@@ -30,6 +30,7 @@ namespace OXASL {
     // return default priors for the parameters
     virtual ColumnVector Priors() const { return priors; }
     virtual string Name() const = 0;
+    virtual void SetPriorMean(int paramn, double value) { priors(paramn) = value; }
 
   protected:
     ColumnVector priors; //list of prior means and precisions - all means first then precisions
@@ -46,15 +47,46 @@ namespace OXASL {
 
   class AIFModel_gammadisp : public AIFModel {
   public:
-    AIFModel_gammadisp() { priors.ReSize(4); priors << 2 << -0.3 << 10 << 10; }
+    AIFModel_gammadisp() { priors.ReSize(4); priors << 2 << -0.3 << 1 << 1; } //old prec.s were 10 and 10
+    // corresponds to mean s~0.7 and p~0.1
     virtual double kcblood(const double ti, const double deltblood, const double taub, const double T_1b, bool casl,const ColumnVector dispparam) const;
     virtual int NumDisp() const {return 2;}
     virtual string Name() const { return "Gamma dispersion kernel"; }
   };
 
-  //  double kcblood_gvf(const double ti, const double deltblood,const double taub,const double T_1b, const double s, const double p, bool casl);
-  //  double kcblood_gaussdisp(const double ti, const double deltblood, const double taub, const double T_1b, const double sig1, const double sig2, bool casl);
-  //  double kcblood_spatialgaussdisp(const double ti, const double deltblood, const double taub, const double T_1b, const double k, bool casl);
+  class AIFModel_gvf : public AIFModel {
+  public:
+    AIFModel_gvf() { priors.ReSize(4); priors << 2 << 1.6 << 1 << 1; }    
+    // corresponds to mean s~0.7 and p~0.7
+    virtual double kcblood(const double ti, const double deltblood, const double taub, const double T_1b, bool casl,const ColumnVector dispparam) const;
+    virtual int NumDisp() const {return 2;}
+    virtual string Name() const { return "GVF"; }
+  };
+
+  class AIFModel_gaussdisp : public AIFModel {
+  public:
+    AIFModel_gaussdisp() { priors.ReSize(2); priors << -1.6 << 1; }    
+    virtual double kcblood(const double ti, const double deltblood, const double taub, const double T_1b, bool casl,const ColumnVector dispparam) const;
+    virtual int NumDisp() const {return 1;}
+    virtual string Name() const { return "Gauss dispersion kernel"; }
+  };
+
+  class AIFModel_spatialgaussdisp : public AIFModel {
+  public:
+    AIFModel_spatialgaussdisp() { priors.ReSize(2); priors << -1.4 << 1; }    
+    virtual double kcblood(const double ti, const double deltblood, const double taub, const double T_1b, bool casl,const ColumnVector dispparam) const;
+    virtual int NumDisp() const {return 1;}
+    virtual string Name() const { return "Spatial gauss dispersion kernel"; }
+  };
+
+  class AIFModel_spatialgaussdisp_alternate : public AIFModel {
+  public:
+    AIFModel_spatialgaussdisp_alternate() { priors.ReSize(2); priors << -1.4 << 1; }    
+    virtual double kcblood(const double ti, const double deltblood, const double taub, const double T_1b, bool casl,const ColumnVector dispparam) const;
+    virtual int NumDisp() const {return 1;}
+    virtual string Name() const { return "Spatial gauss dispersion kernel (alternate)"; }
+  };
+
   //  double kcblood_gallichan(const double ti, const double deltblood, const double taub, const double T_1b, const double xdivVm, bool casl);
 
   // -------------
@@ -67,6 +99,7 @@ namespace OXASL {
     // return the default priors for the parameters
     virtual ColumnVector Priors() const {return residpriors;}
     virtual string Name() const = 0;
+    virtual void SetPriorMean(int paramn, double value) { residpriors(paramn) = value; }
 
   protected:
     ColumnVector residpriors;
@@ -130,6 +163,8 @@ namespace OXASL {
     virtual ColumnVector DispPriors() const { return disppriors; }
     virtual ColumnVector ResidPriors() const {return residpriors; }
     virtual string Name() const = 0;
+    virtual void SetDispPriorMean(int paramn, double value) { disppriors(paramn) = value; }
+    virtual void SetResidPriorMean(int paramn, double value) { residpriors(paramn) = value; }
 
   protected:
     ColumnVector disppriors; //list of prior means and precisions - all means first then precisions
@@ -218,6 +253,7 @@ virtual double kctissue(const double ti,const double fcalib, const double deltti
   // useful functions
   double icgf(const double a, const double x);
   double gvf(const double t, const double s, const double p);
+  double numerical_integration(ColumnVector integrand, double del, double finalval, double finaldel, string method);
 
 
 }
