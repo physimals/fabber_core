@@ -26,16 +26,17 @@ namespace OXASL {
 	}
       else if(ti >= deltblood && ti <= (deltblood + taub))
 	{ 
-	  if (casl) kcblood = 2 * exp(-ti/deltblood);
+	  if (casl) kcblood = 2 * exp(-deltblood/T_1b);
 	  else      kcblood = 2 * exp(-ti/T_1b); 
 	}
       else //(ti > deltblood + tau)
 	{
-	  if (casl) kcblood = 2 * exp(-ti/deltblood);
+	  // artifical lead out period for taub model fitting
+	  if (casl) kcblood = 2 * exp(-deltblood/T_1b);
 	  else      kcblood = 2 * exp(-(deltblood+taub)/T_1b);
 
 	  kcblood *= (0.98 * exp( -(ti - deltblood - taub)/0.05) + 0.02 * (1-(ti - deltblood - taub)/5));
-	  // artifical lead out period for taub model fitting
+	 
 	  if (kcblood<0) kcblood=0; //negative values are possible with the lead out period equation
 	}
 
@@ -43,6 +44,7 @@ namespace OXASL {
   return kcblood;
 }
 
+  //NOTE: for cASL the version here is an over simplificaiton (just changing the decay term and leaving the rest alone) since it ignores the fact that some blood will be more delayed than the rest due to dispersion
   double AIFModel_gammadisp::kcblood(const double ti,const double deltblood,const double taub,const double T_1b,const bool casl,const ColumnVector dispparam) const {
     // Gamma dispersed arterial curve (pASL)
     Tracer_Plus tr("OXASL:kcblood_gammadisp");
@@ -80,14 +82,24 @@ namespace OXASL {
     
     return kcblood;
   }
-  /*
-  double kcblood_gvf(const double ti,const double deltblood,const double taub,const double T_1b,const double s,const double p,const bool casl=false) {
-    //Tracer_Plus tr("OXASL:kcblood_gammadisp");
-  double kcblood = 0.0;
 
-  // gamma variate arterial curve
-  // NOTE:    taub does not directly affect the shape, jsut scale of this KC - see below
-  //          NOT a good idea to use when inferring bolus duration.
+  double AIFModel_gvf::kcblood(const double ti,const double deltblood,const double taub,const double T_1b,const bool casl,const ColumnVector dispparam) const {
+    //GVF AIF shape
+    Tracer_Plus tr("OXASL:kcblood_gvf");
+    double kcblood = 0.0;
+
+    //extract dispersion parameters
+    double s; double p;
+    s = (dispparam.Row(1)).AsScalar();
+    s = exp(s);
+    double sp = (dispparam.Row(2)).AsScalar();
+    sp = exp(sp);
+    if (sp>10) sp=10;
+    p = sp/s;
+
+    // gamma variate arterial curve
+    // NOTE:    taub does not directly affect the shape, jsut scale of this KC - see below
+    //          NOT a good idea to use when inferring bolus duration.
 
       if(ti < deltblood)
 	{ 
@@ -101,61 +113,166 @@ namespace OXASL {
 	  kcblood *= gvf(ti-deltblood,s,p); 
 	}
       // we do not have bolus duration within the GVF AIF - the duration is 'built' into the function shape
-      //else //(ti > deltblood + taub)
-      //	{
-      //	  kcblood(it) = 0.0 ; 
-      //	  
-      //	}
 
       kcblood /= taub; //the 'original' bolus duration scales the magtiude of the KC becuase the area under the KC is preserved under dispersion (apart from T1 decay)
   return kcblood;
 }
-
-  double kcblood_gaussdisp(const double ti,const double deltblood,const double taub,const double T_1b,const double sig1,const double sig2,const bool casl=false) {
+ 
+  //NOTE: for cASL the version here is an over simplificaiton (just changing the decay term and leaving the rest alone) since it ignores the fact that some blood will be more delayed than the rest due to dispersion
+  double AIFModel_gaussdisp::kcblood(const double ti,const double deltblood,const double taub,const double T_1b,const bool casl,const ColumnVector dispparam) const {
   // Gaussian dispersion arterial curve
-  // after Hrabe & Lewis, MRM, 2004 
-    //Tracer_Plus tr("OXASL:kcblood_normdisp");
+  // after Hrabe & Lewis, MRM, 2004 for pASL
+    // my derrivation based on the spatial gauss solution for cASL
+  Tracer_Plus tr("OXASL:kcblood_gaussdisp");
   double kcblood = 0.0;
   double sqrt2 = sqrt(2);
 
-      if (casl) kcblood = 2 * exp(-deltblood/T_1b);
-      else	kcblood = 2 * exp(-ti/T_1b);
+  double sig1;
+  sig1 = exp( (dispparam.Row(1)).AsScalar() );
+  double erf1;
+  double erf2;
+  
+  if (casl) {
+    double a = 1/(sig1*sig1);
+    double b = 1/T_1b;
 
-      double erf1 =  (ti-deltblood)/(sqrt2*sig1);
-      double erf2 = (ti-deltblood-taub)/(sqrt2*sig2);
+    double Q = (2*a*(deltblood-ti)-b)/(2*a);
+    double S = (a*(deltblood-ti)*(deltblood-ti) + b*ti)/a;
 
-      if (erf1>5) erf1=5;
-      if (erf2>5) erf2=5;
-      if (erf1<-5) erf1=-5;
-      if (erf2<-5) erf2 = -5;
+    kcblood = 2 * exp(-deltblood/T_1b)*exp(Q*Q-S);
 
-      kcblood *= 0.5*( erf(erf1)  - erf(erf2)  );
+    erf1 = sqrt(a)*(taub+Q);
+    erf2 = sqrt(a)*Q;
+  }
+  else {
+    // we will only have diserpsion SD (leading edge)
+    // assume trailing edge is related to leading edge as Hrabe did
+    double sig2;
+   if (deltblood > 0) {
+     sig2  = sig1*sqrt( (deltblood+taub)/deltblood );
+   }
+   else sig2 = sig1;
+   
+   kcblood = 2 * exp(-ti/T_1b);
+   
+   erf1 =  (ti-deltblood)/(sqrt2*sig1);
+   erf2 = (ti-deltblood-taub)/(sqrt2*sig2);
+ }
+ 
+ if (erf1>5) erf1=5;
+ if (erf2>5) erf2=5;
+ if (erf1<-5) erf1=-5;
+ if (erf2<-5) erf2 = -5;
+ 
+ kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
 
   return kcblood;
 }
 
-double kcblood_spatialgaussdisp(const double ti,const double deltblood,const double taub,const double T_1b,const double k,const bool casl=false) {
+  double AIFModel_spatialgaussdisp_alternate::kcblood(const double ti,const double deltblood,const double taub,const double T_1b,const bool casl,const ColumnVector dispparam) const {
   // Gaussian dispersion arterial curve - in spatial rather than temporal domain
-  // after Ozyurt ISMRM 2010 (p4065)
-  //Tracer_Plus tr("OXASL:kcblood_normdisp");
+  // after Ozyurt ISMRM 2010 (p4065) for pASL
+  // using derrivation from Thijs van Osch for cASL, but developed into closed form solution
+    // This is the (orignal, now) alternate version that assumes that dispersion happens with TI
+    // NB pASl case is same for both versions
+  
+  Tracer_Plus tr("OXASL:kcblood_spatialgaussdisp");
   double kcblood = 0.0;
 
-      if (casl) kcblood = 2 * exp(-deltblood/T_1b);
-      else	kcblood = 2 * exp(-ti/T_1b);
+  double k;
+  k = exp( (dispparam.Row(1)).AsScalar() );
+  double erf1;
+  double erf2;
 
-      double erf1 =  (ti-deltblood)/(k*sqrt(ti));
-      double erf2 = (ti-deltblood-taub)/(k*sqrt(ti));
-
-      if (erf1>5) erf1=5;
-      if (erf2>5) erf2=5;
-      if (erf1<-5) erf1=-5;
-      if (erf2<-5) erf2 = -5;
-
-      kcblood *= 0.5*( erf(erf1)  - erf(erf2)  );
-
+  if (casl) {
+    double a = 1/(k*k*ti);
+    double b = 1/T_1b;
+    
+    double Q = (2*a*(deltblood-ti)-b)/(2*a);
+    double S = (a*(deltblood-ti)*(deltblood-ti) + b*ti)/a;
+    
+    kcblood = 2 * exp(-deltblood/T_1b)*exp(Q*Q-S);
+    
+    erf1 = sqrt(a)*(taub+Q);
+    erf2 = sqrt(a)*Q;
+  }
+  else {
+    kcblood = 2 * exp(-ti/T_1b);
+    
+    erf1 =  (ti-deltblood)/(k*sqrt(ti));
+    erf2 = (ti-deltblood-taub)/(k*sqrt(ti));
+  }
+    
+    if (erf1>5) erf1=5;
+    if (erf2>5) erf2=5;
+    if (erf1<-5) erf1=-5;
+    if (erf2<-5) erf2 = -5;
+    
+    kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
+    
   return kcblood;
 }
 
+double AIFModel_spatialgaussdisp::kcblood(const double ti,const double deltblood,const double taub,const double T_1b,const bool casl,const ColumnVector dispparam) const {
+  // Gaussian dispersion arterial curve - in spatial rather than temporal domain
+  // after Ozyurt ISMRM 2010 (p4065) for pASL
+  // using derrivation from Thijs van Osch for cASL, but developed into closed form solution
+    // This is the (orignal, now) alternate version that assumes that dispersion happens with TI
+  
+  Tracer_Plus tr("OXASL:kcblood_spatialgaussdisp");
+  double kcblood = 0.0;
+
+  double k;
+  k = exp( (dispparam.Row(1)).AsScalar() );
+  double erf1;
+  double erf2;
+
+  if (casl) {    
+    double dt = 0.01;
+    int ndels = floor( ( ti-max(0.0,ti-taub) )/dt ) + 1;
+    ColumnVector integrand(ndels);
+    double lambda;
+      for (int i=1; i<=ndels; i++) {
+	lambda = ti-(i-1)*dt;
+	if (lambda < 1e-12) {
+	  integrand = 0;
+	}
+	  else {
+	    integrand(i) = 1/sqrt(lambda) * exp(-1/(k*k) * ( (deltblood - lambda)*(deltblood - lambda)/lambda ) )*exp(-lambda/T_1b);
+	  }
+      }
+      // final bit
+      lambda = max(1e-12,ti-taub);
+      double finalintegrand;
+      finalintegrand = 1/sqrt(lambda) * exp(-1/(k*k) * ( (deltblood - lambda)*(deltblood - lambda)/lambda ) )*exp(-lambda/T_1b);
+      double finaldel = (ti-(ndels-1)*dt) - lambda;
+      
+      double integral;
+      integral = numerical_integration(integrand,dt,finalintegrand,finaldel,"trapezium");
+    
+      kcblood = integral*dt* 1/sqrt(M_PI) * 1/k;
+    
+  }
+  else {
+    kcblood = 2 * exp(-ti/T_1b);
+    
+    erf1 =  (ti-deltblood)/(k*sqrt(ti));
+    erf2 = (ti-deltblood-taub)/(k*sqrt(ti));
+    
+    if (erf1>5) erf1=5;
+    if (erf2>5) erf2=5;
+    if (erf1<-5) erf1=-5;
+    if (erf2<-5) erf2 = -5;
+    
+    kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
+
+  }
+
+    
+  return kcblood;
+}
+
+/*
 double kcblood_gallichan(const double ti,const double deltblood,const double taub,const double T_1b,const double xdivVm,const bool casl=false) {
   // Model of dispersion based on a geometrical argument from Gallichan MRM 2008
   // Taking equation [6] (so not including QUIPSSII style saturation)
@@ -648,5 +765,34 @@ double TissueModel_nodisp_spa::kctissue(const double ti,const double fcalib, con
     if (t<0)    return 0.0;
     else        return pow(s,1+s*p) / MISCMATHS::gamma(1+s*p) * pow(t,s*p) * exp(-s*t);
   }
-  
+
+  double numerical_integration(ColumnVector integrand, double del, double finalval, double finaldel, string method) {
+    Tracer_Plus tr("OXASL::numerical_integration");
+
+    int ndel;
+    ndel = integrand.Nrows();
+    ColumnVector prod(ndel);
+    prod = integrand;
+
+    // do numerical intergration on a supplied equispaced vector - with possible extra point at end with spacing: finaldel < del
+    if (method == "rect") {}
+    // rect intergration
+    //nothing to do here - this is essentially done as the default option
+    else if (method == "trapezoid") {
+      ColumnVector trap(ndel);
+      trap = 1;
+      trap(1) = 0.5;
+      trap(del) = 0.5;
+      prod = SP(prod,trap);
+    }
+
+    double result;
+    result = prod.Sum()*del;
+    if (finaldel>1e-12) {
+      result += (0.5*finalval+0.5*prod(ndel))*finaldel;
+    }
+
+    return result;
+
+  }
 } //end namespace
