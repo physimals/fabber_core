@@ -498,11 +498,13 @@ void MCobj::run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat) {
     defy=tmpy;
     defz=tmpz;
   } else {
+
     // mcf.register_volumes(4D reference,4D input image,refweight,inweight,4D output image);
     affmat = mcf.register_volumes(modelpred,wholeimage,mask,mask,finalimage);
+
     // apply transforms to wholeimage to get finalimage (the above is a dummy)
     for (int n=0; n<=wholeimage.maxt(); n++) {
-      affine_transform(wholeimage[n],finalimage[n],affmat.SubMatrix(4*n+1,4*n+4,1,4));
+      affine_transform(wholeimage[n],finalimage[n],affmat);
     }
   }
   finalimage_mat = finalimage.matrix(mask);

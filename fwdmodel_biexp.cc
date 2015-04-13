@@ -17,7 +17,7 @@ using namespace NEWIMAGE;
 
 string BiExpFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_biexp.cc,v 1.1 2014/10/27 14:41:32 chappell Exp $";
+  return "$Id: fwdmodel_biexp.cc,v 1.13 2008/04/10 15:06:27 chappell Exp $";
 }
 
 void BiExpFwdModel::HardcodedInitialDists(MVNDist& prior, 

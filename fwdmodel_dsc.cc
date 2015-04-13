@@ -129,6 +129,7 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
 	 precisions(cbf_index()+1,cbf_index()+1) = 0.1;
        }
 
+
  //     if (infermtt) {
 //        // Transit mean parameter
 //        posterior.means(gmu_index()) = 1; //10;
@@ -299,10 +300,12 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
    // calculate the arterial input function (from upsampled artsig)
    ColumnVector aif_low(ntpts);
-   if (~aifconc) {
+   if (!aifconc) {
      aif_low = -1/te*log(artsighere/artsighere(1)); //using first value from aif input as time zero value
    }
-   else { aif_low=artsighere;}
+   else { 
+     aif_low=artsighere;
+   }
    
    // upsample the signal
    ColumnVector aif; 
@@ -638,11 +641,20 @@ void DSCFwdModel::NameParams(vector<string>& names) const
   names.clear();
   
   names.push_back("cbf");
-  if (infermtt) names.push_back("transitm");
-  if (inferlambda) names.push_back("lambda");
+  if (pvcorr) names.push_back("cbf_wm");
+  if (infermtt) {
+    names.push_back("transitm");
+    if (pvcorr) names.push_back("transitm_wm");
+  }
+  if (inferlambda) {
+    names.push_back("lambda");
+    if (pvcorr) names.push_back("lambda_wm");
+  }
   
-  if (inferdelay)
-  names.push_back("delay");
+  if (inferdelay) {
+    names.push_back("delay");
+    if (pvcorr) names.push_back("delay_wm");
+  }
 
   names.push_back("sig0");
   

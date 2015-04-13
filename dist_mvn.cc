@@ -184,6 +184,8 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 	  //          throw;
 	  // Better behaviour: adds a tiny amount to the diagonal and tries again
 	  Warning::IssueOnce("MVN precision (len==" + stringify(len) + ") was singular, adding 1e-10 to diagonal");
+	  cout << means.t() << endl;
+	  cout << precisions << endl;
 	  covariance = (precisions + IdentityMatrix(len)*1e-10).i();
         }
       covarianceValid = true;

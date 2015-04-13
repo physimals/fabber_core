@@ -8,7 +8,6 @@
 
 #include "inference_vb.h"
 #ifndef __FABBER_LIBRARYONLY
-#include "newimage/newimageall.h"
 #endif //__FABBER_LIBRARYONLY
 
 class CovarianceCache {

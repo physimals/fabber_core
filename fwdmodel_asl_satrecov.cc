@@ -32,10 +32,15 @@ void SatrecovFwdModel::HardcodedInitialDists(MVNDist& prior,
      prior.means(1)=0;
 
      prior.means(2) = t1;
-     precisions(2,2) = 10;
+     precisions(2,2) = 10; //1e-12;
 
      prior.means(3) = 1;
-     precisions(3,3) = 10;
+     if (fixA) {
+       precisions(3,3) = 1e12;
+     }
+     else {
+       precisions(3,3) = 10;
+     }
 
      if (LFAon) {
        prior.means(4) = 1;
@@ -51,7 +56,7 @@ void SatrecovFwdModel::HardcodedInitialDists(MVNDist& prior,
 
     // For parameters with uniformative prior chosoe more sensible inital posterior
     posterior.means(1)=10;
-    precisions(1,1) = 1;
+    precisions(1,1) = 0.1;
     
     posterior.SetPrecisions(precisions);
     
@@ -150,9 +155,12 @@ SatrecovFwdModel::SatrecovFwdModel(ArgsType& args)
       nphases = convertTo<int>(args.ReadWithDefault("phases","1"));
       slicedt = convertTo<double>(args.ReadWithDefault("slicedt","0.0")); // increase in TI per slice
 
+      fixA=args.ReadBool("fixa"); //to fix the A parameter where it will be ambiguous
+
       // with a look locker readout
       FAnom = convertTo<double>(args.ReadWithDefault("FA","0"));
-      if (FAnom>0) looklocker=true;
+      looklocker=false;
+      if (FAnom>0.1) looklocker=true;
       cout << "Looklocker" << looklocker << endl;
       FAnom = FAnom * M_PI/180;
       LFA = convertTo<double>(args.ReadWithDefault("LFA","0"));

@@ -6,6 +6,7 @@
 
 /*  CCOPYRIGHT */
 
+#include "fabber.h"
 #include <iostream>
 #include <exception>
 #include <stdexcept>
@@ -24,6 +25,8 @@ void Usage(const string& errorString = "");
 
 /*** Function implementations ***/
 
+
+#ifndef __FABBER_LIBRARYONLY
 
 int main(int argc, char** argv)
 {
@@ -80,7 +83,7 @@ int main(int argc, char** argv)
 
       // Diagnostic information: software versions
       // This only versions this file... should really use all.
-//      LOG_ERR("FABBER development revision: $Id: fabber.cc,v 1.29 2013/01/25 15:34:35 chappell Exp $\n");
+//      LOG_ERR("FABBER development revision: $Id: fabber.cc,v 1.28 2012/03/07 11:49:10 chappell Exp $\n");
       LOG_ERR("FABBER release v2.0 \n");
       LOG << "Command line and effective options:\n" << args.Read("") << endl;
       LOG << "--output='" << EasyLog::GetOutputDirectory() << "'" << endl;
@@ -216,6 +219,241 @@ void Usage(const string& errorString)
         cout << "\nImmediate cause of error: " << errorString << endl;
 }
 
+#endif //!__FABBER_LIBRARYONLY
+
+void fabber_library(const map<string,string>& argsIn, 
+                    const map<string,const Matrix*>& dataIn, 
+                    map<string,Matrix>& dataOut,
+                    ostream& logOut) 
+// On error, may throw an "Invalid_option", a general STL "exception", or a NEWMAT "Exception". Hopefully nothing else.
+// If it returns normally, everything went fine and dataOut should be populated with results.
+{
+   EasyOptions args(argsIn, &dataIn, &dataOut);
+
+   // Various options don't make sense in library form:
+   // --help --params --output --overwrite --gzip-log
+
+   // Unimplemented for now:
+   // --debug-timings, --debug-instant-stack, --debug-running-stack
+
+   EasyLog::StartLogUsingStream(logOut);
+   LOG_ERR("fabber_library started, options were: " << args.Read("") << endl << endl);
+   
+   Tracer_Plus tr("fabber_library (outer)");
+   { Tracer_Plus tr("fabber_library()");
+
+	InferenceTechnique* infer = InferenceTechnique::NewFromName(args.Read("method"));
+	infer->Setup(args);
+	infer->SetOutputFilenames("<>");
+
+	DataSet allData;
+	allData.LoadData(args);
+
+	args.CheckEmpty();
+	
+	infer->DoCalculations(allData);
+	infer->SaveResults(allData);
+	delete infer;
+	
+	LOG_ERR("fabber_library is all done." << endl);
+   }
+   Warning::ReissueAll();
+   EasyLog::StopLog();
+
+   return;
+}
+
+#ifdef __FABBER_LIBRARYONLY
+#ifdef __FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
+
+#include "newimage/newimage.h"
+using namespace NEWIMAGE;
+#include "inference_spatialvb.h" // useful header function in here
+
+int main() // A simple test program to show how to use the library
+{
+   cout << "FABBER_LIBRARY simple test program" << endl;
+
+   Tracer_Plus tr("fabber_library test main()");
+   // --debug-timings:
+   //    { recordTimings = true; Tracer_Plus::settimingon(); } and also the output code for recordTimings==true
+   // --debug-instant-stack
+   //Tracer_Plus::setinstantstackon(); 
+   // --debug-running-stack
+   //Tracer_Plus::setrunningstackon();
+
+
+   // Sample test case:
+   if (false) 
+   {
+   	cout << "Running sample test case (WILL crash)" << endl;
+   	map<string,string> argsIn;
+   	map<string,const Matrix*> dataIn;
+   	map<string,Matrix> dataOut;
+   	stringstream logOut;
+   	//ostream& logOut = cout;
+
+   	// Should set argsIn, dataIn
+	fabber_library(argsIn, dataIn, dataOut, logOut);
+   	// Should examine dataOut and check it's right.
+	cerr << "Logfile says:\n" << logOut << "\nEnd of logfile." << endl;
+   }
+
+
+   // Test libtest1/out1/
+   // ../fabber --data=data --mask=mask --output=out1 --data-order=singlefile --method=vb --noise=white --model=buxton --ti1=0.4 --ti2=0.62 --ti3=0.84 --ti4=1.06 --ti5=1.28 --ti6=1.5 --ti7=1.72 --ti8=1.94 --ti9=2.16 --ti10=2.38 --tau=1
+   if (true)
+   {
+	map<string,string> argsIn;
+	map<string,const Matrix*> dataIn;
+	map<string,Matrix> dataOut;
+	// stringstream logOut;
+	ostream& logOut = cout; // better for debugging
+
+	cout << "Loading mask from mask.nii.gz..." << endl;
+	volume<float> mask;
+	read_volume(mask, "mask.nii.gz");
+	cout << "Loading data from data.nii.gz..." << endl;
+	volume4D<float> data;
+	read_volume4D(data, "data.nii.gz");
+	cout << "Loading complete." << endl;
+
+	// Convert this into matrix inputs for fabber_library, replaces the --data option
+	// fabber_library also assumes --data-order=singlefile as the only sensible ordering.
+	mask.binarise(1e-16, mask.max()+1, exclusive);
+	Matrix dataMatrix = data.matrix(mask); // Load the voxels where mask>0
+	dataIn["DATA"] = &dataMatrix; // Give dataIn the address of this matrix
+	argsIn["data"] = "<DATA>"; // Not a real filename; indicates fabber_library will find the data in the DATA matrix
+
+	// For spatial VB, should pass in the voxel coordinates instead of a --mask option
+	Matrix voxelCoords;
+	ConvertMaskToVoxelCoordinates(mask, voxelCoords);
+	dataIn["VC"] = &voxelCoords;
+	argsIn["voxelCoords"] = "<VC>";
+
+	// --output option is not required because output matrix names are hardcoded.
+
+	//argsIn["method"]="vb"; // Also works (comment out param-spatial-priors option below)
+	argsIn["method"]="spatialvb"; // Works (requires one of the param-spatial-priors options below) 
+	argsIn["param-spatial-priors"]="NN";
+	//argsIn["param-spatial-priors"]="pp"; // Currently buggy: runs but fills delttiss with inf?
+
+	// The remaining options:
+	argsIn["noise"]="white";
+	argsIn["model"]="buxton";
+	argsIn["ti1"]="0.4";
+	argsIn["ti2"]="0.62";
+	argsIn["ti3"]="0.84";
+	argsIn["ti4"]="1.06";
+	argsIn["ti5"]="1.28";
+	argsIn["ti6"]="1.5";
+	argsIn["ti7"]="1.72";
+	argsIn["ti8"]="1.94";
+	argsIn["ti9"]="2.16";
+	argsIn["ti10"]="2.38";
+	argsIn["tau"]="1";
+
+	// Now run it:
+	cout << "Running fabber_library..." << endl;
+	try
+	{
+	    fabber_library(argsIn, dataIn, dataOut, logOut);
+	}
+  	catch (const Invalid_option& e)
+    	{
+	    Warning::ReissueAll();
+      	    LOG_ERR_SAFE("Invalid_option exception caught in fabber:\n  " << Exception::what() << endl);
+	    return 2;
+    	}
+  	catch (const exception& e)
+    	{
+      	    Warning::ReissueAll();
+      	    LOG_ERR_SAFE("STL exception caught in fabber:\n  " << e.what() << endl);
+	    return 2;
+    	}
+  	catch (Exception)
+    	{
+      	    Warning::ReissueAll();
+      	    LOG_ERR_SAFE("NEWMAT exception caught in fabber:\n  " 
+	      	<< Exception::what() << endl);
+	    return 2;
+    	}
+  	catch (...)
+    	{
+      	    Warning::ReissueAll();
+      	    LOG_ERR_SAFE("Some other exception caught in fabber!" << endl);
+	    return 2;
+    	}
+	    
+	cout << "fabber_library completed." << endl;
+
+	// Next: check that the outputs agree with previous results
+	//cout << "No final checks run." << endl;
+
+	cout << "MaximumAbsoluteValue(means, stdevs, tmp) = " << 
+	    MaximumAbsoluteValue(dataOut["means"]) << ", " << 
+	    MaximumAbsoluteValue(dataOut["stdevs"]) << endl;
+
+	if (true) // save outputs
+	{
+	    cout << "Saving outputs..." << endl;
+	    volume4D<float> output;
+	    Matrix tmp = dataOut["means"] & dataOut["stdevs"];
+	    cout << "tmp Nrows=" << tmp.Nrows() << ", Ncols=" << tmp.Ncols() << endl;
+	    output.setmatrix(tmp, mask); 
+	    output.set_intent(NIFTI_INTENT_NONE,0,0,0);
+	    output.setDisplayMaximumMinimum(output.max(),output.min());
+	    save_volume4D(output,"fabber_library_test_output.nii.gz");
+	    cout << "Outputs saved!" << endl;
+	}
+	else
+	{ 	// load other outputs and compare
+
+	 volume4D<float> testData[4];
+	 string testFilenames[4];
+	 Matrix testMatrices[4];
+	 Matrix compMatrices[4];
+	 testFilenames[0] = "outputs/original/out1/mean_ftiss.nii.gz";
+	 testFilenames[1] = "outputs/original/out1/mean_delttiss.nii.gz";
+	 testFilenames[2] = "outputs/original/out1/zstat_ftiss.nii.gz";
+	 testFilenames[3] = "outputs/original/out1/zstat_delttiss.nii.gz";
+	 compMatrices[0] = dataOut["means"].Row(1);
+	 compMatrices[1] = dataOut["means"].Row(2);
+	 compMatrices[2] = dataOut["stdevs"].Row(1);
+	 compMatrices[3] = dataOut["stdevs"].Row(2);
+ 
+ 	 for (int i=0; i<4; i++)
+	 {
+	    cout << "Loading " << testFilenames[i] << endl;
+	    read_volume4D(testData[i], testFilenames[i]);
+	    testMatrices[i] = testData[i].matrix(mask);
+	    if (testMatrices[i].Nrows() != compMatrices[i].Nrows())
+		cerr << "Test and comparison size mismatch" << endl;
+	    else if (testMatrices[i].Ncols() != compMatrices[i].Ncols())
+		cerr << "Test and comparison size mismatch" << endl;
+	    else if (MaximumAbsoluteValue(testMatrices[i]-compMatrices[i]) > MaximumAbsoluteValue(testMatrices[i])*.1)
+		cerr << "Test and comparison very different!" << endl;
+	    else if (MaximumAbsoluteValue(testMatrices[i]-compMatrices[i]) != 0)
+		cerr << "Test and comparison are slightly different!" << endl;
+	    else
+		cout << "Matches perfectly!" << endl;
+	 } 
+         cout << "Comparison complete." << endl;
+	}
+	
+
+   }
+
+   return 0;
+}
+#else // JUST FOR TESTING
+int main(){cout<<"Hello World!"<<endl;return 2;}
+
+#endif // __FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
+#endif // __FABBER_LIBRARYONLY
+
+// TO DO:
+// Test harness above
 
 
 

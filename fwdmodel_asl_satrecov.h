@@ -58,6 +58,7 @@ protected: // Constants
 
   bool looklocker;
   bool LFAon;
+  bool fixA;
 
   ColumnVector tis;
   Real timax;
