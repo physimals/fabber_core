@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string FLEXFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_flex.cc,v 1.1 2011/03/10 13:55:00 chappell Exp $";
+  return "$Id: fwdmodel_flex.cc,v 1.2 2012/02/09 11:50:09 chappell Exp $";
 }
 
 void FLEXFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -48,15 +48,21 @@ void FLEXFwdModel::HardcodedInitialDists(MVNDist& prior,
 
      // deltw (ppm)
      for (int s=1; s<=ncomp; s++) {
-       prior.means(place) = 0; //compspec(s,1);
-       precisions(place,place) = 1;
+       prior.means(place) = compspec(s,1);
+       if (inferdw) {
+	 precisions(place,place) = 10;
+       }
+       else { precisions(place,place) = 1e12; }
        place++;
      }
 
      // kevol (log)
      for (int s=1; s<=ncomp; s++) {
        prior.means(place) = compspec(s,2);
-       precisions(place,place) = 1;
+       if (inferk) {
+	 precisions(place,place) = 1;
+       }
+       else { precisions(place,place) = 1e12; }
        place++;
      }
 
@@ -74,7 +80,7 @@ void FLEXFwdModel::HardcodedInitialDists(MVNDist& prior,
     posterior = prior;
 
     // For parameters with uniformative prior chosoe more sensible inital posterior
-      posterior.means(1) = 1;
+      posterior.means(1) = 0;
       precisions(1,1) = 10;
       place=2;
 
@@ -85,11 +91,11 @@ void FLEXFwdModel::HardcodedInitialDists(MVNDist& prior,
 	}
       }
 
-      //      for (int s=1; s<=ncomp; s++) {
-      //	posterior.means(place) = 0.1;
-      //	precisions(place,place) = 10;
-      //	place++;
-      //      }
+            for (int s=1; s<=ncomp; s++) {
+	      posterior.means(place) = 1;
+	      precisions(place,place) = 10;
+	      place++;
+            }
 
       posterior.SetPrecisions(precisions);
     
@@ -121,20 +127,21 @@ void FLEXFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
    place += npoly;
 
    // PTR
-   PTR = params.Rows(place,place+ncomp-1);
+   PTR = params.Rows(place,place+ncomp-1)/1e3;
    place += ncomp;
 
    // deltw
-   //deltw = params.Rows(place,place+ncomp-1);
-   ColumnVector pw;
-   pw = params.Rows(place,place+ncomp-1);
-   for (int i=1; i<=ncomp; i++) {
-     if (pw(i)>M_PI/2-1e-12) pw(i) = M_PI/2-1e-12;
-     if (pw(i)<-M_PI/2+1e-12) pw(i) = -M_PI/2+1e-12;
-     deltw(i) = compspec(i,1) + tan(pw(i));
-     //deltw(i) = compspec(i,1) + pw(i);
-   }
+   deltw = params.Rows(place,place+ncomp-1);
+   //ColumnVector pw;
+   //pw = params.Rows(place,place+ncomp-1);
+   //for (int i=1; i<=ncomp; i++) {
+     //if (pw(i)>M_PI/2-1e-12) pw(i) = M_PI/2-1e-12;
+     //if (pw(i)<-M_PI/2+1e-12) pw(i) = -M_PI/2+1e-12;
+     //deltw(i) = compspec(i,1) + tan(pw(i));
+   //  deltw(i) = compspec(i,1) + pw(i);
+   //}
    
+   //cout << deltw.t() << endl;
 
    place += ncomp;
    deltw /= 1e6; // starts out in ppm
@@ -162,11 +169,23 @@ void FLEXFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
       tpower = SP(tpower,tevol);
     }
 
+    //cout << deltw.t() << endl;
+
     for (int s=1; s<=ncomp; s++) {
       for (int i=1; i<=ntpts; i++) {
 	result.Row(i) += PTR.Row(s)*exp( -kevol.Row(s)*tevol.Row(i) )*cos( (deltw.Row(s)*tevol.Row(i) + phase.Row(s)).AsScalar());
       }
     }
+
+    if (ffton) {
+      ColumnVector fftx;
+      ColumnVector ffty;
+      RealFFT(result,fftx,ffty);
+      result = sqrt(SP(fftx,fftx)+SP(ffty,ffty));
+    }
+
+    //cout << params.t() << endl;
+    //cout << result.t() << endl;
 
   return;
 }
@@ -177,6 +196,7 @@ FLEXFwdModel::FLEXFwdModel(ArgsType& args)
   Tracer_Plus tr("FLEXFwdModel");
 
     string scanParams = args.ReadWithDefault("scan-params","cmdline");
+      bool ardon;
 
     // compspec
     // 2 Columns: Freq (ppm), kevol (s^-1)
@@ -198,6 +218,14 @@ FLEXFwdModel::FLEXFwdModel(ArgsType& args)
 
       npoly = convertTo<int>(args.ReadWithDefault("npoly","1"));
 
+      //inference options
+      inferdw = true; //args.ReadBool("inferdw");
+      inferk = true; //args.ReadBool("inferk");
+
+      ardon = args.ReadBool("ardon");
+
+      ffton = args.ReadBool("fft");
+
     }
 
     else
@@ -206,16 +234,20 @@ FLEXFwdModel::FLEXFwdModel(ArgsType& args)
     ncomp = compspec.Nrows();
     ntpts = tevol.Nrows();
 
+    /*
     //ARD on baseline parameters (except DC term)
     if (npoly>1) {
     for (int i=1; i<npoly; i++) {
       ard_index.push_back(i+1);
     }
     }
+    */
+    if (ardon) {
     //ARD on PTR values
-    for (int i=0 ; i<ncomp; i++) {
+    for (int i=1 ; i<ncomp; i++) { //always assume we have first component (which should be water)
       ard_index.push_back(npoly+i+1);
     }
+        }
 }
 
 void FLEXFwdModel::ModelUsage()

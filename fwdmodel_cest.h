@@ -26,7 +26,7 @@ public:
                                 
   virtual void NameParams(vector<string>& names) const;     
   virtual int NumParams() const 
-  { return (3*npool) + 1 + ( inferdrift?1:0 ) + ( t12soft? (2*npool):0 );
+  { return (3*npool - 1) + 1 + ( inferdrift?1:0 ) + ( t12soft? (2*npool):0 ) + (3*nexpool);
   } 
 
   virtual ~CESTFwdModel() { return; }
@@ -46,6 +46,8 @@ protected:
   //specific functions
   void Mz_spectrum(ColumnVector& Mz, const ColumnVector& wvec, const ColumnVector& w1, const ColumnVector& t, const ColumnVector& M0, const Matrix& wi, const Matrix& kij, const Matrix& T12) const;
   ReturnMatrix Mz_spectrum_lorentz(const ColumnVector& wvec, const ColumnVector& w1, const ColumnVector& t, const ColumnVector& M0, const Matrix& wi, const Matrix& kij, const Matrix& T12) const;
+
+  void Mz_contribution_lorentz_simple(ColumnVector& Mzc, const ColumnVector& wvec, const double& I, const ColumnVector& wi, const double& R) const;
 
   //maths functions
   void Ainverse(const Matrix A, RowVector& Ai) const;
@@ -69,6 +71,7 @@ protected:
   //bool pvcorr;
   bool lorentz;
   bool steadystate;
+  bool setconcprior;
 
   // scan parameters
   vector<float> t;
@@ -80,8 +83,18 @@ protected:
   ColumnVector poolppm;
   ColumnVector poolk;
   Matrix T12master;
+  ColumnVector poolcon;
+  ColumnVector poolconprec;
   //Matrix T12WMmaster;
   //Matrix T12CSFmaster;
+
+  // MT pool
+  //bool mtpool;
+
+  // extra pools
+  int nexpool;
+  ColumnVector expoolppm;
+  ColumnVector expoolR;
 
   // Data specification
   ColumnVector wvec;

@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string FlobsFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_flobs.cc,v 1.4 2008/04/03 13:22:39 adriang Exp $";
+  return "$Id: fwdmodel_flobs.cc,v 1.5 2012/01/13 12:00:59 adriang Exp $";
 }
 
 void FlobsFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -108,7 +108,7 @@ FlobsFwdModel::FlobsFwdModel(ArgsType& args, bool polar)
 {
     string basisFile = args.Read("basis"); 
     LOG_ERR( "    Reading basis functions: " << basisFile << endl );
-    basis = read_vest(basisFile);
+    basis = read_vest_fabber(basisFile);
     LOG_ERR( "    Read " << basis.Ncols() << " basis functions of length " 
 	     << basis.Nrows() << endl);
 
@@ -126,7 +126,7 @@ FlobsFwdModel::FlobsFwdModel(ArgsType& args, bool polar)
       {
 	LOG_ERR( "    Reading nuisance basis functions: " 
 		 << basisFile << endl );
-	nuisanceBasis = read_vest(basisFile);
+	nuisanceBasis = read_vest_fabber(basisFile);
 	LOG_ERR( "    Read " << nuisanceBasis.Ncols() 
 		 << " nuisance basis functions of length "
 		 << nuisanceBasis.Nrows() << endl);

@@ -64,6 +64,13 @@ protected:
   
   // analysis specificaitons
   Matrix compspec;
+
+  //inference options
+  bool inferdw;
+  bool inferk;
+
+  //other options
+  bool ffton;
   
   // ard flags
   bool doard;

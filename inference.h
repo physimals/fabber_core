@@ -22,6 +22,7 @@
 #include "dataset.h"
 #ifdef __FABBER_MOTION
  #include "Update_deformation.h"
+ #include "mcflirt/rigidreglib.h"
 #endif //__FABBER_MOTION
 
 class InferenceTechnique {
@@ -71,12 +72,15 @@ private:
 
 class MCobj {
 public:
-  MCobj(const DataSet& allData);
+  MCobj(const DataSet& allData, int dof);
   void run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat);
   void set_num_iter(int nit) { num_iter=nit; }
 private:
+  int userdof;  // anything over 13 is full nonlinear
   int num_iter;  // default 10
   volume<float> mask;
+  Matrix affmat;
+  mcflirt mcf;
   volume4D<float> defx;
   volume4D<float> defy;
   volume4D<float> defz;

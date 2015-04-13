@@ -22,7 +22,7 @@ public:
                                 
   virtual void NameParams(vector<string>& names) const;     
   virtual int NumParams() const 
-  { return 3; } 
+  { return 3 + (incvel?1:0) ; } 
 
   virtual ~MultiPhaseASLFwdModel() { return; }
 
@@ -34,5 +34,26 @@ public:
 
 protected: // Constants
   int repeats;
+
+  // modulation function
+  string modfn;
+
+  // inference options
+  bool incvel;
+  bool infervel;
+
+  // fermi function variables
+  double alpha;
+  double beta;
+
+  //modulation matrix
+  double mod_fn( const double inphase, const double v) const;
+  double interp(const ColumnVector& x, const ColumnVector& y, const double xi) const;
+  Matrix mod_mat;
+  ColumnVector mod_phase;
+  ColumnVector mod_v;
+  double vmax;
+  double vmin;
+  int nvelpts;
 
 };

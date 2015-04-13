@@ -17,7 +17,7 @@ using namespace NEWIMAGE;
 
 string FASLFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_fasl.cc,v 1.1 2010/10/01 13:54:29 chappell Exp $";
+  return "$Id: fwdmodel_fasl.cc,v 1.2 2012/01/13 12:00:59 adriang Exp $";
 }
 
 void FASLFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -276,24 +276,24 @@ echoTime.ReSize(2);
     
     // LOG_ERR( "    Reading BOLD basis functions: " << rb << endl );
     //if (rb != "null")
-    //    Rbasis = read_vest(rb);
+    //    Rbasis = read_vest_fabber(rb);
     //else
     //    throw Invalid_option("Currently --bold-basis=null isn't allowed...");
     
     LOG_ERR( "    Reading CBF basis functions: " << qb << endl );
-        Qbasis = read_vest(qb);
+        Qbasis = read_vest_fabber(qb);
 
     LOG_ERR( "    Reading arrival time basis functions: " << qb << endl );
-        Dbasis = read_vest(db);
+        Dbasis = read_vest_fabber(db);
         
     LOG_ERR( "    Reading Stat. Mag. basis functions: " << mb << endl );
-        Mbasis = read_vest(mb);
+        Mbasis = read_vest_fabber(mb);
 
 	const int numTR = Qbasis.Nrows();
 	/*
     LOG_ERR( "    Reading Nuisance basis functions: " << nb << endl );
     if (nb != "null")
-        Nbasis = read_vest(nb);
+        Nbasis = read_vest_fabber(nb);
     else
         Nbasis.ReSize(numTR, 0);
 	*/

@@ -30,13 +30,23 @@ void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn,
     assert(nPhis == posterior.nPhis);
 
     for (int i = 1; i <= nPhis; i++)
-    {
+      {
+	if (phiprior == -1) {
+	  // use non-informative prior on phi
 	   posterior.phis[i-1].b = prior.phis[i-1].b = 1e6;
 	   posterior.phis[i-1].c = prior.phis[i-1].c = 1e-6;
 
        // Bit of black magic... tiny initial noise precision seems to help
 	   posterior.phis[i-1].b = 1e-8;
 	   posterior.phis[i-1].c = 50;
+	}
+	else {
+	  // use input nosie std dev to determine the prior (and inital values) for phi
+	  // this is for the case where N is small, so it make sense to use a large(ish) c_prior
+	  // since C ~ N (data points) and we struggle to estimate noise when N is small.
+	  posterior.phis[i-1].c = prior.phis[i-1].c = 0.5; //assumes that a given std deviation is equivelent to N=1 measurements
+	  posterior.phis[i-1].b = prior.phis[i-1].b = 1/(phiprior*phiprior*prior.phis[i-1].c); //NB phiprior is a std dev for the noise that is read in
+	}
     }
 }
 
@@ -89,9 +99,13 @@ WhiteNoiseModel::WhiteNoiseModel(ArgsType& args)
   assert(phiPattern.length() > 0);
   MakeQis(phiPattern.length()); // a quick way to validate the input
 
-  // A quick hack to allow phi to be locked externally
+  // Allow phi to be locked externally
   lockedNoiseStdev = convertTo<double>(args.ReadWithDefault("locked-noise-stdev","-1"));
   assert(lockedNoiseStdev == -1 || lockedNoiseStdev > 0); // TODO (should throw)
+
+  // Set phi prior externally
+  phiprior = convertTo<double>(args.ReadWithDefault("prior-noise-stddev","-1"));
+  if ( phiprior < 0 && phiprior != -1 ) throw Invalid_option("Incorrect choice of prior-noise-stddev, is should be >0");
 }
 
 

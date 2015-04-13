@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string ASLFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_asl_rest.cc,v 1.8 2014/12/19 15:32:25 chappell Exp $";
+  return "$Id: fwdmodel_asl_rest.cc,v 1.9 2014/12/19 16:18:31 chappell Exp $";
 }
 
 void ASLFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -480,6 +480,13 @@ void ASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
   if (calib) { f_calib = ftiss; f_calibwm = fwm; }
   else       { f_calib = 0.01; f_calibwm = 0.003; } //otherwise assume sensible value (units of s^-1)
   
+  /*
+  ColumnVector artdir(3);
+  artdir(1) = sin(bloodphi)*cos(bloodth);
+  artdir(2) = sin(bloodphi)*sin(bloodth);
+  artdir(3) = cos(bloodphi);
+  */
+
   double kctissue; kctissue = 0.0;
   double kcblood;  kcblood = 0.0;
   double kcwm;     kcwm = 0.0;
@@ -510,13 +517,22 @@ void ASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 	  if (ti>deltll)
 	  T_1b = T_1ll;
 	}
+	
+	// crushers
+	double artweight=1.0;
+	artweight = 1.0 - crush(it); //arterial weight is opposte of crsuh extent
+	/*
+	if (artdir) {
+	  artweight = Sinc( 2 * bloodbv * std::max(DotProduct(artdir,crushdir.Row(it)),0.0) ); // based on laminar flow profile c.f. perfusion tensor imaging
+	}
+	*/
 
 	//Tissue
 	if (inctiss) kctissue = pvgm*ftiss*tiss_model->kctissue(ti,f_calib,delttiss,tautiss,T_1b,T_1,lambda,casl,disptiss,residtiss);
 	//White matter 
 	if (incwm)   kcwm     = pvwm*fwm*tiss_model->kctissue(ti,f_calibwm,deltwm,tauwm,T_1b,T_1wm,lamwm,casl,dispwm,residwm);
 	// Arterial
-	if (incart)  kcblood  = fblood*art_model->kcblood(ti,deltblood,taublood,T_1b,casl,dispart);
+	if (incart)  kcblood  = artweight*fblood*art_model->kcblood(ti,deltblood,taublood,T_1b,casl,dispart);
 	  
 	if (incpc) {
 	  // pre-capilliary component
@@ -915,7 +931,58 @@ ASLFwdModel::ASLFwdModel(ArgsType& args)
 	}
       }
 
-     
+      // vascular crushing
+      // to specify a custom combination of vascular crushing
+      string crush_temp = args.ReadWithDefault("crush1","notsupplied");
+      // if crush_temp = none then we assume all data has same crushing parameters we will represent this as no crushers
+      crush.ReSize(tis.Nrows());
+      crush = 0.0; // default is no crusher
+      crushdir.ReSize(tis.Nrows(),3);
+      crushdir = 0.0;
+      crushdir.Column(3) = 1.0; //default (which should remain ignored normally) is z-only
+      if (crush_temp != "notsupplied" ) {
+	// we need to assemble crusher information
+
+	int N=1;
+	while (true)
+	  {
+	    if (N>1) {
+	      crush_temp = args.ReadWithDefault("crush"+stringify(N),"stop!");
+	      if (crush_temp == "stop!") break; //we have run out of crusher specifications
+	    }
+
+	    // determine what crusher type we have
+	    if (crush_temp == "off" || crush_temp == "none") {
+		crush(N) = 0.0;
+	      }
+	    else if (crush_temp == "on") {
+	      crush(N) = 1.0;
+	    }
+	    else if (crush_temp == "xyz") {
+	      crush(N) = 1.0;
+	      crushdir.Row(N) << 1 << 1 << 1;
+	      crushdir.Row(N) /= sqrt(3);
+	    }
+	    else if (crush_temp == "-xyz") {
+	      crush(N) = 1.0;
+	      crushdir.Row(N) << -1 << 1 << 1;
+	      crushdir.Row(N) /= sqrt(3);
+	    }
+	    else if (crush_temp == "x-yz") {
+	      crush(N) = 1.0;
+	      crushdir.Row(N) << 1 << -1 << 1;
+	      crushdir.Row(N) /= sqrt(3);
+	    }
+	    else if (crush_temp == "-x-yz") {
+	      crush(N) = 1.0;
+	      crushdir.Row(N) << -1 << -1 << 1;
+	      crushdir.Row(N) /= sqrt(3);
+	    }
+	    N++;
+	  }
+      }
+
+
 
       // Look-Locker correction
       string FAin = args.ReadWithDefault("FA","none");

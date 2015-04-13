@@ -87,6 +87,8 @@ int stattiss_index() const {return facorr_index() + (incfacorr?1:0);} //includin
   ColumnVector taus; // bolus durations if there are more than one
   Real timax;
   int repeats;
+  ColumnVector crush;
+  Matrix crushdir;
 
   //data information
   bool raw; //data is 'raw' (non-subtracted)

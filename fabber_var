@@ -8,6 +8,7 @@
 # HISTORY
 # 13-12-2007 Update to use mvntool to get varainces directly from the saved mvn (rather than from the z-stat)
 # 26-11-2008 Add option to only extract varaince of a specified parameter
+# 29-8-2013 Add anchors to grep expression to find exact match for a parameter name
 
 #deal with options
 #   Copyright (C) 2007-2012 University of Oxford
@@ -32,7 +33,7 @@ fi
 
 #index=1
 for param in $params; do
-    index=`grep -n $param $datdir/paramnames.txt | sed -n 's/^\([0-9]*\)[:].*/\1/p'`
+    index=`grep -n ^$param$ $datdir/paramnames.txt | sed -n 's/^\([0-9]*\)[:].*/\1/p'`
     if [ -z $index ];then
 	echo "Parameter $param not found - skipping"
     else

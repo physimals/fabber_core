@@ -17,7 +17,7 @@ using namespace NEWIMAGE;
 
 string Quipss2FwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_quipss2.cc,v 1.23 2008/03/17 13:00:49 adriang Exp $";
+  return "$Id: fwdmodel_quipss2.cc,v 1.25 2013/01/25 11:01:45 chappell Exp $";
 }
 
 void Quipss2FwdModel::HardcodedInitialDists(MVNDist& prior, 

@@ -200,7 +200,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(const DataSet& allData)
       + ")!");
 
 #ifdef __FABBER_MOTION
-  MCobj mcobj(allData);
+  MCobj mcobj(allData,6);  // hard coded DOF (future TODO item)
 #endif //__FABBER_MOTION
 
   Matrix data(origdata.Nrows(),Nvoxels);

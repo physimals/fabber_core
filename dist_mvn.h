@@ -11,10 +11,12 @@
 #include <stdexcept>
 #include "assert.h"
 #include "easylog.h"
+#ifndef __FABBER_LIBRARYONLY
 #include "newimage/newimageall.h"
+using namespace MISCMATHS;
+#endif
 
 using namespace NEWMAT;
-using namespace MISCMATHS;
 
 class MVNDist {
 public:
@@ -51,8 +53,10 @@ public:
   void DumpTo(ostream& out, const string indent = "") const;
 
   void Load(const string& filename);
+#ifndef __FABBER_LIBRARYONLY
   static void Load(vector<MVNDist*>& mvns, const string& filename, const NEWIMAGE::volume<float>& mask);
   static void Save(const vector<MVNDist*>& mvns, const string& filename, const NEWIMAGE::volume<float>& mask);
+#endif //__FABBER_LIBRARYONLY
   
  protected:
   int len; // should only be changed explicitly

@@ -262,6 +262,12 @@ inline bool LMConvergenceDetector::Test(double F)
 {
   double diff = F - prev;
 
+  // cout << "----" << endl;
+  // cout << its << endl;
+  // cout << "F:" << F << endl;
+  // cout << "prev:" << prev << endl;
+  // cout << diff << endl;
+
   double absdiff = diff; //look at magnitude of diff in absdiff
   if(diff<0) {absdiff = -diff;}
   
@@ -295,9 +301,10 @@ inline bool LMConvergenceDetector::Test(double F)
       revert=false;
     }
   }
-    // if we are in LM mode (NB we dont increase iterations during LM mode)
+    // if we are in LM mode (NB we dont increase iterations if we are increasing the LM alpha, onyl when we make a sucessful step)
   else {
     // if F has improved over our previous best then reduce the alpha and continue from current estimate
+
     if ( diff > 0 ) {
       if (alpha == alphastart) { //leave LM mode if alpha returns to inital value
 	LM = false;
@@ -308,7 +315,8 @@ inline bool LMConvergenceDetector::Test(double F)
       }
       revert=false;
       prev = F;
-      //cout << "Reducing LM" << endl;
+      cout << "Reducing LM" << endl;
+      ++its; // if F has improved then we take this as the new 'step' and move onto the next iteration
       return false;
     }
     //if alpha gets too large then we cannot achieve any gain here so stop and revert to previous best solution
@@ -316,6 +324,12 @@ inline bool LMConvergenceDetector::Test(double F)
       reason = "Reached max alpha";
       revert=true;
       //cout << "LM maxed out" << endl;
+      return true;
+    }
+    //otherwise if we have reached max iterations stop
+    else if (its >= max) {
+      reason = "Max iterations reached";
+      revert=false;
       return true;
     }
     // otherwise continue in LM mode for time being, try increasing alpha

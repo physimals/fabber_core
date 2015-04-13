@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string QuasarFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_asl_quasar.cc,v 1.8 2014/02/21 13:49:09 mwebster Exp $";
+  return "$Id: fwdmodel_asl_quasar.cc,v 1.9 2014/10/24 15:25:58 chappell Exp $";
 }
 
 void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -33,13 +33,12 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
     // Tissue bolus perfusion
      if (infertiss) {
      prior.means(tiss_index()) = 0;
-     precisions(tiss_index(),tiss_index()) = 1e-12;
-
+     precisions(tiss_index(),tiss_index()) = 1e-12; 
      
      //if (!singleti) {
        // Tissue bolus transit delay
        prior.means(tiss_index()+1) = 0.7;
-       precisions(tiss_index()+1,tiss_index()+1) = 10;
+       precisions(tiss_index()+1,tiss_index()+1) = 1;
        // }
     
      }
@@ -47,13 +46,13 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
     // Tissue bolus length
      if (infertau && infertiss) {
        prior.means(tau_index()) = seqtau;
-       precisions(tau_index(),tau_index()) = 10;
+       precisions(tau_index(),tau_index()) = 1;
      }
 
      if (infertaub)
        {
 	 prior.means(taub_index()) = seqtau;
-	 precisions(taub_index(),taub_index()) = 10;
+	 precisions(taub_index(),taub_index()) = 1;
        }
 
     // Arterial Perfusion & bolus delay
@@ -65,7 +64,7 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
 	precisions(aidx,aidx) = 1e-12;
 
 	prior.means(aidx+1) = 0.1;
-	precisions(aidx+1,aidx+1) = 10;
+	precisions(aidx+1,aidx+1) = 1;
 	
       }
  
@@ -89,11 +88,11 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
       prior.means(wmi) = 0;
       prior.means(wmi+1) = 1.2;
       precisions(wmi,wmi) = 1e-12;
-      precisions(wmi+1,wmi+1) = 10;
+      precisions(wmi+1,wmi+1) = 1;
 
       if (infertau) {
 	prior.means(wmi+2) = seqtau;
-	precisions(wmi+2,wmi+2) = 10;
+	precisions(wmi+2,wmi+2) = 1;
       }
 
       if (infert1) {
@@ -144,6 +143,8 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
       precisions(cidx,cidx) = 1e12;  // artdir is multiplied by 1e6 to make its numerical diff work
       prior.means(cidx+1) = 0.0;
       precisions(cidx+1,cidx+1) = 1e12;
+      prior.means(cidx+2) = 1.6;
+      precisions(cidx+2,cidx+2) = 0.1;
       //prior.means(cidx+1) = 0.8;
       //precisions(cidx+1,cidx+1) = 10;
     }
@@ -193,7 +194,7 @@ void QuasarFwdModel::HardcodedInitialDists(MVNDist& prior,
 	precisions(wm_index(),wm_index()) = 1;
       }
 
-    posterior.means(disp_index()) = 0.05;
+    //posterior.means(disp_index()) = 0.05;
 
     if (inferart) {
     if (!artdir) {
@@ -261,6 +262,7 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
   //float crusheff;
   float bloodth;
   float bloodphi;
+  float bloodbv;
   float fbloodc1=0.0;
   float fbloodc2=0.0;
   float fbloodc3=0.0;
@@ -356,6 +358,7 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
     fwm=0;
     deltwm=0;
     T_1wm=t1wm;
+    tauwmset = seqtau;
 
     pv_gm=1;
     pv_wm=1;
@@ -367,6 +370,7 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
     bloodth = 2*M_PI*tanh(bloodth*1e6); //convert to within -360->360 range (reasonably linear over the -180->180 range);
     bloodphi = params(crush_index()+1);
     bloodphi = 2*M_PI*tanh(bloodphi*1e6);
+    bloodbv = paramcpy(crush_index()+2);
     //blooddir = params(crush_index());
     //blooddir = 2*M_PI*tanh(blooddir*1e6); //convert to within -360->360 range (reasonably linear over the -180->180 range)
     //crusheff = 1.0; //paramcpy(crush_index()+1);
@@ -401,8 +405,10 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
   }
 
   float lambdagm=0.9; //the general 'all' tissue lambda value
-  //float lambdagm = 0.98;
-    //float lambdawm = 0.82;
+  float lambdawm = 0.82;
+  if (inferwm) {
+    lambdagm = 0.98;
+  }
 
     // flip angle correction (only if calibon)
     float FAtrue = FA;
@@ -412,12 +418,14 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
     //cout << T_1 << " " << FAtrue << " ";
 
     float T_1app = 1/( 1/T_1 + 0.01/lambdagm - log(cos(FAtrue))/dti);
-    //float T_1appwm = 1/( 1/T_1wm + 0.01/lambdawm - log(cos(FAtrue))/dti);
+    float T_1appwm = 1/( 1/T_1wm + 0.01/lambdawm - log(cos(FAtrue))/dti);
 
     // Need to be careful with T1 values
     if (T_1b<0.1) T_1b=0.1;
     if (T_1app<0.1) T_1app = 0.1;
     if (fabs(T_1app - T_1b)<0.01) T_1app += 0.01;
+    if (T_1appwm<0.1) T_1appwm=0.1;
+    if (fabs(T_1appwm - T_1b)<0.01) T_1appwm += 0.01;
 
     // calculate the 'LL T1' of the blood
     float T_1ll = 1/( 1/T_1b - log(cos(FAtrue))/dti);
@@ -425,7 +433,7 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
 
     float tau=tauset; //bolus length as seen by kintic curve
     float taub=taubset; //bolus length of blood as seen in signal
-    //float tauwm=tauwmset;
+    float tauwm=tauwmset;
     
 
     //float F=0;
@@ -443,28 +451,28 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
     if (disptype=="none") {
       if (infertiss) kctissue=kctissue_nodisp(thetis,delttiss,tau,T_1b,T_1app,deltll,T_1ll);
     //cout << kctissue << endl;
-      //kcwm=kctissue_nodisp(tis,deltwm,tauwm,T_1b,T_1appwm);
+      if (inferwm) kcwm=kctissue_nodisp(thetis,deltwm,tauwm,T_1b,T_1appwm,deltll,T_1ll);
       if (inferart) kcblood=kcblood_nodisp(thetis,deltblood,taub,T_1b,deltll,T_1ll);
     //cout << kcblood << endl;
     }
     else if (disptype=="gamma") {
       if (infertiss) kctissue=kctissue_gammadisp(thetis,delttiss,tau,T_1b,T_1app,s,p,deltll,T_1ll);
     //cout << kctissue << endl;
-      //kcwm=kctissue_gammadisp(tis,deltwm,tauwm,T_1b,T_1appwm,s,p);
+      if (inferwm) kcwm=kctissue_gammadisp(thetis,deltwm,tauwm,T_1b,T_1appwm,s,p,deltll,T_1ll);
       if (inferart) kcblood=kcblood_gammadisp(thetis,deltblood,taub,T_1b,s,p,deltll,T_1ll);
     //cout << kcblood << endl;
     }
     else if (disptype=="gvf") {
       if (infertiss) kctissue=kctissue_gvf(thetis,delttiss,tau,T_1b,T_1app,s,p,deltll,T_1ll);
     //cout << kctissue << endl;
-      //kcwm=kctissue_gvf(tis,deltwm,T_1b,T_1appwm,s,p);
+      if (inferwm) kcwm=kctissue_gvf(thetis,deltwm,tauwm,T_1b,T_1appwm,s,p,deltll,T_1ll);
       if (inferart) kcblood=kcblood_gvf(thetis,deltblood,taub,T_1b,s,p,deltll,T_1ll);
     //cout << kcblood << endl;
     }
    else if (disptype=="gauss") {
      if (infertiss) kctissue=kctissue_gaussdisp(thetis,delttiss,tau,T_1b,T_1app,s,s,deltll,T_1ll);
     //cout << kctissue << endl;
-      //kcwm=kctissue_gvf(tis,deltwm,T_1b,T_1appwm,s,p);
+     if (inferwm) kcwm=kctissue_gaussdisp(thetis,deltwm,tauwm,T_1b,T_1appwm,s,s,deltll,T_1ll);
      if (inferart) kcblood=kcblood_gaussdisp(thetis,deltblood,tau,T_1b,s,s,deltll,T_1ll);
     //cout << kcblood << endl;
     }
@@ -536,7 +544,10 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
       artdir(3) = cos(bloodphi);
 
       for (int i=1; i<=crushdir.Nrows(); i++) {
-	artweight(i) = 1.0 - std::max(DotProduct(artdir,crushdir.Row(i)),0.0);
+	//artweight(i) = 1.0 - std::max(DotProduct(artdir,crushdir.Row(i)),0.0); # original linear approximation
+	//artweight(i) = exp( -bloodbv * std::max(DotProduct(artdir,crushdir.Row(i)),0.0) ); # exponential based on simple diffusion expt
+	artweight(i) = Sinc( 2 * bloodbv * std::max(DotProduct(artdir,crushdir.Row(i)),0.0) ); // based on laminar flow profile c.f. perfusion tensor imaging
+
 	//angle = fabs(crushdir(i) - blooddir);
 	//if (angle<M_PI/2) {
 	//  artweight(i) = crusheff*sin(angle) + 1.0 - crusheff;
@@ -607,7 +618,7 @@ QuasarFwdModel::QuasarFwdModel(ArgsType& args)
 
       repeats = convertTo<int>(args.Read("repeats")); // number of repeats in data
       t1 = convertTo<double>(args.ReadWithDefault("t1","1.3"));
-      t1b = convertTo<double>(args.ReadWithDefault("t1b","1.5"));
+      t1b = convertTo<double>(args.ReadWithDefault("t1b","1.65"));
       t1wm = convertTo<double>(args.ReadWithDefault("t1wm","1.1"));
       lambda =convertTo<double>(args.ReadWithDefault("lambda","0.9")); //NOTE that this parameter is not used!!
 
@@ -815,6 +826,7 @@ void QuasarFwdModel::NameParams(vector<string>& names) const
   if (artdir) {
     names.push_back("thblood");
     names.push_back("phiblood");
+    names.push_back("bvblood");
     //names.push_back("crusheff");
   }
   else {

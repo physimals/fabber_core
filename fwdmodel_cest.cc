@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string CESTFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_cest.cc,v 1.7 2014/02/06 17:00:14 mwebster Exp $";
+  return "$Id: fwdmodel_cest.cc,v 1.8 2015/01/29 12:19:08 chappell Exp $";
 }
 
 void CESTFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -34,34 +34,24 @@ void CESTFwdModel::HardcodedInitialDists(MVNDist& prior,
      int place=1;
      // M0
      prior.means.Rows(1,npool) = 0.0;
-
      precisions(place,place) = 1e-12;
      place++;
-     //precisions(2,2)=1e6;
-     //precisions(3,3)=2500;
-
-     /*
-     if (npool>1) {
-       prior.means(2) = 0.003;
-       precisions(2,2) = 1e6;
-       place++;
-     }
-     if (npool>2) {
-       prior.means(3) = 0.1;
-       precisions(3,3) = 100;
-       place++;
-     }
-     */
 
      if (npool>1) {
        for (int i=2; i<=npool; i++) {
-	 // ** TEMP: hardcode precisions on proton concn ratios
-	 //if (i==2) precisions(place,place) = 1e4;
-	 //if (i==3) precisions(place,place) = 1e2;
-	 precisions(place,place) = 1e2;
-	 place++;
+	 if (setconcprior) {
+	   // priors have been specified via the poolmat
+	   prior.means(place) = poolcon(place-1); //NB poolcon vec doesn't have water in so entry 1 is pool 2 etc
+	   precisions(place,place) = poolconprec(place-1);
+	 }
+	 else {
+	   //hardcoded default of zero mean and (relatively) uniformative precision
+	   //prior mean of zero set above
+	   precisions(place,place) = 1e2;
+	   place++;
+	 }
        }
-       }
+     }
 
      // exchnage consts (these are log_e)
      if (npool>1) {
@@ -157,6 +147,42 @@ void CESTFwdModel::HardcodedInitialDists(MVNDist& prior,
      //  }
      //}
 
+     /*
+     // MT pool
+     if (mtpool) {
+       prior.means(place) = 0;
+       precisions(place,place) = 1e12;
+       place++;
+       prior.means(place) = 0;
+       precisions(place,place) = 1e12;
+       place++;
+       prior.means(place) = 0;
+       precisions(place,place) = 1e12;
+       place++;
+       prior.means(place) = 0;
+       precisions(place,place) = 1e12;
+       place++;
+       prior.means(place) = 0;
+       precisions(place,place) = 1e12;
+       place++;
+     }
+     */
+
+     // Extra ('indepdnent') pools
+     if (nexpool>0) {
+       for (int i=1; i<=nexpool; i++) {
+	 prior.means(place) = 1; 
+	 precisions(place,place) = 1;
+	 place++;
+	 prior.means(place) = expoolppm(i);
+	 precisions(place,place) = 1e12;
+	 place++;
+	 prior.means(place) = expoolR(i);
+	 precisions(place,place) = 1;
+       }
+     }
+
+
     // Set precsions on priors
     prior.SetPrecisions(precisions);
     
@@ -164,22 +190,13 @@ void CESTFwdModel::HardcodedInitialDists(MVNDist& prior,
     posterior = prior;
 
     // For parameters with uniformative prior chosoe more sensible inital posterior
-      posterior.means(1) = 1000;
-      precisions(1,1) = 10;
-    
-      //posterior.means(3*npool+1) = 100;
-      //precisions(3*npool+1,3*npool+1) = 1;
+    // now done in initialise!
+    //  posterior.means(1) = 1000;
+    //  precisions(1,1) = 10;  
+      //posterior.SetPrecisions(precisions);
 
-      /*
-        if (npool>1) {
-	for (int i=2; i<=npool; i++) {
-	  posterior.means(i) = 0.01;
-	  precisions(i,i) = 1e6;
-	}
-	}
-      */
-
-      posterior.SetPrecisions(precisions);
+      //cout << prior.means << endl;
+      //cout << posterior.means << endl;
     
 }    
     
@@ -187,9 +204,23 @@ void CESTFwdModel::HardcodedInitialDists(MVNDist& prior,
 void CESTFwdModel::Initialise(MVNDist& posterior) const
 {
   Tracer_Plus tr("CESTFwdModel::Initialise");
+
+  //load the existing precisions as the basis for any update
+  SymmetricMatrix precisions;
+  precisions = posterior.GetPrecisions();
+
   //init the M0a value  - to max value in the z-spectrum
   posterior.means(1) = data.Maximum();
+  precisions(1,1) = 10;
 
+  // init the pool concentraitons
+  if (npool>1) {
+    for (int i=2; i<=npool; i++) {
+      posterior.means(i) = poolcon(i-1);//NB poolcon vec doesn't have water in so entry 1 is pool 2 etc
+      precisions(i,i) = 1e6;
+    }
+  }
+  
   //init the ppmoff value - by finding the freq where the min of z-spectrum is
   int ind;
   float val;
@@ -200,11 +231,15 @@ void CESTFwdModel::Initialise(MVNDist& posterior) const
   int ppmind=2*npool;
   posterior.means(ppmind) = val;
 
+  posterior.SetPrecisions(precisions);
+
 }
 
 void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
 {
   Tracer_Plus tr("CESTFwdModel::Evaluate");
+
+  //cout << params << endl;
 
     // ensure that values are reasonable
     // negative check
@@ -217,6 +252,13 @@ void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
    ColumnVector M0(npool);
    Matrix kij(npool,npool);
    Matrix T12(2,npool);
+   ColumnVector ppmvec(npool);
+   //MT pool
+   ColumnVector mtparams(5);
+   //Extra pools
+   ColumnVector exI(nexpool);
+   ColumnVector exppmvec(nexpool);
+   ColumnVector exR(nexpool);
 
    // extract values from params
    // M0 comes first
@@ -249,7 +291,6 @@ void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
    }
 
    // frequency offset next
-    ColumnVector ppmvec(npool);
     ppmvec = params.Rows(place,place+npool);
     place += npool;
     // Frist entry is offset due to field, rest are res freq. of the pools rel. to water
@@ -362,6 +403,26 @@ void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
        }
          else {T12 = T12master;}
 
+    // MT pool
+    /*
+    if (mtpool) {
+      mtparams = params.SubMatrix(place,place+5,1,1);
+      place += 5;
+    }
+    */
+
+    // Extra pools
+    if (nexpool>0) {
+      for (int i=1; i<=nexpool; i++) {
+	exI(i) = params(place);
+	place++;
+	exppmvec(i) = params(place);
+	place++;
+	exR(i) = params(place);
+	place++;
+      }
+    }
+
    //cout << "Parameters set up" << endl;
    //cout << "M0: " << M0.t() << endl << "wi: " << wi.t() << endl << "kij: " << kij << endl;
 
@@ -396,6 +457,16 @@ void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
    // species b is at ppm*wlam, but also include offset of main field
    //cout << wi << endl;
 
+   // frequencies for the extra pools
+   Matrix exwimat(nexpool,nsamp);
+   if (nexpool>0) {
+     for (int i=1; i<=nexpool; i++) {
+       for (int j=1; j<=nsamp; j++) {
+	 exwimat(i,j) = wlam*ppmvec(i)/1e6 + wlam*(ppmvec(1)+(j-1)*drift)/1e6*(1+exppmvec(i)/1e6);
+       }
+     }
+   }
+
    //deal with B1
    if (B1off<-0.5) B1off=-0.5; // B1 cannot go too small
    if (B1off>10) B1off=10; //unlikely to get this big (hardlimit in case of convergence problems)
@@ -420,6 +491,21 @@ void CESTFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) co
    else {
      Mz_spectrum(result,wvec,w1,tsatvec,M0,wimat,kij,T12);
    }
+
+   // extra pools
+   ColumnVector Mz_extrapools(nsamp);
+   Mz_extrapools=0.0;
+   ColumnVector Mzc(nsamp);
+   Mzc = 0.0;
+   if (nexpool>0) {
+     for (int i=1; i<=nexpool; i++) {
+       Mz_contribution_lorentz_simple(Mzc,wvec,exI(i),(exwimat.SubMatrix(i,i,1,nsamp)).t(),exR(i));
+       Mz_extrapools += Mzc;
+     }
+   }
+     
+   //cout << Mz_extrapools << endl;
+   result = result - M0(1)*Mz_extrapools;
 
    //for (int i=1; i<=result.Nrows(); i++) {
    //  if(result(i) < floorval) result(i) = floorval;
@@ -449,6 +535,9 @@ CESTFwdModel::CESTFwdModel(ArgsType& args)
     // 1st row is water, col 1 will be interpreted as the actaul centre freq of water if value is >0, col 2 will be ignored.
     // Further rows for pools to be modelled.
 
+    Matrix expoolmat; //Matrix for the 'extra' pools
+
+    string expoolmatfile;
     string pulsematfile;
     
     t12soft=false; //pvcorr=false;
@@ -460,6 +549,9 @@ CESTFwdModel::CESTFwdModel(ArgsType& args)
 
       //read pool specification from file
       poolmat = read_ascii_matrix(args.Read("pools"));
+
+      //read extra pool specification from file
+      expoolmatfile = args.ReadWithDefault("expools","none");
 
       //read pulsed saturation specification
       pulsematfile = args.ReadWithDefault("ptrain","none");
@@ -480,7 +572,9 @@ CESTFwdModel::CESTFwdModel(ArgsType& args)
 
       //Deal with the specification of the pools
       npool=poolmat.Nrows();
-      if (poolmat.Ncols()!=4) throw invalid_argument("Incorrect number of rows in pool spefication file");
+      if (poolmat.Ncols() < 4 || poolmat.Ncols() > 6) {
+	  throw invalid_argument("Incorrect number of columns in pool spefication file");
+	}
       // water centre
       float wdefault = 42.58e6*3*2*M_PI; //the default centre freq. (3T)
       if (poolmat(1,1)>0) wlam = poolmat(1,1)*2*M_PI;
@@ -492,8 +586,36 @@ CESTFwdModel::CESTFwdModel(ArgsType& args)
       // T1 and T2 values
       T12master = (poolmat.SubMatrix(1,npool,3,4)).t();
 
+      if (poolmat.Ncols() > 4) {
+	// pool ratios (concetrations) - these are used for initialisaiton, but may also be used as prior means if precisions are provided
+	poolcon = poolmat.SubMatrix(2,npool,5,5); //ignore water pool
+      }
+      else {
+	poolcon.ReSize(npool);
+	poolcon = 0;
+      }
+
+      setconcprior=false;
+      if (poolmat.Ncols() > 5) {
+	// pool ratio precisions - this overrides the inbuilt priors for the concentrations using these precision and the means in poolcon
+	poolconprec = poolmat.SubMatrix(2,npool,6,6); //ingore water pool
+	setconcprior=true;
+      }
+
       // check that the method chosen is possible
       if ((npool>1) & lorentz) throw invalid_argument("Lorentzian (analytic) solution only compatible with single pool");
+
+      if (expoolmatfile != "none") {
+	//process the Extra pool specification matrix
+	expoolmat = read_ascii_matrix(expoolmatfile);
+	nexpool = expoolmat.Nrows();
+	//cout << "nexpool: " << nexpool << endl;
+	if (expoolmat.Ncols()!=2) throw invalid_argument("Incorrect number of columns in extra pool spefication file");
+	// ppm ofsets
+	expoolppm = expoolmat.SubMatrix(1,nexpool,1,1);
+	// (prior) R values
+	expoolR = expoolmat.SubMatrix(1,nexpool,2,2);
+      }
 
       /* OLD
     //initialization
@@ -675,6 +797,13 @@ void CESTFwdModel::NameParams(vector<string>& names) const
       for (int i=1; i<=npool; i++) {
 	names.push_back("T2" + lettervec[i-1]);
       }
+  }
+  if (nexpool>0) {
+    for (int i=1; i<=nexpool; i++){
+      names.push_back("I_" + lettervec[npool-1+i]);
+      names.push_back("ppm_" + lettervec[npool-1+i]);
+      names.push_back("R_" + lettervec[npool-1+i]);
+    }
   }
 
 }
@@ -1200,3 +1329,20 @@ void CESTFwdModel::Ainverse(const Matrix A, RowVector& Ai) const {
 
 }
 
+void CESTFwdModel::Mz_contribution_lorentz_simple(ColumnVector& Mzc, const ColumnVector& wvec, const double& I, const ColumnVector& wi, const double& R) const {
+
+  // Contirbution to the spectrum from a  single ('independent') pool
+  // A simply parameterised Lorentzian (represeting a single pool solution to the Bloch equation)
+  // Following Jones MRM 2012
+
+  Tracer_Plus tr("CESTFwdModel::Mz_contribution_lorentz");
+
+  int nfreq = wvec.Nrows(); // total number of samples collected
+
+  double delw;
+  for (int k=1; k<=nfreq; k++) {
+    delw = wi(k) - wvec(k);
+    Mzc(k) = I * ( (R*R) / ( 4*delw*delw + R*R) ); 
+  }
+
+}

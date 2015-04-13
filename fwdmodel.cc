@@ -19,7 +19,7 @@ string FwdModel::ModelVersion() const
   // Something like this:
   // return " $ I d $ "; // without the spaces
   // CVS will automatically replace this with version information that looks
-  // like this: $Id: fwdmodel.cc,v 1.36 2013/03/13 10:57:25 chappell Exp $
+  // like this: $Id: fwdmodel.cc,v 1.38 2014/10/24 15:25:27 chappell Exp $
   // It should probably go in your .cc file, not the header.
 }
 
@@ -68,29 +68,32 @@ void FwdModel::pass_in_coords( const ColumnVector& coords )
 #ifdef __OXASL
 // models associated with Oxford_asl components
 #include "fwdmodel_asl_grase.h"
-#include "fwdmodel_asl_buxton.h"
+//#include "fwdmodel_asl_buxton.h"
 #include "fwdmodel_asl_pvc.h"
 #include "fwdmodel_asl_satrecov.h"
 #include "fwdmodel_asl_quasar.h"
+#include "fwdmodel_asl_rest.h"
+#include "fwdmodel_asl_multiphase.h"
 #endif /*__OXASL */
 
 #ifdef __DEVEL
 // development models (not to be complied in FSL)
 #include "fwdmodel_dsc.h"
-#include "fwdmodel_asl_devel.h"
+//#include "fwdmodel_asl_devel.h"
 //#include "fwdmodel_asl_2cpt.h"
 //#include "fwdmodel_asl_multite.h"
 //#include "fwdmodel_cest_devel.h"
 //  #include "fwdmodel_asl_dynangio.h" - this is currently broken since changing asl_models, use asl_models_*_archive
-#include "fwdmodel_fasl.h"
-#include "fwdmodel_oef.h"
+//#include "fwdmodel_fasl.h"
+//#include "fwdmodel_oef.h"
 #include "fwdmodel_biexp.h"
-#include "fwdmodel_deconv.h"
-#include "fwdmodel_flex.h"
-#include "fwdmodel_asl_samira.h"
-#include "fwdmodel_asl_precap.h"
-#include "fwdmodel_asl_rest.h"
+//#include "fwdmodel_deconv.h"
+//#include "fwdmodel_flex.h"
+//#include "fwdmodel_asl_samira.h"
+//#include "fwdmodel_asl_precap.h"
+
 #include "fwdmodel_dce.h"
+
 #endif /* __DEVEL */
 
 // Add your models here
@@ -144,10 +147,10 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
 	{
 		return new GraseFwdModel(args);
 	}
-    else if (name == "buxton_simple")
-	{
-		return new BuxtonFwdModel(args);
-	}
+    //   else if (name == "buxton_simple")
+    //	{
+    //		return new BuxtonFwdModel(args);
+    //	}
     else if (name == "aslpvc")
 	{
 		return new ASL_PVC_FwdModel(args);
@@ -160,6 +163,15 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
       {
 	return new QuasarFwdModel(args);
       }
+    else if (name == "aslrest")
+      {
+	return new ASLFwdModel(args);
+      }
+    else if (name == "asl_multiphase")
+      {
+	return new MultiPhaseASLFwdModel(args);
+      }
+
 #endif /* __OXASL */
 	
 #ifdef __DEVEL
@@ -168,14 +180,10 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
       {
 	return new DSCFwdModel(args);
       }
-    else if (name == "devel")
-      {
-	return new DevelFwdModel(args);
-      }
-    else if (name == "aslrest")
-      {
-	return new ASLFwdModel(args);
-      }
+    //  else if (name == "devel")
+    //   {
+    //	return new DevelFwdModel(args);
+    //   }
 
     // else if (name == "cestdevel")
     //  {
@@ -185,34 +193,34 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
     //  {
     //	return new DynAngioFwdModel(args);
     //  }
-    else if (name == "fasl")
-      {
-	return new FASLFwdModel(args);
-      }
-    else if (name == "oef")
-      {
-	return new OEFFwdModel(args);
-      }
+    // else if (name == "fasl")
+    //   {
+    //	return new FASLFwdModel(args);
+    //   }
+    //else if (name == "oef")
+    //  {
+    //	return new OEFFwdModel(args);
+    //  }
     else if (name == "biexp")
       {
 	return new BiExpFwdModel(args);
       }
-    else if (name == "deconv")
-      {
-	return new DeconvModel(args);
-      }
-    else if (name == "flex")
-      {
-	return new FLEXFwdModel(args);
-      }
-    else if (name == "samira")
-      {
-	return new SamiraFwdModel(args);
-      }
-    else if (name == "aslprecap")
-      {
-	return new PreCapFwdModel(args);
-      }
+    //else if (name == "deconv")
+    //  {
+    //	return new DeconvModel(args);
+    //  }
+    //else if (name == "flex")
+    //  {
+    //	return new FLEXFwdModel(args);
+    //  }
+    //else if (name == "samira")
+    //  {
+    //	return new SamiraFwdModel(args);
+    //  }
+    //else if (name == "aslprecap")
+    //  {
+    //	return new PreCapFwdModel(args);
+    //  }
     //    else if (name == "twocpt")
     //  {
     //	return new TwoCptFwdModel(args);
@@ -225,6 +233,9 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
       {
        return new DCEFwdModel(args);
       }
+
+
+
 #endif /* __DEVEL */
     
     else if (name == "custom")
@@ -275,15 +286,22 @@ void FwdModel::ModelUsageFromName(const string& name, ArgsType& args)
 	{
 		GraseFwdModel::ModelUsage();
 	}
-    else if (name == "buxton-simple")
-	{
-		BuxtonFwdModel::ModelUsage();
-	}
+    //   else if (name == "buxton-simple")
+    //	{
+    //		BuxtonFwdModel::ModelUsage();
+    //	}
     else if (name == "asl_pvc")
 	{
 		ASL_PVC_FwdModel::ModelUsage();
 	}
-	
+    else if (name == "aslrest")
+      {
+	ASLFwdModel::ModelUsage();
+      }
+    else if (name == "asl_multiphase")
+      {
+	MultiPhaseASLFwdModel::ModelUsage();
+      }
 #endif /* __OXASL */
 	
 #ifdef __DEVEL

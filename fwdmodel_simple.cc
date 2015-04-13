@@ -17,7 +17,7 @@ using namespace NEWIMAGE;
 
 string SimpleFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_simple.cc,v 1.18 2007/07/27 21:58:30 adriang Exp $";
+  return "$Id: fwdmodel_simple.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
 }
 
 void SimpleFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
@@ -74,10 +74,10 @@ SimpleFwdModel::SimpleFwdModel(ArgsType& args)
       //      LOG << "SimpleFwdModel::SimpleFwdModel isn't implemented yet!" << endl;
 
       // basis.. not even going to bother trying.  Load from a file.
-//      string basisFile = "/home/fs11/adriang/proj/response_fir/bolddesign.mat";
+//      string basisFile = "/home/fs0/adriang/proj/response_fir/bolddesign.mat";
       string basisFile = "/usr/people/woolrich/scratch/tldata/analysis_protocols/response_fromroi/cbvdesign.mat";
       LOG << "    Reading basis functions from file: " << basisFile << endl;
-      basis = read_vest(basisFile);
+      basis = read_vest_fabber(basisFile);
       //      LOG << "basis == \n" << basis << endl;
       // Nrows = 136, Ncols = 15
       // LOG << "BASIS: " << basis.Nrows() << basis.Ncols() << endl;

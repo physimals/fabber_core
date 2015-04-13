@@ -12,7 +12,7 @@
  * Template written by Adrian Groves, 2008
  * FMRIB Centre, University of Oxford
  *
- * Last modified: $Date: 2009/01/23 12:58:53 $ $Author: adriang $ $Revision: 1.1 $
+ * Last modified: $Date: 2012/01/13 12:00:59 $ $Author: adriang $ $Revision: 1.2 $
  */
 
 #include "fwdmodel_custom.h"
@@ -31,7 +31,7 @@ CustomFwdModel::CustomFwdModel(ArgsType& args)
 
   // e.g. a basis function:
   // string basisFile = args.Read("basis"); // error if --basis=??? option is missing
-  // basis = read_vest(basisFile); // error if file is missing
+  // basis = read_vest_fabber(basisFile); // error if file is missing
 
   // e.g. a boolean option (present or absent);
   // wantFriesWithThat = args.ReadBool("chips");
@@ -100,7 +100,7 @@ void CustomFwdModel::NameParams(vector<string>& names) const
 
 string CustomFwdModel::ModelVersion() const
 { 
-  return "$Id: fwdmodel_custom.cc,v 1.1 2009/01/23 12:58:53 adriang Exp $";
+  return "$Id: fwdmodel_custom.cc,v 1.2 2012/01/13 12:00:59 adriang Exp $";
 }
 
 void CustomFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const

@@ -16,7 +16,7 @@ using namespace NEWIMAGE;
 
 string LinearFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_linear.cc,v 1.18 2011/08/04 13:36:35 chappell Exp $";
+  return "$Id: fwdmodel_linear.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
 }
 
 void LinearFwdModel::ModelUsage()
@@ -32,7 +32,7 @@ LinearFwdModel::LinearFwdModel(ArgsType& args)
   Tracer_Plus tr("LinearFwdModel::LinearFwdModel(args)");
   string designFile = args.Read("basis");
   LOG_ERR("    Reading design file: " << designFile << endl);
-  jacobian = read_vest(designFile);
+  jacobian = read_vest_fabber(designFile);
 
   const int Ntimes = jacobian.Nrows();
   const int Nbasis = jacobian.Ncols();

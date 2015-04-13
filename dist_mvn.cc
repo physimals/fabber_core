@@ -10,7 +10,9 @@
 #include "easyoptions.h"
 #include "miscmaths/miscmaths.h"
 
+#ifndef __FABBER_LIBRARYONLY
 using namespace NEWIMAGE;
+#endif //__FABBER_LIBRARYONLY
 using namespace Utilities;
 using namespace MISCMATHS;
 
@@ -236,7 +238,7 @@ void MVNDist::DumpTo(ostream& out, const string indent) const
 void MVNDist::Load(const string& filename)
 {
     cout << "Reading MVN from file '" << filename << "'...\n";
-    Matrix mat = read_vest(filename);
+    Matrix mat = read_vest_fabber(filename);
     
     cout << "Converting to an MVN...\n";
     // Format: [covariance means(:); means(:)' 1.0]
@@ -256,6 +258,7 @@ void MVNDist::Load(const string& filename)
     assert(means.Nrows() == len);
 }
 
+#ifndef __FABBER_LIBRARYONLY
 void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, const volume<float>& mask)
 {
     Tracer_Plus tr("MVNDist::Load (static)");
@@ -309,6 +312,12 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, const v
 {    
     Tracer_Plus tr("MVNDist::Save");
      
+    if (EasyOptions::UsingMatrixIO())
+    {
+	LOG << "MVNDist is not output (to '" << filename << "') because we're in fabber_library and the germans say they don't need covariances." << endl;
+	return;
+    }
+
     // Save the MVNs in a NIFTI file as a single NIFTI_INTENT_SYMMATRIX 
     // last row/col is the means (1 in the corner).
     // Note that I'm using the 4th dim and should really be using the 5th,
@@ -341,3 +350,6 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, const v
     output.setDisplayMaximumMinimum(output.max(),output.min());
     save_volume4D(output,filename);
 }
+
+#endif //__FABBER_LIBRARYONLY
+
