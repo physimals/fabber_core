@@ -2,4 +2,5 @@ CVS
 *.o
 *~
 .DS_Store
+depend.mk
 fabber
