@@ -2,7 +2,8 @@ include ${FSLCONFDIR}/default.mk
 
 PROJNAME = fabber
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__DEVEL -D__OXASL
+USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__DEVEL #*** NB these (D) tags should become redundant with the new arrangements
+#-I${HOME}/include 
 #USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_MOTION
 #USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_LIBRARYONLY
 #USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_LIBRARYONLY -D__FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
@@ -10,13 +11,37 @@ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB}
 
 #LIBS = -lutils -lprob -lnewmat # Will report the MISCMATHS dependencies
 #LIBS = -lutils -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
-LIBS = -lwarpfns -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
+LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
+
+#
+# Executables
+#
 
 XFILES = fabber mvntool
+SCRIPTS = fabber_var
 
+#
+# C++ build - original all-in-one approach
+#
 
+#*** utils.o - belongs in COREOBJS
+# Sets of objects separated into logical divisions
+# Basic objects - things that have nothing directly to do with inference
+BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o easyoptions.o
+# Core objects - things that implement the framework for inference
+COREOBJS =  noisemodel.o fwdmodel.o inference.o 
+# Forward model groups
+FWDOBJS = fwdmodel_custom.o fwdmodel_flobs.o fwdmodel_q2tips.o fwdmodel_quipss2.o fwdmodel_pcASL.o fwdmodel_simple.o fwdmodel_linear.o fwdmodel_asl_grase.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_asl_quasar.o fwdmodel_cest.o asl_models.o fwdmodel_asl_rest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
+# Infernce methods
+INFERENCEOBJS = inference_spatialvb.o inference_vb.o inference_nlls.o
+# Noise models
+NOISEOBJS = noisemodel_white.o noisemodel_ar.o
+# Configuration
+CONFIGOBJS = setup.o
 
-OBJS = fwdmodel_custom.o fwdmodel_flobs.o tools.o fwdmodel_q2tips.o inference_spatialvb.o dataset.o inference_vb.o noisemodel.o noisemodel_white.o fwdmodel_quipss2.o fwdmodel_pcASL.o fwdmodel.o fwdmodel_simple.o fwdmodel_linear.o noisemodel_ar.o inference.o dist_mvn.o easylog.o easyoptions.o fwdmodel_asl_grase.o inference_nlls.o fwdmodel_asl_pvc.o  fwdmodel_asl_satrecov.o fwdmodel_asl_quasar.o fwdmodel_cest.o asl_models.o fwdmodel_asl_rest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
+# Everything together
+OBJS = ${BASICOBJS} ${COREOBJS} ${FWDOBJS} ${INFERENCEOBJS} ${NOISEOBJS} 
+#*** ${CONFIGOBJS} - taken out TEMP
 
 # For debugging:
 OPTFLAGS = -ggdb
@@ -25,15 +50,11 @@ OPTFLAGS = -ggdb
 all:	${XFILES}
 
 fabber: ${OBJS} fabber.o
-	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
 
-mvntool: ${OBJS} mvntool.o
-	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvntool.o ${LIBS}
+mvntool: ${MVNOBJS} mvntool.o
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
 
-#fabber_library: $(OBJS}
-	#${CXX}  ${CXXFLAGS} ${LDFLAGS} -D__FABBER_LIBRARYONLY -o $@ ${OBJS} fabber.o ${LIBS}
-	#${CXX}  ${CXXFLAGS} ${LDFLAGS} -D__FABBER_LIBRARYONLY -o $@ ${OBJS} mvntool.o ${LIBS}
 
-SCRIPTS = fabber_var
 
 # DO NOT DELETE
