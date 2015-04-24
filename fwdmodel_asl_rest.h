@@ -1,10 +1,13 @@
 /*  fwdmodel_asl_rest.cc - Resting state ASL model
 
-    Michael Chappell, QuBIc & FMRIB Image Analysis Group
+    Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2011-12 University of Oxford  */
+    Copyright (C) 2011-15 University of Oxford  */
 
 /*  CCOPYRIGHT */
+
+#ifndef __FABBER_ASL_REST_FWDMODEL_H
+#define __FABBER_ASL_REST_FWDMODEL_H 1
 
 #include "fwdmodel.h"
 #include "inference.h"
@@ -16,10 +19,13 @@ using namespace OXASL;
 
 class ASLFwdModel : public FwdModel {
 public: 
+  static FwdModel* NewInstance();
+
   // Virtual function overrides
+  virtual void Initialize(ArgsType& args);
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const;
-  static void ModelUsage();
+  virtual vector<string> GetUsage() const;
   virtual string ModelVersion() const;
                   
   virtual void DumpParameters(const ColumnVector& vec,
@@ -38,9 +44,6 @@ public:
   virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
   virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
   vector<int> ardindices;
-
-  // Constructor
-  ASLFwdModel(ArgsType& args);
 
 
 protected: // Constants
@@ -171,5 +174,10 @@ int stattiss_index() const {return facorr_index() + (incfacorr?1:0);} //includin
   string disptype;
   string exchtype;
 
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, ASLFwdModel> registration;
 
 };
+
+#endif  //__FABBER_ASL_REST_FWDMODEL_H
