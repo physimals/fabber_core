@@ -1,15 +1,14 @@
 /*  noisemodel.cc - Class implementation for generic noise models
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
-#include "noisemodel.h"
-
-// Handy mathematical function, used in some free energy calculations
 #include <math.h>
+
+#include "noisemodel.h"
 
 // Calculate log-gamma from a Taylor expansion; good to one part in 2e-10.
 double gammaln(double x)
@@ -25,46 +24,6 @@ double gammaln(double x)
     total += series(i) / (x+i-1);
 
   return log( series(1) * total / x ) + (x + 0.5)*log(x + 5.5) - x - 5.5;
-}
-
-#include "noisemodel_ar.h"
-#include "noisemodel_white.h"
-
-NoiseModel* NoiseModel::NewFromName(const string& name, ArgsType& args)
-{
-    // Update this to add your own models to the code
-    
-  if (name == "ar")
-    {
-      string nPhis = args.ReadWithDefault("num-echoes","(default)");
-      if (nPhis == "(default)")
-	{
-	  nPhis = "1";
-	  Warning::IssueOnce("Defaulting to --num-echoes=1");
-	}
-      string ar1CrossTerms = args.ReadWithDefault("ar1-cross-terms","none");
-      
-      return new Ar1cNoiseModel(ar1CrossTerms, convertTo<int>(nPhis));
-    }
-  else if (name == "ar1" || name == "ar1c")
-    {
-      Warning::IssueOnce("--noise="+name+" is depreciated; use --noise=ar --num-echoes=2 for dual-echo ASL.");
-      string ar1CrossTerms = args.ReadWithDefault("ar1-cross-terms","none");
-      string nPhis = args.ReadWithDefault("num-echoes","2");
-      
-      return new Ar1cNoiseModel(ar1CrossTerms, convertTo<int>(nPhis));
-    }
-    else if (name == "white")
-    {
-      //      string pattern = args.ReadWithDefault("noise-pattern","1");
-      //      return new WhiteNoiseModel(pattern);
-      return new WhiteNoiseModel(args);
-    }
-    // Your models go here!
-    else
-    {
-      throw Invalid_option("Unrecognized noise model '" + name + "'");
-    }
 }
 
 // ARD stuff

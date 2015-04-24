@@ -1,8 +1,8 @@
 /*  noisemodel_ar.cc - Class implementation for the AR(1) noise model
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -20,6 +20,11 @@ using namespace Utilities;
 // Covariance terms are at +/-1, so maximum possible offset from
 // the main diagonal is +/-3.   
 
+NoiseModel* Ar1cNoiseModel::NewInstance()
+{
+  return new Ar1cNoiseModel();
+}
+
 /*Ar1cNoiseModel* Ar1cNoiseModel::Clone() const
 {
   Ar1cNoiseModel* clone = new Ar1cNoiseModel(ar1Type, nPhis);
@@ -30,25 +35,33 @@ using namespace Utilities;
   return clone;
 }*/
 
-// Constructor.  Mostly validates that values are sensible.
-Ar1cNoiseModel::Ar1cNoiseModel(const string& ar1CrossTerms, int numPhis)
-: ar1Type(ar1CrossTerms), nPhis(numPhis)
+void Ar1cNoiseModel::Initialize(ArgsType& args)
 {
-    // Validate ar1Type:
-    NumAlphas(); // throws exception if ar1Type is invalid
-            
-    // Validate nPhis
-    if (nPhis==1)
-    {
-        if (ar1CrossTerms != "none")
-            throw Invalid_option("You must use --ar1-cross-terms=none with --num-echoes=1");
-        else
-            LOG_ERR("WARNING: using --num-echoes=1 is completely untested!\nIt will probably give completely the wrong answers or crash!\n");            
-    }        
-    else if (nPhis==2)
-        { } // ok
-    else            
-        throw Invalid_option("--num-echoes must be 1 or 2");
+  string nPhisString = args.ReadWithDefault("num-echoes","(default)");
+  if (nPhisString == "(default)")
+  {
+      nPhis = 1;
+      Warning::IssueOnce("Defaulting to --num-echoes=1");
+  }
+  else
+  {
+      nPhis = convertTo<int>(nPhisString);
+  }
+  ar1Type = args.ReadWithDefault("ar1-cross-terms","none");
+  // Validate ar1Type:
+  NumAlphas(); // throws exception if ar1Type is invalid
+  // Validate nPhis
+  if (nPhis==1)
+  {
+    if (ar1Type != "none")
+      throw Invalid_option("You must use --ar1-cross-terms=none with --num-echoes=1");
+    else
+      LOG_ERR("WARNING: using --num-echoes=1 is completely untested!\nIt will probably give completely the wrong answers or crash!\n");            
+  }        
+  else if (nPhis==2)
+  { } // ok
+  else            
+    throw Invalid_option("--num-echoes must be 1 or 2");
 }
 
 // Just convert a string into a number

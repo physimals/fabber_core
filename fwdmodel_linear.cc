@@ -1,8 +1,8 @@
 /*  fwdmodel_linear.cc - Linear forward model and related classes
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -19,17 +19,21 @@ string LinearFwdModel::ModelVersion() const
   return "$Id: fwdmodel_linear.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
 }
 
-void LinearFwdModel::ModelUsage()
-{
-  cout << "\nUsage info for --model=linear:\n"
-       << "Required options:\n"
-       << "--basis=<design_file>\n"
-    ;
+vector<string> LinearFwdModel::GetUsage() const { 
+  vector<string> usage;
+  usage.push_back("Required parameters:");
+  usage.push_back("--basis=<design_file>");
+  return usage;
 }
 
-LinearFwdModel::LinearFwdModel(ArgsType& args)
+FwdModel* LinearFwdModel::NewInstance()
 {
-  Tracer_Plus tr("LinearFwdModel::LinearFwdModel(args)");
+  return new LinearFwdModel();
+}
+
+void LinearFwdModel::Initialize(ArgsType& args)
+{
+  Tracer_Plus tr("LinearFwdModel::Initialize");
   string designFile = args.Read("basis");
   LOG_ERR("    Reading design file: " << designFile << endl);
   jacobian = read_vest_fabber(designFile);

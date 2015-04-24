@@ -1,20 +1,22 @@
 /*  noisemodel.h - Class declaration for generic noise models
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
-#pragma once
+#ifndef __FABBER_NOISEMODEL_H
+#define __FABBER_NOISEMODEL_H 1
+
 #include "dist_mvn.h"
 #include "fwdmodel_linear.h"
+#include "utils.h"
 
 class NoiseParams {
     /* Base class -- derived classes will store the data for NoiseModel derivatives */
 public:
-//    virtual void Load( const string& filename ) = 0; //??
-//    virtual void Save( const string& filename ) const = 0; //??
+
     
     virtual NoiseParams* Clone() const = 0;
     virtual const NoiseParams& operator=(const NoiseParams& in) = 0;
@@ -33,6 +35,19 @@ class NoiseModel {
      * the relevant noise parameters in a NoiseParams-derived subclass. */
      
  public:
+    /**
+     * Create a new instance of this class.
+     * @return pointer to new instance.
+     */
+    static NoiseModel* NewInstance();
+    /**
+     * Initialize a new instance using configuration from the given 
+     * arguments.
+     * @param args Configuration parameters.
+     */
+    virtual void Initialize(ArgsType& args) {
+      // No-op.
+    };
 
   // Create a new identical copy of this object (e.g. for spatial vb)
 //  virtual NoiseModel* Clone() const = 0;
@@ -107,10 +122,6 @@ class NoiseModel {
 //  virtual void RevertParams(MVNDist& theta)
 //        { throw Invalid_option("This noise model does not support reverting (don't use the trial-mode convergence detector with it)\n"); }
 
-  // Static member function
-  // If you're given a noise model name, this returns a new NoiseModel 
-  // of the appropriate subclass.
-  static NoiseModel* NewFromName(const string& name, ArgsType& args);
 
  private:
   // Prevent copying using anything other than the Clone() function.
@@ -123,4 +134,11 @@ class NoiseModel {
 
 // Handy mathematical function, used by some free energy calculations
 double gammaln(double xx);
+
+/** 
+ * \ref SingletonFactory that returns pointers to \ref NoiseModel.
+ */
+typedef SingletonFactory<NoiseModel> NoiseModelFactory;
+
+#endif // __FABBER_NOISEMODEL_H
 

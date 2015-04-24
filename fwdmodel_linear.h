@@ -1,17 +1,16 @@
 /*  fwdmodel_linear.h - Linear forward model and related classes
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-20015 University of Oxford  */
 
 /*  CCOPYRIGHT */
-
-#pragma once
 
 #include "fwdmodel.h"
 
 class LinearFwdModel : public FwdModel {
  public:
+  static FwdModel* NewInstance();
   // Virtual function overrides
   virtual void Evaluate(const ColumnVector& params, 
                       ColumnVector& result) const;
@@ -31,13 +30,13 @@ class LinearFwdModel : public FwdModel {
     { assert(jac.Nrows() == ctr.Ncols()); assert(jac.Ncols() == off.Ncols()); }
     
   // Upgrading to a full externally-accessible model type
-  LinearFwdModel(ArgsType& args);
+  LinearFwdModel() {};
   virtual string ModelVersion() const;
-  static void ModelUsage();
+  virtual vector<string> GetUsage() const;
+  virtual void Initialize(ArgsType& args);
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 
  protected:
-  LinearFwdModel() { return; } // Leave uninitialized; derived classes only
 
   Matrix jacobian;     // J (tranposed?)
   ColumnVector centre; // m

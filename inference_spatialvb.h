@@ -1,8 +1,8 @@
 /*  inference_spatialvb.h - implementation of VB with spatial priors
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -43,10 +43,11 @@ class CovarianceCache {
 
 class SpatialVariationalBayes : public VariationalBayesInferenceTechnique {
 public:
+  static InferenceTechnique* NewInstance();
     SpatialVariationalBayes() : 
         VariationalBayesInferenceTechnique(), 
         spatialDims(-1) { return; }
-    virtual void Setup(ArgsType& args); // no changes needed
+    virtual void Initialize(FwdModel* fwd_model, ArgsType& args);
     virtual void DoCalculations(const DataSet& data);
 //    virtual ~SpatialVariationalBayes();
 

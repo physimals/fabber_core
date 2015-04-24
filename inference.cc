@@ -1,40 +1,40 @@
 /*  inference.cc - General inference technique base class
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-20015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
-#include "inference.h"
 #include "newimage/newimageall.h"
+
+#include "inference.h"
  
-using namespace NEWIMAGE;
 using namespace std;
+using namespace NEWIMAGE;
 using namespace MISCMATHS;
 
-void InferenceTechnique::Setup(ArgsType& args)
-{
-  Tracer_Plus tr("InferenceTechnique::Setup");
+void InferenceTechnique::Initialize(FwdModel* fwd_model, ArgsType& args) {
+  Tracer_Plus tr("InferenceTechnique::Initialize");
 
-  // Pick models
-  model = FwdModel::NewFromName(args.Read("model"), args);
-  assert( model->NumParams() > 0 );
-  LOG_ERR("    Forward Model version:\n      " 
-	  << model->ModelVersion() << endl);
-
-  noise = NoiseModel::NewFromName(args.Read("noise"), args);
-//  noise->LoadPrior(args.ReadWithDefault("noise-prior","hardcoded"));
-//  noise->Dump("  ");
-
+  // Set forward model.
+  model = fwd_model;
+  // Get noise model.
+  string noise_name = args.Read("noise");
+  NoiseModelFactory* factory = NoiseModelFactory::GetInstance();
+  noise = factory->Create(noise_name);
+  if (noise == NULL) {
+    throw Invalid_option("Unrecognized --noise: " + noise_name);
+  }
+  noise->Initialize(args);
+  // noise->LoadPrior(args.ReadWithDefault("noise-prior","hardcoded"));
+  // noise->Dump("  ");
   saveModelFit = args.ReadBool("save-model-fit");
   saveResiduals = args.ReadBool("save-residuals");
 
   // Motion correction related setup
   Nmcstep = convertTo<int>(args.ReadWithDefault("mcsteps","0")); //by default no motion correction
 }
-
-
 
 void InferenceTechnique::SaveResults(const DataSet& data) const
 {
@@ -62,34 +62,6 @@ void InferenceTechnique::SaveResults(const DataSet& data) const
 	assert(resultMVNsWithoutPrior.size() == (unsigned)nVoxels);
 	MVNDist::Save(resultMVNsWithoutPrior, outputDir + "/finalMVNwithoutPrior", mask);
       }
-
-    /* Some validation code -- checked, Save then Load 
-       produced identical results (to single precision)
-       cout << "Creating!\n";    
-       vector<MVNDist*> test(resultMVNs.size(), NULL);
-       cout << "Loading!\n";    
-       MVNDist::Load(test, outputDir + "/finalMVN", mask);
-
-       assert(test[0] != NULL);
-
-       cout << "Verifying MVNDists are identical!!!";    
-       // won't be identical because they're written as floats.
-       for (unsigned i = 1; i <= test.size(); i++)
-       {
-       cout << i << endl;
-       test.at(i-1); resultMVNs.at(i-1);
-       cout << 'a'<< endl;
-       assert(resultMVNs[i-1] != NULL);
-       assert(test[i-1] != NULL);
-       cout << resultMVNs[i-1]->means.t() << test[i-1]->means.t();
-       //        assert(resultMVNs[i-1]->means == test[i-1]->means);
-       cout << 'b' << endl;
-       cout << resultMVNs[i-1]->GetCovariance();
-       cout << test[i-1]->GetCovariance();
-       //        assert(resultMVNs[i-1]->GetCovariance() == test[i-1]->GetCovariance());
-       cout << 'c' << endl;
-       }
-    */
 
     // Write the parameter names into paramnames.txt
     
@@ -409,7 +381,6 @@ void InferenceTechnique::InitMVNFromFile(vector<MVNDist*>& continueFromDists,str
 
 InferenceTechnique::~InferenceTechnique() 
 { 
-  delete model;
   delete noise;
   while (!resultMVNs.empty())
     {
@@ -420,37 +391,6 @@ InferenceTechnique::~InferenceTechnique()
     {
       delete resultMVNsWithoutPrior.back();
       resultMVNsWithoutPrior.pop_back();
-    }
-}
-
-#include "inference_vb.h"
-#include "inference_spatialvb.h"
-#include "inference_nlls.h"
-
-// Whenever you add a new class to inference.h, update this too.
-InferenceTechnique* InferenceTechnique::NewFromName(const string& method)
-{
-  Tracer_Plus tr("PickInferenceTechnique");
-
-  if (method == "vb")
-    {
-      return new VariationalBayesInferenceTechnique;
-    }
-  else if (method == "spatialvb")
-    {
-      return new SpatialVariationalBayes;
-    }
-  else if (method == "nlls")
-    {
-      return new NLLSInferenceTechnique;
-    }
-  else if (method == "")
-    {
-      throw Invalid_option("Must include the --method=vb or --method=spatialvb option");
-    }
-  else 
-    {
-      throw Invalid_option("Unrecognized --method: " + method);
     }
 }
 

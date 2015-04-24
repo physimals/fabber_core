@@ -13,12 +13,17 @@
 using namespace NEWIMAGE;
 #endif
 
-void VariationalBayesInferenceTechnique::Setup(ArgsType& args) 
+InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
+{
+  return new VariationalBayesInferenceTechnique();
+}
+
+void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, ArgsType& args) 
 { 
-  Tracer_Plus tr("VariationalBayesInferenceTechnique::Setup");
+  Tracer_Plus tr("VariationalBayesInferenceTechnique::Initialize");
 
   // Call ancestor, which does most of the real work
-  InferenceTechnique::Setup(args);
+  InferenceTechnique::Initialize(fwd_model, args);
 
   // Load up initial prior and initial posterior
   MVNDist* loadPrior = new MVNDist( model->NumParams() );
@@ -322,7 +327,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(const DataSet& allData)
         assert(initialFwdPosterior != NULL);
         fwdPosterior = *initialFwdPosterior;
 	// any voxelwise initialisation
-	model->Initialise(fwdPosterior);
+	model->InitParams(fwdPosterior);
       }
 
 

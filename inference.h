@@ -1,45 +1,75 @@
 /*  inference.h - General inference technique base class
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
 
-#if !defined(__inference_h)
-#define __inference_h
+#ifndef __FABBER_INFERENCE_H
+#define __FABBER_INFERENCE_H 1
 
-
-#pragma once
 #include <map>
 #include <string>
+#include <typeinfo>
 #include <vector>
+
+#include "dataset.h"
 #include "fwdmodel.h"
-#include "noisemodel.h"
 #include "easylog.h"
 #include "easyoptions.h"
-#include "dataset.h"
+#include "noisemodel.h"
+#include "utils.h"
+
 #ifdef __FABBER_MOTION
  #include "Update_deformation.h"
  #include "mcflirt/rigidreglib.h"
 #endif //__FABBER_MOTION
 
 class InferenceTechnique {
-    
+        
  public:
-  static InferenceTechnique* NewFromName(const string& method);
-    // returns a *new* instance of an Inference-Technique-derived class,
-    // as determined by the name given in "method".
-    
- public:
-  InferenceTechnique() : model(NULL), noise(NULL) { return; }
-  virtual void Setup(ArgsType& args);
-  virtual void SetOutputFilenames(const string& output)
-    { outputDir = output; }
-  virtual void DoCalculations(const DataSet& data) = 0;
-  virtual void SaveResults(const DataSet& data) const;
-  virtual ~InferenceTechnique();
+  /**
+     * Create a new instance of this class.
+     * @return pointer to new instance.
+     */
+    static InferenceTechnique* NewInstance();
+    /**
+     * Constructor.
+     */
+    InferenceTechnique() : model(NULL), noise(NULL) { 
+      // No-op.
+    }
+    /**
+     * Initialize a new instance to use the given forward model
+     * and extract additional configuration from the given
+     * arguments.
+     * @param fwd_model Forward model to be used.
+     * @param args Additional configuration parameters.
+     */
+    virtual void Initialize(FwdModel* fwd_model, ArgsType& args);
+    /**
+     * Set the path to the output directory.
+     * @param output Directory path, can be relative or 
+     * absolute.
+     */
+    virtual void SetOutputFilenames(const string& output) { 
+      outputDir = output; 
+    }
+    /**
+     * Perform inference using the given model upon the given data.
+     * @param data 
+     */
+    virtual void DoCalculations(const DataSet& data) = 0;
+    /**
+     * Save the results in the output directory.
+     */
+    virtual void SaveResults(const DataSet& data) const;
+    /**
+     * Destructor.
+     */
+    virtual ~InferenceTechnique();
 
  protected:
   FwdModel* model;
@@ -63,6 +93,11 @@ private:
 
 };
 
+/** 
+ * \ref SingletonFactory that returns pointers to 
+ * \ref InferenceTechnique.
+ */
+typedef SingletonFactory<InferenceTechnique> InferenceTechniqueFactory;
 
 // Motion Correction class
 #ifdef __FABBER_MOTION
@@ -95,5 +130,5 @@ private:
 
 #endif // __FABBER_MOTION
 
-#endif
+#endif // __FABBER_INFERENCE_H
 

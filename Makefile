@@ -24,14 +24,14 @@ SCRIPTS = fabber_var
 # C++ build - original all-in-one approach
 #
 
-#*** utils.o - belongs in COREOBJS
 # Sets of objects separated into logical divisions
 # Basic objects - things that have nothing directly to do with inference
-BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o easyoptions.o
+BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o easyoptions.o 
 # Core objects - things that implement the framework for inference
-COREOBJS =  noisemodel.o fwdmodel.o inference.o 
+COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o
 # Forward model groups
-FWDOBJS = fwdmodel_custom.o fwdmodel_flobs.o fwdmodel_q2tips.o fwdmodel_quipss2.o fwdmodel_pcASL.o fwdmodel_simple.o fwdmodel_linear.o fwdmodel_asl_grase.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_asl_quasar.o fwdmodel_cest.o asl_models.o fwdmodel_asl_rest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
+FWDOBJS = fwdmodel_linear.o 
+# ***TEMP removed models: fwdmodel_custom.o fwdmodel_flobs.o fwdmodel_q2tips.o fwdmodel_quipss2.o fwdmodel_pcASL.o fwdmodel_simple.o fwdmodel_asl_grase.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_asl_quasar.o fwdmodel_cest.o asl_models.o fwdmodel_asl_rest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
 # Infernce methods
 INFERENCEOBJS = inference_spatialvb.o inference_vb.o inference_nlls.o
 # Noise models
@@ -40,8 +40,7 @@ NOISEOBJS = noisemodel_white.o noisemodel_ar.o
 CONFIGOBJS = setup.o
 
 # Everything together
-OBJS = ${BASICOBJS} ${COREOBJS} ${FWDOBJS} ${INFERENCEOBJS} ${NOISEOBJS} 
-#*** ${CONFIGOBJS} - taken out TEMP
+OBJS = ${BASICOBJS} ${COREOBJS} ${FWDOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 
 # For debugging:
 OPTFLAGS = -ggdb

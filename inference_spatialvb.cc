@@ -17,11 +17,16 @@ using namespace Utilities;
 using namespace NEWIMAGE;
 #endif
 
-void SpatialVariationalBayes::Setup(ArgsType& args)
+InferenceTechnique* SpatialVariationalBayes::NewInstance()
 {
-  Tracer_Plus tr("SpatialVariationalBayes::Setup");
+  return new SpatialVariationalBayes();
+}
+
+void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, ArgsType& args)
+{
+   Tracer_Plus tr("SpatialVariationalBayes::Initialize");
   // Call parent to do most of the setup
-  VariationalBayesInferenceTechnique::Setup(args);
+  VariationalBayesInferenceTechnique::Initialize(fwd_model, args);
 
   try 
     {
@@ -987,7 +992,7 @@ Tracer tr("SpatialVariationalBayes::DoCalculations - delta updates");
 
 	if (!continuingFromFile) {
 	  //voxelwise initialisation - only if we dont have initial values from a pre loaded MVN
-	  model->Initialise(fwdPosteriorVox[v-1]);
+	  model->InitParams(fwdPosteriorVox[v-1]);
 	}
 
 	// from simple_do_vb_ar1c_spatial.m

@@ -1,18 +1,23 @@
 /* inference_nlls.h - Non-Linear Least Squares class declarations
 
-   Adrian Groves Michael Chappell, FMRIB Image Analysis Group
+   Adrian Groves Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-   Copyright (C) 2007 University of Oxford */
+   Copyright (C) 2007-2015 University of Oxford */
+
 /*  CCOPYRIGHT  */
+
 #include "inference_nlls.h"
 
-void NLLSInferenceTechnique::Setup(ArgsType& args)
+InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 {
-  Tracer_Plus tr("NLLSInferenceTechnique::Setup");
-  model = FwdModel::NewFromName(args.Read("model"), args);
-  assert( model->NumParams() > 0 );
-  LOG_ERR("    Forward Model version:\n      " 
-	  << model->ModelVersion() << endl);
+  return new NLLSInferenceTechnique();
+}
+
+void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, ArgsType& args)
+{
+  Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
+
+  model = fwd_model;
 
   //determine whether NLLS is being run in isolation or as a pre-step for VB (alters what we do if result is ill conditioned)
   vbinit = args.ReadBool("vb-init");

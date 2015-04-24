@@ -1,8 +1,8 @@
 /*  fwdmodel.h - The base class for generic forward models
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -15,19 +15,22 @@
  * Last modified: $Date: 2013/04/29 12:38:19 $ $Author: chappell $ $Revision: 1.20 $
  */
 
-//#pragma once // prevent multiple includes
 #ifndef __FABBER_FWDMODEL_H
 #define __FABBER_FWDMODEL_H 1
 
 #include "assert.h"
-#include "newmatap.h"
 #include <string>
 #include <vector>
+
+#include "newmatap.h"
+
 #include "dist_mvn.h"
 #include "easyoptions.h"
+#include "utils.h"
 
-using namespace NEWMAT;
 using namespace std;
+using namespace NEWMAT;
+
 
 /*
 class FwdModelIdStruct {
@@ -37,9 +40,28 @@ public:
 };*/
 
 class FwdModel {
-public:
-  // Virtual functions: common to all FwdModels
-  
+ public:
+  // Virtual functions that relate to the creation and inital setup of the model
+  /**
+   * Create a new instance of this class.
+   * @return pointer to new instance.
+   */
+  static FwdModel* NewInstance();
+
+  /**
+   * Initialize a new instance using configuration from the given 
+   * arguments.
+   * @param args Configuration parameters.
+   */
+  virtual void Initialize(ArgsType& args) = 0;
+
+  /**
+   * Return model usage information.
+   * @return vector of strings, one per line of information.
+   */
+  virtual vector<string> GetUsage() const;
+
+  // Virtual functions that relate to the model as sued in the inference process
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const = 0;
   // Evaluate the forward model
@@ -61,8 +83,8 @@ public:
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const = 0;
   // Load up some sensible suggestions for initial prior & posterior values
 
-  virtual void Initialise(MVNDist& posterior) const {};
-  // voxelwise initialization of the posterior
+  virtual void InitParams(MVNDist& posterior) const {};
+  // voxelwise initialization of the posterior, i.e. a paramerer initialisation 
  
   virtual void NameParams(vector<string>& names) const = 0;
   // Name each of the parameters -- see fwdmodel_linear.h for a generic implementation
@@ -113,6 +135,11 @@ public:
   ColumnVector data;
   ColumnVector suppdata;
 };
+
+/** 
+ * \ref SingletonFactory that returns pointers to \ref FwdModel.
+ */
+typedef SingletonFactory<FwdModel> FwdModelFactory;
 
 #endif /* __FABBER_FWDMODEL_H */
 

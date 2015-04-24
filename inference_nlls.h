@@ -1,9 +1,11 @@
 /* inference_nlls.h - Non-Linear Least Squares class declarations
 
-   Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+   Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-   Copyright (C) 2007 University of Oxford */
+   Copyright (C) 2007-2015 University of Oxford */
+
 /*  CCOPYRIGHT  */
+
 #include "inference.h"
 #include "miscmaths/nonlin.h"
 #include <boost/shared_ptr.hpp>
@@ -11,8 +13,9 @@
 
 class NLLSInferenceTechnique : public InferenceTechnique {
  public:
+  static InferenceTechnique* NewInstance();
   NLLSInferenceTechnique() { return; }
-  virtual void Setup(ArgsType& args);
+  virtual void Initialize(FwdModel* fwd_model, ArgsType& args);
   virtual void DoCalculations(const DataSet& data);
   virtual ~NLLSInferenceTechnique();
  protected:

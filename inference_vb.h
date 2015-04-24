@@ -1,8 +1,8 @@
 /*  inference_vb.h - VB inference technique class declarations
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -21,10 +21,11 @@ class ConvergenceDetector;
 
 class VariationalBayesInferenceTechnique : public InferenceTechnique {
    public:
+  static InferenceTechnique* NewInstance();
       VariationalBayesInferenceTechnique() : conv(NULL), 
         initialFwdPrior(NULL), initialFwdPosterior(NULL), 
         initialNoisePrior(NULL), initialNoisePosterior(NULL) { return; }
-      virtual void Setup(ArgsType& args);
+      virtual void Initialize(FwdModel* model, ArgsType& args);
       //  virtual void SetOutputFilenames(ArgsType& args);
       virtual void DoCalculations(const DataSet& data);    
       virtual ~VariationalBayesInferenceTechnique();

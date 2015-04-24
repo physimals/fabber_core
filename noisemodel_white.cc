@@ -1,8 +1,8 @@
 /*  noisemodel_white.cc - Class implementation for the multiple white noise model
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -13,6 +13,11 @@
 using namespace MISCMATHS;
 using namespace Utilities;
 #include "easylog.h"
+
+NoiseModel* WhiteNoiseModel::NewInstance()
+{
+  return new WhiteNoiseModel();
+}
 
 void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn,
     NoiseParams& posteriorIn) const
@@ -92,10 +97,11 @@ void WhiteParams::Dump(const string indent) const
 
 //WhiteNoiseModel::WhiteNoiseModel(const string& pattern) 
 //  : phiPattern(pattern)
-WhiteNoiseModel::WhiteNoiseModel(ArgsType& args)
-  : phiPattern(args.ReadWithDefault("noise-pattern","1"))
-{ 
-  Tracer_Plus tr("WhiteNoiseModel::WhiteNoiseModel");
+
+void WhiteNoiseModel::Initialize(ArgsType& args)
+{
+  Tracer_Plus tr("WhiteNoiseModel::Initialize");
+  phiPattern = args.ReadWithDefault("noise-pattern","1");
   assert(phiPattern.length() > 0);
   MakeQis(phiPattern.length()); // a quick way to validate the input
 

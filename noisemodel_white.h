@@ -1,8 +1,8 @@
 /*  noisemodel_ar.h - Class declaration for the multiple white noise model
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -34,23 +34,25 @@ private:
 
 class WhiteNoiseModel : public NoiseModel {
  public:
-
+  static NoiseModel* NewInstance();
     virtual WhiteParams* NewParams() const
         { return new WhiteParams( Qis.size() ); }
 
     virtual void HardcodedInitialDists(NoiseParams& prior, 
         NoiseParams& posterior) const; 
 
+    virtual void Initialize(ArgsType& args);
 
-  // Constructor/destructor
+  // Constructor
     //  WhiteNoiseModel(const string& pattern);
-    WhiteNoiseModel(ArgsType& args);
+    //  WhiteNoiseModel(ArgsType& args);
   // pattern says which phi distribution to use for each data points; this
   // string is repeated as necessary to make up the data length. e.g. for 
   // dual-echo data, pattern = "12".  after 9, use letters (A=10, ...)
   // Simplest case: pattern = "1".
 
-  virtual ~WhiteNoiseModel() { return; }
+    // Destructor
+    virtual ~WhiteNoiseModel() { return; }
 
   // Do all the calculations
   virtual void UpdateNoise(
@@ -79,7 +81,7 @@ class WhiteNoiseModel : public NoiseModel {
   	const ColumnVector& data) const;
 
  protected:
-  const string phiPattern;
+  string phiPattern;
 
   double lockedNoiseStdev; // Allow phi to be locked externally
   double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)

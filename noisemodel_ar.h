@@ -1,8 +1,8 @@
 /*  noisemodel_ar.cc - Class implementation for the AR(1) noise model
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
  
@@ -81,6 +81,7 @@ private:
 
 class Ar1cNoiseModel : public NoiseModel {
  public:
+  static NoiseModel* NewInstance();
 
 //  virtual Ar1cNoiseModel* Clone() const;
   // makes a new identical copy of this object
@@ -109,8 +110,8 @@ class Ar1cNoiseModel : public NoiseModel {
 //  virtual const MVNDist GetResultsAsMVN() const;
 
   // Constructor/destructor
-
-    Ar1cNoiseModel(const string& ar1CrossTerms, int numPhis );
+    virtual void Initialize(ArgsType& args);
+    //Ar1cNoiseModel(const string& ar1CrossTerms, int numPhis );
     // ar1CrossTerms must be either "none", "dual", or "same". 
     
     virtual ~Ar1cNoiseModel() { return; }
@@ -168,8 +169,8 @@ class Ar1cNoiseModel : public NoiseModel {
     // Whenever this changes, call alphaMat.Update!
 
 //  Ar1cMatrixCache alphaMat;
-  const string ar1Type;
+  string ar1Type;
   int NumAlphas() const; // converts the above string into a number
-  const int nPhis;
+  int nPhis;
 };
 
