@@ -16,6 +16,9 @@
 using namespace NEWIMAGE;
 #include "easylog.h"
 
+FactoryRegistration<FwdModelFactory, GraseFwdModel> 
+   GraseFwdModel::registration("buxton");
+
 string GraseFwdModel::ModelVersion() const
 {
   return "$Id: fwdmodel_asl_grase.cc,v 1.22 2013/09/04 15:13:00 chappell Exp $";
@@ -94,7 +97,8 @@ void GraseFwdModel::HardcodedInitialDists(MVNDist& prior,
     posterior.SetPrecisions(precisions);
     
 }    
-    
+
+
     
 
 void GraseFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
@@ -374,8 +378,15 @@ void GraseFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) c
   return;
 }
 
-GraseFwdModel::GraseFwdModel(ArgsType& args)
+FwdModel* GraseFwdModel::NewInstance()
 {
+  return new GraseFwdModel();
+}
+    
+
+void GraseFwdModel::Initialize(ArgsType& args)
+{
+  Tracer_Plus tr("GraseFwdModel::Initialize");
     string scanParams = args.ReadWithDefault("scan-params","cmdline");
     
     if (scanParams == "cmdline")
@@ -502,25 +513,27 @@ GraseFwdModel::GraseFwdModel(ArgsType& args)
  
 }
 
-void GraseFwdModel::ModelUsage()
+vector<string> GraseFwdModel::GetUsage() const
 { 
-  cout << "\nUsage info for --model=buxton:\n"
-       << "Required parameters:\n"
-       << "--repeats=<no. repeats in data>\n"
-       << "--ti1=<first_inversion_time_in_seconds>\n"
-       << "--ti2=<second_inversion_time>, etc...\n"
-       << "Optional arguments:\n"
-       << "--casl use CASL (or pCASL) preparation rather than PASL\n"
-       << "--grase *DEPRECEATAED* (data collected using GRASE-ASL: same as --pretissat=0.1)\n"
-       << "--pretisat=<presat_time> (Define that blood is saturated a specific time before TI image acquired)\n"
-       << "--calib (data has been provided in calibrated units)\n"
-       << "--tau=<bolus duration> (default 10s if --infertau not set)\n"
-       << "--t1=<T1_of_tissue> (default 1.3)\n"
-       << "--t1b=<T1_of_blood> (default 1.65)\n"
-       << "--infertau (to infer on bolus length)\n"
-       << "--inferart (to infer on arterial compartment)\n"
-       << "--infert1 (to infer on T1 values)\n"
-    ;
+  vector<string> usage;
+  usage.push_back(  "\nUsage info for --model=buxton:" );
+       usage.push_back(  "Required parameters:" );
+       usage.push_back(  "--repeats=<no. repeats in data>" );
+       usage.push_back(  "--ti1=<first_inversion_time_in_seconds>" );
+       usage.push_back(  "--ti2=<second_inversion_time>, etc..." );
+       usage.push_back(  "Optional arguments:" );
+       usage.push_back(  "--casl use CASL (or pCASL) preparation rather than PASL" );
+       usage.push_back(  "--grase *DEPRECEATAED* (data collected using GRASE-ASL: same as --pretissat=0.1)" );
+       usage.push_back(  "--pretisat=<presat_time> (Define that blood is saturated a specific time before TI image acquired)" );
+       usage.push_back(  "--calib (data has been provided in calibrated units)" );
+       usage.push_back(  "--tau=<bolus duration> (default 10s if --infertau not set)" );
+       usage.push_back(  "--t1=<T1_of_tissue> (default 1.3)" );
+       usage.push_back(  "--t1b=<T1_of_blood> (default 1.65)" );
+       usage.push_back(  "--infertau (to infer on bolus length)" );
+       usage.push_back(  "--inferart (to infer on arterial compartment)" );
+       usage.push_back(  "--infert1 (to infer on T1 values)" );
+       
+       return usage;
 }
 
 void GraseFwdModel::DumpParameters(const ColumnVector& vec,

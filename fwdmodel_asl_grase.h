@@ -6,17 +6,24 @@
 
 /*  CCOPYRIGHT */
 
+#ifndef __FABBER_ASL_GRASE_FWDMODEL_H
+#define __FABBER_ASL_GRASE_FWDMODEL_H 1
+
 #include "fwdmodel.h"
 #include "inference.h"
 #include <string>
+
 using namespace std;
 
 class GraseFwdModel : public FwdModel {
 public: 
+  static FwdModel* NewInstance();
+
   // Virtual function overrides
+  virtual void Initialize(ArgsType& args);
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const;
-  static void ModelUsage();
+  virtual vector<string> GetUsage() const;
   virtual string ModelVersion() const;
                   
   virtual void DumpParameters(const ColumnVector& vec,
@@ -35,9 +42,6 @@ public:
 
   virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
   virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
-
-  // Constructor
-  GraseFwdModel(ArgsType& args);
 
 
 protected: // Constants
@@ -86,5 +90,11 @@ protected: // Constants
   ColumnVector tis;
   Real timax;
 
+ private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, GraseFwdModel> registration;
+  
 
 };
+
+#endif  // __FABBER_ASL_GRASE_FWDMODEL_H
