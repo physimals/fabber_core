@@ -15,6 +15,9 @@
 using namespace NEWIMAGE;
 #include "easylog.h"
 
+FactoryRegistration<FwdModelFactory,  MultiPhaseASLFwdModel> 
+  MultiPhaseASLFwdModel::registration("asl_multiphase");
+
 string MultiPhaseASLFwdModel::ModelVersion() const
 {
   return "$Id: fwdmodel_asl_multiphase.cc,v 1.3 2014/11/07 11:43:43 chappell Exp $";
@@ -59,7 +62,7 @@ void MultiPhaseASLFwdModel::HardcodedInitialDists(MVNDist& prior,
     
 }    
 
-void MultiPhaseASLFwdModel::Initialise(MVNDist& posterior) const
+void MultiPhaseASLFwdModel::InitParams(MVNDist& posterior) const
 {
   Tracer_Plus tr("MultiPhaseASLFwdModel::Initialise");
   // init the magntidue and offset parameters
@@ -156,7 +159,12 @@ void MultiPhaseASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& r
   return;
 }
 
-MultiPhaseASLFwdModel::MultiPhaseASLFwdModel(ArgsType& args)
+FwdModel* MultiPhaseASLFwdModel::NewInstance()
+{
+  return new MultiPhaseASLFwdModel();
+}
+
+void MultiPhaseASLFwdModel::Initialize(ArgsType& args)
 {
     string scanParams = args.ReadWithDefault("scan-params","cmdline");
     
@@ -233,14 +241,11 @@ MultiPhaseASLFwdModel::MultiPhaseASLFwdModel(ArgsType& args)
  
 }
 
-void MultiPhaseASLFwdModel::ModelUsage()
-{ 
-  cout << "\nUsage info for --model=biexp:\n"
-       << "Required parameters:\n"
-       
-       << "Optional arguments:\n"
-       
-    ;
+vector<string> MultiPhaseASLFwdModel::GetUsage() const
+{
+  vector<string> usage;
+  usage.push_back( "\nUsage info for --model=biexp:" );
+  return usage;
 }
 
 void MultiPhaseASLFwdModel::NameParams(vector<string>& names) const

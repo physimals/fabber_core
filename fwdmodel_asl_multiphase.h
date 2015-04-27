@@ -6,18 +6,24 @@
 
 /*  CCOPYRIGHT */
 
+#ifndef __FABBER_ASL_MULTIPHASE_FWDMODEL_H
+#define __FABBER_ASL_MULTIPHASE_FWDMODEL_H 1
+
 #include "fwdmodel.h"
 #include "inference.h"
 #include <string>
+
 using namespace std;
 
 class MultiPhaseASLFwdModel : public FwdModel {
 public: 
+  static FwdModel* NewInstance();
+
   // Virtual function overrides
+  virtual void Initialize(ArgsType& args);
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const;
-  virtual void Initialise(MVNDist& posterior) const;
-  static void ModelUsage();
+    virtual vector<string> GetUsage() const;
   virtual string ModelVersion() const;
                                 
   virtual void NameParams(vector<string>& names) const;     
@@ -27,9 +33,7 @@ public:
   virtual ~MultiPhaseASLFwdModel() { return; }
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-
-  // Constructor
-  MultiPhaseASLFwdModel(ArgsType& args);
+  virtual void InitParams(MVNDist& posterior) const;
 
 
 protected: // Constants
@@ -56,4 +60,10 @@ protected: // Constants
   double vmin;
   int nvelpts;
 
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, MultiPhaseASLFwdModel> registration;
+
 };
+
+#endif  //__FABBER_ASL_MULTIPHASE_FWDMODEL_H
