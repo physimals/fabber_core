@@ -12,6 +12,7 @@
 #include "fwdmodel.h"
 #include "inference.h"
 #include <string>
+
 #include "asl_models.h"
 
 using namespace std;
@@ -39,7 +40,7 @@ public:
   virtual ~ASLFwdModel() { return; }
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-  virtual void Initialise(MVNDist& posterior) const;
+  virtual void InitParams(MVNDist& posterior) const;
 
   virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
   virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;

@@ -277,7 +277,7 @@ void ASLFwdModel::HardcodedInitialDists(MVNDist& prior,
     
 }    
     
-void ASLFwdModel::Initialise(MVNDist& posterior) const
+void ASLFwdModel::InitParams(MVNDist& posterior) const
 {
   Tracer_Plus tr("ASLFwdModel::Initialise");
 
