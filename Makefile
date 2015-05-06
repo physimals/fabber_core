@@ -28,10 +28,13 @@ SCRIPTS = fabber_var
 # Basic objects - things that have nothing directly to do with inference
 BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o easyoptions.o 
 # Core objects - things that implement the framework for inference
-COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o
+COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o fwdmodel_linear.o
 # Forward model groups
-FWDOBJS = fwdmodel_linear.o asl_models.o fwdmodel_asl_rest.o fwdmodel_asl_grase.o fwdmodel_asl_multiphase.o
-# ***TEMP removed models: fwdmodel_custom.o fwdmodel_flobs.o fwdmodel_q2tips.o fwdmodel_quipss2.o fwdmodel_pcASL.o fwdmodel_simple.o fwdmodel_asl_grase.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_asl_quasar.o fwdmodel_cest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
+FWDOBJS_ASL =  fwdmodel_asl_multiphase.o fwdmodel_asl_grase.o asl_models.o fwdmodel_asl_rest.o
+FWDOBJS_DUALECHO = fwdmodel_flobs.o #fwdmodel_q2tips.o fwdmodel_quipss2.o fwdmodel_pcASL.o
+# ***TEMP removed models: fwdmodel_custom.o  fwdmodel_simple.o fwdmodel_asl_grase.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_cest.o fwdmodel_asl_multiphase.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
+# all the forward models
+FWDOBJS = ${FWDOBJS_ASL} ${FWDOBJS_DUALECHO}
 # Infernce methods
 INFERENCEOBJS = inference_spatialvb.o inference_vb.o inference_nlls.o
 # Noise models

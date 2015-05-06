@@ -16,11 +16,14 @@
 using namespace std;
 
 class FlobsFwdModel : public FwdModel {
+public:
+  static FwdModel* NewInstance();
 public: 
   // Virtual function overrides
   virtual void Evaluate(const ColumnVector& params, 
-			      ColumnVector& result) const;
-                  
+			      ColumnVector& result) const
+  {};
+              
   virtual void DumpParameters(const ColumnVector& vec,
                                 const string& indents = "") const;
                                 
@@ -35,20 +38,45 @@ public:
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 
-  // Constructor
-  FlobsFwdModel(ArgsType& args, bool sepScale) ;
-  // Usage info
-  static void ModelUsage();
+  virtual void Initialize(ArgsType& args);
 
 protected: // Constants
- 
-  //  const bool useSeparateScale;
-  const bool usePolarCoordinates;
 
   Matrix basis; // Ntr by Nbasis
 
   // Should also have a nuisance basis -- e.g. for offset
   Matrix nuisanceBasis; // Ntr by Nnuisance
+};
+
+// flobs7 = polar coordinate parameterization
+// b1 cos(b2) X1 + b1 sin(b2) X2
+// prior on b2 should probably be modified slightly (unless it's very small).
+class Flobs7FwdModel : public FlobsFwdModel {
+  public:
+    static FwdModel* NewInstance();
+    virtual vector<string> GetUsage() const;
+    virtual void Evaluate(const ColumnVector& params, 
+                          ColumnVector& result) const;
+    virtual ~Flobs7FwdModel() { return; }
+
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, Flobs7FwdModel> registration;
+};
+
+
+// flobs5 = b1X1 + b1b2X2 parameterization
+class Flobs5FwdModel : public FlobsFwdModel {
+  public:
+    static FwdModel* NewInstance();
+    virtual vector<string> GetUsage() const;
+    virtual void Evaluate(const ColumnVector& params,  
+                          ColumnVector& result) const;
+    virtual ~Flobs5FwdModel() { return; }
+
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, Flobs5FwdModel> registration;
 };
 
 #endif /* __FABBER_FWDMODEL_FLOBS_H */
