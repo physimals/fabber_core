@@ -1,8 +1,8 @@
 /*  fwdmodel_quipss2.h - Implements the QUIPSS II ASL model
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, QuBIc (IBME) & FMRIB Image Analysis Group
 
-    Copyright (C) 2007 University of Oxford  */
+    Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -12,7 +12,6 @@
  * Written by Adrian Groves, 2007
  * FMRIB Centre, University of Oxford
  *
- * Last modified: $Date: 2014/02/06 17:00:14 $ $Author: mwebster $ $Revision: 1.13 $
  */
 
 #ifndef __FABBER_FWDMODEL_QUIPSS2_H
@@ -25,10 +24,13 @@ using namespace std;
 
 class Quipss2FwdModel : public FwdModel {
 public: 
+  static FwdModel* NewInstance();
+
   // Virtual function overrides
+  virtual void Initialize(ArgsType& args);
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const;
-                  
+  virtual vector<string> GetUsage() const;
   virtual void DumpParameters(const ColumnVector& vec,
                                 const string& indents = "") const;
                                 
@@ -43,20 +45,7 @@ public:
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 
-  // Constructor
-  Quipss2FwdModel(ArgsType& args);
-  // Usage info
-  static void ModelUsage();
-
-  //  SimpleFwdModel(const SimpleFwdModel& from); // copy constructor - default ok?
-
 protected: // Constants
-  
-  // parameter lookup class:
-  //Quipss2FwdModelIdStruct id;
-  
-  // This is my own rather messy way of keeping track of all my parameters.
-  // There's probably a better way of doing it... but I haven't found it yet.
   
   int Q0index() const { return 1; }
   int M0index() const { return Q0index()+Qbasis.Ncols()+1; }
@@ -95,6 +84,10 @@ protected: // Constants
   Matrix Mbasis;
   Matrix Rbasis;
   Matrix Nbasis;
+
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, Quipss2FwdModel> registration;
 };
 
 #endif /* __FABBER_FWDMODEL_QUIPSS2_H */

@@ -1,8 +1,8 @@
-/*  fwdmodel_quipss2.h - Implements (pseudo) continuous ASL for multi-echo time functional analysis
+/*  fwdmodel_pcASL.h - Implements (pseudo) continuous ASL for multi-echo time functional analysis
 
-    Michael Chappell, IBME & FMRIB Image Analysis Group
+    Michael Chappell, QuBIc (IBME) & FMRIB Image Analysis Group
 
-    Copyright (C) 20011 University of Oxford  */
+    Copyright (C) 2011-15 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -13,7 +13,6 @@
  * Based on fwdmodel_quipss2.h
  * IBME & FMRIB Centre, University of Oxford
  *
- * Last modified: $Date: 2014/02/06 17:00:14 $ $Author: mwebster $ $Revision: 1.2 $
  */
 
 #ifndef __FABBER_FWDMODEL_PCASL_H
@@ -26,10 +25,13 @@ using namespace std;
 
 class pcASLFwdModel : public FwdModel {
 public: 
+  static FwdModel* NewInstance();
+
   // Virtual function overrides
+  virtual void Initialize(ArgsType& args);
   virtual void Evaluate(const ColumnVector& params, 
 			      ColumnVector& result) const;
-                  
+  virtual vector<string> GetUsage() const;              
   virtual void DumpParameters(const ColumnVector& vec,
                                 const string& indents = "") const;
                                 
@@ -44,21 +46,8 @@ public:
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 
-  // Constructor
-  pcASLFwdModel(ArgsType& args);
-  // Usage info
-  static void ModelUsage();
-
-  //  SimpleFwdModel(const SimpleFwdModel& from); // copy constructor - default ok?
-
 protected: // Constants
-  
-  // parameter lookup class:
-  //Quipss2FwdModelIdStruct id;
-  
-  // This is my own rather messy way of keeping track of all my parameters.
-  // There's probably a better way of doing it... but I haven't found it yet.
-  
+   
   int Q0index() const { return 1; }
   int M0index() const { return Q0index()+Qbasis.Ncols()+1; }
   int R0index() const { return M0index()+Mbasis.Ncols()+1; }
@@ -96,6 +85,11 @@ protected: // Constants
   Matrix Mbasis;
   Matrix Rbasis;
   Matrix Nbasis;
+
+private:
+  /** Auto-register with forward model factory. */
+  static FactoryRegistration<FwdModelFactory, pcASLFwdModel> registration;
+
 };
 
 #endif /* __FABBER_FWDMODEL_PCASL_H */

@@ -1,8 +1,8 @@
 /*  fwdmodel_quipss2.cc - Implements the QUIPSS II ASL
 
-    Adrian Groves, FMRIB Image Analysis Group
+    Adrian Groves & Michael Chappell, QuBIc (IBME) & FMRIB Image Analysis Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+    Copyright (C) 2007-2005 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -14,6 +14,9 @@
 #include "newimage/newimageall.h"
 using namespace NEWIMAGE;
 #include "easylog.h"
+
+FactoryRegistration<FwdModelFactory,  Quipss2FwdModel> 
+  Quipss2FwdModel::registration("quipss2");
 
 string Quipss2FwdModel::ModelVersion() const
 {
@@ -120,28 +123,34 @@ void Quipss2FwdModel::Evaluate(const ColumnVector& params, ColumnVector& result)
   return; // answer is in the "result" vector
 }
 
-void Quipss2FwdModel::ModelUsage()
+vector<string> Quipss2FwdModel::GetUsage() const
 {
-    cout << "\nUsage info for --model=quipss2:\n"
-      << "Required options:\n"
-      << "--bold-basis=<bold_design_file>\n"
-      << "--cbf-basis=<cbf_design_file>\n"
-      << "--statmag-basis=<statmag_design_file>\n\n"
-      << "Optional options:\n"
-      << "--nuisance-basis=<nuisance_regressors_design_file> (default: null)\n"
-      << "--ti1=<ti1_in_sec>, "
-      << "--ti2=<ti2_in_sec> (default: 0.6, 1.5)\n"
-      << "--te1=<te1_in_millisec>, "
-      << "--te2=<te2_in_millisec> (default: 9.1, 30)\n"
-//      << "--te3=<next_echo_time>, etc.\n"
-      << "--tag-pattern=<string_of_Ts_and_Cs> (default: TC)\n"      
-      << "--t1b=<T1_of_blood> (default: 1.66), --t1b-stdev=<stdev> (to add it as a parameter)\n"
-      << "--dt=<bolus_arrival_time>, --dt-stdev (default: --dt=0.5 --dt-stdev=0.25)\n"
-      << "--inv-eff=<inversion_efficiency>, --inv-eff-stdev=<stdev> (to add it as a parameter)\n\n"      
-      ;
+  vector<string> usage;
+  usage.push_back("Usage info for --model=quipss2:");
+  usage.push_back("Required options:");
+  usage.push_back("--bold-basis=<bold_design_file>");
+  usage.push_back("--cbf-basis=<cbf_design_file>");
+  usage.push_back("--statmag-basis=<statmag_design_file>");
+  usage.push_back("Optional options:");
+  usage.push_back("--nuisance-basis=<nuisance_regressors_design_file> (default: null)");
+  usage.push_back("--ti1=<ti1_in_sec>, ");
+  usage.push_back("--ti2=<ti2_in_sec> (default: 0.6, 1.5)");
+  usage.push_back("--te1=<te1_in_millisec>, ");
+  usage.push_back("--te2=<te2_in_millisec> (default: 9.1, 30)");
+  usage.push_back("--tag-pattern=<string_of_Ts_and_Cs> (default: TC)");      
+  usage.push_back("--t1b=<T1_of_blood> (default: 1.66), --t1b-stdev=<stdev> (to add it as a parameter)");
+  usage.push_back("--dt=<bolus_arrival_time>, --dt-stdev (default: --dt=0.5 --dt-stdev=0.25)");
+  usage.push_back("--inv-eff=<inversion_efficiency>, --inv-eff-stdev=<stdev> (to add it as a parameter)");      
+  ;
+  return usage;
 }
 
-Quipss2FwdModel::Quipss2FwdModel(ArgsType& args)
+FwdModel* Quipss2FwdModel::NewInstance()
+{
+  return new Quipss2FwdModel();
+}
+
+void Quipss2FwdModel::Initialize(ArgsType& args)
 {
     string scanParams = args.ReadWithDefault("scan-params","cmdline");
     string tagPattern;

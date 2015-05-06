@@ -15,7 +15,13 @@
 using namespace NEWIMAGE;
 #include "easylog.h"
 
+FactoryRegistration<FwdModelFactory,  Q2tipsFwdModel> 
+  Q2tipsFwdModel::registration("q2tips-dualecho");
 
+FwdModel* Q2tipsFwdModel::NewInstance()
+{
+  return new Q2tipsFwdModel();
+}
 
 string Q2tipsFwdModel::ModelVersion() const
 {
@@ -23,6 +29,10 @@ string Q2tipsFwdModel::ModelVersion() const
 	+ Quipss2FwdModel::ModelVersion();
 }
 
+void Q2tipsFwdModel::Initialize(ArgsType& args)
+{
+  Quipss2FwdModel::Initialize(args);
+}
 
 void Q2tipsFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
 {
@@ -72,4 +82,9 @@ void Q2tipsFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
     }
 
   return; // answer is in the "result" vector
+}
+
+vector<string> Q2tipsFwdModel::GetUsage() const {
+  // Uses exactly the same options as its parent.
+  return Quipss2FwdModel::GetUsage();
 }

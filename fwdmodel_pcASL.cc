@@ -1,8 +1,8 @@
 /*  fwdmodel_pcASL.cc - Implements (pseudo) continuous ASL for multi-echo time functional analysis
 
-    Michael Chappell, IBME & FMRIB Image Analysis Group
+    Michael Chappell, QuBIc (IBME) & FMRIB Image Analysis Group
 
-    Copyright (C) 20011 University of Oxford  */
+    Copyright (C) 2011-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -14,6 +14,9 @@
 #include "newimage/newimageall.h"
 using namespace NEWIMAGE;
 #include "easylog.h"
+
+FactoryRegistration<FwdModelFactory,  pcASLFwdModel> 
+  pcASLFwdModel::registration("pcasl-dualecho");
 
 string pcASLFwdModel::ModelVersion() const
 {
@@ -138,28 +141,32 @@ void pcASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) c
   return; // answer is in the "result" vector
 }
 
-void pcASLFwdModel::ModelUsage()
-{
-    cout << "\nUsage info for --model=pcasl-dualecho:\n"
-      << "Required options:\n"
-      << "--bold-basis=<bold_design_file>\n"
-      << "--cbf-basis=<cbf_design_file>\n"
-      << "--statmag-basis=<statmag_design_file>\n\n"
-      << "Optional options:\n"
-      << "--nuisance-basis=<nuisance_regressors_design_file> (default: null)\n"
-      << "--ti=<ti_in_sec>, inversion time of acquisition = PLD + Bolus duration (default: 2.0)"
-      << "--tau=<tau_in_sec>, bolus duration (default: 1.0)\n"
-      << "--te1=<te1_in_millisec>, "
-      << "--te2=<te2_in_millisec> (default: 9.1, 30)\n"
-//      << "--te3=<next_echo_time>, etc.\n"
-      << "--tag-pattern=<string_of_Ts_and_Cs> (default: TC)\n"      
-      << "--t1b=<T1_of_blood> (default: 1.66), --t1b-stdev=<stdev> (to add it as a parameter)\n"
-      << "--dt=<bolus_arrival_time>, --dt-stdev (default: --dt=0.5 --dt-stdev=0.25)\n"
-      << "--inv-eff=<inversion_efficiency>, --inv-eff-stdev=<stdev> (to add it as a parameter)\n\n"      
-      ;
+vector<string> pcASLFwdModel::GetUsage() const { 
+  vector<string> usage;
+  usage.push_back("Required parameters:");
+  usage.push_back("--bold-basis=<bold_design_file>");
+  usage.push_back("--cbf-basis=<cbf_design_file>");
+  usage.push_back("--statmag-basis=<statmag_design_file>");
+  usage.push_back("Optional parameters:");
+  usage.push_back("--nuisance-basis=<nuisance_regressors_design_file> (default: null)");
+  usage.push_back("--ti=<ti_in_sec>, inversion time of acquisition = PLD + Bolus duration (default: 2.0)");
+  usage.push_back("--tau=<tau_in_sec>, bolus duration (default: 1.0)");
+  usage.push_back("--te1=<te1_in_millisec> ");
+  usage.push_back("--te2=<te2_in_millisec> (default: 9.1, 30)");
+  // usage.push_back("--te3=<next_echo_time>, etc.");
+  usage.push_back("--tag-pattern=<string_of_Ts_and_Cs> (default: TC)");      
+  usage.push_back("--t1b=<T1_of_blood> (default: 1.66), --t1b-stdev=<stdev> (to add it as a parameter)");
+  usage.push_back("--dt=<bolus_arrival_time>, --dt-stdev (default: --dt=0.5 --dt-stdev=0.25)");
+  usage.push_back("--inv-eff=<inversion_efficiency>, --inv-eff-stdev=<stdev> (to add it as a parameter)");
+  return usage;
 }
 
-pcASLFwdModel::pcASLFwdModel(ArgsType& args)
+FwdModel* pcASLFwdModel::NewInstance()
+{
+  return new pcASLFwdModel();
+}
+
+void pcASLFwdModel::Initialize(ArgsType& args)
 {
     string scanParams = args.ReadWithDefault("scan-params","cmdline");
     string tagPattern;
