@@ -43,7 +43,7 @@ NOISEOBJS = noisemodel_white.o noisemodel_ar.o
 # Configuration
 CONFIGOBJS = setup.o
 
-# Client objects - contains the main interf
+# Client objects - contains the main interface
 CLIENTOBJS = fabber_core.o
 
 # Everything together
@@ -54,21 +54,23 @@ OPTFLAGS = -ggdb
 #OPTFLAGS =
 
 #
-# Original build - all-in-one approach
+# Build
 #
 
-all:	${XFILES}
-
-fabber: ${OBJS} fabber.o
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
+all:	${XFILES} 
 
 mvntool: ${BASICOBJS} mvntool.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
 
 #
+# Original build - all-in-one approach
+#
+fabber_old: ${OBJS} fabber.o
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
+
+#
 # Library build
 #
-
 
 # fabber core is the basic implementation with no models (except linear), but includes default inference and noise models
 libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
@@ -77,6 +79,10 @@ libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFI
 #
 # Using libraries
 #
+
+# fabber has all the forward models in it
+fabber: fabber_client.o ${FWDOBJS} libfabbercore.a
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS} -lfabbercore ${LIBS}
 
 # fabber_asl is an example of building the main version of fabber with only ASL fwdmodels included
 fabber_asl : fabber_client.o ${FWDOBJS_ASL} libfabbercore.a
