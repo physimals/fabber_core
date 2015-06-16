@@ -66,18 +66,17 @@ mvntool: ${BASICOBJS} mvntool.o
 # Library build
 #
 
-FABBERLIBNAMES = fabbercore fabberbare
-FABBERSTATICS = $(addsuffix .a,$(addprefix lib,$(FABBERLIBNAMES)))
-FABBERLIBS = $(addprefix -l,$(FABBERLIBNAMES))
 
-# fabber core is nothing but the core architecture
-libfabbercore.a : ${BASICOBJS} ${COREOBJS}
-	${AR} -r $@ ${BASICOBJS} ${COREOBJS}
-# fabber bare is the basic implementation with no models (except linear), but includes default inference and noise models
-libfabberbare.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
+# fabber core is the basic implementation with no models (except linear), but includes default inference and noise models
+libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 	${AR} -r $@ ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 
+#
+# Using libraries
+#
 
-
+# fabber_asl is an example of building the main version of fabber with only ASL fwdmodels included
+fabber_asl : fabber.o ${FWDOBJS_ASL} libfabbercore.a
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
 
 # DO NOT DELETE
