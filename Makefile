@@ -76,10 +76,6 @@ fabber_old: ${OBJS} fabber.o
 libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
 	${AR} -r $@ ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
 
-# fabberfwdasl is a library of just the ASL models
-libfabberfwdasl.a : ${FWDOBJS_ASL}
-	${AR} -r $@ ${FWDOBJS_ASL}
-
 #
 # Using libraries
 #
@@ -91,11 +87,6 @@ fabber: fabber_client.o ${FWDOBJS} libfabbercore.a
 # fabber_asl is an example of building the main version of fabber with only ASL fwdmodels included
 fabber_asl : fabber_client.o ${FWDOBJS_ASL} libfabbercore.a
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
-
-# fabber_asllib is an example of building fabber with only the ASL fwdmodels that have previously been packaged as a library
-# TODO: DOESN'T APPEAR TO WORK CORRECTLY
-fabber_asllib : fabber_client.o libfabberfwdasl.a libfabbercore.a
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< -lfabberfwdasl -lfabbercore ${LIBS}
 
 
 # DO NOT DELETE
