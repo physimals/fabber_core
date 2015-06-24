@@ -76,6 +76,10 @@ fabber_old: ${OBJS} fabber.o
 libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
 	${AR} -r $@ ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
 
+# asl models only in a library
+libfabbermodels_asl.a : ${FWDOBJS_ASL}
+	${AR} -r $@ ${FWDOBJS_ASL}
+
 #
 # Using libraries
 #
@@ -91,5 +95,12 @@ fabber_asl : fabber_client.o ${FWDOBJS_ASL} libfabbercore.a
 # fabber_aslalone is an example of building from the core library, where it has been installed in the FSLDIR
 fabber_aslalone : fabber_client.o ${FWDOBJS_ASL}
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
+
+# fabber_asl_fromlib is an example of building using the core library and a library of ASL models - both installed in FSLDIR
+# TODO this doesn't work - the models do not registered correctly
+fabber_aslfromlib : fabber_client.o
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< -lfabbermodels_asl -lfabbercore ${LIBS}
+
+
 
 # DO NOT DELETE
