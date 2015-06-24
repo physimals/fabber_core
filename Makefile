@@ -57,7 +57,7 @@ OPTFLAGS = -ggdb
 # Build
 #
 
-all:	${XFILES} 
+all:	${XFILES} libfabbercore.a
 
 mvntool: ${BASICOBJS} mvntool.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
@@ -88,5 +88,8 @@ fabber: fabber_client.o ${FWDOBJS} libfabbercore.a
 fabber_asl : fabber_client.o ${FWDOBJS_ASL} libfabbercore.a
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
 
+# fabber_aslalone is an example of building from the core library, where it has been installed in the FSLDIR
+fabber_aslalone : fabber_client.o ${FWDOBJS_ASL}
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
 
 # DO NOT DELETE
