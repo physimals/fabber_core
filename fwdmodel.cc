@@ -72,26 +72,8 @@ void FwdModel::pass_in_coords( const ColumnVector& coords )
 #include "fwdmodel_asl_pvc.h"
 #include "fwdmodel_asl_satrecov.h"
 #include "fwdmodel_asl_quasar.h"
-#endif /*__OXASL */
-
-#ifdef __DEVEL
-// development models (not to be complied in FSL)
 #include "fwdmodel_dsc.h"
-#include "fwdmodel_asl_devel.h"
-//#include "fwdmodel_asl_2cpt.h"
-//#include "fwdmodel_asl_multite.h"
-//#include "fwdmodel_cest_devel.h"
-//  #include "fwdmodel_asl_dynangio.h" - this is currently broken since changing asl_models, use asl_models_*_archive
-#include "fwdmodel_fasl.h"
-#include "fwdmodel_oef.h"
-#include "fwdmodel_biexp.h"
-#include "fwdmodel_deconv.h"
-#include "fwdmodel_flex.h"
-#include "fwdmodel_asl_samira.h"
-#include "fwdmodel_asl_precap.h"
-#include "fwdmodel_asl_rest.h"
-#include "fwdmodel_dce.h"
-#endif /* __DEVEL */
+#endif /*__OXASL */
 
 // Add your models here
 
@@ -160,73 +142,13 @@ FwdModel* FwdModel::NewFromName(const string& name, ArgsType& args)
       {
 	return new QuasarFwdModel(args);
       }
-#endif /* __OXASL */
-	
-#ifdef __DEVEL
-// development models (not to be complied in FSL)
     else if (name == "dsc")
       {
 	return new DSCFwdModel(args);
       }
-    else if (name == "devel")
-      {
-	return new DevelFwdModel(args);
-      }
-    else if (name == "aslrest")
-      {
-	return new ASLFwdModel(args);
-      }
+#endif /* __OXASL */
+	
 
-    // else if (name == "cestdevel")
-    //  {
-    //	return new CESTDevelFwdModel(args);
-    //  }
-    //else if (name == "dynangio")
-    //  {
-    //	return new DynAngioFwdModel(args);
-    //  }
-    else if (name == "fasl")
-      {
-	return new FASLFwdModel(args);
-      }
-    else if (name == "oef")
-      {
-	return new OEFFwdModel(args);
-      }
-    else if (name == "biexp")
-      {
-	return new BiExpFwdModel(args);
-      }
-    else if (name == "deconv")
-      {
-	return new DeconvModel(args);
-      }
-    else if (name == "flex")
-      {
-	return new FLEXFwdModel(args);
-      }
-    else if (name == "samira")
-      {
-	return new SamiraFwdModel(args);
-      }
-    else if (name == "aslprecap")
-      {
-	return new PreCapFwdModel(args);
-      }
-    //    else if (name == "twocpt")
-    //  {
-    //	return new TwoCptFwdModel(args);
-    //  }
-    //else if (name == "multite")
-    //  {
-    //	return new multiTEFwdModel(args);
-    //  }
-    else if (name == "dce")
-      {
-       return new DCEFwdModel(args);
-      }
-#endif /* __DEVEL */
-    
     else if (name == "custom")
       {
 	return new CustomFwdModel(args);
@@ -285,10 +207,7 @@ void FwdModel::ModelUsageFromName(const string& name, ArgsType& args)
 	}
 	
 #endif /* __OXASL */
-	
-#ifdef __DEVEL
 
-#endif /* __DEVEL */
 
     // Your models go here!
     else

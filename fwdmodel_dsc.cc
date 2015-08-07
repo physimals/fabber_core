@@ -361,6 +361,9 @@ DSCFwdModel::DSCFwdModel(ArgsType& args)
 
       inferart = args.ReadBool("inferart"); //infer arterial component
 
+      //sort out ARD indices
+      if (inferart)  ard_index.push_back(art_index());
+
       inferret = args.ReadBool("inferret");
 
       convmtx = args.ReadWithDefault("convmtx","simple");
@@ -474,15 +477,12 @@ ColumnVector DSCFwdModel::aifshift( const ColumnVector& aif, const float delta, 
 }
 
 
-void DSCFwdModel::SetupARD( const MVNDist& theta, MVNDist& thetaPrior, double& Fard)
+void DSCFwdModel::SetupARD( const MVNDist& theta, MVNDist& thetaPrior, double& Fard) const
 {
   Tracer_Plus tr("ASL_PVC_FwdModel::SetupARD");
 
   if (doard)
     {
-      //sort out ARD indices
-      if (inferart)  ard_index.push_back(art_index());
-
 
       Fard = 0;
 
