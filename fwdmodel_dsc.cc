@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string DSCFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_dsc.cc,v 1.8 2011/08/04 13:40:11 chappell Exp $";
+  return "$Id: fwdmodel_dsc.cc,v 1.12 2014/10/24 15:27:57 chappell Exp $";
 }
 
 void DSCFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -27,41 +27,43 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
     Tracer_Plus tr("DSCFwdModel::HardcodedInitialDists");
     assert(prior.means.Nrows() == NumParams());
 
-     SymmetricMatrix precisions = IdentityMatrix(NumParams()) * 1e-12;
+    SymmetricMatrix precisions = IdentityMatrix(NumParams()) * 1e12; //by default all parameters are fully informative
 
     // Set priors
     // CBF
      prior.means(cbf_index()) = 0;
      precisions(cbf_index(),cbf_index()) = 1e-12;
-     if (imageprior) precisions(cbf_index(),cbf_index()) = 100;
+     if (imageprior) precisions(cbf_index(),cbf_index()) = 10;
 
      if (infermtt) {
-       // Transit mean parameter
-       prior.means(gmu_index()) = 1.5; //1; //10;
-       precisions(gmu_index(),gmu_index()) = 10; //0.01;
+       prior.means(gmu_index()) = 1.5; 
+       precisions(gmu_index(),gmu_index()) = 10; 
        if (imageprior) precisions(gmu_index(),gmu_index()) = 100;
      }
 
      if (inferlambda) {
        // Transit labmda parameter (log)
-       prior.means(lambda_index()) = 2; //10;
-       precisions(lambda_index(),lambda_index()) = 1; //0.01;
+       prior.means(lambda_index()) = 2.3;
+       precisions(lambda_index(),lambda_index()) = 1; 
+
      }
 
      if (inferdelay) {
        // delay parameter
        prior.means(delta_index()) = 0;
-       precisions(delta_index(),delta_index()) = 1;
+       precisions(delta_index(),delta_index()) = 0.04; //[0.1]; //<1>;
+
      }
 
      // signal magnitude parameter
      prior.means(sig0_index()) = 100;
      precisions(sig0_index(),sig0_index()) = 1e-6;
+     if (imageprior) precisions(sig0_index(),sig0_index()) = 1e12;
 
      if (inferart) {
        //arterial component parameters
        prior.means(art_index()) = 0;
-	 precisions(art_index(),art_index()) = 1e-12;
+       precisions(art_index(),art_index()) = 1e-12;
        prior.means(art_index()+1) = 0;
        precisions(art_index()+1,art_index()+1) = 0.04;
      }
@@ -71,7 +73,21 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
        prior.means(ret_index()) = 0;
        precisions(ret_index(),ret_index()) = 1e4;
      }
-    
+
+     if (usecbv) {
+       // CBV is input as an image prior
+       prior.means(cbv_index()) = 0;
+       precisions(cbv_index(),cbv_index()) = 1e12;
+     }
+
+     if (dispoption) {
+       //including dispersion
+       prior.means(disp_index()) = 0.7;
+       prior.means(disp_index() + 1) = 0.1;
+       precisions(disp_index(),disp_index()) = 100;
+       precisions(disp_index() + 1,disp_index() + 1) = 100;
+     }
+
    
     // Set precsions on priors
     prior.SetPrecisions(precisions);
@@ -82,7 +98,8 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
     // For parameters with uniformative prior chosoe more sensible inital posterior
     // Tissue perfusion
     posterior.means(cbf_index()) = 0.1;
-    precisions(cbf_index(),cbf_index()) = 10;
+    precisions(cbf_index(),cbf_index()) = 0.1;
+
 
  //     if (infermtt) {
 //        // Transit mean parameter
@@ -98,7 +115,7 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
 
     if (inferart) {
       posterior.means(art_index()) = 0;
-      precisions(art_index(),art_index()) = 10;
+      precisions(art_index(),art_index()) = 0.1;
     }
 
     posterior.SetPrecisions(precisions);
@@ -122,20 +139,23 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    float cbf;
    float gmu; //mean of the transit time distribution
    float lambda; // log lambda (fromt ransit distirbution)
+   float cbv;
    float delta;
    float sig0; //'inital' value of the signal
    float artmag;
    float artdelay;
    float tracerret;
+   float disp_s;
+   float disp_p;
 
    // extract values from params
-   //cbf = paramcpy(cbf_index());
    cbf = paramcpy(cbf_index());
 
    if (infermtt) {
      gmu = params(gmu_index()); //this is the log of the mtt so we can have -ve values
    }
    else {gmu = 0;}
+
    if (inferlambda) {
      lambda = params(lambda_index()); //this is the log of lambda so we can have -ve values
    }
@@ -143,24 +163,61 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
      lambda = 0;
    }
 
+   if (usecbv) {
+     cbv = params(cbv_index());
+   }
+   else {
+     cbv=0;
+   }
+
    if (inferdelay) {
-   delta = params(delta_index()); // NOTE: delta is allowed to be negative
+     delta = params(delta_index()); // NOTE: delta is allowed to be negative
    }
    else {
      delta = 0;
    }
+
+
+
    sig0 = paramcpy(sig0_index());
 
    if (inferart) {
-     //artmag = paramcpy(art_index());
      artmag = paramcpy(art_index());
+     //artmag = exp(params(art_index()));
      artdelay = params(art_index()+1);
+     //if (artmag>1e6) artmag=1e6;
    }
      
    if (inferret) {
      tracerret = tanh(paramcpy(ret_index()));
    }
    else tracerret = 0.0;
+
+   if (dispoption) {
+     disp_s = params(disp_index());
+     disp_p = params(disp_index() + 1);
+   }
+   else {
+     disp_s = 0;
+     disp_p = 0;
+   }
+
+   ColumnVector artsighere; // the arterial signal to use for the analysis
+   if (artsig.Nrows()>0) {
+     artsighere = artsig; //use the artsig that was loaded by the model
+   }
+   else {
+     //use an artsig from supplementary data
+     if (suppdata.Nrows()>0) {
+       artsighere = suppdata;
+     }
+     else {
+       cout << "No valid AIF found" << endl;
+       throw;
+     }
+   }
+   // use length of the aif to determine the number of time points
+   int ntpts = artsighere.Nrows();
 
    // sensible limits on delta (beyond which it gets silly trying to estimate it)
    if (delta > ntpts/2*delt) {delta = ntpts/2*delt;}
@@ -169,11 +226,61 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
    //cout << "aif: " << aif.t() << endl;
 
- 
+   
+
+  //upsampled timeseries
+  int upsample;
+  int nhtpts;
+  float hdelt;
+  ColumnVector htsamp;
+
+
+      // Create vector of sampled times
+      ColumnVector tsamp(ntpts);
+      for (int i=1; i<=ntpts; i++) {
+	tsamp(i) = (i-1)*delt;
+      }
+
+      upsample=1;
+      nhtpts=(ntpts-1)*upsample+1;
+      htsamp.ReSize(nhtpts); 
+      htsamp(1) = tsamp(1);
+      hdelt = delt/upsample;
+      for (int i=2; i<=nhtpts-1; i++) {
+	htsamp(i) = htsamp(i-1)+hdelt;
+      }
+      htsamp(nhtpts)=tsamp(ntpts);
+
+   // calculate the arterial input function (from upsampled artsig)
+   ColumnVector aif_low(ntpts);
+   if (!aifconc) {
+     aif_low = -1/te*log(artsighere/artsighere(1)); //using first value from aif input as time zero value
+   }
+   else { 
+     aif_low=artsighere;
+   }
+   
+   // upsample the signal
+   ColumnVector aif; 
+   aif.ReSize(nhtpts);
+   aif(1) = aif_low(1);
+   int j=0; int ii=0;
+   for (int i=2; i<=nhtpts-1; i++) {
+     j = floor((i-1)/upsample)+1;
+     ii= i - upsample*(j-1)-1;
+     aif(i) = aif_low(j) + ii/upsample*(aif_low(j+1) - aif_low(j));
+   }
+   aif(nhtpts) = aif_low(ntpts);
+   
+   // create the AIF matrix - empty for the time being
+   LowerTriangularMatrix A(nhtpts); A = 0.0;
+   LowerTriangularMatrix Awm(nhtpts); Awm = 0.0;
 
    // deal with delay parameter - this shifts the aif
    ColumnVector aifnew(aif);
    aifnew = aifshift(aif,delta,hdelt);
+
+   ColumnVector aifwm(aif);
 
    ColumnVector C_art(aif);
    if (inferart) {
@@ -198,10 +305,31 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
      }
    }
    */
+
+   // Do dispersion of AIF - do this be convolution with a VTF
+   if (dispoption) {
+     ColumnVector vtf;
+     vtf.ReSize(nhtpts);
+     // Use a gamma VTF 
+     double s=exp(disp_s);
+     double p=exp(disp_p);
+     for (int i=1; i<=nhtpts; i++) {
+       vtf(i)= pow(s,1+s*p) / MISCMATHS::gamma(1+s*p) * pow(tsamp(i),s*p) * exp(-s*tsamp(i));
+     }
+     // populate AIF matrix
+     createconvmtx(A,aifnew);
+     //do the convolution (multiplication)
+     aifnew = hdelt*A*vtf;
+
+   }
    
-     
+   // --- Redisue Function ----
    ColumnVector residue;
    residue.ReSize(nhtpts);
+   residue = 0.0;
+   ColumnVector residuewm;
+   residuewm.ReSize(nhtpts);
+   residuewm = 0.0;
    
    // Evaluate the residue function
    //if (gmu > 10) gmu = 10;
@@ -218,10 +346,26 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    //  residue(i) = gdtrc(1/bet,alph,htsamp(i)-htsamp(1));
    //  }
 
-    gmu = exp(gmu);
+   if (lambda>10) lambda=10; if (lambda<-10) lambda=-10;
     lambda = exp(lambda);
-    if (lambda > 10) lambda=10;
+    if (lambda > 100) lambda=100; //this was 10?
+
+    if (usecbv) {
+      if (inferart) {
+	//in this case the cbv image is the 'total' cbv of which part will be arterial
+	cbv = cbv - artmag;
+      }
+
+      gmu = cbv/(lambda*cbf);
+      if (gmu<1e-6) gmu=1e-6;
+    }
+    else {
+      if (gmu>10) gmu=10; if (gmu<-10) gmu=-10;
+      gmu = exp(gmu);
+    }
+
     float gvar = gmu*gmu/lambda;   
+
 
    //float alpha = exp(lambda);
    //float beta = exp(gmu); //gmu temporarily is actually the beta parameter
@@ -229,6 +373,7 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    //float gvar = alpha*beta*beta;
 
    residue = 1 - gammacdf(htsamp.t()-htsamp(1),gmu,gvar).t();
+   residue(1) = 1.0; //always tru - avoid any roundoff errors
 
    //tracer retention
    residue = (1-tracerret)*residue + tracerret;
@@ -251,43 +396,8 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    //cout << "residue: " << residue.t() << endl;
    //cout << "aifnew: " << aifnew.t() << endl;
 
-   LowerTriangularMatrix A(nhtpts); A=0.0;
-
-   if (convmtx=="simple")
-     {
-       // Simple convolution matrix
-       for (int i=1; i<=nhtpts; i++) {
-	 for (int j=1; j <= i; j++) {
-	   A(i,j) = aifnew(i-j+1); //note we are using the local aifnew here! (i.e. it has been suitably time shifted)
-	 }
-       }
-     }
-   //cout << "new run" << endl;
-   //cout << A << endl;
-
-   else if (convmtx=="voltera")
-     {
-       ColumnVector aifextend(nhtpts+2);
-       ColumnVector zero(1);
-       zero=0;
-       aifextend = zero & aifnew & zero;
-       int x, y, z;
-       //voltera convolution matrix (as defined by Sourbron 2007) - assume zeros outside aif range
-       for (int i=1; i<=nhtpts; i++) {
-	 for (int j=1; j <= i; j++) {
-	   //cout << i << "  " << j << endl;
-	   x = i+1;y=j+1; z = i-j+1;
-	   if (j==1) { A(i,j) =(2*aifextend(x) + aifextend(x-1))/6; }
-	   else if (j==i) { A(i,j) = (2*aifextend(2) + aifextend(3))/6; }
-	   else { 
-	     A(i,j) =  (4*aifextend(z) + aifextend(z-1) + aifextend(z+1))/6; 
-	     //cout << x << "  " << y << "  " << z << "  " << ( 4*aifextend(z) + aifextend(z-1) + aifextend(z+1) )/6 << "  " << 1/6*(4*aifextend(z) + aifextend(z-1) + aifextend(z+1)) << endl;
-	     // cout << aifextend(z) << "  " << aifextend(z-1) << "  " << aifextend(z+1) << endl;
-	   }
-	   //cout << i << "  " << j << "  " << aifextend(z) << "  " << A(i,j) << endl<<endl;
-	 }
-       }
-     }
+   
+   createconvmtx(A,aifnew);
 
    //cout << A << endl;
 
@@ -302,18 +412,43 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    
    //cout<< htsamp.t() << endl;
 
+
    ColumnVector C_low(ntpts);
    for (int i=1; i<=ntpts; i++) {
      C_low(i) = C((i-1)*upsample+1);
      //C_low(i) = interp1(htsamp,C,tsamp(i));
-     if (inferart) { //add in arterial contribution
+     if (inferart && !artoption) { 
+       //add in arterial contribution (concentration adding)
        C_low(i) += C_art((i-1)*upsample+1);
      }
      } 
 
+   //ColumnVector sig_art(ntpts);
+   //ColumnVector sig(ntpts);
+   float sig;
    result.ReSize(ntpts);
    for (int i=1; i<=ntpts; i++) {
-     result(i) = sig0*exp(-C_low(i)*te);
+     
+     sig= exp(-C_low(i)*te) - 1;
+
+     if (inferart && artoption) {
+       sig += exp(-C_art((i-1)*upsample+1)*te) - 1;
+     }
+
+
+     result(i) = sig0*(1 + sig);
+
+     /*
+     if (inferart && artoption) {
+       sig_art(i) = C_art((i-1)*upsample+1);
+       sig_art(i) = exp(-sig_art(i)*te);
+
+       result(i) = sig0*(1 + (sig_art(i)-1) + (exp(-C_low(i)*te)-1) );
+     }
+     else {
+       result(i) = sig0*exp(-C_low(i)*te);
+     }
+     */
    }
 
    for (int i=1; i<=ntpts; i++) {
@@ -355,58 +490,38 @@ DSCFwdModel::DSCFwdModel(ArgsType& args)
       delt = convertTo<double>(args.Read("delt"));
 
       // specify options of the model
+      ncomps=1;
+
+
       infermtt = args.ReadBool("infermtt");
+      usecbv = args.ReadBool("usecbv");
+      if (infermtt & usecbv) {
+	throw invalid_argument("Cannot infermtt and useabv simultaneously");
+      }
       inferlambda = args.ReadBool("inferlambda");
       inferdelay = args.ReadBool("inferdelay");
 
       inferart = args.ReadBool("inferart"); //infer arterial component
-
-      //sort out ARD indices
-      if (inferart)  ard_index.push_back(art_index());
+      artoption = args.ReadBool("artoption"); //determines if we add concentrations (false) or signals 
+      dispoption = args.ReadBool("disp"); // determines if we include some dispersion
 
       inferret = args.ReadBool("inferret");
 
       convmtx = args.ReadWithDefault("convmtx","simple");
       
-      // Read in the arterial signal
-      ColumnVector artsig;
-      string artfile = args.Read("aif");
-      artsig = read_ascii_matrix( artfile );
-
-      // establish number of time points from the arterial signal
-      ntpts = artsig.Nrows();
-
-      // Create vector of sampled times
-      tsamp.ReSize(ntpts);
-      for (int i=1; i<=ntpts; i++) {
-	tsamp(i) = (i-1)*delt;
+      // Read in the arterial signal (this will override an image supplied as supplementary data)
+      //ColumnVector artsig;
+      string artfile = args.ReadWithDefault("aif","none");
+      if (artfile != "none") {
+	artsig = read_ascii_matrix( artfile );
       }
-
-      imageprior = args.ReadBool("imageprior"); //temp way to indicate we have some image priors (very fixed meaning!)          
-
-       // calculate the arterial input function (from upsampled artsig)
-      ColumnVector aif_low(ntpts);
-      aif_low = -1/te*log(artsig/artsig(1)); //using first value from aif input as time zero value
       
-      // upsample the signal
-      upsample=1;
-      nhtpts=(ntpts-1)*upsample+1;
-      htsamp.ReSize(nhtpts); 
-      aif.ReSize(nhtpts);
-      htsamp(1) = tsamp(1); aif(1) = aif_low(1);
-      hdelt = delt/upsample;
-      int j=0; int ii=0;
-      for (int i=2; i<=nhtpts-1; i++) {
-	htsamp(i) = htsamp(i-1)+hdelt;
-	j = floor((i-1)/upsample)+1;
-	ii= i - upsample*(j-1)-1;
-	aif(i) = aif_low(j) + ii/upsample*(aif_low(j+1) - aif_low(j));
-      }
-      htsamp(nhtpts)=tsamp(ntpts);
-      aif(nhtpts) = aif_low(ntpts);
+      aifconc = args.ReadBool("aifconc"); // indicates that the AIF is a CTC not signal curve
 
       doard=false;
-      if (inferart) doard=true;     
+      if (inferart) doard=true;
+
+      imageprior = args.ReadBool("imageprior"); //temp way to indicate we have some image priors (very fixed meaning!)             
 
       // add information about the parameters to the log
       /* do logging here*/
@@ -450,6 +565,13 @@ void DSCFwdModel::NameParams(vector<string>& names) const
   if (inferret) {
     names.push_back("ret");
   }
+  if (usecbv) {
+    names.push_back("cbv");
+  }
+  if (dispoption) {
+    names.push_back("disp_s");
+    names.push_back("disp_p");
+  }
 }
 
 
@@ -463,6 +585,7 @@ ColumnVector DSCFwdModel::aifshift( const ColumnVector& aif, const float delta, 
       
    ColumnVector aifnew(aif);
    int index;
+   int nhtpts = aif.Nrows();
    for (int i=1; i<=nhtpts; i++) {
      index = i-nshift;
      if (index==1) { aifnew(i) = aif(1)*minorshift/hdelt; } //linear interpolation with zero as 'previous' time point
@@ -476,70 +599,45 @@ ColumnVector DSCFwdModel::aifshift( const ColumnVector& aif, const float delta, 
    return aifnew;
 }
 
-
-void DSCFwdModel::SetupARD( const MVNDist& theta, MVNDist& thetaPrior, double& Fard) const
+void DSCFwdModel::createconvmtx( LowerTriangularMatrix& A, const ColumnVector aifnew ) const
 {
-  Tracer_Plus tr("ASL_PVC_FwdModel::SetupARD");
+  // create the convolution matrix
+  int nhtpts = aifnew.Nrows();
 
-  if (doard)
-    {
+   if (convmtx=="simple")
+     {
+       // Simple convolution matrix
+       for (int i=1; i<=nhtpts; i++) {
+	 for (int j=1; j <= i; j++) {
+	   A(i,j) = aifnew(i-j+1); //note we are using the local aifnew here! (i.e. it has been suitably time shifted)
+	 }
+       }
+     }
+   //cout << "new run" << endl;
+   //cout << A << endl;
 
-      Fard = 0;
-
-      int ardindex;
-      for (unsigned int i=0; i<ard_index.size(); i++) {
-	//iterate over all ARD parameters
-	ardindex = ard_index[i];
-
-	SymmetricMatrix PriorPrec;
-	PriorPrec = thetaPrior.GetPrecisions();
-	
-	PriorPrec(ardindex,ardindex) = 1e-12; //set prior to be initally non-informative
-	
-	thetaPrior.SetPrecisions(PriorPrec);
-	
-	thetaPrior.means(ardindex)=0;
-	
-	//set the Free energy contribution from ARD term
-	SymmetricMatrix PostCov = theta.GetCovariance();
-	double b = 2/(theta.means(ardindex)*theta.means(ardindex) + PostCov(ardindex,ardindex));
-	Fard += -1.5*(log(b) + digamma(0.5)) - 0.5 - gammaln(0.5) - 0.5*log(b); //taking c as 0.5 - which it will be!
-      }
-  }
-  return;
+   else if (convmtx=="voltera")
+     {
+       ColumnVector aifextend(nhtpts+2);
+       ColumnVector zero(1);
+       zero=0;
+       aifextend = zero & aifnew & zero;
+       int x, y, z;
+       //voltera convolution matrix (as defined by Sourbron 2007) - assume zeros outside aif range
+       for (int i=1; i<=nhtpts; i++) {
+	 for (int j=1; j <= i; j++) {
+	   //cout << i << "  " << j << endl;
+	   x = i+1;y=j+1; z = i-j+1;
+	   if (j==1) { A(i,j) =(2*aifextend(x) + aifextend(x-1))/6; }
+	   else if (j==i) { A(i,j) = (2*aifextend(2) + aifextend(3))/6; }
+	   else { 
+	     A(i,j) =  (4*aifextend(z) + aifextend(z-1) + aifextend(z+1))/6; 
+	     //cout << x << "  " << y << "  " << z << "  " << ( 4*aifextend(z) + aifextend(z-1) + aifextend(z+1) )/6 << "  " << 1/6*(4*aifextend(z) + aifextend(z-1) + aifextend(z+1)) << endl;
+	     // cout << aifextend(z) << "  " << aifextend(z-1) << "  " << aifextend(z+1) << endl;
+	   }
+	   //cout << i << "  " << j << "  " << aifextend(z) << "  " << A(i,j) << endl<<endl;
+	 }
+       }
+     }
 }
 
-void DSCFwdModel::UpdateARD(
-				const MVNDist& theta,
-				MVNDist& thetaPrior, double& Fard) const
-{
-  Tracer_Plus tr("ASL_PVC_FwdModel::UpdateARD");
-  
-  if (doard)
-    Fard=0;
-    {
-      int ardindex;
-      for (unsigned int i=0; i<ard_index.size(); i++) {
-	//iterate over all ARD parameters
-	ardindex = ard_index[i];
-
-  
-      SymmetricMatrix PriorCov;
-      SymmetricMatrix PostCov;
-      PriorCov = thetaPrior.GetCovariance();
-      PostCov = theta.GetCovariance();
-
-      PriorCov(ardindex,ardindex) = theta.means(ardindex)*theta.means(ardindex) + PostCov(ardindex,ardindex);
-
-      
-      thetaPrior.SetCovariance(PriorCov);
-
-      //Calculate the extra terms for the free energy
-      double b = 2/(theta.means(ardindex)*theta.means(ardindex) + PostCov(ardindex,ardindex));
-      Fard += -1.5*(log(b) + digamma(0.5)) - 0.5 - gammaln(0.5) - 0.5*log(b); //taking c as 0.5 - which it will be!
-    }
-  }
-
-  return;
-
-  }

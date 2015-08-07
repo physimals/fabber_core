@@ -24,14 +24,11 @@ public:
                                 
   virtual void NameParams(vector<string>& names) const;     
   virtual int NumParams() const 
-  { return 2 + (infermtt?1:0) + (inferlambda?1:0) + (inferdelay?1:0) + (inferart?2:0) + (inferret?1:0); } 
+  { return 1 + ncomps + (infermtt?ncomps:0) + (inferlambda?ncomps:0) + (inferdelay?ncomps:0) + (inferart?2:0) + (inferret?1:0)+ (usecbv?1:0) + (dispoption?2:0); } 
 
   virtual ~DSCFwdModel() { return; }
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-
- virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
-  virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const;
 
   // Constructor
   DSCFwdModel(ArgsType& args);
@@ -39,23 +36,28 @@ public:
 protected: 
 
   ColumnVector aifshift( const ColumnVector& aif, const float delta, const float hdelt ) const;
+  void createconvmtx( LowerTriangularMatrix& A, const ColumnVector aifnew ) const;
   
 // Constants
 
   // Lookup the starting indices of the parameters
   int cbf_index() const {return 1;} 
 
-  int gmu_index() const {  return 1 + (infermtt?1:0);  }
+  int gmu_index() const {  return cbf_index() + (infermtt?ncomps:0);  }
 
-  int lambda_index() const { return 1 + (infermtt?1:0) + (inferlambda?1:0); }
+  int lambda_index() const { return gmu_index() + (inferlambda?ncomps:0); }
 
-  int delta_index() const { return 1 + (infermtt?1:0) + (inferlambda?1:0) + (inferdelay?1:0); }
+  int delta_index() const { return lambda_index() + (inferdelay?ncomps:0); }
  
-  int sig0_index() const { return 2 + (infermtt?1:0) + (inferlambda?1:0) + (inferdelay?1:0); }
+  int sig0_index() const { return delta_index() + ncomps; }
 
   int art_index() const { return sig0_index() + (inferart?1:0);}
 
   int ret_index() const { return art_index() + (inferart?1:0) + (inferret?1:0); } //NB two arterial parameters
+
+  int cbv_index() const { return ret_index() + (usecbv?1:0); }
+
+  int disp_index() const { return cbv_index() + (dispoption?1:0); }
 
   //for ARD
   vector<int> ard_index;
@@ -64,21 +66,20 @@ protected:
   double te;
   double r2;
   double delt;
-  int ntpts;
-  ColumnVector aif;
+  ColumnVector artsig;
   ColumnVector s;
-  ColumnVector tsamp;
 
-  //upsampled timeseries
-  int upsample;
-  int nhtpts;
-  float hdelt;
-  ColumnVector htsamp;
+  bool aifconc;
 
+  //inference parameters
+  int ncomps;
   bool infermtt;
+  bool usecbv;
   bool inferlambda;
   bool inferdelay;
   bool inferart;
+  bool artoption;
+  bool dispoption;
   bool inferret;
   bool doard;
 
