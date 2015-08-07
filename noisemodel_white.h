@@ -81,7 +81,8 @@ class WhiteNoiseModel : public NoiseModel {
  protected:
   const string phiPattern;
 
-  double lockedNoiseStdev; // A quick hack to allow phi to be locked externally
+  double lockedNoiseStdev; // Allow phi to be locked externally
+  double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)
 
   // Diagonal matrices, indicating which data points use each phi
   mutable vector<DiagonalMatrix> Qis; // mutable because it's used as a cache
