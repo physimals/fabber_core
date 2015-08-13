@@ -18,7 +18,7 @@ using namespace NEWIMAGE;
 
 string DSCFwdModel::ModelVersion() const
 {
-  return "$Id: fwdmodel_dsc.cc,v 1.12 2014/10/24 15:27:57 chappell Exp $";
+  return "$Id: fwdmodel_dsc.cc,v 1.11 2014/09/29 15:20:47 chappell Exp $";
 }
 
 void DSCFwdModel::HardcodedInitialDists(MVNDist& prior, 
@@ -27,7 +27,7 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
     Tracer_Plus tr("DSCFwdModel::HardcodedInitialDists");
     assert(prior.means.Nrows() == NumParams());
 
-    SymmetricMatrix precisions = IdentityMatrix(NumParams()) * 1e12; //by default all parameters are fully informative
+     SymmetricMatrix precisions = IdentityMatrix(NumParams()) * 1e-12;
 
     // Set priors
     // CBF
@@ -36,6 +36,7 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
      if (imageprior) precisions(cbf_index(),cbf_index()) = 10;
 
      if (infermtt) {
+       // Transit mean parameter
        prior.means(gmu_index()) = 1.5; 
        precisions(gmu_index(),gmu_index()) = 10; 
        if (imageprior) precisions(gmu_index(),gmu_index()) = 100;
@@ -45,14 +46,12 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
        // Transit labmda parameter (log)
        prior.means(lambda_index()) = 2.3;
        precisions(lambda_index(),lambda_index()) = 1; 
-
      }
 
      if (inferdelay) {
        // delay parameter
        prior.means(delta_index()) = 0;
        precisions(delta_index(),delta_index()) = 0.04; //[0.1]; //<1>;
-
      }
 
      // signal magnitude parameter
@@ -99,7 +98,6 @@ void DSCFwdModel::HardcodedInitialDists(MVNDist& prior,
     // Tissue perfusion
     posterior.means(cbf_index()) = 0.1;
     precisions(cbf_index(),cbf_index()) = 0.1;
-
 
  //     if (infermtt) {
 //        // Transit mean parameter
@@ -150,6 +148,8 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
    // extract values from params
    cbf = paramcpy(cbf_index());
+   //cbf = exp(params(cbf_index())); 
+   //if (cbf>1e4) cbf=1e4;
 
    if (infermtt) {
      gmu = params(gmu_index()); //this is the log of the mtt so we can have -ve values
@@ -171,14 +171,11 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    }
 
    if (inferdelay) {
-     delta = params(delta_index()); // NOTE: delta is allowed to be negative
+   delta = params(delta_index()); // NOTE: delta is allowed to be negative
    }
    else {
      delta = 0;
    }
-
-
-
    sig0 = paramcpy(sig0_index());
 
    if (inferart) {
@@ -253,12 +250,10 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
    // calculate the arterial input function (from upsampled artsig)
    ColumnVector aif_low(ntpts);
-   if (!aifconc) {
+   if (~aifconc) {
      aif_low = -1/te*log(artsighere/artsighere(1)); //using first value from aif input as time zero value
    }
-   else { 
-     aif_low=artsighere;
-   }
+   else { aif_low=artsighere;}
    
    // upsample the signal
    ColumnVector aif; 
@@ -273,14 +268,11 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    aif(nhtpts) = aif_low(ntpts);
    
    // create the AIF matrix - empty for the time being
-   LowerTriangularMatrix A(nhtpts); A = 0.0;
-   LowerTriangularMatrix Awm(nhtpts); Awm = 0.0;
+   LowerTriangularMatrix A(nhtpts); A=0.0;
 
    // deal with delay parameter - this shifts the aif
    ColumnVector aifnew(aif);
    aifnew = aifshift(aif,delta,hdelt);
-
-   ColumnVector aifwm(aif);
 
    ColumnVector C_art(aif);
    if (inferart) {
@@ -320,16 +312,11 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
      createconvmtx(A,aifnew);
      //do the convolution (multiplication)
      aifnew = hdelt*A*vtf;
-
    }
    
    // --- Redisue Function ----
    ColumnVector residue;
    residue.ReSize(nhtpts);
-   residue = 0.0;
-   ColumnVector residuewm;
-   residuewm.ReSize(nhtpts);
-   residuewm = 0.0;
    
    // Evaluate the residue function
    //if (gmu > 10) gmu = 10;
@@ -366,14 +353,13 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
     float gvar = gmu*gmu/lambda;   
 
-
    //float alpha = exp(lambda);
    //float beta = exp(gmu); //gmu temporarily is actually the beta parameter
    //gmu = alpha*beta;
    //float gvar = alpha*beta*beta;
 
    residue = 1 - gammacdf(htsamp.t()-htsamp(1),gmu,gvar).t();
-   residue(1) = 1.0; //always tru - avoid any roundoff errors
+   residue(1) = 1; //always tru - avoid any roundoff errors
 
    //tracer retention
    residue = (1-tracerret)*residue + tracerret;
@@ -412,43 +398,36 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
    
    //cout<< htsamp.t() << endl;
 
-
    ColumnVector C_low(ntpts);
    for (int i=1; i<=ntpts; i++) {
      C_low(i) = C((i-1)*upsample+1);
      //C_low(i) = interp1(htsamp,C,tsamp(i));
-     if (inferart && !artoption) { 
-       //add in arterial contribution (concentration adding)
+     if (inferart && !artoption) { //add in arterial contribution
        C_low(i) += C_art((i-1)*upsample+1);
      }
      } 
 
-   //ColumnVector sig_art(ntpts);
-   //ColumnVector sig(ntpts);
-   float sig;
+   ColumnVector sig_art(ntpts);
    result.ReSize(ntpts);
    for (int i=1; i<=ntpts; i++) {
      
-     sig= exp(-C_low(i)*te) - 1;
 
-     if (inferart && artoption) {
-       sig += exp(-C_art((i-1)*upsample+1)*te) - 1;
-     }
-
-
-     result(i) = sig0*(1 + sig);
-
-     /*
      if (inferart && artoption) {
        sig_art(i) = C_art((i-1)*upsample+1);
        sig_art(i) = exp(-sig_art(i)*te);
 
+       /*
+       float cbv = gmu*cbf;
+       float sumbv = artmag+cbv;
+       if (sumbv<1e-12) sumbv=1e-12; //catch cases where both volumes are zero
+       float ratio = artmag/sumbv;
+       result(i) = sig0*(1 + ratio*(sig_art(i)-1) + (1-ratio)*(exp(-C_low(i)*te)-1) ); //assume relative scaling is based on the relative proportions of blood volume
+       */
        result(i) = sig0*(1 + (sig_art(i)-1) + (exp(-C_low(i)*te)-1) );
      }
      else {
        result(i) = sig0*exp(-C_low(i)*te);
      }
-     */
    }
 
    for (int i=1; i<=ntpts; i++) {
@@ -490,9 +469,6 @@ DSCFwdModel::DSCFwdModel(ArgsType& args)
       delt = convertTo<double>(args.Read("delt"));
 
       // specify options of the model
-      ncomps=1;
-
-
       infermtt = args.ReadBool("infermtt");
       usecbv = args.ReadBool("usecbv");
       if (infermtt & usecbv) {
