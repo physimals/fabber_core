@@ -57,7 +57,7 @@ OPTFLAGS = -ggdb
 # Build
 #
 
-all:	${XFILES} libfabbercore.a
+all:	${XFILES} libfabbercore.a libfabbermodels_asl.a
 
 mvntool: ${BASICOBJS} mvntool.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
@@ -97,8 +97,8 @@ fabber_aslalone : fabber_client.o ${FWDOBJS_ASL}
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
 
 # fabber_asl_fromlib is an example of building using the core library and a library of ASL models - both installed in FSLDIR
-# TODO this doesn't work - the models do not registered correctly
-fabber_aslfromlib : fabber_client.o
+# note that the client needs to know which models from the library are wanted
+fabber_aslfromlib : fabber_aslclient.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< -lfabbermodels_asl -lfabbercore ${LIBS}
 
 
