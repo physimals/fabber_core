@@ -250,7 +250,7 @@ void DSCFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 
    // calculate the arterial input function (from upsampled artsig)
    ColumnVector aif_low(ntpts);
-   if (~aifconc) {
+   if (!aifconc) {
      aif_low = -1/te*log(artsighere/artsighere(1)); //using first value from aif input as time zero value
    }
    else { aif_low=artsighere;}
