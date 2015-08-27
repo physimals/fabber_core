@@ -101,7 +101,7 @@ void SatrecovFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result
    float M0tp = M0t;
 
    if (looklocker) {
-     T1tp = 1/( 1/T1t - log(cos(FA))/dti );
+     T1tp = 1/( 1/T1t - log(cos(FA))/dti );  //FA is in radians
      M0tp = M0t*(1 - exp(-dti/T1t) )/(1 - cos(FA)*exp(-dti/T1t));
      // note that we do not have sin(FA) here - we actually estiamte the M0 at the flip angle used for the readout!
    }
@@ -162,9 +162,9 @@ SatrecovFwdModel::SatrecovFwdModel(ArgsType& args)
       looklocker=false;
       if (FAnom>0.1) looklocker=true;
       cout << "Looklocker" << looklocker << endl;
-      FAnom = FAnom * M_PI/180;
+      FAnom = FAnom * M_PI/180;  //convert to radians
       LFA = convertTo<double>(args.ReadWithDefault("LFA","0"));
-      LFA = LFA * M_PI/180;
+      LFA = LFA * M_PI/180; //convert to radians
       LFAon=false;
       if (LFA>0) LFAon=true;
       

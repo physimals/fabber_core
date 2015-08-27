@@ -411,6 +411,7 @@ void QuasarFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
   }
 
     // flip angle correction (only if calibon)
+  // Note that FA is in radians
     float FAtrue = FA;
     float dg=0.023;
     if (calibon) FAtrue = (g+dg)*FA;
@@ -703,7 +704,7 @@ QuasarFwdModel::QuasarFwdModel(ArgsType& args)
       dti = tis(2)-tis(1);
 
       float fadeg = convertTo<double>(args.ReadWithDefault("fa","30"));
-      FA = fadeg * M_PI/180;
+      FA = fadeg * M_PI/180; //convert FA to radians
       
       //setup crusher directions
       //crushdir.ReSize(4);
