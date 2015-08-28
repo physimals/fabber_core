@@ -24,6 +24,7 @@ public:
   virtual int NumParams() const 
   { return 3 + (incvel?1:0) ; } 
 
+
   virtual ~MultiPhaseASLFwdModel() { return; }
 
   virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
@@ -55,5 +56,6 @@ protected: // Constants
   double vmax;
   double vmin;
   int nvelpts;
+
 
 };

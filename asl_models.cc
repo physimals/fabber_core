@@ -164,7 +164,8 @@ namespace OXASL {
  if (erf1<-5) erf1=-5;
  if (erf2<-5) erf2 = -5;
  
- kcblood *= 0.5*( erf(erf1)  - erf(erf2)  );
+ kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
+
 
   return kcblood;
 }
@@ -208,7 +209,7 @@ namespace OXASL {
     if (erf1<-5) erf1=-5;
     if (erf2<-5) erf2 = -5;
     
-    kcblood *= 0.5*( erf(erf1)  - erf(erf2)  );
+    kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
     
   return kcblood;
 }
@@ -264,7 +265,8 @@ double AIFModel_spatialgaussdisp::kcblood(const double ti,const double deltblood
     if (erf1<-5) erf1=-5;
     if (erf2<-5) erf2 = -5;
     
-    kcblood *= 0.5*( erf(erf1)  - erf(erf2)  );
+    kcblood *= 0.5*( MISCMATHS::erf(erf1)  - MISCMATHS::erf(erf2)  );
+
 
   }
 

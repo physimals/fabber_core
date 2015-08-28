@@ -92,6 +92,7 @@ void MultiPhaseASLFwdModel::Initialise(MVNDist& posterior) const
   if (incvel) {
     posterior.means(4) = 0.3;
   }
+
 }
     
     
@@ -146,6 +147,7 @@ void MultiPhaseASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& r
 	 evalfunc = mag*(mod_fn(ph_rad - phaserad,flowvel)) + offset;
        }
 
+
        for (int j=1; j<=repeats; j++) {
 	 result((j-1)*8+i) = evalfunc;
        }
@@ -180,6 +182,7 @@ MultiPhaseASLFwdModel::MultiPhaseASLFwdModel(ArgsType& args)
       alpha = convertTo<double>(args.ReadWithDefault("alpha","55"));
       beta = convertTo<double>(args.ReadWithDefault("beta","12"));
       
+
       // deal with ARD selection
       //doard=false;
       //if (inferart==true && ardoff==false) { doard=true; }

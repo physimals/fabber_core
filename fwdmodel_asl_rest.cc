@@ -528,12 +528,14 @@ void ASLFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) con
 	}
 	*/
 
+
 	//Tissue
 	if (inctiss) kctissue = pvgm*ftiss*tiss_model->kctissue(ti,f_calib,delttiss,tautiss,T_1b,T_1,lambda,casl,disptiss,residtiss);
 	//White matter 
 	if (incwm)   kcwm     = pvwm*fwm*tiss_model->kctissue(ti,f_calibwm,deltwm,tauwm,T_1b,T_1wm,lamwm,casl,dispwm,residwm);
 	// Arterial
 	if (incart)  kcblood  = artweight*fblood*art_model->kcblood(ti,deltblood,taublood,T_1b,casl,dispart);
+
 	  
 	if (incpc) {
 	  // pre-capilliary component
@@ -982,8 +984,6 @@ ASLFwdModel::ASLFwdModel(ArgsType& args)
 	    N++;
 	  }
       }
-
-
 
       // Look-Locker correction
       string FAin = args.ReadWithDefault("FA","none");
