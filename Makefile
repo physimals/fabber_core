@@ -9,8 +9,6 @@ USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST}
 #USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_LIBRARYONLY -D__FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB}
 
-#LIBS = -lutils -lprob -lnewmat # Will report the MISCMATHS dependencies
-#LIBS = -lutils -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
 LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
 
 #
@@ -27,13 +25,6 @@ BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o easyoptions.o
 # Core objects - things that implement the framework for inference
 COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o fwdmodel_linear.o
 
-# Forward model groups
-FWDOBJS_ASL =  fwdmodel_asl_multiphase.o fwdmodel_asl_grase.o asl_models.o fwdmodel_asl_rest.o
-FWDOBJS_DUALECHO = fwdmodel_quipss2.o fwdmodel_q2tips.o fwdmodel_pcASL.o
-# ***TEMP removed models: fwdmodel_custom.o  fwdmodel_simple.o fwdmodel_asl_buxton.o fwdmodel_asl_pvc.o fwdmodel_asl_satrecov.o fwdmodel_cest.o fwdmodel_dsc.o fwdmodel_dce.o fwdmodel_biexp.o
-# all the forward models
-FWDOBJS = ${FWDOBJS_ASL} ${FWDOBJS_DUALECHO}
-
 # Infernce methods
 INFERENCEOBJS = inference_spatialvb.o inference_vb.o inference_nlls.o
 
@@ -47,7 +38,7 @@ CONFIGOBJS = setup.o
 CLIENTOBJS = fabber_core.o
 
 # Everything together
-OBJS = ${BASICOBJS} ${COREOBJS} ${FWDOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
+OBJS = ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 
 # For debugging:
 OPTFLAGS = -ggdb
@@ -57,7 +48,7 @@ OPTFLAGS = -ggdb
 # Build
 #
 
-all:	${XFILES} libfabbercore.a libfabbermodels_asl.a
+all:	${XFILES} libfabbercore.a
 
 mvntool: ${BASICOBJS} mvntool.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
@@ -65,7 +56,7 @@ mvntool: ${BASICOBJS} mvntool.o
 #
 # Original build - all-in-one approach
 #
-fabber_old: ${OBJS} fabber.o
+fabber: ${OBJS} fabber.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
 
 #
@@ -75,32 +66,5 @@ fabber_old: ${OBJS} fabber.o
 # fabber core is the basic implementation with no models (except linear), but includes default inference and noise models
 libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
 	${AR} -r $@ ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
-
-# asl models only in a library
-libfabbermodels_asl.a : ${FWDOBJS_ASL}
-	${AR} -r $@ ${FWDOBJS_ASL}
-
-#
-# Using libraries
-#
-
-# fabber has all the forward models in it
-fabber: fabber_client.o ${FWDOBJS} libfabbercore.a
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS} -lfabbercore ${LIBS}
-
-# fabber_asl is an example of building the main version of fabber with only ASL fwdmodels included
-fabber_asl : fabber_client.o ${FWDOBJS_ASL} libfabbercore.a
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
-
-# fabber_aslalone is an example of building from the core library, where it has been installed in the FSLDIR
-fabber_aslalone : fabber_client.o ${FWDOBJS_ASL}
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< ${FWDOBJS_ASL} -lfabbercore ${LIBS}
-
-# fabber_asl_fromlib is an example of building using the core library and a library of ASL models - both installed in FSLDIR
-# note that the client needs to know which models from the library are wanted
-fabber_aslfromlib : fabber_aslclient.o
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ $< -lfabbermodels_asl -lfabbercore ${LIBS}
-
-
 
 # DO NOT DELETE
