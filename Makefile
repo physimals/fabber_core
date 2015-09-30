@@ -1,6 +1,6 @@
 include ${FSLCONFDIR}/default.mk
 
-PROJNAME = fabber
+PROJNAME = fabbercore
 
 USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST}
 #-I${HOME}/include 
@@ -15,7 +15,7 @@ LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -l
 # Executables
 #
 
-XFILES = fabber mvntool
+XFILES = mvntool #remove fabber from here, since we do not ususally build a version of fabber without models
 SCRIPTS = fabber_var
 
 
@@ -54,7 +54,7 @@ mvntool: ${BASICOBJS} mvntool.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
 
 #
-# Original build - all-in-one approach
+# Build a fabber exectuable, this will have nothing but the linear model so it not practically useful for data analysis
 #
 fabber: ${OBJS} fabber.o
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber.o ${LIBS}
