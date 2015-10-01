@@ -172,8 +172,6 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, ArgsTyp
 void VariationalBayesInferenceTechnique::DoCalculations(const DataSet& allData) 
 {
   Tracer_Plus tr("VariationalBayesInferenceTechnique::DoCalculations");
-
-  cout << "here" << endl;
   
   // extract data (and the coords) from allData for the (first) VB run
   const Matrix& origdata = allData.GetVoxelData();
