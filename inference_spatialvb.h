@@ -47,8 +47,8 @@ public:
     SpatialVariationalBayes() : 
         VariationalBayesInferenceTechnique(), 
         spatialDims(-1) { return; }
-    virtual void Initialize(FwdModel* fwd_model, ArgsType& args);
-    virtual void DoCalculations(const DataSet& data);
+    virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
+    virtual void DoCalculations(FabberRunData& data);
 //    virtual ~SpatialVariationalBayes();
 
  protected:

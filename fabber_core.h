@@ -28,6 +28,10 @@ using namespace std;
 using namespace MISCMATHS;
 using namespace Utilities;
 
+extern "C" {
+  void libfabber_present(void);
+}
+
 /**
  * Run FABBER.
  *

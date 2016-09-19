@@ -1,349 +1,335 @@
 /*  convergence.h - Convergence detectors for FABBER
 
-    Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
+ Adrian Groves and Michael Chappell, FMRIB Image Analysis Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+ Copyright (C) 2007-2008 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
-class ConvergenceDetector {
- public:
-  virtual bool Test(double F) = 0;  // to be called BEFORE each iteration
-  virtual ~ConvergenceDetector() { return; }
-  virtual void DumpTo(ostream& out, const string indent = "") const = 0;
-  virtual void Reset(double F=-99e99) = 0; 
-  virtual bool UseF() const = 0;
-  virtual bool NeedSave() = 0;
-  virtual bool NeedRevert() = 0;
-  virtual float LMalpha() = 0;
+#include <ostream>
+
+#include "utils.h"
+#include "dataset.h"
+
+/**
+ * Abstract base class for method of testing whether the free energy maximisation algorithm has converged.
+ */
+class ConvergenceDetector
+{
+public:
+	static ConvergenceDetector *NewInstance();
+
+	static ConvergenceDetector* NewFromName(const string& name);
+
+	/**
+	 * Initialize from run parameters
+	 */
+	virtual void Initialize(FabberRunData &params)=0;
+
+	/**
+	 * The key method. Called before iteration with the current free energy
+	 *
+	 * Returns true if converged, false otherwise
+	 */
+	virtual bool Test(double F) = 0;
+	virtual ~ConvergenceDetector()
+	{
+	}
+
+	/**
+	 * Send information on current progress to output stream
+	 */
+	virtual void
+	DumpTo(std::ostream& out, const std::string indent = "") const = 0;
+
+	/**
+	 * Reset as if algorithm was starting from scratch
+	 */
+	virtual void Reset(double F = -99e99) = 0;
+
+	virtual bool UseF() const = 0;
+	virtual bool NeedSave() = 0;
+	virtual bool NeedRevert() = 0;
+	virtual float LMalpha() = 0;
+
+	/**
+	 * Reason convergence reached
+	 *
+	 * If Test returns true, this should
+	 * contain a human readable string giving the reason
+	 */
+	virtual std::string GetReason() = 0;
 };
 
-class CountingConvergenceDetector : public ConvergenceDetector {
-  public:
-    virtual bool Test(double) 
-        { return ++its >= max; }
-    CountingConvergenceDetector(int maxIts) 
-        : max(maxIts) { assert(max>0); Reset(); }
-      virtual void DumpTo(ostream& out, const string indent = "") const
-        { out << indent << "Starting iteration " << its+1 << " of " << max << endl << endl; }
-    virtual void Reset(double F=-99e99) 
-        { its = 0; }
-    virtual bool UseF() const { return false; }        
-    virtual bool NeedSave() { return false; }
-    virtual bool NeedRevert() {return false; }
-  virtual float LMalpha() {return 0.0;}
-  
-  private:
-    int its;
-    const int max;
+/**
+ * Simple implementation which just carries out a fixed number
+ * of iterations
+ */
+class CountingConvergenceDetector: public ConvergenceDetector
+{
+public:
+	static ConvergenceDetector *NewInstance()
+	{
+		return new CountingConvergenceDetector();
+	}
+
+	virtual bool Test(double);
+
+	virtual void Initialize(FabberRunData &params);
+
+	virtual void DumpTo(std::ostream& out, const std::string indent = "") const;
+
+	/**
+	 * Set the number of iterations back to zero
+	 */
+	virtual void Reset(double F = -99e99);
+
+	/**
+	 * Does not use the free energy
+	 *
+	 * @return false
+	 */
+	virtual bool UseF() const
+	{
+		return false;
+	}
+
+	/**
+	 * Do we need to save the last set of parameters?
+	 *
+	 * @return true if we do, i.e. if the last value
+	 *              of F tested was the best so far.
+	 */
+	virtual bool NeedSave()
+	{
+		return false;
+	}
+
+	/**
+	 * Do we need to revert to the previously saved set of parameters?
+	 */
+	virtual bool NeedRevert()
+	{
+		return false;
+	}
+
+	/**
+	 * Used by the LM detector - all others return zero
+	 */
+	virtual float LMalpha()
+	{
+		return 0.0;
+	}
+
+	/**
+	 * Reason convergence reached
+	 *
+	 * If Test returns true, this should
+	 * contain a human readable string giving the reason
+	 */
+	std::string GetReason()
+	{
+		return m_reason;
+	}
+
+protected:
+	int m_its;
+	int m_max_its;
+	std::string m_reason;
 };
 
-class FchangeConvergenceDetector : public ConvergenceDetector {
-  public:
-    virtual bool Test(double F);
-    FchangeConvergenceDetector(int maxIts, double Fchange)
-        : max(maxIts), chg(Fchange)  { assert(max>0); assert(chg>0); Reset(); }
-      virtual void DumpTo(ostream& out, const string indent = "") const;
-    virtual void Reset(double F=-99e99)
-        { its = 0; prev = F; }
-    virtual bool UseF() const { return true; }      
-    virtual bool NeedSave() { return false; }
-    virtual bool NeedRevert() {return false; }
-  virtual float LMalpha() {return 0.0;}
+/**
+ * Converges when the absolute difference between F and the previous
+ * value is sufficiently small
+ */
+class FchangeConvergenceDetector: public CountingConvergenceDetector
+{
+public:
+	static ConvergenceDetector *NewInstance()
+	{
+		return new FchangeConvergenceDetector();
+	}
+	/**
+	 * @return true if F differs from previous value by less than
+	 * the configured value
+	 */
+	virtual bool Test(double F);
 
-  private:
-    int its;
-    const int max;
-    double prev;
-    const double chg;
+	/**
+	 * @param maxIts Maximum number of iterations
+	 * @param Fchange Convergence when difference between subsequent Fs is less than this
+	 */
+	virtual void Initialize(FabberRunData &params);
+
+	virtual void DumpTo(std::ostream& out, const std::string indent = "") const;
+
+	/**
+	 * Sets number of iterations to zero and the previous free energy to
+	 * an unrealistically large number
+	 */
+	virtual void Reset(double F = -99e99);
+
+	/**
+	 * Uses the free energy
+	 * @return true
+	 */
+	virtual bool UseF() const
+	{
+		return true;
+	}
+
+	virtual bool NeedSave()
+	{
+		return m_save;
+	}
+
+	virtual bool NeedRevert()
+	{
+		return m_revert;
+	}
+
+protected:
+	double m_prev_f;
+	double m_min_fchange;
+	bool m_revert;// determines whether we should revert or not if asked
+	bool m_save;
 };
 
-inline bool FchangeConvergenceDetector::Test(double F)
-{   
-//    if (F == 1234.5678)
-//        throw logic_error("FchangeConvergenceDetector needs F, but it seems it isn't being calculated!  Internal bug... should have needF = true");
-        // F could actually be 1234.5678, but what are the chances of that?        
-    double diff = F - prev;
-    prev = F; 
-    ++its;
-    
-    diff = diff>0 ? diff : -diff;
-    
-    return (its >= max) || (diff < chg);
-}
-
-inline void FchangeConvergenceDetector::DumpTo(ostream& out, const string indent) const
+/**
+ * Converges when the absolute difference between F and the previous
+ * value is sufficiently small or if F has reduced since the
+ * previous iteration
+ */
+class FreduceConvergenceDetector: public FchangeConvergenceDetector
 {
-    out << indent << "Iteration " << its << " of at most " << max << endl;
-    out << indent << "Previous Free Energy == " << prev << endl;
-} 
+public:
+	static ConvergenceDetector *NewInstance()
+	{
+		return new FreduceConvergenceDetector();
+	}
+	/**
+	 * @return true if difference to previous is less than
+	 * configured value, or F is less than previous value
+	 */
+	virtual bool Test(double F);
 
-class FreduceConvergenceDetector : public ConvergenceDetector {
- public:
-  virtual bool Test(double F);
-  FreduceConvergenceDetector(int maxIts, double Fchange)
-    : max(maxIts), chg(Fchange) {assert(max>0); assert(chg>0); Reset(); }
-  virtual void DumpTo(ostream& out, const string indent = "") const;
-  virtual void Reset(double F=-99e99)
-  { its = 0; prev = F; revert = false; }
-  virtual bool UseF() const {return true;}
-  virtual bool NeedSave() { return true; } //this simple convergence detector always saves every interation
-  virtual bool NeedRevert();
-  //virtual bool DoNoiseUpdate() {return true;}
-  virtual float LMalpha() {return 0.0;}
+	/**
+	 * @param maxIts Maximum number of iterations
+	 * @param Fchange Change if F smaller than this amount means convergence
+	 */
+	virtual void Initialize(FabberRunData &params);
 
- private:
-  int its;
-  const int max;
-  double prev;
-  const double chg;
-  string reason;
-  bool revert;// determines whether we should revert or not if asked
+	virtual void DumpTo(std::ostream& out, const std::string indent = "") const;
+
+protected:
 };
 
-inline bool FreduceConvergenceDetector::Test(double F)
+/**
+ * Convergence detector which gives F a chance to increase
+ * after first decrease found
+ *
+ * Like FreduceConvergenceDetector, however if F is found
+ * to have reduced, continues for a maximum number of additional
+ * iterations. If F does not go above the previous highest in this
+ * time, then convergence is reached. If it does, carries on
+ * until either F reduces again, or the absolute difference from
+ * the previous is sufficiently small
+ */
+class TrialModeConvergenceDetector: public FchangeConvergenceDetector
 {
-  double diff = F - prev;
-  prev = F;
-  ++its;
-  reason = "blank";
-  
-  double absdiff = diff; //look at magnitude of diff in absdiff
-  if(diff<0) {absdiff = -diff;}
+public:
+	static ConvergenceDetector *NewInstance()
+	{
+		return new TrialModeConvergenceDetector();
+	}
+	virtual bool Test(double F);
+	virtual void Initialize(FabberRunData &params);
+	virtual void DumpTo(std::ostream& out, const std::string indent = "") const;
+	virtual void Reset(double F = -99e99);
 
-  if (its >= max) {reason = "Max. Iterations Reached";}
-  else if (diff < 0) {
-    reason = "F reduced - halt here"; 
-    revert=true;
-  }
-  else if (absdiff < chg) {reason = "F Settled";}
-  
-  return (its >= max) || (absdiff < chg) || (diff < 0);
-}
+	virtual bool NeedSave()
+	{
+		return m_save;
+	}
 
-inline bool FreduceConvergenceDetector::NeedRevert()
-{
-  return revert;
-}
-
-inline void FreduceConvergenceDetector::DumpTo(ostream& out, const string indent) const
-{
-  out << indent << "Iteration " << its << " of at most " << max << " : " << reason << endl;
-  out << indent << "Previous Free Energy == " << prev << endl;
-}
-
-
-class TrialModeConvergenceDetector : public ConvergenceDetector {
- public:
-  virtual bool Test(double F);
- TrialModeConvergenceDetector(int maxIts, int maxTrials, double Fchange)
-   : max(maxIts), maxT(maxTrials), chg(Fchange) {assert(max>0); assert(maxT>0); assert(chg>0); Reset(); }
-  virtual void DumpTo(ostream& out, const string indent = "") const;
-  virtual void Reset(double F=-99e99)
-  { its = 0; prev = F; trials = 0; save = true; revert = false; }
-  virtual bool UseF() const {return true;}
-  virtual bool NeedSave();
-  virtual bool NeedRevert();
-  //virtual bool DoNoiseUpdate() {return true;} 
-  virtual float LMalpha() {return 0.0;}
- private:
-  int its;
-  int trials;
-  const int max;
-  const int maxT;
-  double prev;
-  const double chg;
-  string reason;
-  bool save;
-  bool revert;
-  bool trialmode;
+protected:
+	int m_trials;
+	int m_max_trials;
+	bool m_trialmode;
 };
 
-inline bool TrialModeConvergenceDetector::NeedSave() { return save; }
-inline bool TrialModeConvergenceDetector::NeedRevert() { return revert; }
-
-inline bool TrialModeConvergenceDetector::Test(double F)
+/**
+ * Convergence detector which gives a variable amount of time
+ * for F to increase after a decrease.
+ *
+ * FIXME should subclass FchangeConvergenceDetector as
+ * well but not done yet as do not have tests for this
+ * class
+ */
+class LMConvergenceDetector: public ConvergenceDetector
 {
-  double diff = F - prev;
+public:
+	static ConvergenceDetector *NewInstance()
+	{
+		return new LMConvergenceDetector();
+	}
+	/**
+	 * Convergence is reached if maximum number
+	 * of iterations is reached, if the change in F to
+	 * the previous step is smaller than Fchange or if
+	 * a series of decreases are found.
+	 *
+	 * When a decrease in F is found, the detector goes
+	 * into LM mode, and each decrease is counted.
+	 * If an increase is found, one decrease is wiped out.
+	 * If the number of decreases returns to zero, the
+	 * detector leaves LM mode and continues. If the
+	 * number of decreases reaches a maximum, the
+	 * detector converges.
+	 *
+	 * @return true if convergence reached
+	 */
+	virtual bool Test(double F);
+	virtual void Initialize(FabberRunData &params);
+	virtual void DumpTo(std::ostream& out, const std::string indent = "") const;
+	virtual void Reset(double F = -99e99);
+	virtual bool UseF() const
+	{
+		return true;
+	}
+	bool NeedSave()
+	{
+		return m_save;
+	}
+	bool NeedRevert()
+	{
+		return m_revert;
+	}
+	float LMalpha()
+	{
+		return alpha;
+	}
+	std::string GetReason()
+	{
+		return reason;
+	}
 
-  double absdiff = diff; //look at magnitude of diff in absdiff
-  if(diff<0) {absdiff = -diff;}
-  
-  //if we are not in trial mode
-  if (!trialmode) {
-    // if F has reduced then we will enter trial mode
-    if (diff < 0) {
-      ++trials;
-      trialmode = true;
-      revert = true; save = false;
-      return false;
-    }
-    //otherwise if we have converged stop
-    else if (absdiff < chg) {
-      reason = "F converged";
-      return true;
-    }
-      //otherwise if we have reached max iterations stop
-    else if (its >= max) {
-      reason = "Max iterations reached";
-      return true;
-    }
-    // otherwise carry on to next iteration
-    else {
-      prev = F;
-      ++its;
-      return false;
-    }
-  }
-    // if we are in trial mode
-  else {
-    // if F has improved over our previous best then resume iterations
-    if ( diff > 0 ) {
-      trialmode = false;
-      save = true; revert = false;
-      ++its;
-      trials = 0; //reset number of trials for future use
-      prev = F;
-      return false;
-    }
-    //if we have exceeded max trials then stop and output previous best result
-    else if (trials >= maxT ) {
-      reason = "Reached max trials";
-      return true;
-    }
-    // otherwise continue in trial mode for time being
-    else {
-      ++trials;
-      return false;
-    }
-  }
-}
+private:
+	int m_its;
+	int m_max_its;
+	double prev;
+	double m_max_fchange;
+	std::string reason;
+	bool m_save;
+	bool m_revert;
+	bool LM;
 
-inline void TrialModeConvergenceDetector::DumpTo(ostream& out, const string indent) const
-{
-  out << indent << "Iteration " << its << " of at most " << max << " : " << reason << endl;
-  out << indent << "Previous Free Energy == " << prev << endl;
-}
-
-class LMConvergenceDetector : public ConvergenceDetector {
- public:
-  virtual bool Test(double F);
- LMConvergenceDetector(int maxIts, double Fchange)
-   : max(maxIts), chg(Fchange) {assert(max>0); assert(chg>0); Reset(); }
-  virtual void DumpTo(ostream& out, const string indent = "") const;
-  virtual void Reset(double F=-99e99)
-  { its = 0; prev = F; save = true; revert = false; alphastart=1e-6; alpha=0.0; alphamax=1e6; LM=false; }
-  virtual bool UseF() const {return true;}
-  virtual bool NeedSave();
-  virtual bool NeedRevert();
-  //virtual bool DoNoiseUpdate();
-  virtual float LMalpha();
- private:
-  int its;
-  const int max;
-  double prev;
-  const double chg;
-  string reason;
-  bool save;
-  bool revert;
-  bool LM;
-
-  double alpha;
-  double alphastart;
-  double alphamax;
+	double alpha;
+	double alphastart;
+	double alphamax;
 };
 
-inline bool LMConvergenceDetector::NeedSave() { return save; }
-inline bool LMConvergenceDetector::NeedRevert() { return revert; }
-//inline bool LMConvergenceDetector::DoNoiseUpdate() {return !LM; } //dont update the noise when we are in LM mode
-inline float LMConvergenceDetector::LMalpha() { return alpha; }
-
-inline bool LMConvergenceDetector::Test(double F)
-{
-  double diff = F - prev;
-
-  // cout << "----" << endl;
-  // cout << its << endl;
-  // cout << "F:" << F << endl;
-  // cout << "prev:" << prev << endl;
-  // cout << diff << endl;
-
-  double absdiff = diff; //look at magnitude of diff in absdiff
-  if(diff<0) {absdiff = -diff;}
-  
-  //if we are not in LM mode
-  if (!LM) {
-    // if F has reduced then we go into LM mode
-    if (diff < 0) {
-      LM = true;
-      revert=true; //revert to the previous solution and try again with LM adjustment
-      alpha=alphastart;
-      //cout << "Entering LM" << endl;
-      return false;
-    }
-    //otherwise if we have converged stop
-    else if (absdiff < chg) {
-      reason = "F converged";
-      revert=false;
-      return true;
-    }
-      //otherwise if we have reached max iterations stop
-    else if (its >= max) {
-      reason = "Max iterations reached";
-      revert=false;
-      return true;
-    }
-    // otherwise carry on to next iteration
-    else {
-      prev = F;
-      ++its;
-      return false;
-      revert=false;
-    }
-  }
-    // if we are in LM mode (NB we dont increase iterations if we are increasing the LM alpha, onyl when we make a sucessful step)
-  else {
-    // if F has improved over our previous best then reduce the alpha and continue from current estimate
-
-    if ( diff > 0 ) {
-      if (alpha == alphastart) { //leave LM mode if alpha returns to inital value
-	LM = false;
-      }
-      else {
-	alpha /= 10;
-	LM = true;
-      }
-      revert=false;
-      prev = F;
-      cout << "Reducing LM" << endl;
-      ++its; // if F has improved then we take this as the new 'step' and move onto the next iteration
-      return false;
-    }
-    //if alpha gets too large then we cannot achieve any gain here so stop and revert to previous best solution
-    else if (alpha >= alphamax ) {
-      reason = "Reached max alpha";
-      revert=true;
-      //cout << "LM maxed out" << endl;
-      return true;
-    }
-    //otherwise if we have reached max iterations stop
-    else if (its >= max) {
-      reason = "Max iterations reached";
-      revert=false;
-      return true;
-    }
-    // otherwise continue in LM mode for time being, try increasing alpha
-    else {
-      alpha *= 10;
-      revert=true; //revert to the previous solution and try again with new LM adjustment
-      //cout << "Increasing LM" << endl;
-      return false;
-    }
-  }
-}
-
-inline void LMConvergenceDetector::DumpTo(ostream& out, const string indent) const
-{
-  out << indent << "Iteration " << its << " of at most " << max << " : " << reason << endl;
-  out << indent << "Previous Free Energy == " << prev << endl;
-}
+/**
+ * \ref SingletonFactory that returns pointers to \ref ConvergenceDetector.
+ */
+typedef SingletonFactory<ConvergenceDetector> ConvergenceDetectorFactory;

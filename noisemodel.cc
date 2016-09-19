@@ -10,6 +10,16 @@
 
 #include "noisemodel.h"
 
+NoiseModel* NoiseModel::NewFromName(const string& name)
+{
+    NoiseModelFactory* factory = NoiseModelFactory::GetInstance();
+    NoiseModel *noise = factory->Create(name);
+    if (noise == NULL) {
+        throw Invalid_option("Unrecognized --noise: " + name);
+    }
+    return noise;
+}
+
 // Calculate log-gamma from a Taylor expansion; good to one part in 2e-10.
 double gammaln(double x)
 {

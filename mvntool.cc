@@ -17,7 +17,6 @@ int main() {cout << "MVNTOOL not built; compiled with __FABBER_LIBRARYONLY optio
 #include <map>
 #include <string>
 #include "dist_mvn.h"
-#include "easyoptions.h"
 #include "newimage/newimageall.h"
 
 using namespace Utilities;

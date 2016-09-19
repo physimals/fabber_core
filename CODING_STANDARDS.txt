@@ -1,0 +1,101 @@
+This is a general list of coding style standards to use when adding or modifying
+code in Fabber. Adhering to these standards will improve code readability
+because you can make assumptions about the code without having to check
+(e.g. the symbol mvn_dist is a local variable, not a class, function or 
+a member variable). In addition, keeping style consistent ensures that
+version control diffs show only meaningful changes and not irrelevant 
+changes to spacing, etc.
+
+Updating Fabber to these guidelines is an ongoing task as files are edited
+and refactored. Currently many files are not updated. dataset.cc/dataset.h are 
+believed to be reasonably consistent with these guidelines.
+
+Guidelines will be added as required, but the intention is to keep this as
+brief as possible and not turn into a 'How you should write C++' guide.
+
+1. Bracing/indent style
+
+BSD/Allman style is used, e.g.
+
+void FabberRunData::Parse(int argc, char** argv)
+{
+	for (int a = 1; a < argc; a++)
+	{
+		if (string(argv[a], 0, 2) == "--")
+		{
+			string key = argv[a] + 2; // skip the "--"
+			AddKeyEqualsValue(key);
+		}
+		else
+		{
+			LOG << "Option doesn't begin with --: " + string(argv[a]);
+			throw Invalid_option("An option doesn't begin with --\n");
+		}
+	}
+}
+
+This tends to separate out the code and make it less dense. A major issue
+with Fabber code at present is that too much is crammed into a single function!
+Use of this style will emphasise this and encourage refactoring (hopefully).
+
+Eclipse contains this style as a built in option. Once selected, SHIFT-CTRL-F will
+reformat your current file in this style.
+
+2. Tabs/spaces
+
+Tabs are used for all indentation, and should normally be viewed as 4 spaces. Spaces can be used
+for other whitespace.
+
+3. Naming conventions
+
+Classes are in CamelCase, e.g.
+
+FabberRunData
+FwdModel
+
+Functions are also in CamelCase, e.g.
+
+FwdMode.Evaluate
+
+Variables are in lower case with underscores, e.g.
+
+image_priors
+
+Member variables should be prefixed with m_, e.g.
+
+m_param_names[3]
+
+4. Header files
+
+Header files should be self-contained. I should always be able to do:
+
+#include "fwdmodel.h"
+
+Without having to worry about including any other headers. This means 
+that fwdmodel.h should contain all #includes that it needs.
+
+Header files should include guards against multiple inclusion, e.g.
+
+#ifndef FABBER_FWDMODEL_H
+#define FABBER_FWDMODEL_H
+...
+...
+#endif
+
+Header files should not generally contain function implementations. 
+As a general rule, only empty functions or one-line functions (e.g.
+getters/setters) should be implemented in a header file.
+
+Do not put "using namespace" in a header file, as it will affect
+any code which includes that header.
+
+5. Documentation and comments
+
+All public members should have Doxygen documentation
+
+// Comments should be used to explain code in cc files
+
+Do not 'comment out' code. Either 
+ - Remove it (Version control means it isn't really lost)
+ - Use #ifdef 0 ... #endif to temporarily remove
+ 

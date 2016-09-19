@@ -1,224 +1,245 @@
 /* inference_nlls.h - Non-Linear Least Squares class declarations
 
-   Adrian Groves Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
+ Adrian Groves Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-   Copyright (C) 2007-2015 University of Oxford */
+ Copyright (C) 2007-2015 University of Oxford */
 
 /*  CCOPYRIGHT  */
 
+#include "dataset.h"
 #include "inference_nlls.h"
 
 InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 {
-  return new NLLSInferenceTechnique();
+    return new NLLSInferenceTechnique();
 }
 
-void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, ArgsType& args)
+void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
-  Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
+    Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
 
-  model = fwd_model;
+    LOG << "Initialising NLLS method" << endl;
+    model = fwd_model;
 
-  //determine whether NLLS is being run in isolation or as a pre-step for VB (alters what we do if result is ill conditioned)
-  vbinit = args.ReadBool("vb-init");
+    // Determine whether NLLS is being run in isolation or as a pre-step for VB
+    // This alters what we do if result is ill conditioned
+    vbinit = args.GetBool("vb-init");
 
-  // option to load a 'posterior' which will allow the setting of intial parameter estmates for NLLS
-  MVNDist* loadPosterior = new MVNDist( model->NumParams() );
-  MVNDist* junk = new MVNDist( model->NumParams() );
-  string filePosterior = args.ReadWithDefault("fwd-inital-posterior","modeldefault");
-  model->HardcodedInitialDists(*junk, *loadPosterior);
-  if (filePosterior != "modeldefault") loadPosterior->Load(filePosterior);
+    // Initialize the model with MVN distributions for its parameters
+    MVNDist* loadPosterior = new MVNDist(model->NumParams());
+    MVNDist* junk = new MVNDist(model->NumParams());
+    model->HardcodedInitialDists(*junk, *loadPosterior);
 
-  //assert(initialFwdPosterior == NULL);
-  initialFwdPosterior = loadPosterior;
-  loadPosterior = NULL;
+    // Option to load a 'posterior' which will allow the setting of intial parameter estimates for NLLS
+    string filePosterior = args.GetStringDefault("fwd-inital-posterior", "modeldefault");
+    if (filePosterior != "modeldefault") {
+        LOG << "File posterior" << endl;
+        loadPosterior->Load(filePosterior);
+    }
 
-  lm = args.ReadBool("lm"); //determine whether we use L (default) or LM converengce
+    initialFwdPosterior = loadPosterior;
+    loadPosterior = NULL;
 
+    // Determine whether we use L (default) or LM convergence
+    lm = args.GetBool("lm");
+    LOG << "Done initialising" << endl;
 }
 
-void NLLSInferenceTechnique::DoCalculations(const DataSet& allData)
+void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 {
-  Tracer_Plus tr("NLLSInferenceTechnique::DoCalculations");
-  //get data for this voxel
-  const Matrix& data = allData.GetVoxelData();
-  const Matrix & coords = allData.GetVoxelCoords();
-  unsigned int Nvoxels = data.Ncols();
-  int Nsamples = data.Nrows();
-  if (data.Nrows() != model->NumOutputs())
-    throw Invalid_option("Data length (" 
-      + stringify(data.Nrows())
-      + ") does not match model's output length ("
-      + stringify(model->NumOutputs())
-      + ")!");
+    Tracer_Plus tr("NLLSInferenceTechnique::DoCalculations");
 
-  for (unsigned int voxel = 1; voxel <= Nvoxels; voxel++)
-    {
-      ColumnVector y = data.Column(voxel);
-      ColumnVector vcoords = coords.Column(voxel);
-      // some models might want more information about the data
-      model->pass_in_data( y );
-      model->pass_in_coords(vcoords);
-      
-      LOG_ERR("  Voxel " << voxel << " of " << Nvoxels << endl);
+    // Get basic voxel data
+    const Matrix& data = allData.GetMainVoxelData();
+    const Matrix & coords = allData.GetVoxelCoords();
+    unsigned int Nvoxels = data.Ncols();
 
-      MVNDist fwdPosterior;
-      LinearizedFwdModel linear(model);
+    // pass in some (dummy) data/coords here just in case the model relies upon it
+    // use the first voxel values as our dummies
 
-      int Nparams = initialFwdPosterior->GetSize();
-      fwdPosterior.SetSize(Nparams);
-      IdentityMatrix I(Nparams);
+    model->pass_in_data(data.Column(1));
+    model->pass_in_coords(coords.Column(1));
 
-      NLLSCF costfn(y, model);
-      NonlinParam nlinpar(Nparams,NL_LM);
+    // Check how many samples in time series - should
+    // be same as model outputs
+    int Nsamples = data.Nrows();
+    if (data.Nrows() != model->NumOutputs()) {
+        throw Invalid_option("Data length (" + stringify(data.Nrows()) + ") does not match model's output length ("
+                + stringify(model->NumOutputs()) + ")!");
+    }
 
-      if (!lm)
-	{ nlinpar.SetGaussNewtonType(LM_L); }
+    // Loop over voxels. The result for each voxel is
+    // stored as a MVN distribution for its parameters
+    // in resultMVNs.
+    for (unsigned int voxel = 1; voxel <= Nvoxels; voxel++) {
+        ColumnVector y = data.Column(voxel);
+        ColumnVector vcoords = coords.Column(voxel);
 
-      // set ics from 'posterior'
-      ColumnVector nlinics = initialFwdPosterior->means;
-      nlinpar.SetStartingEstimate(nlinics);
-      nlinpar.LogPar( true);nlinpar.LogCF(true);
-      
- 
-      try {
-	 __attribute__((unused)) NonlinOut status = nonlin(nlinpar,costfn);
-	 // Status is unused - unsure if nonlin has any effect so telling compiler to ignore the status variable
+        // Some models might want more information about the data
+        model->pass_in_data(y);
+        model->pass_in_coords(vcoords);
 
-	/*cout << "The solution is: " << nlinpar.Par() << endl;
-	cout << "and this is the process " << endl;
-	for (int i=0; i<nlinpar.CFHistory().size(); i++) {
-	  cout << " cf: " << (nlinpar.CFHistory())[i] <<endl;
-	}
-	for (int i=0; i<nlinpar.ParHistory().size(); i++) {
-	  cout << (nlinpar.ParHistory())[i] << ": :";
-	  }*/
+        LinearizedFwdModel linear(model);
 
-	fwdPosterior.means = nlinpar.Par();
+        // FIXME should be a single sensible way to get the
+        // number of model parameters!
+        int Nparams = initialFwdPosterior->GetSize();
 
-	// recenter linearized model on new parameters
-	linear.ReCentre( fwdPosterior.means );
-	const Matrix& J = linear.Jacobian();
-	// Calculate the NLLS covariance
-	/* this is inv(J'*J)*mse?*/
-	double sqerr = costfn.cf( fwdPosterior.means );
-	double mse = sqerr/(Nsamples - Nparams);
-	
-	/*	Matrix Q = J;
-	UpperTriangularMatrix R;
-	QRZ(Q,R);
-	Matrix Rinv = R.i();
-	SymmetricMatrix nllscov;
-	nllscov = Rinv.t()*Rinv*mse;
-	
-	fwdPosterior.SetCovariance( nllscov );*/
+        // FIXME how about a ctor for MVNDist which takes a size?
+        MVNDist fwdPosterior;
+        fwdPosterior.SetSize(Nparams);
 
-	
-	SymmetricMatrix nllsprec;
-      	nllsprec << J.t()*J/mse;
-	
-	// look for zero diagonal elements (implies parameter is not observable) 
-	//and set precision small, but non-zero - so that covariance can be calculated
-	for (int i=1; i<=nllsprec.Nrows(); i++)
-	  {
-	    if (nllsprec(i,i) < 1e-6)
-	      {
-		nllsprec(i,i) = 1e-6;
-	      }
-	  }
-	fwdPosterior.SetPrecisions( nllsprec );
-	fwdPosterior.GetCovariance();
+        IdentityMatrix I(Nparams);
 
-      }
+        // Create a cost function evaluator which will
+        // measure the difference between the model
+        // and the data
+        NLLSCF costfn(y, model);
 
-catch (Exception)
-	{
-	  LOG_ERR("   NEWMAT Exception in this voxel:\n"
-		  << Exception::what() << endl);
-	  
-	  //if (haltOnBadVoxel) throw;
-    
-	  LOG_ERR("   Estimates in this voxel may be unreliable" <<endl
-		  << "(precision matrix will be set manually)" <<endl
-		  << "   Going on to the next voxel" << endl);
+        // Set the convergence method
+        // either Levenberg (L) or Levenberg-Marquardt (LM)
+        NonlinParam nlinpar(Nparams, NL_LM);
+        if (!lm) {
+            nlinpar.SetGaussNewtonType(LM_L);
+        }
 
-	    // output the results where we are
-	    fwdPosterior.means = nlinpar.Par();
+        // set ics from 'posterior'
+        ColumnVector nlinics = initialFwdPosterior->means;
+        nlinpar.SetStartingEstimate(nlinics);
+        nlinpar.LogPar(true);
+        nlinpar.LogCF(true);
 
-	    // recenter linearized model on new parameters
-	    linear.ReCentre( fwdPosterior.means );
-	    
-	    // precision matrix is probably singular so set manually
-	    fwdPosterior.SetPrecisions(  I*1e-12 );
-	 
-	}
+        try {
+            // Run the nonlinear optimizer
+            // output variable status is unused - unsure if nonlin has any effect
+            NonlinOut status = nonlin(nlinpar, costfn);
 
-      resultMVNs.push_back(new MVNDist(fwdPosterior));
-      assert(resultMVNs.size() == voxel);
+#if 0
+            LOG << "The solution is: " << nlinpar.Par() << endl;
+            LOG << "and this is the process " << endl;
+            for (int i=0; i<nlinpar.CFHistory().size(); i++) {
+                LOG << " cf: " << (nlinpar.CFHistory())[i] <<endl;
+            }
+            for (int i=0; i<nlinpar.ParHistory().size(); i++) {
+                LOG << (nlinpar.ParHistory())[i] << ": :";
+            }
+#endif
+            // Get the new parameters
+            fwdPosterior.means = nlinpar.Par();
+
+            // Recenter linearized model on new parameters
+            linear.ReCentre(fwdPosterior.means);
+            const Matrix& J = linear.Jacobian();
+
+            // Calculate the NLLS precision
+            // This is (J'*J)/mse
+            // The covariance is the inverse
+            SymmetricMatrix nllsprec;
+            double sqerr = costfn.cf(fwdPosterior.means);
+            double mse = sqerr / (Nsamples - Nparams);
+            nllsprec << J.t() * J / mse;
+
+            // Look for zero diagonal elements (implies parameter is not observable)
+            // and set precision small, but non-zero - so that covariance can be calculated
+            for (int i = 1; i <= nllsprec.Nrows(); i++) {
+                if (nllsprec(i, i) < 1e-6) {
+                    nllsprec(i, i) = 1e-6;
+                }
+            }
+            fwdPosterior.SetPrecisions(nllsprec);
+            fwdPosterior.GetCovariance();
+        } catch (Exception &e) {
+            LOG << "   NEWMAT Exception in this voxel:\n" << e.what() << endl;
+
+            //if (haltOnBadVoxel) throw;
+
+            LOG << "   Estimates in this voxel may be unreliable" << endl
+                    << "   (precision matrix will be set manually)" << endl << "   Going on to the next voxel" << endl;
+
+            // output the results where we are
+            fwdPosterior.means = nlinpar.Par();
+
+            // recenter linearized model on new parameters
+            linear.ReCentre(fwdPosterior.means);
+
+            // precision matrix is probably singular so set manually
+            fwdPosterior.SetPrecisions(I * 1e-12);
+        }
+
+        resultMVNs.push_back(new MVNDist(fwdPosterior));
+        assert(resultMVNs.size() == voxel);
     }
 }
 
 NLLSInferenceTechnique::~NLLSInferenceTechnique()
 {
-
 }
 
 double NLLSCF::cf(const ColumnVector& p) const
 {
-  Tracer_Plus tr("NLLSCF::cf");
-  ColumnVector yhat;
-  model->Evaluate(p,yhat);
+    Tracer_Plus tr("NLLSCF::cf");
 
-  double cfv = ( (y-yhat).t() * (y-yhat) ).AsScalar();
+    // p = parameters
+    // yhat = data predicted by model
+    ColumnVector yhat;
+    model->Evaluate(p, yhat);
 
-  /*double cfv = 0.0;
-  for (int i=1; i<=y.Nrows(); i++) { //sum of squares cost function
-    double err = y(i) - yhat(i);
-    cfv += err*err;
-    }*/
-  return(cfv);
+    // y = actual data. Find sum of squares of differences
+    // between this and the model data using a scalar product.
+    double cfv = ((y - yhat).t() * (y - yhat)).AsScalar();
+    return (cfv);
 }
 
 ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
 {
-  Tracer_Plus tr("NLLSCF::grad");
-  ColumnVector gradv(p.Nrows());
-  gradv=0.0;
+    Tracer_Plus tr("NLLSCF::grad");
 
-  // need to recenter the linearised model to the current parameter values
-  linear.ReCentre( p );
-  const Matrix& J = linear.Jacobian();
-  //const ColumnVector gm = linear.Offset(); //this is g(w) i.e. model evaluated at current parameters?
-  ColumnVector yhat;
-  model->Evaluate(p,yhat);
+    // Create an initial zero gradient vector
+    ColumnVector gradv(p.Nrows());
+    gradv = 0.0;
 
-  gradv = -2*J.t()*(y-yhat);
+    // Need to recenter the linearised model to the current parameter values
+    linear.ReCentre(p);
+    const Matrix& J = linear.Jacobian();
 
-  gradv.Release();
-  return(gradv);
-  }
+#if 0 // FIXME Old code?
+    //this is g(w) i.e. model evaluated at current parameters?
+    //const ColumnVector gm = linear.Offset();
+#endif
+    // Evaluate the model given the parameters
+    ColumnVector yhat;
+    model->Evaluate(p, yhat);
+
+    gradv = -2 * J.t() * (y - yhat);
+    gradv.Release();
+    return (gradv);
+}
 
 boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_ptr<BFMatrix> iptr) const
 {
-  Tracer_Plus tr("NLLSCF::hess");
-  boost::shared_ptr<BFMatrix> hessm;
+    Tracer_Plus tr("NLLSCF::hess");
 
-  if (iptr && iptr->Nrows()==(unsigned)p.Nrows() && iptr->Ncols()==(unsigned)p.Nrows())
-    { hessm = iptr; }
-  else
-    {
-      hessm = boost::shared_ptr<BFMatrix>(new FullBFMatrix(p.Nrows(),p.Nrows()));
+    boost::shared_ptr<BFMatrix> hessm;
+
+    if (iptr && iptr->Nrows() == (unsigned) p.Nrows() && iptr->Ncols() == (unsigned) p.Nrows()) {
+        hessm = iptr;
     }
-  
-  // need to recenter the linearised model to the current parameter values
-  linear.ReCentre( p );
-  const Matrix& J = linear.Jacobian();
-  Matrix hesstemp = 2*J.t()*J; //Make the G-N approximation to the hessian
+    else {
+        hessm = boost::shared_ptr<BFMatrix>(new FullBFMatrix(p.Nrows(), p.Nrows()));
+    }
 
-  //(*hessm) = J.t()*J;
+    // need to recenter the linearised model to the current parameter values
+    linear.ReCentre(p);
+    const Matrix& J = linear.Jacobian();
+    Matrix hesstemp = 2 * J.t() * J; //Make the G-N approximation to the hessian
 
-  for (int i=1; i<=p.Nrows(); i++) { for (int j=1; j<=p.Nrows(); j++) hessm->Set(i,j,hesstemp(i,j));}
+    //(*hessm) = J.t()*J;
 
-  return(hessm);
-  }
-  
+    for (int i = 1; i <= p.Nrows(); i++) {
+        for (int j = 1; j <= p.Nrows(); j++)
+            hessm->Set(i, j, hesstemp(i, j));
+    }
+
+    return (hessm);
+}
+

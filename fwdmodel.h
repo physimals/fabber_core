@@ -1,11 +1,10 @@
 /*  fwdmodel.h - The base class for generic forward models
 
-    Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
+ Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
-    Copyright (C) 2007-2015 University of Oxford  */
+ Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
-
 
 /* fwdmodel.h
  * Class declaration for generic forward models and related classes.
@@ -16,7 +15,7 @@
  */
 
 #ifndef __FABBER_FWDMODEL_H
-#define __FABBER_FWDMODEL_H 1
+#define __FABBER_FWDMODEL_H
 
 #include "assert.h"
 #include <string>
@@ -25,115 +24,184 @@
 #include "newmatap.h"
 
 #include "dist_mvn.h"
-#include "easyoptions.h"
 #include "utils.h"
 
 using namespace std;
 using namespace NEWMAT;
 
-
-/*
-class FwdModelIdStruct {
+class FwdModel
+{
 public:
-  virtual void DumpVector(const ColumnVector& vec, const string& indent = "") = 0;
-  virtual ~FwdModelIdStruct() { return; }
-};*/
 
-class FwdModel {
- public:
-  // Virtual functions that relate to the creation and inital setup of the model
-  /**
-   * Create a new instance of this class.
-   * @return pointer to new instance.
-   */
-  static FwdModel* NewInstance();
+    /**
+     * Static member function, to pick a forward model from a name
+     */
+    static FwdModel* NewFromName(const string& name);
 
-  /**
-   * Initialize a new instance using configuration from the given 
-   * arguments.
-   * @param args Configuration parameters.
-   */
-  virtual void Initialize(ArgsType& args) = 0;
+    /**
+     * Get usage information for a named model
+     */
+    static void UsageFromName(const string& name, std::ostream &stream);
 
-  /**
-   * Return model usage information.
-   * @return vector of strings, one per line of information.
-   */
-  virtual vector<string> GetUsage() const;
+    /**
+     * Create a new instance of this class.
+     * @return pointer to new instance.
+     */
+    static FwdModel* NewInstance();
 
-  // Virtual functions that relate to the model as sued in the inference process
-  virtual void Evaluate(const ColumnVector& params, 
-			      ColumnVector& result) const = 0;
-  // Evaluate the forward model
+    /**
+     * Initialize a new instance using configuration from the given
+     * arguments.
+     * @param args Configuration parameters.
+     */
+    virtual void Initialize(FabberRunData& args) = 0;
 
-  virtual int Gradient(const ColumnVector& params, Matrix& grad) const;
-  // evaluate the gradient, the int return is to indicate whether a valid gradient is returned by the model
-                  
-  virtual string ModelVersion() const; 
-  // Return a CVS version info string
-  // See fwdmodel.cc for an example of how to implement this.
+    /**
+     * Evaluate the forward model
+     */
+    virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const = 0;
 
-  virtual int NumParams() const = 0;
-  // How long should the parameter vector be?
-  
-  virtual int NumOutputs() const;
-  // How long is output vector?  Default implementation uses Evaluate.
+    /**
+     * Evaluate the gradient, the int return is to indicate whether a valid gradient is returned by the model
+     */
+    virtual int Gradient(const ColumnVector& params, Matrix& grad) const;
 
-  // Various other useful functions:
-  virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const = 0;
-  // Load up some sensible suggestions for initial prior & posterior values
+    /**
+     * Return model usage information.
+     * @return vector of strings, one per line of information.
+     */
+    virtual void Usage(std::ostream &stream) const;
 
-  virtual void InitParams(MVNDist& posterior) const {};
-  // voxelwise initialization of the posterior, i.e. a paramerer initialisation 
- 
-  virtual void NameParams(vector<string>& names) const = 0;
-  // Name each of the parameters -- see fwdmodel_linear.h for a generic implementation
-  
-  virtual void DumpParameters(const ColumnVector& params, 
-                              const string& indent="") const;
-  // Describe what a given parameter vector means (to LOG)
-  // Default implementation uses NameParams to give reasonably meaningful output 
-  
-  
-  // Static member function, to pick a forward model from a name
-  static FwdModel* NewFromName(const string& name, ArgsType& args);
-  
-  // Usage information for this model
-  static void ModelUsageFromName(const string& name, ArgsType& args);
+    /**
+     * See fwdmodel.cc for an example of how to implement this.
+     *
+     * @return a CVS version info string
+     */
+    virtual string ModelVersion() const;
 
-  // An ARD update step can be specified in the model
-  virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const { return; };
+    /**
+     * How many parameters in the model
+     */
+    virtual int NumParams() const = 0;
 
-  // Steup function for the ARD process (forces the prior on the parameter that is subject to ARD to be correct) - really a worst case scenario if people are loading in their own priors
-  virtual void SetupARD( const MVNDist& posterior, MVNDist& prior, double& Fard ) const { return; };
+    /**
+     * How many outputs for the model
+     *
+     * The default implementation calls Evaluate() on some fake data
+     * and sees how many outputs are produced.
+     */
+    virtual int NumOutputs() const;
 
-  //vector of indicies of parameters to which ARD should be applied;
-  vector<int> ardindices;
-  
-  // For models that need the data values in the voxel to calculate
-  virtual void pass_in_data( const ColumnVector& voxdata ) { data=voxdata; return; };
-  virtual void pass_in_data( const ColumnVector& voxdata, const ColumnVector& voxsuppdata )
-  { data = voxdata; suppdata = voxsuppdata; return; };
+    /**
+     * Load up some sensible suggestions for initial prior & posterior values
+     *
+     * @param prior Prior distribution for parameters. Should be passed in as
+     *        an MVN of the correct size for the number of parameters. Model
+     *        may set mean/variances to suggested prior, or just give a trivial
+     *        default
+     * @param posterior As above for posterior distribution
+     */
+    virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const = 0;
 
-  // For models that need to know the voxel co-ordinates of the data
-  virtual void pass_in_coords( const ColumnVector& coords);
+    /**
+     * Voxelwise initialization of the posterior, i.e. a parameter initialisation
+     *
+     * Called for each voxel, rather than HardcodedInitialDists which is called
+     * at the very start. Does not need to do anything unless the model
+     * wants per-voxel default posterior.
+     *
+     * @param posterior Posterior distribution for model parameters. Should be passed in as
+     *        an MVN of the correct size for the number of parameters. Model
+     *        may set mean/variances to suggested prior, or just do nothing to
+     *        accept general default
+     */
+    virtual void InitParams(MVNDist& posterior) const
+    {
+    }
 
-  virtual ~FwdModel() { return; };
-  // Virtual destructor
-  
-  // Your derived classes should have storage for all constants that are
-  // implicitly part of g() -- e.g. pulse sequence parameters, any parameters
-  // that are assumed to take known values, and basis functions.  Given these
-  // constants, NumParams() should have a fixed value.
+    /**
+     * Name each of the parameters
+     *
+     * See fwdmodel_linear.h for a generic implementation
+     */
+    virtual void NameParams(vector<string>& names) const = 0;
 
- protected:
-  // storage for voxel co-ordinates
-  int coord_x;
-  int coord_y;
-  int coord_z;
-  //storage for data
-  ColumnVector data;
-  ColumnVector suppdata;
+    /**
+     * Describe what a given parameter vector means (to LOG)
+     *
+     * Default implementation uses NameParams to give reasonably meaningful output
+     */
+    virtual void DumpParameters(const ColumnVector& params, const string& indent = "") const;
+
+    /**
+     * An ARD update step can be specified in the model
+     */
+    virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+    {
+    }
+    ;
+
+    /**
+     * Setup function for the ARD process
+     *
+     * Forces the prior on the parameter that is subject to ARD to be correct -
+     * really a worst case scenario if people are loading in their own priors
+     */
+    virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+    {
+    }
+    ;
+
+    /**
+     * Indicies of parameters to which ARD should be applied
+     */
+    vector<int> ardindices;
+
+    /**
+     * For models that need the data values in the voxel to calculate
+     *
+     * Called for each voxel so the model knows what the current data is
+     */
+    virtual void pass_in_data(const ColumnVector& voxdata)
+    {
+        data = voxdata;
+    }
+
+    /**
+     * For models that need the data and supplementary data values in the voxel to calculate
+     *
+     * Called for each voxel so the model knows what the current data is
+     */
+    virtual void pass_in_data(const ColumnVector& voxdata, const ColumnVector& voxsuppdata)
+    {
+        data = voxdata;
+        suppdata = voxsuppdata;
+    }
+
+    /**
+     * For models that need to know the voxel co-ordinates of the data
+     *
+     * Called for each voxel so the model knows what the current coords are
+     */
+    virtual void pass_in_coords(const ColumnVector& coords);
+
+    virtual ~FwdModel()
+    {
+    }
+
+    // Your derived classes should have storage for all constants that are
+    // implicitly part of g() -- e.g. pulse sequence parameters, any parameters
+    // that are assumed to take known values, and basis functions.  Given these
+    // constants, NumParams() should have a fixed value.
+
+protected:
+    // storage for voxel co-ordinates
+    int coord_x;
+    int coord_y;
+    int coord_z;
+    //storage for data
+    ColumnVector data;
+    ColumnVector suppdata;
 };
 
 /** 

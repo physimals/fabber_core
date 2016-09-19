@@ -110,7 +110,7 @@ class Ar1cNoiseModel : public NoiseModel {
 //  virtual const MVNDist GetResultsAsMVN() const;
 
   // Constructor/destructor
-    virtual void Initialize(ArgsType& args);
+    virtual void Initialize(FabberRunData& args);
     //Ar1cNoiseModel(const string& ar1CrossTerms, int numPhis );
     // ar1CrossTerms must be either "none", "dual", or "same". 
     
@@ -159,6 +159,8 @@ class Ar1cNoiseModel : public NoiseModel {
   	const MVNDist& thetaPrior,
   	const LinearFwdModel& model,
   	const ColumnVector& data) const;
+
+   int NumParams();
 
 //  void SaveParams(const MVNDist& theta) {};		 
 //  void RevertParams(MVNDist& theta) {};

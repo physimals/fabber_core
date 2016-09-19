@@ -11,8 +11,7 @@
 #include <iostream>
 #include <newmatio.h>
 #include <stdexcept>
-#include "newimage/newimageall.h"
-using namespace NEWIMAGE;
+
 #include "easylog.h"
 
 string SimpleFwdModel::ModelVersion() const

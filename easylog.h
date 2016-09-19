@@ -1,76 +1,115 @@
 /*  easylog.h - a fairly minimal logging-to-file implementation
 
-    Adrian Groves, FMRIB Image Analysis Group
+ Adrian Groves, FMRIB Image Analysis Group
 
-    Copyright (C) 2007-2008 University of Oxford  */
+ Copyright (C) 2007-2008 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
 #pragma once
 
-#include "utils/tracer_plus.h"
 #include <iostream>
 #include <string>
+#include <sstream>
 #include "assert.h"
+
+#include "utils/tracer_plus.h"
 
 using namespace std;
 using namespace Utilities;
 
 #define PRINTNOTE fprintf(stderr, "Note: %s line %d\n", __FILE__, __LINE__);
 
+/**
+ * Use LOG just like you'd use cout.  (i.e. LOG << your_data << endl;)
+ *
+ * StartLog() is used to tell the logger where to put the output - any log
+ * calls made before this are stored in a temporary stringstream and then
+ * flushed to the log once StartLog is called.
+ *
+ * If you want to dump variables directly to this stream, just implement
+ * ostream& operator<<(ostream& stream, const your_type& data);
+ */
 #define LOG (*EasyLog::CurrentLog())
-// Use LOG just like you'd use cout.  (i.e. LOG << your_data << endl;)
-// Make sure you call StartLog or StartLogUsingStream before LOGging anything.
-// If you want to dump variables directly to this stream, just implement
-//    ostream& operator<<(ostream& stream, const your_type& data);
 
-// Two new ones that aren't used very much
-#define LOG_SAFE_ELSE_CERR(x) (EasyLog::LogStarted()?(void)(LOG<<x):(void)(cout<<x)) 
-#define LOG_SAFE_ELSE_DISCARD(x) (EasyLog::LogStarted()?(void)(LOG<<x):(void)(0)) 
+#define LOG_ERR(x) ((void)((LOG<<x)))
 
+/**
+ * Sends logging information to an output stream
+ *
+ * The stream might be a file, a string buffer, or
+ * stdout/stderr
+ */
+class EasyLog
+{
+public:
+    /**
+     * Returns a pointer to the current logging stream
+     *
+     * The result can be used with the << operator, e.g.
+     *   *CurrentLog() << "Hello World" << endl;
+     */
+    static ostream* CurrentLog()
+    {
+        if (filestream == NULL) {
+            return &templog;
+        }
+        else {
+            return filestream;
+        }
+    }
 
-#ifdef __FABBER_LIBRARYONLY
-// These names no longer have their original meaning in the library version
-#define LOG_ERR(x) ((void)((LOG<<x))) 
-#define LOG_ERR_SAFE(x) LOG_ERR(x)
-#define LOG_SAFE_ELSE_CERR(x) (EasyLog::LogStarted()?(void)(LOG<<x):(void)(cout<<x)) 
-#define LOG_SAFE_ELSE_DISCARD(x) (EasyLog::LogStarted()?(void)(LOG<<x):(void)(0)) 
+    /**
+     * Get the output directory for the log file, or
+     * an empty string if not logging to a file.
+     */
+    static const string& GetOutputDirectory()
+    {
+        assert(filestream != NULL);
+        return outDir;
+    }
 
-#else //__FABBER_LIBRARYONLY
+    /**
+     * Log output to a file
+     *
+     * The file will be called 'logfile'
+     *
+     * @param basename Name of a directory in which to put the logfile.
+     * @param overwrite If true, will replace any existing log file in the
+     *                  specified directory. If false, and the specified
+     *                  directory already exists, a new directory will
+     *                  be created with a '+' added to basename, e.g.
+     *                  'out', 'out+', 'out++', etc...
+     */
+    static void StartLog(const string& basename, bool overwrite);
 
-// Changed these to use cout rather than cerr -- since the logfile contains 
-// almost everything I don't expect people to redirect cout very often.
+    /**
+     * Log output to an existing stream
+     *
+     * This might be std::cout/cerr or something else, e.g. a
+     * stringstream.
+     */
+    static void StartLog(ostream& s);
 
-#define LOG_ERR(x) ((void)((cout<<x),(LOG << x)))
-// Use only for things that are safe to duplicate
-// LOG_ERR("Note: the matrix " << name << " == " << mat.t() << endl);
+    /**
+     * Stop logging.
+     *
+     * @param gzip If true and we are logging to a file, gzip the logfile
+     */
+    static void StopLog(bool gzip = false);
 
-#define LOG_ERR_SAFE(x) (cout<<x,EasyLog::LogStarted()?(void)(LOG<<x):(void)0)
-// This is safe to use if even if the log might not have started.
-// It should only be used in main()'s exception-catching routines
+    /**
+     * @return true if StartLog has been called
+     */
+    static bool LogStarted()
+    {
+        return filestream != NULL;
+    }
 
-
-#endif //__FABBER_LIBRARYONLY
-
-class EasyLog {
- public:
-  static ostream* CurrentLog()
-    { assert(filestream != NULL); return filestream; }
-  static const string& GetOutputDirectory()
-    { assert(filestream != NULL); return outDir; }
-
-  static void StartLog(const string& basename, bool overwrite);
-  static void StartLogUsingStream(ostream& s);
-  static void StopLog(bool gzip = false);
-
-  static bool LogStarted() 
-    { return filestream != NULL; }
-  // only use this in situations where the log might not have been started..
-  // e.g. in main()'s exception-handling routines
-
- private:
-  static ostream* filestream;
-  static string outDir;
+private:
+    static stringstream templog;
+    static ostream* filestream;
+    static string outDir;
 };
 
 // Other useful functions:
@@ -81,33 +120,53 @@ class EasyLog {
 template<typename type>
 inline string stringify(type from)
 {
-  ostringstream s;
-  if (!(s << from))
-    throw logic_error("Stringify failed");
-  return s.str();
+    ostringstream s;
+    if (!(s << from))
+        throw logic_error("Stringify failed");
+    return s.str();
 }
-
-
 
 // output a vector<int>
 #include <vector>
 inline ostream& operator<<(ostream& out, vector<int> x)
 {
-  out << "[ ";
-  for (unsigned i = 0; i < x.size(); i++)
-    out << x[i] << " ";
-  out << "]";
-  return out;
+    out << "[ ";
+    for (unsigned i = 0; i < x.size(); i++)
+        out << x[i] << " ";
+    out << "]";
+    return out;
 }
 
 #include <map>
 
-// A work in progress:
-class Warning {
- public:
-  static void IssueOnce(const string& text);
-  static void IssueAlways(const string& text);
-  static void ReissueAll();
- private:
-  static map<string, int> issueCount;
+/**
+ * Allows code to issue warnings which can be recorded
+ * and repeated at the end so they do not get missed
+ */
+class Warning
+{
+public:
+    /**
+     * Issue a warning
+     *
+     * The warning will appear once in the current log.
+     * If the same warning occurs again, it will not
+     * be repeated.
+     */
+    static void IssueOnce(const string& text);
+
+    /**
+     * Issue a warning
+     *
+     * The warning will appear in the current log
+     * each time it is issued.
+     */
+    static void IssueAlways(const string& text);
+
+    /**
+     * Resend all warnings recorded so far to the current log
+     */
+    static void ReissueAll();
+private:
+    static map<string, int> issueCount;
 };

@@ -12,8 +12,16 @@
 using namespace MISCMATHS;
 using namespace Utilities;
 #include "easylog.h"
+#include "dataset.h"
 
 #define AR1_BANDWIDTH 3
+
+
+int Ar1cNoiseModel::NumParams()
+{
+	return nPhis;
+}
+
 // Good enough for AR(1) with covariance terms
 // Reason: regular AR(1) matrix R has stuff only in -2.  
 // R'*R are oppositely oriented so +/- 2 is still good enough.  
@@ -35,9 +43,9 @@ NoiseModel* Ar1cNoiseModel::NewInstance()
   return clone;
 }*/
 
-void Ar1cNoiseModel::Initialize(ArgsType& args)
+void Ar1cNoiseModel::Initialize(FabberRunData& args)
 {
-  string nPhisString = args.ReadWithDefault("num-echoes","(default)");
+  string nPhisString = args.GetStringDefault("num-echoes","(default)");
   if (nPhisString == "(default)")
   {
       nPhis = 1;
@@ -47,7 +55,7 @@ void Ar1cNoiseModel::Initialize(ArgsType& args)
   {
       nPhis = convertTo<int>(nPhisString);
   }
-  ar1Type = args.ReadWithDefault("ar1-cross-terms","none");
+  ar1Type = args.GetStringDefault("ar1-cross-terms","none");
   // Validate ar1Type:
   NumAlphas(); // throws exception if ar1Type is invalid
   // Validate nPhis
@@ -359,7 +367,7 @@ void Ar1cNoiseModel::UpdateTheta(
 	if (wasSingular)
 	  {
 	    Warning::IssueOnce("Ltmp was singular, so changed zeros on diagonal to 1e-20.");
-	    // cout << "Ltmp == \n" << Ltmp << "mTmp == \n" << mTmp;
+	    // LOG << "Ltmp == \n" << Ltmp << "mTmp == \n" << mTmp;
 	  }
 	
 	thetaWithoutPrior->SetPrecisions(Ltmp);

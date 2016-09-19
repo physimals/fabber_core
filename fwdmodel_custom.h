@@ -39,7 +39,7 @@ class CustomFwdModel : public FwdModel {
   virtual void NameParams(vector<string>& names) const;
   // use default implementation of DumpParameters
 
-  static void ModelUsage();
+  static void Usage(std::ostream &stream);
 
  protected:
   // TODO: put your implementation-specific variables here.  These include any constants or

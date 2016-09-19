@@ -120,7 +120,7 @@ void CustomFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) c
   // and you can set initialization points using the --continue-from-mvn=MVNFILE option.
 }
  
-void CustomFwdModel::ModelUsage()
+void CustomFwdModel::Usage(std::ostream &stream)
 {
-  cout << "No model usage info available for --model=custom, yet." << endl;
+  stream << "No model usage info available for --model=custom, yet." << endl;
 }
