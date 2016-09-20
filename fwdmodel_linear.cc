@@ -17,9 +17,14 @@ string LinearFwdModel::ModelVersion() const
 	return "$Id: fwdmodel_linear.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
 }
 
-void LinearFwdModel::Usage(std::ostream &stream) const
+static int NUM_OPTIONS = 1;
+static OptionSpec OPTIONS[] =
 {
-	stream << "Required parameters:" << endl << "  --basis=<design_file>" << endl;
+	{	"basis", "File containing design matrix", false, ""}};
+
+vector<OptionSpec> LinearFwdModel::GetOptions() const
+{
+	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
 }
 
 FwdModel* LinearFwdModel::NewInstance()

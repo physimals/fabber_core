@@ -140,6 +140,12 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	// Call ancestor, which does most of the real work
 	InferenceTechnique::Initialize(fwd_model, args);
 
+	// Get noise model.
+	noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(args.GetString("noise")));
+	noise->Initialize(args);
+	m_noise_params = noise->NumParams();
+	LOG << "VariationalBayesInferenceTechnique::Noise has " << m_noise_params << " parameters" << endl;
+
 	// Create initial prior and posterior distributions
 	MakeInitialDistributions(args);
 

@@ -322,158 +322,6 @@ TEST_P(InferenceMethodTest, CLArgs)
 	remove(FILENAME.c_str());
 }
 
-// Tests concatenated data sets
-TEST_F(InferenceMethodTest, ConcatenatedData)
-{
-	int NTIMES = 10; // needs to be even
-	int VSIZE = 5;
-	float VAL = 7.32;
-
-	// Create coordinates and data matrices
-	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
-	for (int z = 0; z < VSIZE; z++)
-	{
-		for (int y = 0; y < VSIZE; y++)
-		{
-			for (int x = 0; x < VSIZE; x++)
-			{
-				voxelCoords(1, v) = x;
-				voxelCoords(2, v) = y;
-				voxelCoords(3, v) = z;
-				for (int n = 0; n < NTIMES; n++)
-				{
-					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
-				}
-				v++;
-			}
-		}
-	}
-
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
-	rundata.Set("data-order", "concatenate");
-	NEWMAT::Matrix data = rundata.GetMainVoxelData();
-
-	ASSERT_EQ(data.Nrows(), NTIMES*3);
-	ASSERT_EQ(data.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
-	{
-		for (int t=0; t<NTIMES*3; t++)
-		{
-			if (t < NTIMES) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL);
-			else if (t < NTIMES*2 == 1) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
-			else ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*3);
-		}
-	}
-}
-
-// Tests interleaved data sets
-TEST_F(InferenceMethodTest, InterleavedData)
-{
-	int NTIMES = 10; // needs to be even
-	int VSIZE = 5;
-	float VAL = 7.32;
-
-	// Create coordinates and data matrices
-	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
-	for (int z = 0; z < VSIZE; z++)
-	{
-		for (int y = 0; y < VSIZE; y++)
-		{
-			for (int x = 0; x < VSIZE; x++)
-			{
-				voxelCoords(1, v) = x;
-				voxelCoords(2, v) = y;
-				voxelCoords(3, v) = z;
-				for (int n = 0; n < NTIMES; n++)
-				{
-					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
-				}
-				v++;
-			}
-		}
-	}
-
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
-	rundata.Set("data-order", "interleave");
-	NEWMAT::Matrix data = rundata.GetMainVoxelData();
-
-	ASSERT_EQ(data.Nrows(), NTIMES*3);
-	ASSERT_EQ(data.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
-	{
-		for (int t=0; t<NTIMES*3; t++)
-		{
-			if (t % 3 == 0) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL);
-			else if (t % 3 == 1) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
-			else ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*3);
-		}
-	}
-}
-// Tests inconsistent multi-data sets
-TEST_F(InferenceMethodTest, MultiDataInconsistent)
-{
-	int NTIMES = 10; // needs to be even
-	int VSIZE = 5;
-	float VAL = 7.32;
-
-	// Create coordinates and data matrices
-	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
-	for (int z = 0; z < VSIZE; z++)
-	{
-		for (int y = 0; y < VSIZE; y++)
-		{
-			for (int x = 0; x < VSIZE; x++)
-			{
-				voxelCoords(1, v) = x;
-				voxelCoords(2, v) = y;
-				voxelCoords(3, v) = z;
-				for (int n = 0; n < NTIMES; n++)
-				{
-					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
-				}
-				v++;
-			}
-		}
-	}
-
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
-	rundata.Set("data-order", "singlefile");
-	ASSERT_THROW(NEWMAT::Matrix data = rundata.GetMainVoxelData(), Invalid_option);
-}
-
 // Test fitting to a simple polynomial model
 TEST_P(InferenceMethodTest, PolynomialFit)
 {
@@ -516,7 +364,7 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("degree", stringify(DEGREE));
-	rundata.Set("max-iterations", "100");
+	rundata.Set("max-iterations", "50");
 	rundata.Set("method", GetParam());
 	rundata.Run();
 
@@ -554,9 +402,62 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 	}
 }
 
+// Test saving model fit data
+TEST_P(InferenceMethodTest, SaveModelFit)
+{
+	int NTIMES = 10;
+	int VSIZE = 5;
+	float VAL = 2;
+	int DEGREE = 3;
+	int n_voxels = VSIZE*VSIZE*VSIZE;
+
+	// Create coordinates and data matrices
+	// Data fitted to a cubic function
+	NEWMAT::Matrix voxelCoords, data;
+	data.ReSize(NTIMES, n_voxels);
+	voxelCoords.ReSize(3, n_voxels);
+	int v=1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					// function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
+					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1)-2*VAL*(n+1)*(n+1)*(n+1);
+				}
+				v++;
+			}
+		}
+	}
+
+	// Do just 1 iteration
+
+	FabberRunData rundata;
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", stringify(DEGREE));
+	rundata.Set("max-iterations", "10");
+	rundata.SetBool("save-model-fit");
+	rundata.Set("method", GetParam());
+	rundata.Run();
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("modelfit");
+	ASSERT_EQ(mean.Nrows(), NTIMES);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+}
+
 INSTANTIATE_TEST_CASE_P(MethodTests,
 		InferenceMethodTest,
 		::testing::Values("vb", "nlls", "spatialvb"));
 
 } // namespace
+
 

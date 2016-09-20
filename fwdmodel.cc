@@ -25,8 +25,20 @@ FwdModel* FwdModel::NewFromName(const string& name)
 
 void FwdModel::UsageFromName(const string& name, std::ostream &stream)
 {
+	stream << "Usage information for model: " << name << endl;
 	std::auto_ptr<FwdModel> model(NewFromName(name));
-	model->Usage(stream);
+	vector<OptionSpec> options = model->GetOptions();
+	if (options.size() > 0)
+	{
+		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
+		{
+			stream << "  " << iter->name << " : " << iter->description << " "
+					<< (iter->optional ? "(optional, default=" + iter->def : "(mandatory)") << endl;
+		}
+	}
+	else {
+		model->Usage(stream);
+	}
 }
 
 string FwdModel::ModelVersion() const

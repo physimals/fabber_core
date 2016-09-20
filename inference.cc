@@ -31,12 +31,6 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 	m_num_params = model->NumParams();
 	LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
 
-	// Get noise model.
-	noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(args.GetString("noise")));
-	noise->Initialize(args);
-	m_noise_params = noise->NumParams();
-	LOG << "InferenceTechnique::Noise has " << m_noise_params << " parameters" << endl;
-
 	saveModelFit = args.GetBool("save-model-fit");
 	saveResiduals = args.GetBool("save-residuals");
 
@@ -101,14 +95,13 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	// That's it! We've written our outputs to the "means" and "stdevs" output matrices.
 	// Also save the noise parameters, just 'cuz.
 
-	LOG << "InferenceTechnique::Writing noise" << endl;
-
 	// We know how many noise parameters we have because it's the difference between
 	// the size of the output matrix and the number of parameters in the model.
 	const int nParams = paramNames.size();
 	const int nNoise = resultMVNs[0]->means.Nrows() - paramNames.size();
 	if (nNoise > 0)
 	{
+		LOG << "InferenceTechnique::Writing noise" << endl;
 		Matrix noiseMean, noiseStd;
 		noiseMean.ReSize(nNoise, nVoxels);
 		noiseStd.ReSize(nNoise, nVoxels);
@@ -171,11 +164,11 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		if (saveResiduals)
 		{
 			residuals = datamtx - modelFit;
-			data.SetVoxelData("residuals", residuals);
+			data.SaveVoxelData("residuals", residuals);
 		}
 		if (saveModelFit)
 		{
-			data.SetVoxelData("modelfit", modelFit);
+			data.SaveVoxelData("modelfit", modelFit);
 		}
 	}
 	LOG << "InferenceTechnique::Done writing results." << endl;

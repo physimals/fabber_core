@@ -21,6 +21,21 @@
 #define DEPRECATED 1
 
 /**
+ * Describes a runtime option for a model, inference method, etc
+ */
+struct OptionSpec
+{
+	/** Option name as used on command line --name */
+	std::string name;
+	/** Human readable description */
+	std::string description;
+	/** true if does not need to be specified */
+	bool optional;
+	/** Default value if there is one */
+	std::string def;
+};
+
+/**
  * Functor which is be called to monitor progress.
  *
  * The default does nothing.
@@ -58,13 +73,15 @@ private:
  *   - String parameters with a key and value
  *   - Boolean parameters with a key which are either present (true) or not (false)
  *   - Voxel data, which is a set of N values associated with each voxel
- *   - Other matrix data which is not per-voxel
- *
+  *
  * In a command line program, run data is loaded during parsing of the command
- * line options in the Parse() method.
+ * line options in the Parse() or ParseParamFile methods.
  *
  * In a library program, it should be provided explicitly by calling the various
  * Set() methods.
+ *
+ * The class will try to keep all it's voxel data consistent. Once any data is
+ * obtained, subsequent per-voxel data sets must be of the correct size.
  */
 class FabberRunData
 {
@@ -142,7 +159,7 @@ public:
 	 * @param key Name of the boolean option
 	 * @param value true or false
 	 */
-	void SetBool(const std::string key, bool value);
+	void SetBool(const std::string key, bool value=true);
 
 	/**
 	 * Get string option.
@@ -191,10 +208,11 @@ public:
 	/**
 	 * Save the specified voxel data
 	 *
-	 * In file mode, the specified data will be written out to a file but not
-	 * kept in memory.
+	 * If SetSaveFiles has been set to true, the specified data will be written
+	 * out to a file but not kept in memory. This is the default when
+	 * command line options have been used to initialize the rundata using Parse
 	 *
-	 * In library mode the data will be saved internally
+	 * If SetSaveFiles is fales, the data will be saved internally
 	 * and can be retrieved using GetVoxelData. The filename specified is the
 	 * data key value.
 	 *
@@ -235,7 +253,8 @@ public:
 	 *         voxel. The rows may contain the time series of data for that voxel
 	 *         however they might be used for other purposes, e.g. storing the mean
 	 *         of each parameter for that voxel.
-	 * @throw If no voxel data matching key is found
+	 * @throw DataNotFound If no voxel data matching key is found and no data
+	 *                     could be loaded
 	 */
 	const NEWMAT::Matrix& GetVoxelData(std::string key);
 
@@ -400,14 +419,14 @@ private:
 	 * @key Key name to associate with this data
 	 */
 	void LoadVoxelData(std::string filename, std::string key);
-	void SetVoxelCoordsFromVolume(NEWIMAGE::volume4D<float> vol);
+	void SetVoxelCoords(NEWIMAGE::volume4D<float> vol);
+	void LoadVoxelCoordsFromMask(std::string mask_filename);
 #endif
 	NEWMAT::Matrix m_voxelCoords;
 
 	void AddKeyEqualsValue(const std::string key);
 	void CheckSize(std::string key, NEWMAT::Matrix &mat);
-	void LoadVoxelCoordsFromMask(std::string mask_filename);
-	void LoadVoxelDataMultiple();
+	void GetMainVoxelDataMultiple();
 
 	bool m_save_files;
 	bool m_have_coords;

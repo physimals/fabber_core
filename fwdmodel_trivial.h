@@ -16,7 +16,6 @@ class TrivialFwdModel: public FwdModel
 public:
 	static FwdModel* NewInstance();
 	void Initialize(FabberRunData& args);
-	virtual void Usage(std::ostream &stream) const;
 	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
 
 	virtual void DumpParameters(const ColumnVector& vec, const string& indents = "") const;

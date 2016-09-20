@@ -39,7 +39,7 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 }
 
 FabberRunData::FabberRunData() :
-	m_save_files(false), m_progress(0), m_have_coords(false)
+	m_save_files(false), m_progress(0), m_have_coords(false), m_nvoxels(-1)
 {
 	FabberSetup::SetupDefaults();
 }
@@ -259,7 +259,7 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 		return GetVoxelData("data");
 	} catch (DataNotFound &e)
 	{
-		LoadVoxelDataMultiple();
+		GetMainVoxelDataMultiple();
 		return GetVoxelData("data");
 	}
 }
@@ -292,32 +292,46 @@ void FabberRunData::SetVoxelSuppData(NEWMAT::Matrix &data)
  */
 void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
 {
-	if (mat.Ncols() != m_nvoxels)
+	// If this is the first data set provided, it gets to
+	// decide the number of voxels
+	if (m_nvoxels == -1)
 	{
-		throw Invalid_option("Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols())
-				+ " should be " + stringify(m_nvoxels) + ")");
+		m_nvoxels = mat.Ncols();
+	}
+	else
+	{
+		if (mat.Ncols() != m_nvoxels)
+		{
+			throw Invalid_option("Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols())
+					+ " should be " + stringify(m_nvoxels) + ")");
+		}
 	}
 }
 
 void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
 {
+	// This will also set m_nvoxels if it's the first data set
+	CheckSize("coords", coords);
 	m_voxelCoords = coords;
-	m_nvoxels = coords.Ncols();
 
-	m_size.resize(coords.Nrows());
-	m_dims.resize(coords.Nrows());
+	// FIXME we assume 3D coordinates
+	if (coords.Nrows() != 3)
+	{
+		throw Invalid_option("Co-ordinates must be 3 dimensional");
+	}
 
 	// FIXME we assume coords will start at 0 in any
 	// volume that is output but will not be negative
-	m_size[0] = coords.Row(1).Maximum()+1;
-	m_size[1] = coords.Row(2).Maximum()+1;
-	m_size[2] = coords.Row(3).Maximum()+1;
+	m_size.resize(3);
+	m_size[0] = coords.Row(1).Maximum() + 1;
+	m_size[1] = coords.Row(2).Maximum() + 1;
+	m_size[2] = coords.Row(3).Maximum() + 1;
 
-	// FIXME need proper setter
 	m_dims.resize(3);
 	m_dims[0] = 1.0;
 	m_dims[1] = 1.0;
 	m_dims[2] = 1.0;
+
 	m_have_coords = true;
 }
 
@@ -385,7 +399,7 @@ void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
 			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
-void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> vol)
+void FabberRunData::SetVoxelCoords(volume4D<float> first_data)
 {
 	// First try to get the coords from a mask. This
 	// can't be set as voxel data, as it defines what the
@@ -402,9 +416,9 @@ void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> vol)
 		LOG << "FabberRunData::Setting voxel coordinates from first volume to be loaded" << endl;
 		// Create coordinates matrix from the first volume to
 		// be loaded
-		int nx = vol.xsize();
-		int ny = vol.ysize();
-		int nz = vol.zsize();
+		int nx = first_data.xsize();
+		int ny = first_data.ysize();
+		int nz = first_data.zsize();
 		volume4D<float> coordvol(nx, ny, nz, 3);
 		for (int i = 0; i < nx; i++)
 		{
@@ -419,17 +433,8 @@ void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> vol)
 			}
 		}
 
-		m_voxelCoords = coordvol.matrix();
-		m_nvoxels = m_voxelCoords.Ncols();
-		m_size.resize(3);
-		m_size[0] = vol.xsize();
-		m_size[1] = vol.ysize();
-		m_size[2] = vol.zsize();
-
-		m_dims.resize(3);
-		m_dims[0] = vol.xdim();
-		m_dims[1] = vol.ydim();
-		m_dims[2] = vol.zdim();
+		Matrix coords = coordvol.matrix();
+		SetVoxelCoords(coords);
 	}
 	m_have_coords = true;
 }
@@ -439,17 +444,16 @@ void FabberRunData::LoadVoxelCoordsFromMask(std::string mask_filename)
 	Tracer_Plus tr("LoadMask");
 
 	LOG_ERR("FabberRunData::Loading mask data from '" + mask_filename << "'" << endl);
-	NEWIMAGE::volume<float> mask;
-	read_volume(mask, mask_filename);
-	mask.binarise(1e-16, mask.max() + 1, exclusive);
-	DumpVolumeInfo(mask);
+	read_volume(m_mask, mask_filename);
+	m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
+	DumpVolumeInfo(m_mask);
 
 	// Create coordinates matrix using mask
 	LOG << "FabberRunData::Setting voxel coordinates from mask" << endl;
 
-	int nx = mask.xsize();
-	int ny = mask.ysize();
-	int nz = mask.zsize();
+	int nx = m_mask.xsize();
+	int ny = m_mask.ysize();
+	int nz = m_mask.zsize();
 	volume4D<float> coordvol(nx, ny, nz, 3);
 	for (int i = 0; i < nx; i++)
 	{
@@ -464,20 +468,8 @@ void FabberRunData::LoadVoxelCoordsFromMask(std::string mask_filename)
 		}
 	}
 
-	m_voxelCoords = coordvol.matrix(mask);
-	m_nvoxels = m_voxelCoords.Ncols();
-	m_size.resize(3);
-	m_size[0] = mask.xsize();
-	m_size[1] = mask.ysize();
-	m_size[2] = mask.zsize();
-
-	m_dims.resize(3);
-	m_dims[0] = mask.xdim();
-	m_dims[1] = mask.ydim();
-	m_dims[2] = mask.zdim();
-
-	m_mask = mask;
-	m_have_coords = true;
+	Matrix coords = coordvol.matrix(m_mask);
+	SetVoxelCoords(coords);
 }
 
 void FabberRunData::LoadVoxelData(std::string filename, std::string key)
@@ -498,8 +490,11 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 			throw DataNotFound(key, filename);
 		}
 		DumpVolumeInfo(data);
-		if (!m_have_coords)
-			SetVoxelCoordsFromVolume(data);
+
+		if (!m_have_coords) {
+			// First data set! Set our co-ords from this
+			SetVoxelCoords(data);
+		}
 
 		try
 		{
@@ -525,51 +520,21 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 	}
 }
 
-void FabberRunData::LoadVoxelDataMultiple()
+void FabberRunData::GetMainVoxelDataMultiple()
 {
 	Tracer_Plus tr("LoadVoxelDataMultiple");
 
-#if 0
-	vector<volume4D<float> > dataSets;
-	int n = 1;
-	int nTimes = -1;
-	while (true)
-	{
-		string datafile = GetStringDefault("data" + stringify(n), "");
-		if (datafile == "")
-			break;
-		LOG << "FabberRunData::Loading " << "data" << " from '" << datafile << "'" << endl;
-		volume4D<float> temp;
-		read_volume4D(temp, datafile);
-		if (!m_have_coords)
-			SetVoxelCoordsFromVolume(temp);
-
-		DumpVolumeInfo(temp);
-		if (nTimes == -1)
-		{
-			nTimes = temp.tsize();
-		}
-		else if ((nTimes != temp.tsize()) && order == "interleave")
-		{
-			// data sets only strictly need same number of time points if they are to be interleaved
-			throw Invalid_option("Data sets must all have the same number of time points");
-		}
-		dataSets.push_back(temp);
-	}
-
-
-#endif
-
 	vector<Matrix> dataSets;
-	int n=1;
+	int n = 1;
 	while (true)
 	{
-		try {
+		try
+		{
 			dataSets.push_back(GetVoxelData("data" + stringify(n)));
 			n++;
-		}
-		catch (DataNotFound &e) {
-			// No more data, carry on with what we've got
+		} catch (DataNotFound &e)
+		{
+			// No more data sets to combine, carry on with what we've got
 			break;
 		}
 	}
@@ -578,7 +543,8 @@ void FabberRunData::LoadVoxelDataMultiple()
 	int nSets = dataSets.size();
 	if (nSets < 1)
 	{
-		throw Invalid_option("At least one data file is required: --data1=<file1> [--data2=<file2> [...]]\n");
+		throw Invalid_option(
+				"At least one data file is required: --data=<file1> or [--data1=<file1> --data2=<file2> [...]]\n");
 	}
 	if ((order == "singlefile") && nSets > 1)
 	{
@@ -598,8 +564,9 @@ void FabberRunData::LoadVoxelDataMultiple()
 		{
 			for (int j = 0; j < nSets; j++)
 			{
-				if (dataSets[j].Nrows() != nTimes) {
-					// data sets only strictly need same number of time points if they are to be interleaved
+				if (dataSets[j].Nrows() != nTimes)
+				{
+					// Data sets need same number of time points if they are to be interleaved
 					throw Invalid_option("Data sets must all have the same number of time points");
 				}
 				voxelDataMain.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
@@ -618,10 +585,12 @@ void FabberRunData::LoadVoxelDataMultiple()
 			voxelDataMain &= dataSets.at(j);
 		}
 	}
-	else if (order == "singlefile") {
+	else if (order == "singlefile")
+	{
 		voxelDataMain = dataSets[0];
 	}
-	else {
+	else
+	{
 		throw Invalid_option("data-order not recognized: " + order);
 	}
 
@@ -636,17 +605,20 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 
 	if (!m_save_files)
 	{
-		LOG << "FabberRunData::Not saving files" << endl;
+		LOG << "FabberRunData::Saving to memory: " << filename << endl;
 		// FIXME what should we do with NIFTI_INTENT_CODE?
 		SetVoxelData(filename, data);
 	}
 	else
 	{
+		LOG << "FabberRunData::Saving to nifti: " << filename << endl;
 		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
-		if (m_mask.xsize() > 0) {
+		if (m_mask.xsize() > 0)
+		{
 			output.setmatrix(data, m_mask);
 		}
-		else {
+		else
+		{
 			output.setmatrix(data);
 		}
 		output.set_intent(nifti_intent_code, 0, 0, 0);

@@ -44,6 +44,12 @@ public:
 	static void UsageFromName(const string& name, std::ostream &stream);
 
 	/**
+	 * Get option descriptions for this model. The default returns
+	 * nothing to enable compatibility with older model code
+	 */
+	virtual vector<OptionSpec> GetOptions() const {return vector<OptionSpec>();}
+
+	/**
 	 * Initialize a new instance using configuration from the given
 	 * arguments.
 	 * @param args Configuration parameters.
@@ -62,6 +68,9 @@ public:
 
 	/**
 	 * Return model usage information.
+	 *
+	 * Deprecated in favour of GetOptions.
+	 *
 	 * @return vector of strings, one per line of information.
 	 */
 	virtual void Usage(std::ostream &stream) const;

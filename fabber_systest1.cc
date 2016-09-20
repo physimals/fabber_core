@@ -103,42 +103,23 @@ int main()
 
 	LOG << "FABBER_system test 1" << endl;
 
-	LOG << "Loading mask from mask.nii.gz..." << endl;
-	volume<float> mask;
-	read_volume(mask, "mask.nii.gz");
-
-	LOG << "Loading data from data.nii.gz..." << endl;
-	volume4D<float> data;
-	read_volume4D(data, "data.nii.gz");
-
-	LOG << "Loading complete." << endl;
-
 	FabberRunData rundata;
 
-	// Get voxel coords from the mask
-	Matrix voxelCoords;
-	ConvertMaskToVoxelCoordinates(mask, voxelCoords);
-	rundata.SetVoxelCoords(voxelCoords);
+	LOG << "Loading mask from mask.nii.gz..." << endl;
+	rundata.Set("mask", "mask");
+	LOG << "Loading data from data.nii.gz..." << endl;
+	rundata.Set("data", "data");
 
-	// Get data where mask>0
-	mask.binarise(1e-16, mask.max() + 1, exclusive);
-	Matrix dataMatrix = data.matrix(mask);
-	rundata.SetMainVoxelData(dataMatrix);
-
-	// The remaining options:
 	rundata.Set("noise", (string) "white");
 	rundata.Set("basis", (string) "design.mat");
 
 	// Now run it:
-	std::auto_ptr<FwdModel> model(FwdModel::NewFromName("linear"));
-	model->Initialize(rundata);
-
-	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName("vb"));
-	infer->Initialize(model.get(), rundata);
-	infer->DoCalculations(rundata);
-	infer->SaveResults(rundata);
+	rundata.Run();
 
 	// Lets get some data back and write it to a file
+	// Could have done this automatically using
+	// rundata.SetSaveData(true)
+
 	Matrix mean = rundata.GetVoxelData("mean_Parameter_1");
 	volume4D<float> output(mask.xsize(), mask.ysize(), mask.zsize(), 1);
 	output.setmatrix(mean, mask);

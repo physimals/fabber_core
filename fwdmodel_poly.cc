@@ -10,9 +10,14 @@
 
 #include "fwdmodel_poly.h"
 
-void PolynomialFwdModel::Usage(std::ostream &stream) const
+static int NUM_OPTIONS = 1;
+static OptionSpec OPTIONS[] =
 {
-	stream << "--degree=<polynomial degree> - Required" << endl;
+	{	"degree", "Maximum power in the polynomial function", false, ""}};
+
+vector<OptionSpec> PolynomialFwdModel::GetOptions() const
+{
+	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
 }
 
 FwdModel* PolynomialFwdModel::NewInstance()

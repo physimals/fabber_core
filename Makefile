@@ -75,7 +75,8 @@ am_testfabber_OBJECTS = testfabber-fabbertest.$(OBJEXT) \
 	testfabber-test_inference.$(OBJEXT) \
 	testfabber-test_spatialvb.$(OBJEXT) \
 	testfabber-test_vb.$(OBJEXT) \
-	testfabber-test_convergence.$(OBJEXT)
+	testfabber-test_convergence.$(OBJEXT) \
+	testfabber-test_rundata.$(OBJEXT)
 testfabber_OBJECTS = $(am_testfabber_OBJECTS)
 am__DEPENDENCIES_1 = libfabbercore.a
 testfabber_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -216,7 +217,8 @@ testfabber_SOURCES = test/fabbertest.cc \
                    test/test_inference.cc \
                    test/test_spatialvb.cc \
                    test/test_vb.cc \
-                   test/test_convergence.cc
+                   test/test_convergence.cc \
+		   test/test_rundata.cc
 
 testfabber_CPPFLAGS = -I. $(CPPFLAGS)
 testfabber_LDADD = $(fabber_LDADD) -lgtest
@@ -342,6 +344,7 @@ include ./$(DEPDIR)/setup.Po
 include ./$(DEPDIR)/testfabber-fabbertest.Po
 include ./$(DEPDIR)/testfabber-test_convergence.Po
 include ./$(DEPDIR)/testfabber-test_inference.Po
+include ./$(DEPDIR)/testfabber-test_rundata.Po
 include ./$(DEPDIR)/testfabber-test_spatialvb.Po
 include ./$(DEPDIR)/testfabber-test_vb.Po
 include ./$(DEPDIR)/tools.Po
@@ -444,6 +447,20 @@ testfabber-test_convergence.obj: test/test_convergence.cc
 #	source='test/test_convergence.cc' object='testfabber-test_convergence.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testfabber_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o testfabber-test_convergence.obj `if test -f 'test/test_convergence.cc'; then $(CYGPATH_W) 'test/test_convergence.cc'; else $(CYGPATH_W) '$(srcdir)/test/test_convergence.cc'; fi`
+
+testfabber-test_rundata.o: test/test_rundata.cc
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testfabber_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT testfabber-test_rundata.o -MD -MP -MF $(DEPDIR)/testfabber-test_rundata.Tpo -c -o testfabber-test_rundata.o `test -f 'test/test_rundata.cc' || echo '$(srcdir)/'`test/test_rundata.cc
+	$(am__mv) $(DEPDIR)/testfabber-test_rundata.Tpo $(DEPDIR)/testfabber-test_rundata.Po
+#	source='test/test_rundata.cc' object='testfabber-test_rundata.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testfabber_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o testfabber-test_rundata.o `test -f 'test/test_rundata.cc' || echo '$(srcdir)/'`test/test_rundata.cc
+
+testfabber-test_rundata.obj: test/test_rundata.cc
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testfabber_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT testfabber-test_rundata.obj -MD -MP -MF $(DEPDIR)/testfabber-test_rundata.Tpo -c -o testfabber-test_rundata.obj `if test -f 'test/test_rundata.cc'; then $(CYGPATH_W) 'test/test_rundata.cc'; else $(CYGPATH_W) '$(srcdir)/test/test_rundata.cc'; fi`
+	$(am__mv) $(DEPDIR)/testfabber-test_rundata.Tpo $(DEPDIR)/testfabber-test_rundata.Po
+#	source='test/test_rundata.cc' object='testfabber-test_rundata.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testfabber_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o testfabber-test_rundata.obj `if test -f 'test/test_rundata.cc'; then $(CYGPATH_W) 'test/test_rundata.cc'; else $(CYGPATH_W) '$(srcdir)/test/test_rundata.cc'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

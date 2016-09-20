@@ -17,9 +17,8 @@ InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
 	Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
-
 	LOG << "Initialising NLLS method" << endl;
-	model = fwd_model;
+	InferenceTechnique::Initialize(fwd_model, args);
 
 	// Determine whether NLLS is being run in isolation or as a pre-step for VB
 	// This alters what we do if result is ill conditioned

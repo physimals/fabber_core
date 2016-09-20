@@ -80,7 +80,7 @@ public:
 	}
 
 	virtual string ModelVersion() const;
-	virtual void Usage(std::ostream &stream) const;
+	std::vector<OptionSpec> GetOptions() const;
 	virtual void Initialize(FabberRunData& args);
 	virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 

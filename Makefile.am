@@ -32,7 +32,8 @@ testfabber_SOURCES=test/fabbertest.cc \
                    test/test_inference.cc \
                    test/test_spatialvb.cc \
                    test/test_vb.cc \
-                   test/test_convergence.cc
+                   test/test_convergence.cc \
+		   test/test_rundata.cc
 testfabber_CPPFLAGS= -I. $(CPPFLAGS)
 testfabber_LDADD= $(fabber_LDADD) -lgtest
 	

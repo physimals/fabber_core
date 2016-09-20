@@ -10,11 +10,6 @@
 
 #include "fwdmodel_trivial.h"
 
-void TrivialFwdModel::Usage(std::ostream &stream) const
-{
-	stream << "No configurable parameters at all!" << endl;
-}
-
 FwdModel* TrivialFwdModel::NewInstance()
 {
 	return new TrivialFwdModel();

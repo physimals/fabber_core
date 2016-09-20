@@ -19,7 +19,8 @@ int main()
 {
 	EasyLog::StartLog(".", true);
 
-	// Create coordinates and data matrices
+	// Create coordinates and data matrices. The data
+	// is a simple 'how close to the centre' function
 	Matrix voxelCoords, data;
 	data.ReSize(NTIMES, X * Y * Z);
 	voxelCoords.ReSize(3, X * Y * Z);
@@ -43,6 +44,7 @@ int main()
 		}
 	}
 
+	// Not necessary to save data if not required
 	volume4D<float> data_out(X, Y, Z, 1);
 	data_out.setmatrix(data);
 	data_out.setDisplayMaximumMinimum(data_out.max(), data_out.min());
