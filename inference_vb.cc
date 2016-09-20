@@ -257,12 +257,13 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	// use the first voxel values as our dummies FIXME this shouldn't really be
 	// necessary, need to find way for model to know about the data beforehand.
 	PassModelData(1);
-
 	if (m_origdata->Nrows() != model->NumOutputs())
 	{
-		throw Invalid_option("Data length (" + stringify(m_origdata->Nrows()) + ") does not match model's output length ("
-				+ stringify(model->NumOutputs()) + ")!");
+		throw Invalid_option("Data length (" + stringify(m_origdata->Nrows())
+				+ ") does not match model's output length (" + stringify(model->NumOutputs()) + ")!");
 	}
+
+	LoadImagePriors(allData);
 
 #ifdef __FABBER_MOTION
 	MCobj mcobj(allData,6); // hard coded DOF (future TODO item)
@@ -299,8 +300,6 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 		throw Invalid_option(
 				"The option --locked-linear-from-mvn doesn't work with --method=vb yet, but should be pretty easy to implement.\n");
 	}
-
-	LoadImagePriors(allData);
 
 	// Main loop over motion correction iterations and VB calculations
 	bool continuefromprevious = false; //indicates that we should continue from a previous run (i.e. after a motion correction step)
@@ -378,6 +377,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				model->InitParams(fwdPosterior);
 			}
 
+			// Save our model parameters in case we need to revert later
 			MVNDist fwdPosteriorSave(fwdPosterior);
 			MVNDist fwdPriorSave(fwdPrior);
 
@@ -395,9 +395,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			{
 				if (PriorsTypes[k - 1] == 'I')
 				{
-					RowVector thisimageprior;
-					thisimageprior = ImagePrior[k - 1];
-					fwdPrior.means(k) = thisimageprior(voxel);
+					fwdPrior.means(k) = ImagePrior[k - 1](voxel);
 				}
 			}
 
@@ -421,7 +419,8 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel));
+						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
@@ -443,11 +442,13 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 					}
 
 					// Theta update
-					noise->UpdateTheta(*noiseVox, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel), NULL, conv->LMalpha());
+					noise->UpdateTheta(*noiseVox, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel), NULL,
+							conv->LMalpha());
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel));
+						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
@@ -458,7 +459,8 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel));
+						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
@@ -473,7 +475,8 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel));
+						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)

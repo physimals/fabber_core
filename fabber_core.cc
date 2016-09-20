@@ -55,16 +55,15 @@ int execute(int argc, char** argv)
 		}
 
 		EasyLog::StartLog(params.GetStringDefault("output", "."), true);
-		cout << "Logfile started: " << EasyLog::GetOutputDirectory()
-				<< "/logfile" << endl;
+		cout << "Logfile started: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
 		string outputDir = params.GetStringDefault("output", ".");
 
 		// Diagnostic information: software versions
 		LOG << "FABBER release v" << VERSION << endl;
 
 		time_t startTime;
-				time(&startTime);
-				LOG << "Start time: " << ctime(&startTime);
+		time(&startTime);
+		LOG << "Start time: " << ctime(&startTime);
 
 		// Start timing/tracing if requested
 		bool recordTimings = false;
@@ -103,15 +102,14 @@ int execute(int argc, char** argv)
 		if (recordTimings)
 		{
 			tr.dump_times(EasyLog::GetOutputDirectory());
-			LOG << "Timing profile information recorded to "
-					<< EasyLog::GetOutputDirectory() << "/timings.html" << endl;
+			LOG << "Timing profile information recorded to " << EasyLog::GetOutputDirectory() << "/timings.html"
+					<< endl;
 		}
 
 		Warning::ReissueAll();
 
 		gzLog = params.GetBool("gzip-log");
-		cout << "Final logfile: " << EasyLog::GetOutputDirectory()
-				<< (gzLog ? "/logfile.gz" : "/logfile") << endl;
+		cout << "Final logfile: " << EasyLog::GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile") << endl;
 		EasyLog::StopLog(gzLog);
 
 		return 0;
@@ -130,8 +128,7 @@ int execute(int argc, char** argv)
 	} catch (Exception)
 	{
 		Warning::ReissueAll();
-		LOG_ERR("NEWMAT exception caught in fabber:\n  "
-				<< Exception::what() << endl);
+		LOG_ERR("NEWMAT exception caught in fabber:\n  " << Exception::what() << endl);
 	} catch (...)
 	{
 		Warning::ReissueAll();
@@ -141,8 +138,7 @@ int execute(int argc, char** argv)
 	if (EasyLog::LogStarted())
 	{
 		// Only gzip the logfile if we exited normally.
-		cout << "Logfile was: " << EasyLog::GetOutputDirectory() << "/logfile"
-				<< endl;
+		cout << "Logfile was: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
 		EasyLog::StopLog();
 	}
 
@@ -158,8 +154,7 @@ int execute(int argc, char** argv)
 string vectorToString(vector<string> str_vector, const char* separator)
 {
 	stringstream str_stream;
-	copy(str_vector.begin(), str_vector.end(), ostream_iterator<string> (
-			str_stream, separator));
+	copy(str_vector.begin(), str_vector.end(), ostream_iterator<string> (str_stream, separator));
 	string str = str_stream.str();
 	// Trim trailing delimiter.
 	if (str.size() > 0)
@@ -175,29 +170,23 @@ string vectorToString(vector<string> str_vector, const char* separator)
  */
 void Usage(const string& errorString)
 {
-	string fwdmodels = vectorToString(
-			FwdModelFactory::GetInstance()->GetNames(), "|");
-	string methods = vectorToString(
-			InferenceTechniqueFactory::GetInstance()->GetNames(), "|");
-	string noisemodels = vectorToString(
-			NoiseModelFactory::GetInstance()->GetNames(), "|");
+	string fwdmodels = vectorToString(FwdModelFactory::GetInstance()->GetNames(), "|");
+	string methods = vectorToString(InferenceTechniqueFactory::GetInstance()->GetNames(), "|");
+	string noisemodels = vectorToString(NoiseModelFactory::GetInstance()->GetNames(), "|");
 
-	cout << "\n\nUsage: fabber <arguments>\n"
-			<< "Arguments are mandatory unless they appear in [brackets].\n"
+	cout << "\n\nUsage: fabber <arguments>\n" << "Arguments are mandatory unless they appear in [brackets].\n"
 			<< "Use -@ argfile to read additional arguments from a text file.\n\n";
 	cout << "  [--help] : print this usage message\n"
-			<< "  --output=/path/to/output : put output here (including logfile)\n"
-			<< "  --method={" << methods
+			<< "  --output=/path/to/output : put output here (including logfile)\n" << "  --method={" << methods
 			<< "} : use VB (or VB with spatial priors)\n"
 			<< "  [--max-iterations=NN] : number of iterations of VB to use (default: 10)\n"
 			<< "  [--data-order={interleave|concatenate|singlefile}] : should time points from multiple data "
 			<< "be interleaved (e.g. TE1/TE2) or left in order? (default: interleave)\n"
 			<< "  --data1=file1, [--data2=file2]. (use --data=file instead if --data-order=singlefile)\n"
-			<< "  --mask=maskfile : inference will only be performed where mask value > 0\n"
-			<< "  --model={" << fwdmodels << "} : forward model to use. "
-			<< "For model parameters use fabber --help --model=<model_of_interest>\n"
-			<< "  --noise={" << noisemodels << "} : Noise model to use\n"
-			<< "    ar1: two AR(1) models (optional cross-linking between TE1 & TE2)\n"
+			<< "  --mask=maskfile : inference will only be performed where mask value > 0\n" << "  --model={"
+			<< fwdmodels << "} : forward model to use. "
+			<< "For model parameters use fabber --help --model=<model_of_interest>\n" << "  --noise={" << noisemodels
+			<< "} : Noise model to use\n" << "    ar1: two AR(1) models (optional cross-linking between TE1 & TE2)\n"
 			<< "      [--ar1-cross-terms={dual|same|none}] : two types of cross-linking, or none (default: dual)\n"
 			<< "    white: white noise model, optionally with different noise variances at some data points\n"
 			<< "      [--noise-pattern=<phi_index_pattern>] : repeating pattern of noise variances for each data point "

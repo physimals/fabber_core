@@ -22,90 +22,89 @@
 class WhiteParams: public NoiseParams
 {
 public:
-    virtual WhiteParams* Clone() const
-    {
-        return new WhiteParams(*this);
-    }
+	virtual WhiteParams* Clone() const
+	{
+		return new WhiteParams(*this);
+	}
 
-    virtual const WhiteParams& operator=(const NoiseParams& in)
-    {
-        const WhiteParams& from = dynamic_cast<const WhiteParams&> (in);
-        assert(nPhis == from.nPhis);
-        phis = from.phis;
-        return *this;
-    }
+	virtual const WhiteParams& operator=(const NoiseParams& in)
+	{
+		const WhiteParams& from = dynamic_cast<const WhiteParams&> (in);
+		assert(nPhis == from.nPhis);
+		phis = from.phis;
+		return *this;
+	}
 
-    virtual const MVNDist OutputAsMVN() const;
-    virtual void InputFromMVN(const MVNDist& mvn);
+	virtual const MVNDist OutputAsMVN() const;
+	virtual void InputFromMVN(const MVNDist& mvn);
 
-    virtual void Dump(const string indent = "") const;
+	virtual void Dump(const string indent = "") const;
 
-    WhiteParams(int N) :
-        nPhis(N), phis(N)
-    {
-        return;
-    }
-    WhiteParams(const WhiteParams& from) :
-        nPhis(from.nPhis), phis(from.phis)
-    {
-        return;
-    }
+	WhiteParams(int N) :
+		nPhis(N), phis(N)
+	{
+		return;
+	}
+	WhiteParams(const WhiteParams& from) :
+		nPhis(from.nPhis), phis(from.phis)
+	{
+		return;
+	}
 
 private:
-    friend class WhiteNoiseModel;
-    const int nPhis;
-    vector<GammaDist> phis;
+	friend class WhiteNoiseModel;
+	const int nPhis;
+	vector<GammaDist> phis;
 };
 
 class WhiteNoiseModel: public NoiseModel
 {
 public:
-    /**
-     * Create a new instance of white noise. Used by factory
-     * to create noise models by name. Parameters are set
-     * during initialization
-     */
-    static NoiseModel* NewInstance();
+	/**
+	 * Create a new instance of white noise. Used by factory
+	 * to create noise models by name. Parameters are set
+	 * during initialization
+	 */
+	static NoiseModel* NewInstance();
 
-    virtual WhiteParams* NewParams() const
-    {
-        return new WhiteParams(Qis.size());
-    }
+	virtual WhiteParams* NewParams() const
+	{
+		return new WhiteParams(Qis.size());
+	}
 
-    virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
+	virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
 
-    virtual void Initialize(FabberRunData& args);
+	virtual void Initialize(FabberRunData& args);
 
-    virtual ~WhiteNoiseModel()
-    {
-    }
+	virtual ~WhiteNoiseModel()
+	{
+	}
 
-    /**
-     * Update the noise parameters
-     */
-    virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-            const LinearFwdModel& model, const ColumnVector& data) const;
+	/**
+	 * Update the noise parameters
+	 */
+	virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+			const LinearFwdModel& model, const ColumnVector& data) const;
 
-    /**
-     * Update the model parameters?
-     */
-    virtual void
-            UpdateTheta(const NoiseParams& noise, MVNDist& theta, const MVNDist& thetaPrior,
-                    const LinearFwdModel& model, const ColumnVector& data, MVNDist* thetaWithoutPrior = NULL,
-                    float LMalpha = 0) const;
+	/**
+	 * Update the model parameters?
+	 */
+	virtual void
+	UpdateTheta(const NoiseParams& noise, MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model,
+			const ColumnVector& data, MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
-    virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-            const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data) const;
+	virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+			const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data) const;
 
-    int NumParams();
+	int NumParams();
 
 protected:
-    string phiPattern;
+	string phiPattern;
 
-    double lockedNoiseStdev; // Allow phi to be locked externally
-    double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)
+	double lockedNoiseStdev; // Allow phi to be locked externally
+	double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)
 
-    // Diagonal matrices, indicating which data points use each phi
-    mutable vector<DiagonalMatrix> Qis; // mutable because it's used as a cache
-    void MakeQis(int dataLen) const;
+	// Diagonal matrices, indicating which data points use each phi
+	mutable vector<DiagonalMatrix> Qis; // mutable because it's used as a cache
+	void MakeQis(int dataLen) const;
 };

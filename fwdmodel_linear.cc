@@ -19,8 +19,7 @@ string LinearFwdModel::ModelVersion() const
 
 void LinearFwdModel::Usage(std::ostream &stream) const
 {
-	stream << "Required parameters:" << endl << "  --basis=<design_file>"
-			<< endl;
+	stream << "Required parameters:" << endl << "  --basis=<design_file>" << endl;
 }
 
 FwdModel* LinearFwdModel::NewInstance()
@@ -38,8 +37,7 @@ void LinearFwdModel::Initialize(FabberRunData& args)
 	const int Ntimes = jacobian.Nrows();
 	const int Nbasis = jacobian.Ncols();
 
-	LOG << "LinearFwdModel::Loaded " << jacobian.Ncols()
-			<< " basis functions of length " << Ntimes << endl;
+	LOG << "LinearFwdModel::Loaded " << jacobian.Ncols() << " basis functions of length " << Ntimes << endl;
 
 	centre.ReSize(Nbasis);
 	centre = 0;
@@ -61,8 +59,7 @@ void LinearFwdModel::Initialize(FabberRunData& args)
 	// the code from inference and made this code run all the time
 	// until I know what correct behaviour is!
 	//    if (args.GetBool("params")) {
-	ofstream paramFile(
-			(EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
+	ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
 	vector<string> paramNames;
 	NameParams(paramNames);
 	for (unsigned i = 0; i < paramNames.size(); i++)
@@ -90,11 +87,9 @@ void LinearFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) 
 	result = jacobian * (params - centre) + offset;
 }
 
-void LinearFwdModel::DumpParameters(const ColumnVector& vec,
-		const string& indent) const
+void LinearFwdModel::DumpParameters(const ColumnVector& vec, const string& indent) const
 {
-	LOG << "LinearFwdModel::Parameters mean nothing to me!  "
-			<< "I am a mere linear model." << endl;
+	LOG << "LinearFwdModel::Parameters mean nothing to me!  " << "I am a mere linear model." << endl;
 	LOG << "LinearFwdModel::Vector: " << vec.t();
 }
 
@@ -151,8 +146,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 			centre3(i) -= delta;
 			fcn->Evaluate(centre2, offset2);
 			fcn->Evaluate(centre3, offset3);
-			jacobian.Column(i) = (offset2 - offset3)
-					/ (centre2(i) - centre3(i));
+			jacobian.Column(i) = (offset2 - offset3) / (centre2(i) - centre3(i));
 
 			/*
 			 if (i==4)
@@ -175,8 +169,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 	}
 }
 
-void LinearizedFwdModel::DumpParameters(const ColumnVector& vec,
-		const string& indent) const
+void LinearizedFwdModel::DumpParameters(const ColumnVector& vec, const string& indent) const
 {
 	//    LOG << indent << "This is what the nonlinear model has to say:" << endl;
 	fcn->DumpParameters(vec, indent);

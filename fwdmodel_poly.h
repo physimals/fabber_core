@@ -21,7 +21,7 @@ public:
 	virtual void NameParams(vector<string>& names) const;
 	virtual int NumParams() const
 	{
-		return m_degree+1;
+		return m_degree + 1;
 	}
 	string ModelVersion() const;
 	void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;

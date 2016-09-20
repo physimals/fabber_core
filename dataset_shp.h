@@ -20,6 +20,12 @@
 /** Include deprecated compatibility methods */
 #define DEPRECATED 1
 
+#include <tr1/memory>
+/*
+ * Part of C++11, this is a bit platform dependent
+ */
+typedef std::tr1::shared_ptr<NEWMAT::Matrix> MatrixPtr;
+
 /**
  * Functor which is be called to monitor progress.
  *
@@ -202,7 +208,7 @@ public:
 	 * @param data Data as a matrix in which each column is a voxel, and
 	 *        rows contain a series of data values for that voxel
 	 */
-	void SaveVoxelData(std::string filename, NEWMAT::Matrix &coords, int nifti_intent_code = NIFTI_INTENT_NONE);
+	void SaveVoxelData(std::string filename, MatrixPtr coords, int nifti_intent_code = NIFTI_INTENT_NONE);
 
 	/**
 	 * Get the voxel co-ordinates
@@ -211,7 +217,7 @@ public:
 	 *         are the xyz co-ords of the voxel. The co-ordinates are
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
-	const NEWMAT::Matrix& GetVoxelCoords() const
+	const MatrixPtr GetVoxelCoords() const
 	{
 		return m_voxelCoords;
 	}
@@ -223,7 +229,7 @@ public:
 	 *         are the xyz co-ords of the voxel. The co-ordinates are
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
-	void SetVoxelCoords(NEWMAT::Matrix &coords);
+	void SetVoxelCoords(MatrixPtr coords);
 
 	/**
 	 * Get named voxel data
@@ -237,7 +243,7 @@ public:
 	 *         of each parameter for that voxel.
 	 * @throw If no voxel data matching key is found
 	 */
-	const NEWMAT::Matrix& GetVoxelData(std::string key);
+	const MatrixPtr GetVoxelData(std::string key);
 
 	/**
 	 * Set named voxel data
@@ -249,7 +255,7 @@ public:
 	 *        of each parameter for that voxel.
 	 * @throw If number of columns in data is not equal to the number of voxels
 	 */
-	void SetVoxelData(std::string key, NEWMAT::Matrix &data);
+	void SetVoxelData(std::string key, MatrixPtr data);
 
 	/**
 	 * Remove previously set voxel data
@@ -300,7 +306,7 @@ public:
 	 * @return an NxT matrix where each column contains the data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-	const NEWMAT::Matrix& GetMainVoxelData();
+	const MatrixPtr GetMainVoxelData();
 
 	/**
 	 * Set the main voxel data
@@ -308,7 +314,7 @@ public:
 	 * @param coords an NxT matrix where each column contains the data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-	void SetMainVoxelData(NEWMAT::Matrix &data);
+	void SetMainVoxelData(MatrixPtr data);
 
 	/**
 	 * Get the voxel supplementary data
@@ -316,7 +322,7 @@ public:
 	 * @return an NxT matrix where each column contains the supplementary data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-	const NEWMAT::Matrix& GetVoxelSuppData();
+	const MatrixPtr GetVoxelSuppData();
 
 	/**
 	 * Set the voxel supplementary data
@@ -324,7 +330,7 @@ public:
 	 * @param coords an NxT matrix where each column contains supplementary data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-	void SetVoxelSuppData(NEWMAT::Matrix &data);
+	void SetVoxelSuppData(MatrixPtr data);
 
 	/**
 	 * Pass a functor which will be called periodically to allow progress to
@@ -402,22 +408,22 @@ private:
 	void LoadVoxelData(std::string filename, std::string key);
 	void SetVoxelCoordsFromVolume(NEWIMAGE::volume4D<float> vol);
 #endif
-	NEWMAT::Matrix m_voxelCoords;
+	MatrixPtr m_voxelCoords;
 
 	void AddKeyEqualsValue(const std::string key);
-	void CheckSize(std::string key, NEWMAT::Matrix &mat);
+	void CheckSize(std::string key, MatrixPtr mat);
 	void LoadVoxelCoordsFromMask(std::string mask_filename);
 	void LoadVoxelDataMultiple();
 
 	bool m_save_files;
 	bool m_have_coords;
 	int m_nvoxels;
-	NEWMAT::Matrix m_empty;
+	MatrixPtr m_empty;
 	std::map<std::string, std::string> m_params;
 	std::vector<int> m_size;
 	std::vector<float> m_dims;
-	std::map<std::string, NEWMAT::Matrix> m_voxel_data;
-	std::map<std::string, NEWMAT::Matrix> m_misc_data;
+	std::map<std::string, MatrixPtr> m_voxel_data;
+	std::map<std::string, MatrixPtr> m_misc_data;
 	ProgressCheck *m_progress;
 };
 

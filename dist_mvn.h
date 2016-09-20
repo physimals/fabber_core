@@ -70,8 +70,7 @@ public:
 	/**
 	 * Copy using a subset of another MVN distribution's parameters
 	 */
-	void CopyFromSubmatrix(const MVNDist& from, int first, int last,
-			bool checkIndependence = true);
+	void CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence = true);
 
 	/**
 	 * Get a subset of this MVN distribution as another MVN distribution
@@ -192,8 +191,7 @@ public:
 	 *
 	 * @param mvns One MVN for each voxel
 	 */
-	static void Load(vector<MVNDist*>& mvns, const string& filename,
-			FabberRunData &data);
+	static void Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
 
 	/**
 	 * Save a per-voxel vector of MVN distributions to a NIFTI file
@@ -205,8 +203,7 @@ public:
 	 *
 	 * @param mvns One MVN for each voxel
 	 */
-	static void Save(const vector<MVNDist*>& mvns, const string& filename,
-			FabberRunData &data);
+	static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
 
 protected:
 	int m_size; // should only be changed explicitly

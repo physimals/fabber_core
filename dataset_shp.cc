@@ -250,7 +250,7 @@ ostream& operator<<(ostream& out, const FabberRunData& opts)
 	return out;
 }
 
-const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
+const MatrixPtr FabberRunData::GetMainVoxelData()
 {
 	// Main voxel data is a bit special because it can
 	// come from multiple files
@@ -264,12 +264,12 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 	}
 }
 
-void FabberRunData::SetMainVoxelData(NEWMAT::Matrix &data)
+void FabberRunData::SetMainVoxelData(MatrixPtr data)
 {
 	FabberRunData::SetVoxelData("data", data);
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
+const MatrixPtr FabberRunData::GetVoxelSuppData()
 {
 	// FIXME Currently Fabber models assume that suppdata will return an empty matrix if none present.
 	try
@@ -281,7 +281,7 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
 	}
 }
 
-void FabberRunData::SetVoxelSuppData(NEWMAT::Matrix &data)
+void FabberRunData::SetVoxelSuppData(MatrixPtr data)
 {
 	FabberRunData::SetVoxelData("suppdata", data);
 }
@@ -290,28 +290,28 @@ void FabberRunData::SetVoxelSuppData(NEWMAT::Matrix &data)
  * Check matrix is per-voxel, i.e. the number of columns
  * equals the number of voxels
  */
-void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
+void FabberRunData::CheckSize(std::string key, MatrixPtr mat)
 {
-	if (mat.Ncols() != m_nvoxels)
+	if (mat->Ncols() != m_nvoxels)
 	{
-		throw Invalid_option("Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols())
+		throw Invalid_option("Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat->Ncols())
 				+ " should be " + stringify(m_nvoxels) + ")");
 	}
 }
 
-void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
+void FabberRunData::SetVoxelCoords(MatrixPtr coords)
 {
 	m_voxelCoords = coords;
-	m_nvoxels = coords.Ncols();
+	m_nvoxels = coords->Ncols();
 
-	m_size.resize(coords.Nrows());
-	m_dims.resize(coords.Nrows());
+	m_size.resize(coords->Nrows());
+	m_dims.resize(coords->Nrows());
 
 	// FIXME we assume coords will start at 0 in any
 	// volume that is output but will not be negative
-	m_size[0] = coords.Row(1).Maximum()+1;
-	m_size[1] = coords.Row(2).Maximum()+1;
-	m_size[2] = coords.Row(3).Maximum()+1;
+	m_size[0] = coords->Row(1).Maximum()+1;
+	m_size[1] = coords->Row(2).Maximum()+1;
+	m_size[2] = coords->Row(3).Maximum()+1;
 
 	// FIXME need proper setter
 	m_dims.resize(3);
@@ -323,11 +323,11 @@ void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
 
 int FabberRunData::GetVoxelDataSize(std::string key)
 {
-	NEWMAT::Matrix mat = GetVoxelData(key);
-	return mat.Nrows();
+	MatrixPtr mat = GetVoxelData(key);
+	return mat->Nrows();
 }
 
-void FabberRunData::SetVoxelData(std::string key, NEWMAT::Matrix &data)
+void FabberRunData::SetVoxelData(std::string key, MatrixPtr data)
 {
 	CheckSize(key, data);
 	m_voxel_data[key] = data;
@@ -342,7 +342,7 @@ void FabberRunData::ClearVoxelData(std::string key)
 	}
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
+const MatrixPtr FabberRunData::GetVoxelData(std::string key)
 {
 	// Attempt to load data if not already present. Will
 	// throw an exception if parameter not specified
@@ -419,8 +419,8 @@ void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> vol)
 			}
 		}
 
-		m_voxelCoords = coordvol.matrix();
-		m_nvoxels = m_voxelCoords.Ncols();
+		m_voxelCoords = std::tr1::shared_ptr<Matrix>(new Matrix(coordvol.matrix()));
+		m_nvoxels = m_voxelCoords->Ncols();
 		m_size.resize(3);
 		m_size[0] = vol.xsize();
 		m_size[1] = vol.ysize();
@@ -464,8 +464,8 @@ void FabberRunData::LoadVoxelCoordsFromMask(std::string mask_filename)
 		}
 	}
 
-	m_voxelCoords = coordvol.matrix(mask);
-	m_nvoxels = m_voxelCoords.Ncols();
+	m_voxelCoords = std::tr1::shared_ptr<Matrix>(new Matrix(coordvol.matrix(mask)));
+	m_nvoxels = m_voxelCoords->Ncols();
 	m_size.resize(3);
 	m_size[0] = mask.xsize();
 	m_size[1] = mask.ysize();
@@ -507,11 +507,11 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 			if (m_mask.xsize() > 0)
 			{
 				LOG << "     Applying mask to data..." << endl;
-				m_voxel_data[key] = data.matrix(m_mask);
+				m_voxel_data[key] = std::tr1::shared_ptr<Matrix>(new Matrix(data.matrix(m_mask)));
 			}
 			else
 			{
-				m_voxel_data[key] = data.matrix();
+				m_voxel_data[key] = std::tr1::shared_ptr<Matrix>(new Matrix(data.matrix()));
 			}
 		} catch (exception &e)
 		{
@@ -560,7 +560,7 @@ void FabberRunData::LoadVoxelDataMultiple()
 
 #endif
 
-	vector<Matrix> dataSets;
+	vector<MatrixPtr> dataSets;
 	int n=1;
 	while (true)
 	{
@@ -585,24 +585,24 @@ void FabberRunData::LoadVoxelDataMultiple()
 		throw Invalid_option("data-order=singlefile but more than one file specified");
 	}
 
-	Matrix voxelDataMain;
+	MatrixPtr voxelDataMain(new Matrix);
 	if (order == "interleave")
 	{
 		LOG << "FabberRunData::Combining data into one big matrix by interleaving..." << endl;
 		// Interleave - For example if the data sets are A, B, C and each
 		// has 3 time points 1, 2, 3 the final time series will be
 		// A1B1C1A2B2C2A3B3C3
-		int nTimes = dataSets[0].Nrows();
-		voxelDataMain.ReSize(nTimes * nSets, dataSets[0].Ncols());
+		int nTimes = dataSets[0]->Nrows();
+		voxelDataMain->ReSize(nTimes * nSets, dataSets[0]->Ncols());
 		for (int i = 0; i < nTimes; i++)
 		{
 			for (int j = 0; j < nSets; j++)
 			{
-				if (dataSets[j].Nrows() != nTimes) {
+				if (dataSets[j]->Nrows() != nTimes) {
 					// data sets only strictly need same number of time points if they are to be interleaved
 					throw Invalid_option("Data sets must all have the same number of time points");
 				}
-				voxelDataMain.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
+				voxelDataMain->Row(nSets * i + j + 1) = dataSets.at(j)->Row(i + 1);
 			}
 		}
 	}
@@ -615,7 +615,7 @@ void FabberRunData::LoadVoxelDataMultiple()
 		voxelDataMain = dataSets.at(0);
 		for (unsigned j = 1; j < dataSets.size(); j++)
 		{
-			voxelDataMain &= dataSets.at(j);
+			*voxelDataMain &= *dataSets.at(j);
 		}
 	}
 	else if (order == "singlefile") {
@@ -626,13 +626,13 @@ void FabberRunData::LoadVoxelDataMultiple()
 	}
 
 	m_voxel_data["data"] = voxelDataMain;
-	LOG << "FabberRunData::Done loading data, size = " << voxelDataMain.Nrows() << " timepoints by "
-			<< voxelDataMain.Ncols() << " voxels" << endl;
+	LOG << "FabberRunData::Done loading data, size = " << voxelDataMain->Nrows() << " timepoints by "
+			<< voxelDataMain->Ncols() << " voxels" << endl;
 }
 
-void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, int nifti_intent_code)
+void FabberRunData::SaveVoxelData(std::string filename, MatrixPtr data, int nifti_intent_code)
 {
-	int data_size = data.Nrows();
+	int data_size = data->Nrows();
 
 	if (!m_save_files)
 	{
@@ -644,10 +644,10 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 	{
 		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
 		if (m_mask.xsize() > 0) {
-			output.setmatrix(data, m_mask);
+			output.setmatrix(*data, m_mask);
 		}
 		else {
-			output.setmatrix(data);
+			output.setmatrix(*data);
 		}
 		output.set_intent(nifti_intent_code, 0, 0, 0);
 		output.setDisplayMaximumMinimum(output.max(), output.min());

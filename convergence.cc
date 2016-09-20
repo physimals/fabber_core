@@ -19,15 +19,16 @@ ConvergenceDetector* ConvergenceDetector::NewFromName(const string& name)
 {
 	ConvergenceDetectorFactory* factory = ConvergenceDetectorFactory::GetInstance();
 	ConvergenceDetector* conv = factory->Create(name);
-    if (conv == NULL) {
-        throw Invalid_option("Unrecognized convergence detector: " + name);
-    }
-    return conv;
+	if (conv == NULL)
+	{
+		throw Invalid_option("Unrecognized convergence detector: " + name);
+	}
+	return conv;
 }
 
 void CountingConvergenceDetector::Initialize(FabberRunData &params)
 {
-	m_max_its = convertTo<int>(params.GetStringDefault("max-iterations", "10"));
+	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "CountingConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)
 		throw Invalid_option("CountingConvergenceDetector::Max iterations must be positive");
@@ -50,8 +51,7 @@ bool CountingConvergenceDetector::Test(double)
 
 void CountingConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
-	out << indent << "Starting iteration " << m_its + 1 << " of " << m_max_its
-			<< endl << endl;
+	out << indent << "Starting iteration " << m_its + 1 << " of " << m_max_its << endl << endl;
 }
 
 void CountingConvergenceDetector::Reset(double F)
@@ -64,7 +64,7 @@ void FchangeConvergenceDetector::Initialize(FabberRunData &params)
 {
 	CountingConvergenceDetector::Initialize(params);
 
-	m_min_fchange = convertTo<double>(params.GetStringDefault("min-fchange", "0.01"));
+	m_min_fchange = convertTo<double> (params.GetStringDefault("min-fchange", "0.01"));
 	LOG << "FchangeConvergenceDetector::Minimum F change=" << m_min_fchange << endl;
 	if (m_min_fchange <= 0)
 		throw Invalid_option("FchangeConvergenceDetector::Minimum F change must be positive");
@@ -97,11 +97,9 @@ bool FchangeConvergenceDetector::FchangeConvergenceDetector::Test(double F)
 		return CountingConvergenceDetector::Test(F);
 }
 
-void FchangeConvergenceDetector::FchangeConvergenceDetector::DumpTo(
-		ostream& out, const string indent) const
+void FchangeConvergenceDetector::FchangeConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
-	out << indent << "Iteration " << m_its << " of at most " << m_max_its
-			<< endl;
+	out << indent << "Iteration " << m_its << " of at most " << m_max_its << endl;
 	out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
@@ -129,8 +127,7 @@ bool FreduceConvergenceDetector::FreduceConvergenceDetector::Test(double F)
 
 void FreduceConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
-	out << indent << "Iteration " << m_its << " of at most " << m_max_its
-			<< " : " << m_reason << endl;
+	out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << m_reason << endl;
 	out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
@@ -138,7 +135,7 @@ void TrialModeConvergenceDetector::Initialize(FabberRunData &params)
 {
 	FchangeConvergenceDetector::Initialize(params);
 
-	m_max_trials = convertTo<int>(params.GetStringDefault("max-trials", "10"));
+	m_max_trials = convertTo<int> (params.GetStringDefault("max-trials", "10"));
 	LOG << "TrialModeConvergenceDetector::Max trials=" << m_max_trials << endl;
 	if (m_min_fchange <= 0)
 		throw Invalid_option("TrialModeConvergenceDetector::Max trials must be positive");
@@ -209,19 +206,18 @@ bool TrialModeConvergenceDetector::Test(double F)
 
 void TrialModeConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
-	out << indent << "Iteration " << m_its << " of at most " << m_max_its
-			<< " : " << m_reason << endl;
+	out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << m_reason << endl;
 	out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
 void LMConvergenceDetector::Initialize(FabberRunData &params)
 {
-	m_max_its = convertTo<int>(params.GetStringDefault("max-iterations", "10"));
+	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "LMConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)
 		throw Invalid_option("LMConvergenceDetector::Max iterations must be positive");
 
-	m_max_fchange = convertTo<double>(params.GetStringDefault("max-fchange", "0.01"));
+	m_max_fchange = convertTo<double> (params.GetStringDefault("max-fchange", "0.01"));
 	LOG << "LMConvergenceDetector::Max fchange=" << m_max_fchange << endl;
 	if (m_max_fchange <= 0)
 		throw Invalid_option("LMConvergenceDetector::Max fchange must be positive");
@@ -341,7 +337,6 @@ bool LMConvergenceDetector::LMConvergenceDetector::Test(double F)
 
 void LMConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
-	out << indent << "Iteration " << m_its << " of at most " << m_max_its
-			<< " : " << reason << endl;
+	out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << reason << endl;
 	out << indent << "Previous Free Energy == " << prev << endl;
 }

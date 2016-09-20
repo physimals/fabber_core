@@ -304,6 +304,13 @@ EXTRACT_ALL            = NO
 
 EXTRACT_PRIVATE        = NO
 
+# HACK TO STOP INCLUDING PROTECTED MEMBERS
+
+ENABLE_PREPROCESSING = YES
+MACRO_EXPANSION = YES
+EXPAND_ONLY_PREDEF = YES
+PREDEFINED = protected=private
+
 # If the EXTRACT_STATIC tag is set to YES all static members of a file
 # will be included in the documentation.
 

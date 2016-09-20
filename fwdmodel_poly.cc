@@ -31,8 +31,7 @@ string PolynomialFwdModel::ModelVersion() const
 	return "0"; // This model does not really deserve a version
 }
 
-void PolynomialFwdModel::Evaluate(const ColumnVector& params,
-		ColumnVector& result) const
+void PolynomialFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
 {
 	assert(params.Nrows() == m_degree+1);
 	result.ReSize(data.Nrows());
@@ -43,21 +42,19 @@ void PolynomialFwdModel::Evaluate(const ColumnVector& params,
 		int p = 1;
 		for (int n = 0; n <= m_degree; n++)
 		{
-			res += params(n+1) * p;
+			res += params(n + 1) * p;
 			p *= i;
 		}
 		result(i) = res;
 	}
 }
 
-void PolynomialFwdModel::DumpParameters(const ColumnVector& vec,
-		const string& indent) const
+void PolynomialFwdModel::DumpParameters(const ColumnVector& vec, const string& indent) const
 {
 	LOG << indent << vec << endl;
 }
 
-void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior,
-		MVNDist& posterior) const
+void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
 {
 	// Have to implement this
 	assert(prior.means.Nrows() == m_degree+1);
@@ -71,7 +68,7 @@ void PolynomialFwdModel::NameParams(vector<string>& names) const
 	names.clear();
 	for (int i = 0; i <= m_degree; i++)
 	{
-		names.push_back((string)"c"+stringify(i));
+		names.push_back((string) "c" + stringify(i));
 	}
 }
 

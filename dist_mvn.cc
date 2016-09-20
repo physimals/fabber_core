@@ -33,8 +33,7 @@ MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
 	covariance.ReSize(m_size);
 	covariance = 0;
 	covariance.SymSubMatrix(1, from1.m_size) = from1.GetCovariance();
-	covariance.SymSubMatrix(from1.m_size + 1, from1.m_size + from2.m_size)
-			= from2.GetCovariance();
+	covariance.SymSubMatrix(from1.m_size + 1, from1.m_size + from2.m_size) = from2.GetCovariance();
 	covarianceValid = true;
 
 	assert(means.Nrows() == m_size);
@@ -82,8 +81,7 @@ const MVNDist& MVNDist::operator=(const MVNDist& from)
 	return *this;
 }
 
-void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last,
-		bool checkIndependence)
+void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence)
 {
 	Tracer_Plus tr("MVNDist::CopyFromSubmatrix");
 	m_size = last - first + 1;
@@ -104,13 +102,10 @@ void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last,
 
 	if (checkIndependence)
 	{
-		Matrix deps1 = from.GetCovariance().Rows(first, last).Columns(1, first
-				- 1);
-		Matrix deps2 = from.GetCovariance().Rows(first, last).Columns(last + 1,
-				from.covariance.Ncols());
+		Matrix deps1 = from.GetCovariance().Rows(first, last).Columns(1, first - 1);
+		Matrix deps2 = from.GetCovariance().Rows(first, last).Columns(last + 1, from.covariance.Ncols());
 		if (!deps1.IsZero() || !deps2.IsZero())
-			throw Invalid_option(
-					"Covariance found in part of MVN that should be independent from the rest!");
+			throw Invalid_option("Covariance found in part of MVN that should be independent from the rest!");
 	}
 	return;
 }
@@ -226,8 +221,7 @@ void MVNDist::SetCovariance(const SymmetricMatrix& from)
 void MVNDist::DumpTo(ostream& out, const string indent) const
 {
 	Tracer_Plus tr("MVNDist::Dump");
-	out << indent << "MVNDist, with m_size == " << m_size
-			<< ", precisionsValid == " << precisionsValid
+	out << indent << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
 			<< ", covarianceValid == " << covarianceValid << endl;
 	out << indent << "  Means: " << means.t();
 	if (precisionsValid || covarianceValid)
@@ -268,8 +262,7 @@ void MVNDist::Load(const string& filename)
 	assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename,
-		FabberRunData &data)
+void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
 {
 	Tracer_Plus tr("MVNDist::Load (static)");
 
@@ -315,18 +308,16 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename,
 
 		assert(index == nParams*(nParams+1)/2);
 		mvn->SetCovariance(tmp);
-		mvn->means = vols.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
-				nParams * (nParams + 1) / 2 + nParams);
+		mvn->means = vols.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
 
 		assert(vols(vols.Nrows(), vox) == 1);
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);
-		mvns[vox-1] = mvn;
+		mvns[vox - 1] = mvn;
 	}
 }
 
-void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename,
-		FabberRunData &data)
+void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
 {
 	Tracer_Plus tr("MVNDist::Save");
 
@@ -367,8 +358,7 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename,
 		// Note that AsColumn for a SymmetricMatrix uses row ordering on the
 		// lower triangular part, returning (1,1) (2,1) (2,2) (3,1).. as
 		// required by NIFTI_INTENT_SYMMATRIX
-		vols.Column(vox) = mvns.at(vox - 1)->GetCovariance().AsColumn()
-				& mvns.at(vox - 1)->means & aOne;
+		vols.Column(vox) = mvns.at(vox - 1)->GetCovariance().AsColumn() & mvns.at(vox - 1)->means & aOne;
 	}
 	// Write the file
 

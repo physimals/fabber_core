@@ -1,11 +1,10 @@
 /*  fwdmodel_custom.h - A place for your own quick'n'dirty forward model implementations.
 
-    Adrian Groves, FMRIB Image Analysis Group
+ Adrian Groves, FMRIB Image Analysis Group
 
-    Copyright (C) 2008 University of Oxford  */
+ Copyright (C) 2008 University of Oxford  */
 
 /*  CCOPYRIGHT */
-
 
 /* fwdmodel_custom.h
  * Class declaration for a custom forward model
@@ -27,29 +26,33 @@ using namespace std;
  * This "custom" model gives you a place to put your code and quickly start fitting your model.
  */
 
-class CustomFwdModel : public FwdModel {
- public:
-  CustomFwdModel(ArgsType& args);
-  virtual ~CustomFwdModel() { return; } 	
+class CustomFwdModel: public FwdModel
+{
+public:
+	CustomFwdModel(ArgsType& args);
+	virtual ~CustomFwdModel()
+	{
+		return;
+	}
 
-  virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
-  virtual string ModelVersion() const;
-  virtual int NumParams() const;
-  virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-  virtual void NameParams(vector<string>& names) const;
-  // use default implementation of DumpParameters
+	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
+	virtual string ModelVersion() const;
+	virtual int NumParams() const;
+	virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
+	virtual void NameParams(vector<string>& names) const;
+	// use default implementation of DumpParameters
 
-  static void Usage(std::ostream &stream);
+	static void Usage(std::ostream &stream);
 
- protected:
-  // TODO: put your implementation-specific variables here.  These include any constants or
-  // flags that are read from the command line.
+protected:
+	// TODO: put your implementation-specific variables here.  These include any constants or
+	// flags that are read from the command line.
 
-  // int numRepeats;          // e.g. number of repeats
-  // double T1;               // e.g. a fixed scan parameter
-  // ColumnVector echoTimes;  // e.g. a list of TEs
-  // Matrix basis;            // e.g. a basis set
-  // bool wantFriesWithThat;  // e.g. a boolean option
+	// int numRepeats;          // e.g. number of repeats
+	// double T1;               // e.g. a fixed scan parameter
+	// ColumnVector echoTimes;  // e.g. a list of TEs
+	// Matrix basis;            // e.g. a basis set
+	// bool wantFriesWithThat;  // e.g. a boolean option
 };
 
 #endif // __FABBER_FWDMODEL_CUSTOM_H

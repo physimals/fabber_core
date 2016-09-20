@@ -1,9 +1,8 @@
-
 /*  FABBER - Fast ASL and BOLD Bayesian Estimation Routine
 
-    Michael Chappell, FMRIB Image Analysis & IBME QuBIc groups
+ Michael Chappell, FMRIB Image Analysis & IBME QuBIc groups
 
-    Copyright (C) 2015 University of Oxford  */
+ Copyright (C) 2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
 
@@ -28,8 +27,9 @@ using namespace std;
 using namespace MISCMATHS;
 using namespace Utilities;
 
-extern "C" {
-  void libfabber_present(void);
+extern "C"
+{
+void libfabber_present(void);
 }
 
 /**
@@ -47,8 +47,7 @@ int execute(int argc, char** argv);
  * @param separator Separator for each string in the new string.
  * @return single string.
  */
-string vectorToString(vector<string> str_vector, 
-                      const char* separator=" ");
+string vectorToString(vector<string> str_vector, const char* separator = " ");
 
 /**
  * Print usage information.
