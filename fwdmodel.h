@@ -48,122 +48,72 @@ public:
 	 * nothing to enable compatibility with older model code
 	 */
 	virtual vector<OptionSpec> GetOptions() const {return vector<OptionSpec>();}
+	
+	/**
+	 * @return human-readable description of the model.
+	 * 
+	virtual std::string GetDescription() const {return ""}
+
+	/**
+	 * Get the model version. There is no fixed format for this,
+	 * and it has no meaning other than by comparison with different
+	 * versions of the same model. 
+	 * 
+	 * See fwdmodel.cc for an example 
+	 * of how to implement this to return a CVS file version.
+	 *
+	 * @return a string indicating the model version. 
+	 */
+	virtual string ModelVersion() const;
 
 	/**
 	 * Initialize a new instance using configuration from the given
 	 * arguments.
+	 * 
 	 * @param args Configuration parameters.
 	 */
 	virtual void Initialize(FabberRunData& args) = 0;
 
 	/**
-	 * Evaluate the forward model
-	 */
-	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const = 0;
-
-	/**
-	 * Evaluate the gradient, the int return is to indicate whether a valid gradient is returned by the model
-	 */
-	virtual int Gradient(const ColumnVector& params, Matrix& grad) const;
-
-	/**
-	 * Return model usage information.
-	 *
-	 * Deprecated in favour of GetOptions.
-	 *
-	 * @return vector of strings, one per line of information.
-	 */
-	virtual void Usage(std::ostream &stream) const;
-
-	/**
-	 * See fwdmodel.cc for an example of how to implement this.
-	 *
-	 * @return a CVS version info string
-	 */
-	virtual string ModelVersion() const;
-
-	/**
-	 * How many parameters in the model
+	 * How many parameters in the model? 
+	 * 
+	 * Initialize must be called before this method
+	 * 
+	 * @return number of parameters, i.e. size of vector to be passed
+	 * to Evaluate function
 	 */
 	virtual int NumParams() const = 0;
 
 	/**
-	 * How many outputs for the model
+	 * Name each of the parameters
+	 * 
+	 * Initialize must be called before this method
 	 *
-	 * The default implementation calls Evaluate() on some fake data
-	 * and sees how many outputs are produced.
+	 * See fwdmodel_linear.h for a generic implementation
 	 */
-	virtual int NumOutputs() const;
-
+	virtual void NameParams(vector<string>& names) const = 0;
+	
 	/**
 	 * Load up some sensible suggestions for initial prior & posterior values
+	 * 
+	 * Initialize must be called before this method
 	 *
 	 * @param prior Prior distribution for parameters. Should be passed in as
 	 *        an MVN of the correct size for the number of parameters. Model
 	 *        may set mean/variances to suggested prior, or just give a trivial
 	 *        default
+	 *        
 	 * @param posterior As above for posterior distribution
 	 */
 	virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const = 0;
 
 	/**
-	 * Voxelwise initialization of the posterior, i.e. a parameter initialisation
-	 *
-	 * Called for each voxel, rather than HardcodedInitialDists which is called
-	 * at the very start. Does not need to do anything unless the model
-	 * wants per-voxel default posterior.
-	 *
-	 * @param posterior Posterior distribution for model parameters. Should be passed in as
-	 *        an MVN of the correct size for the number of parameters. Model
-	 *        may set mean/variances to suggested prior, or just do nothing to
-	 *        accept general default
-	 */
-	virtual void InitParams(MVNDist& posterior) const
-	{
-	}
-
-	/**
-	 * Name each of the parameters
-	 *
-	 * See fwdmodel_linear.h for a generic implementation
-	 */
-	virtual void NameParams(vector<string>& names) const = 0;
-
-	/**
-	 * Describe what a given parameter vector means (to LOG)
-	 *
-	 * Default implementation uses NameParams to give reasonably meaningful output
-	 */
-	virtual void DumpParameters(const ColumnVector& params, const string& indent = "") const;
-
-	/**
-	 * An ARD update step can be specified in the model
-	 */
-	virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
-	{
-	}
-	;
-
-	/**
-	 * Setup function for the ARD process
-	 *
-	 * Forces the prior on the parameter that is subject to ARD to be correct -
-	 * really a worst case scenario if people are loading in their own priors
-	 */
-	virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
-	{
-	}
-	;
-
-	/**
-	 * Indicies of parameters to which ARD should be applied
-	 */
-	vector<int> ardindices;
-
-	/**
 	 * For models that need the data values in the voxel to calculate
 	 *
 	 * Called for each voxel so the model knows what the current data is
+	 *
+	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
+	 *                number of values that are in this vector
 	 */
 	virtual void pass_in_data(const ColumnVector& voxdata)
 	{
@@ -174,6 +124,10 @@ public:
 	 * For models that need the data and supplementary data values in the voxel to calculate
 	 *
 	 * Called for each voxel so the model knows what the current data is
+	 * 
+	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
+	 *                number of values that are in this vector
+	 * @param voxsuppdata Supplementary data if provided. Must be the same length as voxdata.
 	 */
 	virtual void pass_in_data(const ColumnVector& voxdata, const ColumnVector& voxsuppdata)
 	{
@@ -185,19 +139,103 @@ public:
 	 * For models that need to know the voxel co-ordinates of the data
 	 *
 	 * Called for each voxel so the model knows what the current coords are
+	 * 
+	 * @param coords Vector of length 3 containing x, y, z coords
 	 */
 	virtual void pass_in_coords(const ColumnVector& coords);
+
+	/**
+	 * Voxelwise initialization of the posterior, i.e. a parameter initialisation
+	 *
+	 * Called for each voxel, rather than HardcodedInitialDists which is called
+	 * at the very start. Does not need to do anything unless the model
+	 * wants per-voxel default posterior.
+	 * 
+	 * Initialize must be called before this method
+	 *
+	 * @param posterior Posterior distribution for model parameters. Should be passed in as
+	 *        an MVN of the correct size for the number of parameters. Model
+	 *        may set mean/variances to suggested prior, or just do nothing to
+	 *        accept general default
+	 */
+	virtual void InitParams(MVNDist& posterior) const
+	{
+	}
+
+	/**
+	 * Evaluate the forward model
+	 * 
+	 * Initialize must be called before this method
+	 * 
+	 * @param params Model parameter values. Must contain the correct number of parameters
+	 *  			 as specified by NumParams
+	 * @param result Will be populated with the model prediction for these parameters.
+	 *               The length of this vector will be set to the same as the number of
+	 *               data points passed in via pass_in_data
+	 */
+	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const = 0;
+
+	/**
+	 * Evaluate the gradient
+	 * 
+	 * @param params Model parameter values. Must contain the correct number of parameters
+	 *  			 as specified by NumParams
+	 * @param grad If returning true, gradient of model as a NumParams x NumParams matrix
+	 * 
+	 * @return false if no valid gradient is returned by the model, true if it is
+	 */
+	virtual bool Gradient(const ColumnVector& params, Matrix& grad) const;
+
+	/**
+	 * An ARD update step can be specified in the model
+	 */
+	virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+	{
+	}
+	
+	/**
+	 * Setup function for the ARD process
+	 *
+	 * Forces the prior on the parameter that is subject to ARD to be correct -
+	 * really a worst case scenario if people are loading in their own priors
+	 */
+	virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+	{
+	}
+
+	/**
+	 * Indicies of parameters to which ARD should be applied
+	 */
+	vector<int> ardindices;
 
 	virtual ~FwdModel()
 	{
 	}
 
+#ifdef DEPRECATED
+	/**
+	 * Describe what a given parameter vector means (to LOG)
+	 *
+	 * Default implementation uses NameParams to give reasonably meaningful output
+	 */
+	virtual void DumpParameters(const ColumnVector& params, const string& indent = "") const;
+
+	/**
+	 * Return model usage information.
+	 *
+	 * Deprecated in favour of GetOptions.
+	 *
+	 * @return vector of strings, one per line of information.
+	 */
+	virtual void Usage(std::ostream &stream) const;
+#endif
+	
+protected:
 	// Your derived classes should have storage for all constants that are
 	// implicitly part of g() -- e.g. pulse sequence parameters, any parameters
 	// that are assumed to take known values, and basis functions.  Given these
 	// constants, NumParams() should have a fixed value.
-
-protected:
+	
 	// storage for voxel co-ordinates
 	int coord_x;
 	int coord_y;

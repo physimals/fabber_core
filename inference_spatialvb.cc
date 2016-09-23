@@ -220,11 +220,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	// pass in some (dummy) data/coords here just in case the model relies upon it
 	// use the first voxel values as our dummies
 	PassModelData(1);
-	if (m_origdata->Nrows() != model->NumOutputs())
-	{
-		throw Invalid_option("Data length (" + stringify(m_origdata->Nrows())
-				+ ") does not match model's output length (" + stringify(model->NumOutputs()) + ")!");
-	}
 
 	// Added to diagonal to make sure the spatial precision matrix
 	// doesn't become singular -- and isolated voxels behave sensibly.
@@ -1730,68 +1725,6 @@ bool IsCoordMatrixCorrectlyOrdered(const Matrix& voxelCoords)
 	}
 	return true;
 }
-
-#if 0
-/**
- * Calculate nearest and second-nearest neighbours for each voxel
- *
- * This builds a mask to identify the voxels in the supplied list and then
- * passes to the overloaded CalcNeighbours method which takes the mask as 
- * a parameter.
- * 
- * @param voxelCoords List of voxels as an N x 3 matrix, each column is the xyz coords of a single voxel.
- */
-void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
-{
-	Tracer_Plus tr("SpatialVariationalBayes::CalcNeighbours from voxelCoords");
-	// NOTE there's a bit of an incompatibility here: CalcDistances assumes voxelCoords are in mm, while this assumes
-	// that they're integers!
-
-	// voxelCoords is a N x 3 matrix, each column is the x, y, z coords for a single voxel.
-	const int nVoxels = voxelCoords.Ncols();
-	m_coords = &voxelCoords; // FIXME temp hack for testing
-
-	// Need at least 2 voxels for there to be any neighbours!
-	// True, but later code assumes that neighbours.size() == nVoxels, so need to do something sensible
-	if (nVoxels < 2)
-	{
-		neighbours.resize(nVoxels);
-		neighbours2.resize(nVoxels);
-		return;
-	}
-
-	// Voxels must be ordered by increasing z, y and x values respectively in order of priority
-	if (!IsCoordMatrixCorrectlyOrdered(voxelCoords))
-	{
-		throw Invalid_option("Coordinate matrix must be in correct order to use adjacency-based priors.");
-	}
-
-	// Create a 3D volume whose x size is the largest voxel X co-ordinate, similarly for
-	// y and z sizes. Set all values to 0
-	//
-	// FIXME could use Matrix for this, presumably?
-	NEWIMAGE::volume<float> mask(voxelCoords.Row(1).Maximum() + 1, voxelCoords.Row(2).Maximum() + 1,
-			voxelCoords.Row(3).Maximum() + 1);
-	mask = 0.0;
-
-	// For each voxel in the list, set the mask to a positive integer starting at 1 for the first
-	// voxel, etc.
-	for (int v = 1; v <= nVoxels; v++)
-	{
-		float& maskVox = mask(voxelCoords(1, v), voxelCoords(2, v), voxelCoords(3, v));
-		assert(maskVox == 0);
-		maskVox = v;
-	}
-
-	// Essential thing: threshold the mask!
-	// FIXME doesn't this just set the mask to 1 where there is a voxel? If so, why not
-	// just do that in the loop above?
-	mask.binarise(1e-16, mask.max() + 1, NEWIMAGE::exclusive);
-
-	// Okay, now we've built up a close-enough mask matrix, pass the buck to the old version:
-	CalcNeighbours(mask);
-}
-#endif
 
 /**
  * Calculate nearest and second-nearest neighbours for the voxels

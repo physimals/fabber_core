@@ -57,7 +57,7 @@ class PercentProgressCheck: public ProgressCheck
 {
 public:
 	PercentProgressCheck() :
-		m_last(-1)
+			m_last(-1)
 	{
 	}
 	virtual void operator()(int voxel, int nVoxels);
@@ -73,7 +73,7 @@ private:
  *   - String parameters with a key and value
  *   - Boolean parameters with a key which are either present (true) or not (false)
  *   - Voxel data, which is a set of N values associated with each voxel
-  *
+ *
  * In a command line program, run data is loaded during parsing of the command
  * line options in the Parse() or ParseParamFile methods.
  *
@@ -125,7 +125,10 @@ public:
 	 * files. Otherwise it will be kept in the run data
 	 * where it can be accessed using GetVoxelData()
 	 */
-	void SetSaveFiles(bool save) {m_save_files = save;}
+	void SetSaveFiles(bool save)
+	{
+		m_save_files = save;
+	}
 
 	/**
 	 * Set string option.
@@ -159,7 +162,7 @@ public:
 	 * @param key Name of the boolean option
 	 * @param value true or false
 	 */
-	void SetBool(const std::string key, bool value=true);
+	void SetBool(const std::string key, bool value = true);
 
 	/**
 	 * Get string option.
@@ -419,7 +422,7 @@ private:
 	 * @key Key name to associate with this data
 	 */
 	void LoadVoxelData(std::string filename, std::string key);
-	void SetVoxelCoords(NEWIMAGE::volume4D<float> vol);
+	void SetVoxelCoordsFromVolume(NEWIMAGE::volume4D<float> vol);
 	void LoadVoxelCoordsFromMask(std::string mask_filename);
 #endif
 	NEWMAT::Matrix m_voxelCoords;
@@ -453,7 +456,7 @@ class Invalid_option: public std::runtime_error
 {
 public:
 	Invalid_option(std::string msg) :
-		std::runtime_error(msg)
+			std::runtime_error(msg)
 	{
 	}
 };
@@ -465,24 +468,23 @@ class MandatoryParameterMissing: public Invalid_option
 {
 public:
 	MandatoryParameterMissing(std::string msg) :
-		Invalid_option(msg)
+			Invalid_option(msg)
 	{
 	}
 };
 
 /**
- * Thrown when data is requested but
- * cannot be found
+ * Thrown when data is requested but cannot be found
  */
 class DataNotFound: public Invalid_option
 {
 public:
 	DataNotFound(std::string key, std::string filename) :
-		Invalid_option(key + " (filename: " + filename + ")")
+			Invalid_option(key + " (filename: " + filename + ")")
 	{
 	}
 	DataNotFound(std::string key) :
-		Invalid_option(key)
+			Invalid_option(key)
 	{
 	}
 };

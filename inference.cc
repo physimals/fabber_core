@@ -142,9 +142,9 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		// Produce the model fit and residual volumeserieses
 
 		Matrix modelFit, residuals, datamtx, coords;
-		modelFit.ReSize(model->NumOutputs(), nVoxels);
 		datamtx = data.GetMainVoxelData(); // it is just possible that the model needs the data in its calculations
 		coords = data.GetVoxelCoords();
+		modelFit.ReSize(datamtx.Nrows(), nVoxels);
 		ColumnVector tmp;
 		for (int vox = 1; vox <= nVoxels; vox++)
 		{
@@ -176,9 +176,6 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 
 void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData& allData, string paramFilename = "")
 {
-#ifndef USE_NEWIMAGE
-	throw Logic_error("Should not be called when compiled without NEWIMAGE support");
-#else
 	// Loads in a MVN to set it as inital values for inference
 	// can cope with the special scenario in which extra parameters have been added to the inference
 	Tracer_Plus tr("InferenceTechnique::InitMVNFromFile");

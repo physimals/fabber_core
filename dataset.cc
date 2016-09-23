@@ -39,7 +39,7 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 }
 
 FabberRunData::FabberRunData() :
-	m_save_files(false), m_progress(0), m_have_coords(false), m_nvoxels(-1)
+		m_save_files(false), m_progress(0), m_have_coords(false), m_nvoxels(-1)
 {
 	FabberSetup::SetupDefaults();
 }
@@ -64,13 +64,13 @@ void FabberRunData::Run()
 	LogParams();
 
 	//Set the forward model
-	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
+	std::auto_ptr < FwdModel > fwd_model(FwdModel::NewFromName(GetString("model")));
 	fwd_model->Initialize(*this);
-	assert( fwd_model->NumParams() > 0 );
+	assert(fwd_model->NumParams() > 0);
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
 	//Set the inference technique (and pass in the model)
-	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
+	std::auto_ptr < InferenceTechnique > infer(InferenceTechnique::NewFromName(GetString("method")));
 	infer->Initialize(fwd_model.get(), *this);
 
 	// Arguments should all have been used by now, so complain if there's anything left.
@@ -302,8 +302,9 @@ void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
 	{
 		if (mat.Ncols() != m_nvoxels)
 		{
-			throw Invalid_option("Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols())
-					+ " should be " + stringify(m_nvoxels) + ")");
+			throw Invalid_option(
+					"Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols()) + " should be "
+							+ stringify(m_nvoxels) + ")");
 		}
 	}
 }
@@ -381,25 +382,25 @@ void DumpVolumeInfo(const volume4D<float>& info, ostream& out = LOG)
 {
 	Tracer_Plus tr("DumpVolumeInfo");
 	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-			<< ", vols=" << info.tsize() << endl;
+	<< ", vols=" << info.tsize() << endl;
 	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-			<< "mm, TR=" << info.tdim() << " sec\n";
+	<< "mm, TR=" << info.tdim() << " sec\n";
 	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
+	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
 void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
 {
 	Tracer_Plus tr("DumpVolumeInfo");
 	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-			<< ", vols=1" << endl;
+	<< ", vols=1" << endl;
 	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-			<< "mm, TR=1" << " sec\n";
+	<< "mm, TR=1" << " sec\n";
 	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
+	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
-void FabberRunData::SetVoxelCoords(volume4D<float> first_data)
+void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> first_data)
 {
 	// First try to get the coords from a mask. This
 	// can't be set as voxel data, as it defines what the
@@ -485,13 +486,15 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 		try
 		{
 			read_volume4D(data, filename);
-		} catch (Exception &e)
+		}
+		catch (Exception &e)
 		{
 			throw DataNotFound(key, filename);
 		}
 		DumpVolumeInfo(data);
 
-		if (!m_have_coords) {
+		if (!m_have_coords)
+		{
 			// First data set! Set our co-ords from this
 			SetVoxelCoords(data);
 		}
@@ -508,7 +511,8 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 			{
 				m_voxel_data[key] = data.matrix();
 			}
-		} catch (exception &e)
+		}
+		catch (exception &e)
 		{
 			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
 			throw e;
@@ -519,12 +523,13 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 		throw DataNotFound(key);
 	}
 }
+#endif
 
 void FabberRunData::GetMainVoxelDataMultiple()
 {
-	Tracer_Plus tr("LoadVoxelDataMultiple");
+	Tracer_Plus tr("GetMainVoxelDataMultiple");
 
-	vector<Matrix> dataSets;
+	vector < Matrix > dataSets;
 	int n = 1;
 	while (true)
 	{
@@ -611,6 +616,7 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 	}
 	else
 	{
+#ifdef USE_NEWIMAGE
 		LOG << "FabberRunData::Saving to nifti: " << filename << endl;
 		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
 		if (m_mask.xsize() > 0)
@@ -625,8 +631,9 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 		output.setDisplayMaximumMinimum(output.max(), output.min());
 		string output_dir = GetStringDefault("output", ".");
 		save_volume4D(output, output_dir + "/" + filename);
+#else
+		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version")
+#endif
 	}
 }
-
-#endif
 

@@ -63,11 +63,6 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 	// Check how many samples in time series - should
 	// be same as model outputs
 	int Nsamples = data.Nrows();
-	if (data.Nrows() != model->NumOutputs())
-	{
-		throw Invalid_option("Data length (" + stringify(data.Nrows()) + ") does not match model's output length ("
-				+ stringify(model->NumOutputs()) + ")!");
-	}
 
 	// Loop over voxels. The result for each voxel is
 	// stored as a MVN distribution for its parameters

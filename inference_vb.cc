@@ -263,11 +263,6 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	// use the first voxel values as our dummies FIXME this shouldn't really be
 	// necessary, need to find way for model to know about the data beforehand.
 	PassModelData(1);
-	if (m_origdata->Nrows() != model->NumOutputs())
-	{
-		throw Invalid_option("Data length (" + stringify(m_origdata->Nrows())
-				+ ") does not match model's output length (" + stringify(model->NumOutputs()) + ")!");
-	}
 
 	LoadImagePriors(allData);
 
@@ -279,7 +274,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	data = *m_origdata;
 
 	// Use this to store the model predictions in to pass to motion correction routine
-	Matrix modelpred(model->NumOutputs(), Nvoxels);
+	Matrix modelpred(m_origdata->Nrows(), Nvoxels);
 
 	// Only call DoCalculations once
 	assert(resultMVNs.empty());

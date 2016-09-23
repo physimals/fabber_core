@@ -64,15 +64,6 @@ int FwdModel::Gradient(const ColumnVector& params, Matrix& grad) const
 	return false;
 }
 
-int FwdModel::NumOutputs() const
-{
-	ColumnVector params, result;
-	params.ReSize(NumParams());
-	params = 1; // probably safer than 0
-	Evaluate(params, result);
-	return result.Nrows();
-}
-
 void FwdModel::DumpParameters(const ColumnVector& params, const string& indent) const
 {
 	LOG << indent << "Parameters:" << endl;
