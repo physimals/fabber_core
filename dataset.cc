@@ -367,8 +367,12 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 	// data is optional?
 	if (m_voxel_data.count(key) == 0)
 	{
+#ifdef USE_NEWIMAGE
 		string filename = GetStringDefault(key, "");
 		LoadVoxelData(filename, key);
+#else
+		throw DataNotFound(key);
+#endif
 	}
 
 	return m_voxel_data.find(key)->second;
