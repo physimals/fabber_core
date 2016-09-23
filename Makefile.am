@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS=foreign
 
 bin_PROGRAMS=fabber
 check_PROGRAMS=testfabber
-noinst_LIBRARIES=libfabbercore.a
+lib_LTLIBRARIES=libfabbercore.la
 
 TESTS=testfabber
 
@@ -22,11 +22,12 @@ CPPFLAGS=-I$(FSLDIR)/include -I$(FSLDIR)/extras/include/newmat -I$(FSLDIR)/extra
 
 fabber_SOURCES=fabber_main.cc 
 fabber_CPPFLAGS= -I. $(CPPFLAGS)
-fabber_LDADD= libfabbercore.a \
+fabber_LDADD= -lfabbercore \
 	-L$(FSLDIR)/lib -L$(FSLDIR)/extras/lib \
 	-lnewimage -lmiscmaths -lnewmat -lfslio -lniftiio -lutils \
 	-lpthread -lznz -lz
-fabber_DEPENDENCISE: libfabbercore.a
+#fabber_DEPENDENCISE: libfabbercore.a
+#fabber_LDFLAGS=--all-static
 
 testfabber_SOURCES=test/fabbertest.cc \
                    test/test_inference.cc \
@@ -35,11 +36,12 @@ testfabber_SOURCES=test/fabbertest.cc \
                    test/test_convergence.cc \
 		   test/test_rundata.cc
 testfabber_CPPFLAGS= -I. $(CPPFLAGS)
-testfabber_LDADD= $(fabber_LDADD) -lgtest
+testfabber_LDADD= $(fabber_LDADD) -lgtest 
+#testfabber_LDFLAGS=--all-static
 	
-libfabbercore_a_SOURCES=$(BASIC_SRC) $(CORE_SRC) $(INFERENCE_SRC) $(NOISE_SRC)
-libfabbercore_a_CPPFLAGSas=$(CPPFLAGS)
-libfabbercore_a_LIBADD=
+libfabbercore_la_SOURCES=$(BASIC_SRC) $(CORE_SRC) $(INFERENCE_SRC) $(NOISE_SRC)
+libfabbercore_la_CPPFLAGSas=$(CPPFLAGS)
+libfabbercore_la_LIBADD=
 	
 all-local :
 	$(DOXYGEN)
