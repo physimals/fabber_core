@@ -6,10 +6,15 @@
 
 /*  CCOPYRIGHT */
 
+#include "newmat.h"
+
+#include "easylog.h"
+//#include "tracer_plus.h"
 #include "inference.h"
 
 using namespace std;
 using namespace MISCMATHS;
+using namespace NEWMAT;
 
 InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 {
@@ -20,6 +25,23 @@ InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 		throw Invalid_option("Unrecognized inference method: " + name);
 	}
 	return inf;
+}
+
+void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
+{
+	stream << "Usage information for method: " << name << endl << endl;
+
+	std::auto_ptr<InferenceTechnique> method(NewFromName(name));
+	stream << method->GetDescription() << endl << endl << "Options: " << endl << endl;
+	vector<OptionSpec> options = method->GetOptions();
+	if (options.size() > 0)
+	{
+		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
+		{
+			stream << "  " << iter->name << " : " << iter->description << " "
+					<< (iter->optional ? "(optional, default=" + iter->def + ")" : "(mandatory)") << endl;
+		}
+	}
 }
 
 void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
@@ -35,7 +57,7 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 	saveResiduals = args.GetBool("save-residuals");
 
 	// Motion correction related setup - by default no motion correction
-	Nmcstep = convertTo<int> (args.GetStringDefault("mcsteps", "0"));
+	Nmcstep = convertTo<int>(args.GetStringDefault("mcsteps", "0"));
 }
 
 void InferenceTechnique::SaveResults(FabberRunData& data) const
@@ -54,7 +76,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 
 	if (resultMVNsWithoutPrior.size() > 0)
 	{
-		assert(resultMVNsWithoutPrior.size() == (unsigned)nVoxels);
+		assert(resultMVNsWithoutPrior.size() == (unsigned )nVoxels);
 		MVNDist::Save(resultMVNsWithoutPrior, "finalMVNwithoutPrior", data);
 	}
 
@@ -122,7 +144,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	if (!resultFs.empty())
 	{
 		LOG << "InferenceTechnique::Writing free energy" << endl;
-		assert((int)resultFs.size() == nVoxels);
+		assert((int )resultFs.size() == nVoxels);
 		Matrix freeEnergy;
 		freeEnergy.ReSize(1, nVoxels);
 		for (int vox = 1; vox <= nVoxels; vox++)
@@ -273,13 +295,9 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		//     }
 
 		ColumnVector modelmeans = tempposterior.means;
-		;
 		ColumnVector newmeans = modelmeans;
-
 		SymmetricMatrix modelcov = tempposterior.GetCovariance();
-		;
 		SymmetricMatrix newcov = modelcov;
-		;
 
 		// Number of forward model and noise params in the FILE we are loading
 		int n_file_params = paramNames.size();
@@ -328,10 +346,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 			MVNDist *distout = new MVNDist(newfwd, noisedist);
 			resultMVNs.push_back(distout);
 		}
-
 	}
-
-#endif 
 }
 
 InferenceTechnique::~InferenceTechnique()

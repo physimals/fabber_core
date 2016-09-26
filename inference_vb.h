@@ -22,6 +22,10 @@ public:
 	 */
 	static InferenceTechnique* NewInstance();
 
+	virtual vector<OptionSpec> GetOptions() const;
+	virtual std::string GetDescription() const;
+	virtual string GetVersion() const;
+
 	VariationalBayesInferenceTechnique() :
 		conv(NULL), initialFwdPrior(NULL), initialFwdPosterior(NULL), initialNoisePrior(NULL), initialNoisePosterior(
 				NULL)

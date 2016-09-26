@@ -9,9 +9,32 @@
 #include "inference_vb.h"
 #include "convergence.h"
 
+static int NUM_OPTIONS = 4;
+static OptionSpec OPTIONS[] =
+{
+{ "noise", "Noise model to use (white or ar1)", false, "" },
+{ "PSP_byname<n>", "Name of model parameter to use image prior", true, "" },
+{ "PSP_byname<n>_type", "Type of image prior to use fo parameter <n> - I=image prior", true, "" },
+{ "PSP_byname<n>_image", "File containing image prior for parameter <n>", true, "" }, };
+
 InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 {
 	return new VariationalBayesInferenceTechnique();
+}
+
+vector<OptionSpec> VariationalBayesInferenceTechnique::GetOptions() const
+{
+	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+}
+
+std::string VariationalBayesInferenceTechnique::GetDescription() const
+{
+	return "Variational Bayes inference technique. See Chappell et al IEEE Trans Sig Proc 57:1 (2009)";
+}
+
+string VariationalBayesInferenceTechnique::GetVersion() const
+{
+	return "1.0";
 }
 
 void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& args, MVNDist *dist, string param_key)
@@ -24,8 +47,9 @@ void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& a
 		// Check the file we've loaded has the right number of parameters
 		if (dist->GetSize() != m_num_params)
 		{
-			throw Invalid_option("Size mismatch: model wants " + stringify(m_num_params) + ", loaded MVNDist has "
-					+ stringify(dist->GetSize()));
+			throw Invalid_option(
+					"Size mismatch: model wants " + stringify(m_num_params) + ", loaded MVNDist has "
+							+ stringify(dist->GetSize()));
 		}
 	}
 }
@@ -111,7 +135,7 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 			if (param_name == modnames[p])
 			{
 				found = true;
-				char psp_type = convertTo<char> (args.GetString("PSP_byname" + stringify(current_psp) + "_type"));
+				char psp_type = convertTo<char>(args.GetString("PSP_byname" + stringify(current_psp) + "_type"));
 				PriorsTypes[p] = psp_type;
 				//record the index at which a PSP has been defined for use in spatialvb setup
 				PSPidx.push_back(p);
@@ -127,8 +151,8 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 		}
 		if (!found)
 		{
-			throw Invalid_option("ERROR: Prior specification by name, parameter " + param_name
-					+ " does not exist in the model\n");
+			throw Invalid_option(
+					"ERROR: Prior specification by name, parameter " + param_name + " does not exist in the model\n");
 		}
 	}
 }
@@ -342,8 +366,8 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				// and contain model and noise parameters. Get the noise parameters from the submatrix of
 				// the result for this voxel
 				noiseVox = noise->NewParams();
-				noiseVox->InputFromMVN(resultMVNs.at(voxel - 1)->GetSubmatrix(m_num_params + 1, m_num_params
-						+ m_noise_params));
+				noiseVox->InputFromMVN(
+						resultMVNs.at(voxel - 1)->GetSubmatrix(m_num_params + 1, m_num_params + m_noise_params));
 			}
 			else
 			{
@@ -410,7 +434,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				int iteration = 0; //count the iterations
 				do
 				{
-					if (conv-> NeedRevert()) //revert to previous solution if the convergence detector calls for it
+					if (conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
 					{
 						*noiseVox = *noiseVoxSave; // copy values, not pointers!
 						fwdPosterior = fwdPosteriorSave;
@@ -487,7 +511,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				} while (!conv->Test(F));
 
 				// Revert to old values at last stage if required
-				if (conv-> NeedRevert())
+				if (conv->NeedRevert())
 				{
 					*noiseVox = *noiseVoxSave; // copy values, not pointers!
 					fwdPosterior = fwdPosteriorSave;
@@ -496,16 +520,14 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				}
 			} catch (const overflow_error& e)
 			{
-				LOG_ERR("VbInferenceTechnique::Went infinite!  Reason:" << endl
-						<< "      " << e.what() << endl);
+				LOG_ERR("VbInferenceTechnique::Went infinite!  Reason:" << endl << "      " << e.what() << endl);
 				//todo: write garbage or best guess to memory/file
 				if (haltOnBadVoxel)
 					throw;
 				LOG_ERR("VbInferenceTechnique::Going on to the next voxel." << endl);
 			} catch (Exception)
 			{
-				LOG_ERR("    NEWMAT Exception in this voxel:\n"
-						<< Exception::what() << endl);
+				LOG_ERR("    NEWMAT Exception in this voxel:\n" << Exception::what() << endl);
 				if (haltOnBadVoxel)
 					throw;
 				LOG_ERR("VbInferenceTechnique::Going on to the next voxel." << endl);
@@ -557,7 +579,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 		if (step < Nmcstep)
 		{ //dont do motion correction on the last run though as that would be a waste
 #ifdef __FABBER_MOTION
-			mcobj.run_mc(modelpred,data);
+		mcobj.run_mc(modelpred,data);
 #endif //__FABBER_MOTION
 		}
 

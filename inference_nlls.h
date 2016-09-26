@@ -28,6 +28,10 @@ public:
 	 */
 	static InferenceTechnique* NewInstance();
 
+	virtual vector<OptionSpec> GetOptions() const;
+	virtual std::string GetDescription() const;
+	virtual string GetVersion() const;
+
 	virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
 	virtual void DoCalculations(FabberRunData& data);
 	virtual ~NLLSInferenceTechnique();

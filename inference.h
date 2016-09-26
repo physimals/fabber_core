@@ -35,6 +35,11 @@ public:
 	static InferenceTechnique* NewFromName(const string& name);
 
 	/**
+	 * Get usage information for a named method
+	 */
+	static void UsageFromName(const string& name, std::ostream &stream);
+
+	/**
 	 * Create a new instance of this class.
 	 * @return pointer to new instance.
 	 */
@@ -47,6 +52,28 @@ public:
 		model(NULL), noise(NULL)
 	{
 	}
+
+	/**
+	 * Get option descriptions for this inference method.
+	 */
+	virtual vector<OptionSpec> GetOptions() const = 0;
+
+	/**
+	 * @return human-readable description of the inference method.
+	 */
+	virtual std::string GetDescription() const = 0;
+
+	/**
+	 * Get the code version. There is no fixed format for this,
+	 * and it has no meaning other than by comparison with different
+	 * versions of the same inference method code.
+	 *
+	 * See fwdmodel.cc for an example of how to implement this to
+	 * return a CVS file version.
+	 *
+	 * @return a string indicating the inference code version.
+	 */
+	virtual string GetVersion() const = 0;
 
 	/**
 	 * Initialize a new instance to use the given forward model

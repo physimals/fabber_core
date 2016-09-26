@@ -9,6 +9,26 @@
 #include "dataset.h"
 #include "inference_nlls.h"
 
+static int NUM_OPTIONS = 1;
+static OptionSpec OPTIONS[] =
+{
+{ "basis", "File containing basis matrix in VEST format", false, "" }, };
+
+vector<OptionSpec> NLLSInferenceTechnique::GetOptions() const
+{
+	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+}
+
+std::string NLLSInferenceTechnique::GetDescription() const
+{
+	return "Non-linear least squares inference technique.";
+}
+
+string NLLSInferenceTechnique::GetVersion() const
+{
+	return "1.0"; // FIXME
+}
+
 InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 {
 	return new NLLSInferenceTechnique();
