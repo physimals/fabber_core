@@ -7,14 +7,11 @@
 /*  CCOPYRIGHT */
 
 #include "inference_vb.h"
-#ifndef __FABBER_LIBRARYONLY
-#endif //__FABBER_LIBRARYONLY
+
 class CovarianceCache
 {
 public:
-#ifndef __FABBER_LIBRARYONLY
-	void CalcDistances(const NEWIMAGE::volume<float>& mask, const string& distanceMeasure);
-#endif //__FABBER_LIBRARYONLY
+
 	void CalcDistances(const NEWMAT::Matrix& voxelCoords, const string& distanceMeasure);
 	const SymmetricMatrix& GetDistances() const
 	{
@@ -45,6 +42,7 @@ class SpatialVariationalBayes: public VariationalBayesInferenceTechnique
 {
 public:
 	static InferenceTechnique* NewInstance();
+
 	SpatialVariationalBayes() :
 		VariationalBayesInferenceTechnique(), spatialDims(-1)
 	{
@@ -110,9 +108,3 @@ protected:
 							NULL) const;
 };
 
-#ifdef __FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
-#include "newimage/newimage.h"
-using namespace NEWIMAGE;
-// Helper function, useful elsewhere:
-void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoords);
-#endif //__FABBER_LIBRARYONLY_TESTWITHNEWIMAGE

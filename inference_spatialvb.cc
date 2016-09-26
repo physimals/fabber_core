@@ -1963,37 +1963,10 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
 #endif
 
 /** 
- * Calculate a distance matrix from a mask
- * 
- * Converts mask into list of voxel co-ords in physical units (mm), and then calls 
- * overloaded CalcDistances method
- *
- * @param mask Volume which has 1 for a voxel of interest, 0 otherwise
- * @param distanceMeasure How to measure distance: dist1 = Euclidian distance, dist2 = squared Euclidian distance,
- *                        mdist = Manhattan distance (|dx| + |dy|)
- */
-#if 0
-void CovarianceCache::CalcDistances(const volume<float>& mask, const string& distanceMeasure)
-{
-	Tracer_Plus tr("CovarianceCache::CalcDistances mask -> voxelCoords");
-
-	Matrix voxelCoords;
-	ConvertMaskToVoxelCoordinates(mask, voxelCoords);
-
-	// This bit converts the grid co-ords into physical (mm) co-ords
-	Matrix voxelCoordsInMm = voxelCoords;
-	voxelCoordsInMm.Row(1) *= mask.xdim();
-	voxelCoordsInMm.Row(2) *= mask.ydim();
-	voxelCoordsInMm.Row(3) *= mask.zdim();
-	CalcDistances(voxelCoords, distanceMeasure);
-}
-#endif
-
-/** 
  * Calculate a distance matrix
  * 
  * FIXME voxelCoords should really be in MM, not indices; only really matters if it's aniostropic or you're using the
- * smoothness values directly. Not a problem if called via a mask because then the NIFTI data is used to put coords into mm.
+ * smoothness values directly.
  *
  * @param voxelCoords List of voxel co-ordinates as a matrix: each column = 1 voxel
  * @param distanceMeasure How to measure distance: dist1 = Euclidian distance, dist2 = squared Euclidian distance,
