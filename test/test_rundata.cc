@@ -191,4 +191,26 @@ TEST_F(RunDataTest, MultiDataInconsistent)
 	ASSERT_THROW(NEWMAT::Matrix data = rundata.GetMainVoxelData(), Invalid_option);
 }
 
+// Tests that we can read config from a .fab file
+TEST_F(RunDataTest, OptionsFile)
+{
+	string FILENAME = "test_config";
+
+	ofstream os;
+	os.open(FILENAME.c_str(), ios::out);
+	os << "noise=white" << endl
+	<< "model=trivial" << endl
+	<< "method=vb" << endl
+	<< "bool-option" << endl
+	<< "#comment, ignored" << endl;
+	os.close();
+
+	FabberRunData rundata;
+	rundata.ParseParamFile(FILENAME);
+	ASSERT_EQ("white", rundata.GetString("noise"));
+	ASSERT_EQ("trivial", rundata.GetString("model"));
+	ASSERT_EQ("vb", rundata.GetString("method"));
+	ASSERT_EQ(true, rundata.GetBool("bool-option"));
+}
+
 }

@@ -255,7 +255,7 @@ TEST_P(InferenceMethodTest, ConfigFile)
 	FabberRunData rundata;
 	rundata.SetVoxelCoords(voxelCoords);
 	rundata.SetMainVoxelData(data);
-	rundata.ParseParamFile(FILENAME);
+	rundata.ParseOldStyleParamFile(FILENAME);
 	rundata.Run();
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
