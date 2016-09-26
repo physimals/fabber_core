@@ -16,6 +16,8 @@
 #include <memory>
 #include <vector>
 
+#include "fwdmodel.h"
+#include "inference.h"
 #include "fabber_core.h"
 
 void libfabber_present(void)
@@ -45,12 +47,20 @@ int execute(int argc, char** argv)
 		if (params.GetBool("help") || argc == 1)
 		{
 			string model = params.GetStringDefault("model", "");
-			if (model == "")
-				Usage();
-			else
+			string method = params.GetStringDefault("method", "");
+			if (model != "")
 			{
 				FwdModel::UsageFromName(model, cout);
 			}
+			else if (method != "")
+			{
+				InferenceTechnique::UsageFromName(method, cout);
+			}
+			else
+			{
+				Usage();
+			}
+
 			return 0;
 		}
 
@@ -137,7 +147,7 @@ int execute(int argc, char** argv)
 
 	if (EasyLog::LogStarted())
 	{
-		// Only gzip the logfile if we exited normally.
+// Only gzip the logfile if we exited normally.
 		cout << "Logfile was: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
 		EasyLog::StopLog();
 	}
@@ -154,7 +164,7 @@ int execute(int argc, char** argv)
 string vectorToString(vector<string> str_vector, const char* separator)
 {
 	stringstream str_stream;
-	copy(str_vector.begin(), str_vector.end(), ostream_iterator<string> (str_stream, separator));
+	copy(str_vector.begin(), str_vector.end(), ostream_iterator<string>(str_stream, separator));
 	string str = str_stream.str();
 	// Trim trailing delimiter.
 	if (str.size() > 0)
@@ -174,31 +184,50 @@ void Usage(const string& errorString)
 	string methods = vectorToString(InferenceTechniqueFactory::GetInstance()->GetNames(), "|");
 	string noisemodels = vectorToString(NoiseModelFactory::GetInstance()->GetNames(), "|");
 
-	cout << "\n\nUsage: fabber <arguments>\n" << "Arguments are mandatory unless they appear in [brackets].\n"
-			<< "Use -@ argfile to read additional arguments from a text file.\n\n";
-	cout << "  [--help] : print this usage message\n"
-			<< "  --output=/path/to/output : put output here (including logfile)\n" << "  --method={" << methods
-			<< "} : use VB (or VB with spatial priors)\n"
-			<< "  [--max-iterations=NN] : number of iterations of VB to use (default: 10)\n"
-			<< "  [--data-order={interleave|concatenate|singlefile}] : should time points from multiple data "
-			<< "be interleaved (e.g. TE1/TE2) or left in order? (default: interleave)\n"
-			<< "  --data1=file1, [--data2=file2]. (use --data=file instead if --data-order=singlefile)\n"
-			<< "  --mask=maskfile : inference will only be performed where mask value > 0\n" << "  --model={"
-			<< fwdmodels << "} : forward model to use. "
-			<< "For model parameters use fabber --help --model=<model_of_interest>\n" << "  --noise={" << noisemodels
-			<< "} : Noise model to use\n" << "    ar1: two AR(1) models (optional cross-linking between TE1 & TE2)\n"
-			<< "      [--ar1-cross-terms={dual|same|none}] : two types of cross-linking, or none (default: dual)\n"
-			<< "    white: white noise model, optionally with different noise variances at some data points\n"
-			<< "      [--noise-pattern=<phi_index_pattern>] : repeating pattern of noise variances for each data point "
-			<< "(e.g. --noise-pattern=12 gives odd and even data points different noise variances)\n"
-			<< "  [--save-model-fit] and [--save-residuals] : Save model fit/residuals files\n"
-			<< "  [--print-free-energy] : Calculate & dump F to the logfile after each update\n"
-			<< "  [--allow-bad-voxels] : Skip to next voxel if a numerical exception occurs (don't stop)\n"
-			<< "For spatial priors (using --method=spatialvb):\n"
-			<< "  --param-spatial-priors=<choice_of_prior_forms>: Specify a type of prior to use for each"
-			<< " forward model parameter.  One letter per parameter.  S=spatial, N=nonspatial, D=Gaussian-process-based combined prior\n"
-			<< "  --fwd-initial-prior=<prior_vest_file>: specify the nonspatial prior distributions on the forward model parameters.  The vest file is the covariance matrix supplemented by the prior means; see the documentation for details.  Very important if 'D' prior is used.\n"
-			<< endl;
+	cout << "\n\nUsage: fabber <arguments>" << endl << "Use -@ argfile to read additional arguments from a text file."
+
+	<< endl << endl << " General options " << endl << endl
+			<< "  --help                     Print this usage message. When --method or --model" << endl
+			<< "                             are specified in addition, display relevant model" << endl
+			<< "                             / inference method options" << endl
+			<< "  --output=<dir>             Directory for output files (including logfile)" << endl
+			<< "  --method=<method>          Use this inference method " << endl
+			<< "                             (known inference methods: " << methods << ")" << endl
+			<< "  --model=<model name>       Forward model to use. Known forward models are: " << endl
+			<< "                            " << fwdmodels << endl
+			<< "  --data=<file>              Specify a single input data file" << endl
+			<< "  --data1=<file>, --data2=<file2>" << endl
+			<< "                             Specify multiple input data files (see data-order)" << endl
+			<< "  --data-order=[interleave|concatenate|singlefile]  " << endl
+			<< "                             If multiple data files are specified, how they will" << endl
+			<< "                             be handled: concatenate = one after the other, " << endl
+			<< "                             interleave = first record from each file, then " << endl
+			<< "                             second, etc." << endl
+			<< "  --mask=<file>              Mask file. Inference will only be performed where " << endl
+			<< "                             mask value > 0" << endl
+			<< "  --save-model-fit           Save a file containing the mean model prediction " << endl
+			<< "                             at each voxel" << endl << "  --save-residuals           " << endl
+			<< "  --allow-bad-voxels         Skip to next voxel if a numerical exception occurs" << endl << endl
+			<< " Noise options " << endl << endl << "  --ar1-cross-terms={dual|same|none}]  " << endl
+			<< "                             Two types of cross-linking, or none (default: dual)" << endl
+			<< "  --noise-pattern=<phi_index_pattern>] " << endl
+			<< "                             repeating pattern of noise variances for each point" << endl
+			<< "                             (e.g. --noise-pattern=12 gives odd and even data " << endl
+			<< "                             points different noise variances)" << endl << endl << " VB options "
+			<< endl << endl << "  --noise=<noise model name> Noise model to use. Known noise models are: " << endl
+			<< "                            " << noisemodels << endl
+			<< "  --max-iterations=<n>       number of iterations of VB to use (default: 10)" << endl
+			<< "  --print-free-energy        Calculate & dump F to the logfile after each update" << endl << endl
+			<< " Spatial VB options: " << endl << endl << "  --param-spatial-priors=<choice_of_prior_forms> " << endl
+			<< "                             Specify a type of prior to use for each forward " << endl
+			<< "                             model parameter.  One letter per parameter.  " << endl
+			<< "                             S=spatial, N=nonspatial, D=Gaussian-process-based" << endl
+			<< "                             combined prior" << endl << "  --fwd-initial-prior=<prior_vest_file> "
+			<< endl << "                             Specify the nonspatial prior distributions on the" << endl
+			<< "                             forward model parameters.  The vest file is the " << endl
+			<< "                             covariance matrix supplemented by the prior means" << endl
+			<< "                             See the documentation for details.  Very important" << endl
+			<< "                             if 'D' prior is used." << endl << endl;
 	if (errorString.length() > 0)
 		cout << "\nImmediate cause of error: " << errorString << endl;
 }

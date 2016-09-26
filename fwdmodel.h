@@ -51,8 +51,8 @@ public:
 	
 	/**
 	 * @return human-readable description of the model.
-	 * 
-	virtual std::string GetDescription() const {return ""}
+	 */
+	virtual std::string GetDescription() const {return "";}
 
 	/**
 	 * Get the model version. There is no fixed format for this,
