@@ -64,13 +64,13 @@ void FabberRunData::Run()
 	LogParams();
 
 	//Set the forward model
-	std::auto_ptr < FwdModel > fwd_model(FwdModel::NewFromName(GetString("model")));
+	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
 	fwd_model->Initialize(*this);
 	assert(fwd_model->NumParams() > 0);
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
 	//Set the inference technique (and pass in the model)
-	std::auto_ptr < InferenceTechnique > infer(InferenceTechnique::NewFromName(GetString("method")));
+	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
 	infer->Initialize(fwd_model.get(), *this);
 
 	// Arguments should all have been used by now, so complain if there's anything left.
@@ -84,9 +84,48 @@ void FabberRunData::Run()
 	infer->SaveResults(*this);
 }
 
+static string trim(string const& str)
+{
+    if(str.empty())
+        return str;
+
+    size_t firstScan = str.find_first_not_of(' ');
+    size_t first     = firstScan == string::npos ? str.length() : firstScan;
+    size_t last      = str.find_last_not_of(' ');
+    return str.substr(first, last-first+1);
+}
+
 void FabberRunData::ParseParamFile(const string filename)
 {
 	Tracer_Plus tr("FabberRunData::ParseParamFile");
+	ifstream is(filename.c_str());
+	if (!is.good())
+	{
+		LOG << "FabberRunData::Couldn't read input options file: '" << filename << "'";
+		throw Invalid_option("Couldn't read input options file:" + filename);
+	}
+	char c;
+	string param;
+	while (is.good())
+	{
+		string input;
+		std::getline(is, input);
+		input = trim(input);
+		if (input.size() > 0)
+		{
+			if (input[0] == '#')
+				continue;
+			else
+			{
+				AddKeyEqualsValue(input);
+			}
+		}
+	}
+}
+
+void FabberRunData::ParseOldStyleParamFile(const string filename)
+{
+	Tracer_Plus tr("FabberRunData::ParseOldStyleParamFile");
 	ifstream is(filename.c_str());
 	if (!is.good())
 	{
@@ -134,14 +173,20 @@ void FabberRunData::Parse(int argc, char** argv)
 	m_params[""] = argv[0];
 	for (int a = 1; a < argc; a++)
 	{
-		if (string(argv[a], 0, 2) == "--")
+		if (string(argv[a]) == "-f")
+		{
+			// FIXME what if no file specified?
+			ParseParamFile(argv[++a]);
+			++a;
+		}
+		else if (string(argv[a], 0, 2) == "--")
 		{
 			string key = argv[a] + 2; // skip the "--"
 			AddKeyEqualsValue(key);
 		}
 		else if (string(argv[a]) == "-@")
 		{
-			ParseParamFile(argv[++a]);
+			ParseOldStyleParamFile(argv[++a]);
 		}
 		else
 		{
@@ -151,18 +196,20 @@ void FabberRunData::Parse(int argc, char** argv)
 	}
 }
 
-void FabberRunData::AddKeyEqualsValue(const string key)
+void FabberRunData::AddKeyEqualsValue(const string exp)
 {
-	string::size_type eqPos = key.find("=");
-
-	if (m_params.count(string(key, 0, eqPos)) > 0)
+	string::size_type eqPos = exp.find("=");
+	string key = trim(string(exp, 0, eqPos));
+	if (m_params.count(key) > 0)
 		throw Invalid_option("Duplicated option: '" + key + "'\n");
-	else if (eqPos != (key.npos))
-		m_params[string(key, 0, eqPos)] = string(key, eqPos + 1);
-	//    else if (a+1 < argc && string(argv[a+1],0,1) != "-")
-	//        m_params[key] = argv[++a]; // This is the --option value rather than --option=value format.
+	else if (eqPos != (exp.npos)) {
+		string value = trim(string(exp, eqPos + 1));
+		m_params[key] = value;
+	}
 	else
-		m_params[key] = "";
+	{
+		m_params[exp] = "";
+	}
 }
 
 void FabberRunData::Set(const string key, const string value)
@@ -500,7 +547,7 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 		if (!m_have_coords)
 		{
 			// First data set! Set our co-ords from this
-			SetVoxelCoords(data);
+			SetVoxelCoordsFromVolume(data);
 		}
 
 		try
@@ -533,7 +580,7 @@ void FabberRunData::GetMainVoxelDataMultiple()
 {
 	Tracer_Plus tr("GetMainVoxelDataMultiple");
 
-	vector < Matrix > dataSets;
+	vector<Matrix> dataSets;
 	int n = 1;
 	while (true)
 	{

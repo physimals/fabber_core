@@ -113,7 +113,13 @@ public:
 	void Parse(int argc, char** argv);
 
 	/**
-	 * Parse options from file
+	 * Parse options from a .fab file
+	 *
+	 * This file has a simple format:
+	 *
+	 * # This is a comment
+	 * option=value
+	 * bool-option
 	 */
 	void ParseParamFile(const std::string file);
 
@@ -404,6 +410,7 @@ public:
 	{
 		return GetBool(key);
 	}
+	void ParseOldStyleParamFile(const string filename);
 #endif
 
 	/**
