@@ -434,7 +434,7 @@ private:
 #endif
 	NEWMAT::Matrix m_voxelCoords;
 
-	void AddKeyEqualsValue(const std::string key);
+	void AddKeyEqualsValue(const std::string key, bool trim_comments=false);
 	void CheckSize(std::string key, NEWMAT::Matrix &mat);
 	void GetMainVoxelDataMultiple();
 

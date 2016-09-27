@@ -117,7 +117,7 @@ void FabberRunData::ParseParamFile(const string filename)
 				continue;
 			else
 			{
-				AddKeyEqualsValue(input);
+				AddKeyEqualsValue(input, true);
 			}
 		}
 	}
@@ -196,14 +196,16 @@ void FabberRunData::Parse(int argc, char** argv)
 	}
 }
 
-void FabberRunData::AddKeyEqualsValue(const string exp)
+void FabberRunData::AddKeyEqualsValue(const string exp, bool trim_comments)
 {
 	string::size_type eqPos = exp.find("=");
 	string key = trim(string(exp, 0, eqPos));
 	if (m_params.count(key) > 0)
 		throw Invalid_option("Duplicated option: '" + key + "'\n");
 	else if (eqPos != (exp.npos)) {
-		string value = trim(string(exp, eqPos + 1));
+		string::size_type end = exp.npos;
+		if (trim_comments) end = exp.find("#");
+		string value = trim(exp.substr(eqPos + 1, end-(eqPos+1)));
 		m_params[key] = value;
 	}
 	else
