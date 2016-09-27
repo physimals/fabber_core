@@ -24,8 +24,6 @@
 #include "utils.h"
 
 using namespace std;
-using namespace MISCMATHS;
-using namespace Utilities;
 
 extern "C"
 {
