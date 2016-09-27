@@ -213,4 +213,19 @@ TEST_F(RunDataTest, OptionsFile)
 	ASSERT_EQ(true, rundata.GetBool("bool-option"));
 }
 
+// Tests embedded comments
+TEST_F(RunDataTest, OptionsFileEmbeddedComment)
+{
+	string FILENAME = "test_config";
+
+	ofstream os;
+	os.open(FILENAME.c_str(), ios::out);
+	os << "model=trivial #just keep things simple" << endl;
+	os.close();
+
+	FabberRunData rundata;
+	rundata.ParseParamFile(FILENAME);
+	ASSERT_EQ("trivial", rundata.GetString("model"));
+}
+
 }
