@@ -15,9 +15,6 @@
 
 #include "utils/tracer_plus.h"
 
-using namespace std;
-using namespace Utilities;
-
 #define PRINTNOTE fprintf(stderr, "Note: %s line %d\n", __FILE__, __LINE__);
 
 /**

@@ -10,8 +10,6 @@
 #include "dist_gamma.h"
 #include <vector>
 
-using namespace std;
-
 class Ar1cParams;
 
 // Helper class -- caches some of the AR matrices

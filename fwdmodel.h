@@ -26,9 +26,6 @@
 #include "dist_mvn.h"
 #include "utils.h"
 
-using namespace std;
-using namespace NEWMAT;
-
 class FwdModel
 {
 public:

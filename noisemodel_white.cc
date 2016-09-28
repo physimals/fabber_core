@@ -9,8 +9,7 @@
 #include "noisemodel_white.h"
 #include "noisemodel.h"
 #include <stdexcept>
-#include "miscmaths/miscmaths.h"
-using namespace MISCMATHS;
+//using namespace MISCMATHS;
 using namespace Utilities;
 #include "dataset.h"
 #include "easylog.h"

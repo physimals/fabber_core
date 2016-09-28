@@ -20,9 +20,7 @@
 #include "inference.h"
 #include "fabber_core.h"
 
-void libfabber_present(void)
-{
-}
+using namespace Utilities;
 
 /**
  * Run the default command line program

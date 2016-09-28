@@ -1,3 +1,4 @@
+#ifndef NO_NLLS
 /* inference_nlls.h - Non-Linear Least Squares class declarations
 
  Adrian Groves and Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
@@ -97,3 +98,4 @@ private:
 	const FwdModel* model;
 	mutable LinearizedFwdModel linear;
 };
+#endif

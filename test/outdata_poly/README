@@ -1,0 +1,3 @@
+This directory contains output data for a simple fabber run using a polynomial
+model. The version of fabber used was 4.0_pre as of 28/09/2016. This
+output data is used to validate the current version of fabber.

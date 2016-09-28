@@ -15,10 +15,15 @@
 
 #ifdef USE_NEWIMAGE
 #include "newimage/newimage.h"
+#else
+// This is harmless because we do not create actual NIFTI files
+// without NEWIMAGE
+#define NIFTI_INTENT_NONE 1
+#define NIFTI_INTENT_SYMMATRIX 2
 #endif
 
 /** Include deprecated compatibility methods */
-#define DEPRECATED 1
+#define DEPRECATED 7
 
 /**
  * Describes a runtime option for a model, inference method, etc

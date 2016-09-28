@@ -9,13 +9,27 @@
 #include "inference_vb.h"
 #include "convergence.h"
 
-static int NUM_OPTIONS = 4;
+using namespace Utilities;
+
+static int NUM_OPTIONS = 16;
 static OptionSpec OPTIONS[] =
 {
 { "noise", "Noise model to use (white or ar1)", false, "" },
 { "PSP_byname<n>", "Name of model parameter to use image prior", true, "" },
 { "PSP_byname<n>_type", "Type of image prior to use fo parameter <n> - I=image prior", true, "" },
-{ "PSP_byname<n>_image", "File containing image prior for parameter <n>", true, "" }, };
+{ "PSP_byname<n>_image", "File containing image prior for parameter <n>", true, "" },
+{ "save-model-fit", "Save the model prediction as a 4d volume", true, "" },
+{ "save-residuals", "Save the difference between the data and the model prediction as a 4d volume", true, "" },
+{ "mcsteps", "Number of motion correction steps", true, "0" },
+{ "convergence", "Name of method for detecting convergence", true, "maxits" },
+{ "print-free-energy", "Output the free energy", true, "" },
+{ "continue-from-mvn", "Continue previous run from output MVN files", true, "" },
+{ "fwd-initial-prior", "MVN file containing initial model prior", true, "" },
+{ "fwd-initial-posterior", "MVN file containing initial model posterior", true, "" },
+{ "noise-initial-prior", "MVN file containing initial noise prior", true, "" },
+{ "noise-initial-posterior", "MVN file containing initial noise posterior", true, "" },
+{ "locked-linear-mvn", "MVN file containing fixed centres for linearization", true, "" },
+{ "allow-bad-voxels", "Continue if numerical error found in a voxel, rather than stopping", true, "" }, };
 
 InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 {
@@ -24,7 +38,7 @@ InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 
 vector<OptionSpec> VariationalBayesInferenceTechnique::GetOptions() const
 {
-	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+	return vector < OptionSpec > (OPTIONS, OPTIONS + NUM_OPTIONS);
 }
 
 std::string VariationalBayesInferenceTechnique::GetDescription() const
@@ -69,13 +83,13 @@ void VariationalBayesInferenceTechnique::InitializeNoiseFromParam(FabberRunData&
 void VariationalBayesInferenceTechnique::MakeInitialDistributions(FabberRunData& args)
 {
 	// Create initial prior and posterior distributions for model parameters
-	MVNDist* loadPrior = new MVNDist(m_num_params);
-	MVNDist* loadPosterior = new MVNDist(m_num_params);
-	model->HardcodedInitialDists(*loadPrior, *loadPosterior);
+	initialFwdPrior = auto_ptr < MVNDist > (new MVNDist(m_num_params));
+	initialFwdPosterior = new MVNDist(m_num_params);
+	model->HardcodedInitialDists(*initialFwdPrior, *initialFwdPosterior);
 
-	NoiseParams* loadNoisePrior = noise->NewParams();
-	NoiseParams* loadNoisePosterior = noise->NewParams();
-	noise->HardcodedInitialDists(*loadNoisePrior, *loadNoisePosterior);
+	initialNoisePrior = noise->NewParams();
+	initialNoisePosterior = noise->NewParams();
+	noise->HardcodedInitialDists(*initialNoisePrior, *initialNoisePosterior);
 
 	// The parameters fwd-initial-prior and fwd-initial-posterior can
 	// be used to specify initial data for the prior and posterior
@@ -83,24 +97,12 @@ void VariationalBayesInferenceTechnique::MakeInitialDistributions(FabberRunData&
 	//
 	// If unset, the default MVN distribution is used for each parameter
 	// instead
-	InitializeMVNFromParam(args, loadPrior, "fwd-initial-prior");
-	InitializeMVNFromParam(args, loadPosterior, "fwd-initial-posterior");
+	InitializeMVNFromParam(args, initialFwdPrior.get(), "fwd-initial-prior");
+	InitializeMVNFromParam(args, initialFwdPosterior, "fwd-initial-posterior");
 
 	// As above for the noise initial data
-	InitializeNoiseFromParam(args, loadNoisePrior, "noise-initial-prior");
-	InitializeNoiseFromParam(args, loadNoisePosterior, "noise-initial-posterior");
-
-	// Make these distributions constant: FIXME worth it?
-	assert(initialFwdPrior == NULL);
-	assert(initialFwdPosterior == NULL);
-	assert(initialNoisePrior == NULL);
-	assert(initialNoisePosterior == NULL);
-	initialFwdPrior = loadPrior;
-	initialFwdPosterior = loadPosterior;
-	initialNoisePrior = loadNoisePrior;
-	initialNoisePosterior = loadNoisePosterior;
-	loadPrior = loadPosterior = NULL;
-	loadNoisePrior = loadNoisePosterior = NULL; // now, only accessible as consts.
+	InitializeNoiseFromParam(args, initialNoisePrior, "noise-initial-prior");
+	InitializeNoiseFromParam(args, initialNoisePosterior, "noise-initial-posterior");
 }
 
 void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
@@ -116,7 +118,7 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 	// imagepriorstr similarly contains the image file name/key
 
 	// Get names of model parameters
-	vector<string> modnames;
+	vector < string > modnames;
 	model->NameParams(modnames);
 	imagepriorstr.resize(m_num_params);
 	PriorsTypes.resize(m_num_params, ' ');
@@ -175,23 +177,12 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 
 	// If we are resuming from a previous run, there will be a file containing a per-voxel
 	// distribution of the model parameters, and possibly the noise as well. So we may
-	// not need the initial posterior distributions we have created
+	// not need the initial posterior distributions we have created. We choose not to delete
+	// them here as the memory involved is not large (they are not per voxel).
 	continueFromFile = args.GetStringDefault("continue-from-mvn", "");
 	paramFilename = args.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
-	if (continueFromFile != "")
-	{
-		// Won't need these any more.  They don't hurt, but why leave them around?
-		// They can only cause trouble (if used by mistake).
-		delete initialFwdPosterior;
-		initialFwdPosterior = NULL;
 
-		if (!args.GetBool("continue-fwd-only"))
-		{
-			delete initialNoisePosterior;
-			initialNoisePosterior = NULL;
-		}
-	}
-
+	// Get the spatial prior options for each parameter, if specified
 	GetPriorTypes(args);
 
 	// Create convergence-testing method:
@@ -200,6 +191,11 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 
 	// Fix the linearization centres? FIXME don't know what this is
 	lockedLinearFile = args.GetStringDefault("locked-linear-from-mvn", "");
+	if (lockedLinearFile != "")
+	{
+		throw Invalid_option(
+				"The option --locked-linear-from-mvn doesn't work with --method=vb yet, but should be pretty easy to implement.\n");
+	}
 
 	// Figure out if F needs to be calculated every iteration
 	printF = args.GetBool("print-free-energy");
@@ -308,26 +304,19 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	resultMVNs.resize(Nvoxels, NULL);
 	resultFs.resize(Nvoxels, 9999); // 9999 is a garbage default value
 
+	//Indicates that we should continue from a previous run (i.e. after a motion correction step)
+	bool continueFromPrevious = false;
+
 	// If we're continuing from previous saved results, load the current
 	// values of the parameters here: FIXME paramFilename is broken and ignored
-	// FIXME could we just load directly into resultMVNs?
-
-	bool continuingFromFile = (continueFromFile != "");
-	if (continuingFromFile)
+	if (continueFromFile != "")
 	{
 		LOG << "VbInferenceTechnique::Continuing from file " << continueFromFile << endl;
 		InitMVNFromFile(continueFromFile, allData, paramFilename);
-	}
-
-	// Don't know about this
-	if (lockedLinearFile != "")
-	{
-		throw Invalid_option(
-				"The option --locked-linear-from-mvn doesn't work with --method=vb yet, but should be pretty easy to implement.\n");
+		continueFromPrevious = true;
 	}
 
 	// Main loop over motion correction iterations and VB calculations
-	bool continuefromprevious = false; //indicates that we should continue from a previous run (i.e. after a motion correction step)
 	for (int step = 0; step <= Nmcstep; step++)
 	{
 		if (step > 0)
@@ -345,76 +334,20 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			//   fwdPrior			MVNDist
 			//   fwdPosterior		MVNDist
 			//
-			// A lot of the code below revolves around initializing these
-			// things which may come from defaults, previous runs, files or image priors
-			// Considerable improvement in readability would come from moving this
-			// data initialization elsewhere and refactoring, once we have some
-			// tests in place.
-
-			// Create noise parameters for this voxel
 			// The posterior either comes from previous iteration (per-voxel)
 			//   or from the file loaded from a previous run (per-voxel)
 			//   or from initialNoisePosterior (same for all voxels)
 			//     (which may have come from a file or the model!)
-			// The prior comes from initialNoisePrior
+			// The prior comes from initialNoisePrior (same for all voxels)
 			//     (which may have come from a file or the model!)
-			NoiseParams* noiseVox = NULL;
+			//   or from an image prior (per-voxel) if specified
 
-			if (continuefromprevious || continuingFromFile)
-			{
-				// If we are continuing from a previous run still in memory, resultMVN will be populated
-				// and contain model and noise parameters. Get the noise parameters from the submatrix of
-				// the result for this voxel
-				noiseVox = noise->NewParams();
-				noiseVox->InputFromMVN(
-						resultMVNs.at(voxel - 1)->GetSubmatrix(m_num_params + 1, m_num_params + m_noise_params));
-			}
-			else
-			{
-				// No previous run - just copy the standard initial noise values
-				noiseVox = initialNoisePosterior->Clone();
-			}
-
-			const NoiseParams* noiseVoxPrior = initialNoisePrior;
-			NoiseParams* const noiseVoxSave = noiseVox->Clone();
-
-			// Give an indication of the progress through the voxels;
-			allData.Progress(voxel, Nvoxels);
-			double F = 1234.5678;
-
-			// Determine the model parameters prior and posterior, in the same
-			// way as the noise parameters were above
+			const NoiseParams* noisePrior = initialNoisePrior;
+			NoiseParams* noisePosterior = NULL;
 			MVNDist fwdPrior(*initialFwdPrior);
 			MVNDist fwdPosterior;
-			if (continuefromprevious || continuingFromFile)
-			{
-				// Similar to the extraction of noise posteriors above -
-				// here we are using result from previous run still in
-				// memory (presumably motion correction)
-				fwdPosterior = resultMVNs.at(voxel - 1)->GetSubmatrix(1, m_num_params);
-			}
-			else
-			{
-				// No previous results - just use default
-				assert(initialFwdPosterior != NULL);
-				fwdPosterior = *initialFwdPosterior;
-				// any voxelwise initialisation
-				model->InitParams(fwdPosterior);
-			}
 
-			// Save our model parameters in case we need to revert later
-			MVNDist fwdPosteriorSave(fwdPosterior);
-			MVNDist fwdPriorSave(fwdPrior);
-
-			// Create a linearized version of the model
-			LinearizedFwdModel linear(model);
-
-			// Setup for ARD (fwdmodel will decide if there is anything to be done)
-			double Fard = 0;
-			model->SetupARD(fwdPosterior, fwdPrior, Fard); // THIS USES ARD IN THE MODEL AND IS DEPRECEATED
-			Fard = noise->SetupARD(model->ardindices, fwdPosterior, fwdPrior);
-
-			// Image priors. This is a way of setting the mean of the
+			// We may have an image priors. This is a way of setting the mean of the
 			// prior for each parameter on a per-voxel basis
 			for (int k = 1; k <= m_num_params; k++)
 			{
@@ -424,10 +357,48 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				}
 			}
 
+			if (continueFromPrevious)
+			{
+				// If we are continuing from a previous run still in memory, resultMVN will be populated
+				// and contain model and noise parameters. Get the noise and model parameters from submatrices of
+				// the result for this voxel
+				noisePosterior = noise->NewParams();
+				noisePosterior->InputFromMVN(
+						resultMVNs.at(voxel - 1)->GetSubmatrix(m_num_params + 1, m_num_params + m_noise_params));
+				fwdPosterior = resultMVNs.at(voxel - 1)->GetSubmatrix(1, m_num_params);
+			}
+			else
+			{
+				// No previous run - just copy the standard initial posterior parameter values
+				fwdPosterior = *initialFwdPosterior;
+				noisePosterior = initialNoisePosterior->Clone();
+
+				// The model may override the standard posterior on a per-voxel basis
+				model->InitParams(fwdPosterior);
+			}
+
+			// Save our model parameters in case we need to revert later.
+			// Note need to save prior in case ARD is being used
+			NoiseParams* const noisePosteriorSave = noisePosterior->Clone();
+			MVNDist fwdPosteriorSave(fwdPosterior);
+			MVNDist fwdPriorSave(fwdPrior);
+
+			// Give an indication of the progress through the voxels;
+			allData.Progress(voxel, Nvoxels);
+			double F = 1234.5678;
+
+			// Create a linearized version of the model
+			LinearizedFwdModel linear(model);
+
+			// Setup for ARD (fwdmodel will decide if there is anything to be done)
+			double Fard = 0;
+			model->SetupARD(fwdPosterior, fwdPrior, Fard); // THIS USES ARD IN THE MODEL AND IS DEPRECEATED
+			Fard = noise->SetupARD(model->ardindices, fwdPosterior, fwdPrior);
+
 			try
 			{
 				linear.ReCentre(fwdPosterior.means);
-				noise->Precalculate(*noiseVox, *noiseVoxPrior, m_origdata->Column(voxel));
+				noise->Precalculate(*noisePosterior, *noisePrior, m_origdata->Column(voxel));
 				conv->Reset();
 
 				// START the VB updates and run through the relevant iterations (according to the convergence testing)
@@ -436,25 +407,27 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				{
 					if (conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
 					{
-						*noiseVox = *noiseVoxSave; // copy values, not pointers!
+						*noisePosterior = *noisePosteriorSave;
 						fwdPosterior = fwdPosteriorSave;
-						fwdPrior = fwdPriorSave; // need to revert prior too (in case ARD is in place)
+						fwdPrior = fwdPriorSave;
 						linear.ReCentre(fwdPosterior.means);
 					}
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
+					{
 						LOG << "VbInferenceTechnique::Fbefore == " << F << endl;
+					}
 
 					// Save old values if called for
 					if (conv->NeedSave())
 					{
-						*noiseVoxSave = *noiseVox; // copy values, not pointers!
+						*noisePosteriorSave = *noisePosterior; // copy values, not pointers!
 						fwdPosteriorSave = fwdPosterior;
 						fwdPriorSave = fwdPrior;
 					}
@@ -467,32 +440,33 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 					}
 
 					// Theta update
-					noise->UpdateTheta(*noiseVox, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel), NULL,
+					noise->UpdateTheta(*noisePosterior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel), NULL,
 							conv->LMalpha());
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
+					{
 						LOG << "VbInferenceTechnique::Ftheta == " << F << endl;
+					}
 
 					// Alpha & Phi updates
-					noise->UpdateNoise(*noiseVox, *noiseVoxPrior, fwdPosterior, linear, m_origdata->Column(voxel));
+					noise->UpdateNoise(*noisePosterior, *noisePrior, fwdPosterior, linear, m_origdata->Column(voxel));
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
+					{
 						LOG << "VbInferenceTechnique::Fphi == " << F << endl;
-
-					// Test of NoiseModel cloning:
-					// NoiseModel* tmp = noise; noise = tmp->Clone(); delete tmp;
+					}
 
 					// Linearization update
 					// Update the linear model before doing Free energy calculation (and ready for next round of theta and phi updates)
@@ -500,12 +474,14 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 					if (needF)
 					{
-						F = noise->CalcFreeEnergy(*noiseVox, *noiseVoxPrior, fwdPosterior, fwdPrior, linear,
+						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
 					if (printF)
+					{
 						LOG << "VbInferenceTechnique::Fnoise == " << F << endl;
+					}
 
 					iteration++;
 				} while (!conv->Test(F));
@@ -513,7 +489,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				// Revert to old values at last stage if required
 				if (conv->NeedRevert())
 				{
-					*noiseVox = *noiseVoxSave; // copy values, not pointers!
+					*noisePosterior = *noisePosteriorSave; // copy values, not pointers!
 					fwdPosterior = fwdPosteriorSave;
 					fwdPrior = fwdPriorSave;
 					linear.ReCentre(fwdPosterior.means); //just in case we go on to use this in motion correction
@@ -550,10 +526,12 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				linear.DumpParameters(fwdPosterior.means, "      ");
 #endif
 
-				resultMVNs.at(voxel - 1) = new MVNDist(fwdPosterior, noiseVox->OutputAsMVN());
-				if (needF)
+				resultMVNs.at(voxel - 1) = new MVNDist(fwdPosterior, noisePosterior->OutputAsMVN());
+				if (needF) {
 					resultFs.at(voxel - 1) = F;
-				modelpred.Column(voxel) = linear.Offset(); // get the model prediction which is stored within the linearized forward model
+				}
+				// get the model prediction which is stored within the linearized forward model
+				modelpred.Column(voxel) = linear.Offset();
 
 			} catch (...)
 			{
@@ -561,7 +539,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				LOG
 						<< "VbInferenceTechnique::Can't give any sensible answer for this voxel; outputting zero +- identity\n";
 				MVNDist* tmp = new MVNDist();
-				tmp->SetSize(fwdPosterior.means.Nrows() + noiseVox->OutputAsMVN().means.Nrows());
+				tmp->SetSize(fwdPosterior.means.Nrows() + noisePosterior->OutputAsMVN().means.Nrows());
 				tmp->SetCovariance(IdentityMatrix(tmp->means.Nrows()));
 				resultMVNs.at(voxel - 1) = tmp;
 
@@ -570,9 +548,9 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				modelpred.Column(voxel) = linear.Offset(); // get the model prediction which is stored within the linearized forward model
 			}
 
-			delete noiseVox;
-			noiseVox = NULL;
-			delete noiseVoxSave;
+			delete noisePosterior;
+			noisePosterior = NULL;
+			delete noisePosteriorSave;
 		} //END of voxelwise updates
 
 		//MOTION CORRECTION
@@ -583,22 +561,14 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 #endif //__FABBER_MOTION
 		}
 
-		continuefromprevious = true; // We now take resultMVNs and use these as the starting point if we are to run again
+		continueFromPrevious = true; // We now take resultMVNs and use these as the starting point if we are to run again
 	} // END of Steps that include motion correction and VB updates
-
-#if 0
-	while (continueFromDists.size() > 0)
-	{
-		delete continueFromDists.back();
-		continueFromDists.pop_back();
-	}
-#endif
 }
 
 VariationalBayesInferenceTechnique::~VariationalBayesInferenceTechnique()
 {
 	delete conv;
-	delete initialFwdPrior;
+	//delete initialFwdPrior;
 	delete initialFwdPosterior;
 }
 

@@ -23,13 +23,6 @@
 #include "setup.h"
 #include "utils.h"
 
-using namespace std;
-
-extern "C"
-{
-void libfabber_present(void);
-}
-
 /**
  * Run FABBER.
  *

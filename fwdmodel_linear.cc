@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include "easylog.h"
 
+using namespace Utilities;
+using namespace std;
+
 string LinearFwdModel::ModelVersion() const
 {
 	return "$Id: fwdmodel_linear.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
@@ -59,19 +62,6 @@ void LinearFwdModel::Initialize(FabberRunData& args)
 		centre.ReSize(Nbasis + 1);
 	}
 
-	// If --params specified, dump model parameters to paramnames.txt
-	// FIXME inference.cc does this by default anyway! I have removed
-	// the code from inference and made this code run all the time
-	// until I know what correct behaviour is!
-	//    if (args.GetBool("params")) {
-	ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
-	vector<string> paramNames;
-	NameParams(paramNames);
-	for (unsigned i = 0; i < paramNames.size(); i++)
-	{
-		paramFile << paramNames[i] << endl;
-	}
-	paramFile.close();
 	//
 	// Warning: Nbasis is now wrong!
 }

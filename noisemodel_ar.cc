@@ -8,8 +8,8 @@
 
 #include "noisemodel_ar.h"
 #include <stdexcept>
-#include "miscmaths/miscmaths.h"
-using namespace MISCMATHS;
+//#include "miscmaths/miscmaths.h"
+//using namespace MISCMATHS;
 using namespace Utilities;
 #include "easylog.h"
 #include "dataset.h"

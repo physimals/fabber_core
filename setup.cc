@@ -4,9 +4,11 @@
 
  Copyright (C) 2015 University of Oxford  */
 
-#include "inference_nlls.h"
 #include "inference_spatialvb.h"
 #include "inference_vb.h"
+#ifndef NO_NLLS
+#include "inference_nlls.h"
+#endif
 
 #include "noisemodel_ar.h"
 #include "noisemodel_white.h"
@@ -24,7 +26,9 @@ void FabberSetup::SetupDefaultInferenceTechniques()
 	InferenceTechniqueFactory* factory = InferenceTechniqueFactory::GetInstance();
 	factory->Add("vb", &VariationalBayesInferenceTechnique::NewInstance);
 	factory->Add("spatialvb", &SpatialVariationalBayes::NewInstance);
+#ifndef NO_NLLS
 	factory->Add("nlls", &NLLSInferenceTechnique::NewInstance);
+#endif
 }
 
 void FabberSetup::SetupDefaultNoiseModels()

@@ -22,6 +22,7 @@
 #include "dataset.h"
 
 using namespace std;
+using namespace Utilities;
 
 void PercentProgressCheck::operator()(int voxel, int nVoxels)
 {
@@ -82,6 +83,19 @@ void FabberRunData::Run()
 	infer->DoCalculations(*this);
 	Progress(m_nvoxels, m_nvoxels);
 	infer->SaveResults(*this);
+
+	// FIXME this is a hack but seems to be expected that the command line
+	// tool will output parameter names to a file. Really should be an option!
+	if (m_save_files) {
+		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
+		vector<string> paramNames;
+		fwd_model->NameParams(paramNames);
+		for (unsigned i = 0; i < paramNames.size(); i++)
+		{
+			paramFile << paramNames[i] << endl;
+		}
+		paramFile.close();
+	}
 }
 
 static string trim(string const& str)

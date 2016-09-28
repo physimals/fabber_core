@@ -6,23 +6,20 @@
 /*  CCOPYRIGHT  */
 
 #include <iostream>
-using namespace std;
-
-#ifdef __FABBER_LIBRARYONLY // Skip entire file if making fabber_library
-int main()
-{	cout << "MVNTOOL not built; compiled with __FABBER_LIBRARYONLY option." << endl; return 2;}
-#else
-
 #include <exception>
 #include <stdexcept>
 #include <map>
 #include <string>
-#include "dist_mvn.h"
-#include "newimage/newimageall.h"
 
-using namespace Utilities;
-using namespace MISCMATHS;
+#include "dist_mvn.h"
+
+#ifdef USE_NEWIMAGE
+#include "newimage/newimageall.h"
 using namespace NEWIMAGE;
+#endif
+
+using namespace std;
+using namespace Utilities;
 
 /* Function declarations */
 void Usage(const string& errorString = "");
@@ -33,7 +30,8 @@ int main(int argc, char** argv)
 	{
 		cout << "FABBER: MVNtool" << endl;
 
-		EasyOptions args(argc, argv);
+		FabberRunData args;
+		args.Parse(argc, argv);
 
 		if (args.ReadBool("help"))
 		{
@@ -41,7 +39,7 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		EasyLog::StartLogUsingStream(cout);
+		EasyLog::StartLog(cout);
 
 		/* parse command line arguments*/
 		bool verbose = args.ReadBool("v");
@@ -49,11 +47,15 @@ int main(int argc, char** argv)
 		string infile;
 		string outfile;
 		infile = args.Read("input");
-		string maskfile;
-		maskfile = args.Read("mask");
 		int param = 0;
 		int cparam = 0;
 		outfile = args.ReadWithDefault("output", infile);
+
+		// Unfortunately, libfabber uses the output option to decide where
+		// to save files. MVNtool uses it for the output file. So no we've
+		// got it, we clear the value so it won't confuse libfabber when
+		// we get to save
+		args.Set("output", ".");
 
 		bool ins;
 		bool write;
@@ -231,15 +233,10 @@ int main(int argc, char** argv)
 			}
 		}
 
-		/* Read in MVN file */
-		volume<float> mask;
-		read_volume(mask, maskfile);
-		mask.binarise(1e-16, mask.max() + 1, exclusive);
-
 		if (verbose)
 			cout << "Read file" << endl;
 		vector<MVNDist*> vmvnin;
-		MVNDist::Load(vmvnin, infile, mask);
+		MVNDist::Load(vmvnin, "input", args);
 
 		if (ins | write)
 		{
@@ -254,9 +251,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				volume4D<float> valimvol;
-				read_volume4D(valimvol, valimfile);
-				inmean = (valimvol.matrix(mask)).AsColumn();
+				inmean = args.GetVoxelData("valim").AsColumn();
 			}
 			if (varimfile == "")
 			{
@@ -264,9 +259,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				volume4D<float> varimvol;
-				read_volume4D(varimvol, varimfile);
-				invar = (varimvol.matrix(mask)).AsColumn();
+				invar = args.GetVoxelData("varim").AsColumn();
 			}
 
 			vector<MVNDist*> vmvnout(vmvnin);
@@ -343,7 +336,7 @@ int main(int argc, char** argv)
 			/* Save MVN to output */
 			if (verbose)
 				cout << "Save file" << endl;
-			MVNDist::Save(vmvnout, outfile, mask);
+			MVNDist::Save(vmvnout, outfile, args);
 		}
 
 		else
@@ -384,12 +377,7 @@ int main(int argc, char** argv)
 			if (verbose)
 				cout << "Writing output file" << endl;
 
-			volume4D<float> output(mask.xsize(), mask.ysize(), mask.zsize(), 1);
-			copybasicproperties(mask, output);
-			output.setmatrix(image, mask);
-			output.setDisplayMaximumMinimum(output.max(), output.min());
-			output.set_intent(NIFTI_INTENT_NONE, 0, 0, 0);
-			save_volume4D(output, outfile);
+			args.SaveVoxelData(outfile, image);
 		}
 
 		if (verbose)
@@ -427,5 +415,3 @@ void Usage(const string& errorString)
 			<< " --val=<mean_value>  : Mean value for parameter to be written." << endl
 			<< " --var=<variance>    : Variance of parameter to be written." << endl << endl;
 }
-
-#endif //__FABBER_LIBRARYONLY

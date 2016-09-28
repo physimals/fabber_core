@@ -1,0 +1,1228 @@
+Logfile started: out++++/logfile
+Start time: Wed Sep 28 11:11:26 2016
+FABBER release v2.0 
+Command line and effective options:
+/usr/share/fsl/5.0/bin/fabber
+--output='out++++'
+--basis='test/test_linear_design.mat'
+--data1='test/test_data.nii.gz'
+--mask='test/test_mask_small.nii.gz'
+--method='vb'
+--model='linear'
+--noise='white'
+--------------------
+    Reading design file: test/test_linear_design.mat
+      Loaded 4 basis functions of length 106
+    Forward Model version:
+      $Id: fwdmodel_linear.cc,v 1.18 2011/08/04 13:36:35 chappell Exp $
+Pattern of phis used is [ 1 ]
+Note: numerical errors in voxels will cause the program to halt.
+Use --allow-bad-voxels (with caution!) to keep on calculating.
+    Loading mask data from 'test/test_mask_small.nii.gz'
+Dimensions: x=64, y=64, z=42, vols=1
+Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=1 sec
+Intents: 0, 0, 0, 0
+  Loading data from multiple files...
+    Loading data1 from 'test/test_data.nii.gz'
+      Dimensions: x=64, y=64, z=42, vols=106
+      Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=4.2 sec
+      Intents: 0, 0, 0, 0
+    Applying mask to all data sets...
+    Combining data into one big matrix by interleaving...
+    Done loading data, size = 106 timepoints by 147 voxels
+  Voxel 1 of 147
+Pattern of phis used is [ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -168.416179 299.934134 -228.010334 20.971058 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -168.416179 299.934134 -228.010334 20.971058 
+
+  Voxel 2 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -11.496212 -111.626908 -501.547281 490.675339 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -11.496212 -111.626908 -501.547281 490.675339 
+
+  Voxel 3 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 221.665516 -5.165780 -448.811966 -187.556546 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 221.665516 -5.165780 -448.811966 -187.556546 
+
+  Voxel 4 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 278.422820 34.825235 15.961229 -303.400616 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 278.422820 34.825235 15.961229 -303.400616 
+
+  Voxel 5 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 5.692043 85.816915 -263.631731 -242.639306 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 5.692043 85.816915 -263.631731 -242.639306 
+
+  Voxel 6 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -1157.837506 -2509.120109 -2339.312287 -529.304109 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -1157.837506 -2509.120109 -2339.312287 -529.304109 
+
+  Voxel 7 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -208.681393 -324.286187 -622.582693 -20.761988 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -208.681393 -324.286187 -622.582693 -20.761988 
+
+  Voxel 8 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -107.247550 -72.859978 -187.731961 284.418778 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -107.247550 -72.859978 -187.731961 284.418778 
+
+  Voxel 9 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 276.629611 -173.435728 74.614804 152.944012 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 276.629611 -173.435728 74.614804 152.944012 
+
+  Voxel 10 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -118.267307 -1157.302046 -739.920140 -231.076291 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -118.267307 -1157.302046 -739.920140 -231.076291 
+
+  Voxel 11 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 168.860274 78.702222 -275.452716 -82.808547 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 168.860274 78.702222 -275.452716 -82.808547 
+
+  Voxel 12 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -160.408782 230.645234 -96.988892 348.545250 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -160.408782 230.645234 -96.988892 348.545250 
+
+  Voxel 13 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -307.085318 -259.129853 -148.875517 -13.559656 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -307.085318 -259.129853 -148.875517 -13.559656 
+
+  Voxel 14 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 310.632416 -61.055606 -30.051420 80.891913 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 310.632416 -61.055606 -30.051420 80.891913 
+
+  Voxel 15 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -132.591543 168.562888 102.820370 96.488706 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -132.591543 168.562888 102.820370 96.488706 
+
+  Voxel 16 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 175.463338 -221.544045 0.072398 -151.653509 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 175.463338 -221.544045 0.072398 -151.653509 
+
+  Voxel 17 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -119.275822 204.941740 -148.205438 -13.616284 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -119.275822 204.941740 -148.205438 -13.616284 
+
+  Voxel 18 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -315.090320 213.002796 138.966786 -61.922887 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -315.090320 213.002796 138.966786 -61.922887 
+
+  Voxel 19 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 30.324633 21.517199 58.188461 -156.279835 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 30.324633 21.517199 58.188461 -156.279835 
+
+  Voxel 20 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 117.461862 270.892167 54.525195 184.077239 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 117.461862 270.892167 54.525195 184.077239 
+
+  Voxel 21 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -149.649490 197.448591 -286.169997 260.610037 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -149.649490 197.448591 -286.169997 260.610037 
+
+  Voxel 22 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -4.646871 -72.481992 31.258659 -230.767989 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -4.646871 -72.481992 31.258659 -230.767989 
+
+  Voxel 23 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -0.635150 38.791681 -32.845299 18.809103 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -0.635150 38.791681 -32.845299 18.809103 
+
+  Voxel 24 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -19.634453 -156.350151 334.121849 -886.988224 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -19.634453 -156.350151 334.121849 -886.988224 
+
+  Voxel 25 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 19.798628 833.415950 777.069123 43.475417 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 19.798628 833.415950 777.069123 43.475417 
+
+  Voxel 26 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 26.573561 413.216171 354.565690 -154.987128 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 26.573561 413.216171 354.565690 -154.987128 
+
+  Voxel 27 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 206.602127 -400.011293 -206.360347 -90.367891 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 206.602127 -400.011293 -206.360347 -90.367891 
+
+  Voxel 28 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -108.045841 -38.983659 204.132192 445.991483 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -108.045841 -38.983659 204.132192 445.991483 
+
+  Voxel 29 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 47.249761 61.926725 11.619224 349.952330 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 47.249761 61.926725 11.619224 349.952330 
+
+  Voxel 30 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 135.153499 340.391449 124.741521 111.467758 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 135.153499 340.391449 124.741521 111.467758 
+
+  Voxel 31 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 190.757731 702.658946 53.445190 360.175788 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 190.757731 702.658946 53.445190 360.175788 
+
+  Voxel 32 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -151.713426 165.731758 -284.477725 554.664450 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -151.713426 165.731758 -284.477725 554.664450 
+
+  Voxel 33 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -55.030309 434.746961 -171.998235 527.895257 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -55.030309 434.746961 -171.998235 527.895257 
+
+  Voxel 34 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -107.519972 85.919393 -512.306002 6.916543 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -107.519972 85.919393 -512.306002 6.916543 
+
+  Voxel 35 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -41.822154 116.901428 -1.223493 -34.816510 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -41.822154 116.901428 -1.223493 -34.816510 
+
+  Voxel 36 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 150.094969 238.500733 282.475553 288.405162 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 150.094969 238.500733 282.475553 288.405162 
+
+  Voxel 37 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 72.483012 -310.084492 62.415276 240.554038 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 72.483012 -310.084492 62.415276 240.554038 
+
+  Voxel 38 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 13.018102 -380.468374 -75.866939 31.940927 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 13.018102 -380.468374 -75.866939 31.940927 
+
+  Voxel 39 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 302.447823 104.588210 -102.743596 490.380830 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 302.447823 104.588210 -102.743596 490.380830 
+
+  Voxel 40 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -23.857709 534.483580 -114.210482 467.487463 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -23.857709 534.483580 -114.210482 467.487463 
+
+  Voxel 41 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -194.940060 878.970370 -250.499497 370.730007 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -194.940060 878.970370 -250.499497 370.730007 
+
+  Voxel 42 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 180.799314 145.763161 57.704029 288.886725 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 180.799314 145.763161 57.704029 288.886725 
+
+  Voxel 43 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 214.949334 -143.469604 216.722455 384.585575 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 214.949334 -143.469604 216.722455 384.585575 
+
+  Voxel 44 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -68.903696 141.868742 99.194392 291.332670 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -68.903696 141.868742 99.194392 291.332670 
+
+  Voxel 45 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -122.354469 -69.862856 -455.852187 -125.652890 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -122.354469 -69.862856 -455.852187 -125.652890 
+
+  Voxel 46 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 274.317721 -107.878260 -114.505832 -339.253716 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 274.317721 -107.878260 -114.505832 -339.253716 
+
+  Voxel 47 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 166.627850 239.287002 -51.014473 -250.872750 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 166.627850 239.287002 -51.014473 -250.872750 
+
+  Voxel 48 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 74.846668 164.162751 -40.896815 -39.320112 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 74.846668 164.162751 -40.896815 -39.320112 
+
+  Voxel 49 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -123.250386 -22.909954 -36.291847 369.508459 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -123.250386 -22.909954 -36.291847 369.508459 
+
+  Voxel 50 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 1145.822591 470.816369 1511.491022 610.698891 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 1145.822591 470.816369 1511.491022 610.698891 
+
+  Voxel 51 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 477.321060 1012.853971 486.747921 419.354424 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 477.321060 1012.853971 486.747921 419.354424 
+
+  Voxel 52 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -734.750399 233.075594 -1450.511126 -647.202635 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -734.750399 233.075594 -1450.511126 -647.202635 
+
+  Voxel 53 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 35.166974 -20.288756 -90.392990 -309.145069 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 35.166974 -20.288756 -90.392990 -309.145069 
+
+  Voxel 54 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -177.879583 -136.039147 66.987357 227.636548 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -177.879583 -136.039147 66.987357 227.636548 
+
+  Voxel 55 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -758.784190 273.366675 -793.046249 -436.417355 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -758.784190 273.366675 -793.046249 -436.417355 
+
+  Voxel 56 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 1335.361274 621.823065 728.166108 -230.773988 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 1335.361274 621.823065 728.166108 -230.773988 
+
+  Voxel 57 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 661.912805 496.512041 232.731930 150.624880 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 661.912805 496.512041 232.731930 150.624880 
+
+  Voxel 58 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 147.294744 -48.403670 -171.197369 155.805286 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 147.294744 -48.403670 -171.197369 155.805286 
+
+  Voxel 59 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 578.457184 287.847645 419.344730 -136.167818 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 578.457184 287.847645 419.344730 -136.167818 
+
+  Voxel 60 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 766.578838 348.839185 269.473982 -724.897576 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 766.578838 348.839185 269.473982 -724.897576 
+
+  Voxel 61 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 125.657291 147.477486 -54.467521 -96.575794 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 125.657291 147.477486 -54.467521 -96.575794 
+
+  Voxel 62 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 3.662081 115.556482 60.475190 42.312879 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 3.662081 115.556482 60.475190 42.312879 
+
+  Voxel 63 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 34.328336 126.171509 375.433361 -92.107487 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 34.328336 126.171509 375.433361 -92.107487 
+
+  Voxel 64 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 105.267276 405.270765 -36.287972 226.125889 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 105.267276 405.270765 -36.287972 226.125889 
+
+  Voxel 65 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 442.968298 128.425055 137.458681 -169.224496 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 442.968298 128.425055 137.458681 -169.224496 
+
+  Voxel 66 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 24.164329 -539.595682 -13.423118 -1093.005993 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 24.164329 -539.595682 -13.423118 -1093.005993 
+
+  Voxel 67 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -197.242641 87.868055 -164.022681 6.970111 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -197.242641 87.868055 -164.022681 6.970111 
+
+  Voxel 68 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 167.243901 -172.366962 45.573966 -86.326206 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 167.243901 -172.366962 45.573966 -86.326206 
+
+  Voxel 69 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 308.951606 -272.450346 309.914107 36.958181 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 308.951606 -272.450346 309.914107 36.958181 
+
+  Voxel 70 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 3.561830 -104.641171 345.979098 -89.525440 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 3.561830 -104.641171 345.979098 -89.525440 
+
+  Voxel 71 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -478.391422 94.864214 -306.440660 266.355986 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -478.391422 94.864214 -306.440660 266.355986 
+
+  Voxel 72 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -152.091002 494.973399 -246.891181 223.146437 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -152.091002 494.973399 -246.891181 223.146437 
+
+  Voxel 73 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 29.414254 -405.700262 -437.794022 -894.510487 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 29.414254 -405.700262 -437.794022 -894.510487 
+
+  Voxel 74 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -63.763169 -301.674298 -135.559023 -321.209750 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -63.763169 -301.674298 -135.559023 -321.209750 
+
+  Voxel 75 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 113.856572 59.212530 -96.918483 221.558623 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 113.856572 59.212530 -96.918483 221.558623 
+
+  Voxel 76 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 186.016067 -84.960787 18.155690 -229.250370 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 186.016067 -84.960787 18.155690 -229.250370 
+
+  Voxel 77 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 53.531434 42.696876 -16.905748 -132.240140 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 53.531434 42.696876 -16.905748 -132.240140 
+
+  Voxel 78 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -109.059788 -44.714718 -214.775402 -80.637205 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -109.059788 -44.714718 -214.775402 -80.637205 
+
+  Voxel 79 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 42.317919 258.485678 -255.208690 -225.970784 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 42.317919 258.485678 -255.208690 -225.970784 
+
+  Voxel 80 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 487.809720 919.028564 -11.864947 28.461572 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 487.809720 919.028564 -11.864947 28.461572 
+
+  Voxel 81 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 220.436129 693.761872 15.215270 -37.803866 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 220.436129 693.761872 15.215270 -37.803866 
+
+  Voxel 82 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -136.275197 462.965249 -108.352924 -7.917894 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -136.275197 462.965249 -108.352924 -7.917894 
+
+  Voxel 83 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -133.660329 -98.357154 -133.773344 56.455448 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -133.660329 -98.357154 -133.773344 56.455448 
+
+  Voxel 84 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -32.325293 -242.777049 -74.301232 -214.299659 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -32.325293 -242.777049 -74.301232 -214.299659 
+
+  Voxel 85 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 397.690487 6.662465 916.110262 -391.415171 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 397.690487 6.662465 916.110262 -391.415171 
+
+  Voxel 86 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 775.803876 308.762377 422.683281 -202.444501 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 775.803876 308.762377 422.683281 -202.444501 
+
+  Voxel 87 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 833.148897 436.672581 -163.029342 245.458306 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 833.148897 436.672581 -163.029342 245.458306 
+
+  Voxel 88 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 296.547035 96.356078 204.494469 -166.512603 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 296.547035 96.356078 204.494469 -166.512603 
+
+  Voxel 89 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 11.922441 141.352420 29.641296 -259.858145 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 11.922441 141.352420 29.641296 -259.858145 
+
+  Voxel 90 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 37.345814 49.294043 -7.830648 30.790183 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 37.345814 49.294043 -7.830648 30.790183 
+
+  Voxel 91 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 614.323751 1145.010817 81.103579 792.962824 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 614.323751 1145.010817 81.103579 792.962824 
+
+  Voxel 92 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 416.785195 633.704096 4.263433 105.401810 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 416.785195 633.704096 4.263433 105.401810 
+
+  Voxel 93 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -221.522799 24.502164 -524.484155 344.208925 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -221.522799 24.502164 -524.484155 344.208925 
+
+  Voxel 94 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -85.807700 180.114123 -366.656793 344.023766 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -85.807700 180.114123 -366.656793 344.023766 
+
+  Voxel 95 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 66.197366 310.268068 -151.381836 742.974909 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 66.197366 310.268068 -151.381836 742.974909 
+
+  Voxel 96 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -91.377032 82.582286 -255.660359 462.455166 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -91.377032 82.582286 -255.660359 462.455166 
+
+  Voxel 97 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 69.611766 -361.460974 -182.246388 23.585371 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 69.611766 -361.460974 -182.246388 23.585371 
+
+  Voxel 98 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -44.200241 -204.407038 -368.883028 391.828395 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -44.200241 -204.407038 -368.883028 391.828395 
+
+  Voxel 99 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -143.992877 591.981572 -257.272340 715.929733 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -143.992877 591.981572 -257.272340 715.929733 
+
+  Voxel 100 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 93.744584 983.874940 -362.243310 1004.834791 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 93.744584 983.874940 -362.243310 1004.834791 
+
+  Voxel 101 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -14.365466 389.432126 -438.256848 342.302910 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -14.365466 389.432126 -438.256848 342.302910 
+
+  Voxel 102 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -38.097744 -274.344405 -288.601756 -197.987101 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -38.097744 -274.344405 -288.601756 -197.987101 
+
+  Voxel 103 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -50.714049 -320.153829 -233.709759 333.437437 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -50.714049 -320.153829 -233.709759 333.437437 
+
+  Voxel 104 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 52.907215 -330.158801 -320.684693 -254.618001 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 52.907215 -330.158801 -320.684693 -254.618001 
+
+  Voxel 105 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 170.694389 355.386940 -83.873722 -81.446879 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 170.694389 355.386940 -83.873722 -81.446879 
+
+  Voxel 106 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 127.604817 452.476288 -356.482324 926.210036 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 127.604817 452.476288 -356.482324 926.210036 
+
+  Voxel 107 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -36.213696 -190.191174 -194.445301 592.322121 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -36.213696 -190.191174 -194.445301 592.322121 
+
+  Voxel 108 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 64.469110 -120.729325 -94.566797 163.345115 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 64.469110 -120.729325 -94.566797 163.345115 
+
+  Voxel 109 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 181.280669 -50.807217 45.272175 82.351914 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 181.280669 -50.807217 45.272175 82.351914 
+
+  Voxel 110 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 279.397478 437.865909 292.726130 197.103562 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 279.397478 437.865909 292.726130 197.103562 
+
+  Voxel 111 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 176.192824 -315.858439 58.746738 7.972031 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 176.192824 -315.858439 58.746738 7.972031 
+
+  Voxel 112 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 139.967446 308.261599 -200.671680 441.221501 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 139.967446 308.261599 -200.671680 441.221501 
+
+  Voxel 113 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -151.932509 62.329463 -154.716301 321.700356 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -151.932509 62.329463 -154.716301 321.700356 
+
+  Voxel 114 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -42.013556 11.090630 -91.884799 354.603105 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -42.013556 11.090630 -91.884799 354.603105 
+
+  Voxel 115 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 49.407230 438.256493 25.862347 351.367165 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 49.407230 438.256493 25.862347 351.367165 
+
+  Voxel 116 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 6.937052 193.373586 -877.742002 448.427222 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 6.937052 193.373586 -877.742002 448.427222 
+
+  Voxel 117 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 135.614080 351.169318 92.663840 551.859906 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 135.614080 351.169318 92.663840 551.859906 
+
+  Voxel 118 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 135.272467 435.131644 512.216634 517.386202 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 135.272467 435.131644 512.216634 517.386202 
+
+  Voxel 119 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 207.459221 331.582544 213.602578 382.444811 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 207.459221 331.582544 213.602578 382.444811 
+
+  Voxel 120 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 167.401886 292.089059 -94.378363 289.198179 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 167.401886 292.089059 -94.378363 289.198179 
+
+  Voxel 121 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 121.244265 265.122314 126.600429 408.016689 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 121.244265 265.122314 126.600429 408.016689 
+
+  Voxel 122 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -148.759334 191.890559 -48.400250 414.033663 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -148.759334 191.890559 -48.400250 414.033663 
+
+  Voxel 123 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 0.216506 -41.635654 -58.733215 236.519843 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 0.216506 -41.635654 -58.733215 236.519843 
+
+  Voxel 124 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -148.206745 -231.635913 -431.732650 63.520995 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -148.206745 -231.635913 -431.732650 63.520995 
+
+  Voxel 125 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 111.603532 -6.079281 70.775702 40.415452 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 111.603532 -6.079281 70.775702 40.415452 
+
+  Voxel 126 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 46.193189 -442.348459 -382.709878 155.784857 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 46.193189 -442.348459 -382.709878 155.784857 
+
+  Voxel 127 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -153.841927 -382.090224 -349.416666 108.831979 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -153.841927 -382.090224 -349.416666 108.831979 
+
+  Voxel 128 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -309.292264 -292.342230 -512.124632 255.313447 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -309.292264 -292.342230 -512.124632 255.313447 
+
+  Voxel 129 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -299.846579 39.150315 -157.781720 280.301437 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -299.846579 39.150315 -157.781720 280.301437 
+
+  Voxel 130 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 145.110449 -299.634292 -456.675438 -132.095436 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 145.110449 -299.634292 -456.675438 -132.095436 
+
+  Voxel 131 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 3.805439 -738.660039 -360.649795 -121.975943 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 3.805439 -738.660039 -360.649795 -121.975943 
+
+  Voxel 132 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -333.808847 -676.086963 -398.555390 6.057092 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -333.808847 -676.086963 -398.555390 6.057092 
+
+  Voxel 133 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -63.164917 -509.285612 -628.295184 149.754075 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -63.164917 -509.285612 -628.295184 149.754075 
+
+  Voxel 134 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -157.068473 -357.941234 -482.966692 -70.564005 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -157.068473 -357.941234 -482.966692 -70.564005 
+
+  Voxel 135 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 159.461923 -464.846985 -529.315573 -431.369336 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 159.461923 -464.846985 -529.315573 -431.369336 
+
+  Voxel 136 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -175.640467 -777.031561 -291.959927 -117.392203 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -175.640467 -777.031561 -291.959927 -117.392203 
+
+  Voxel 137 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 81.177002 -735.391231 -457.205120 466.108656 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 81.177002 -735.391231 -457.205120 466.108656 
+
+  Voxel 138 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 363.392242 -260.433903 -366.646248 403.853608 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 363.392242 -260.433903 -366.646248 403.853608 
+
+  Voxel 139 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 403.617226 -21.517723 -76.212691 173.922950 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 403.617226 -21.517723 -76.212691 173.922950 
+
+  Voxel 140 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -23.019188 -262.943174 51.775282 61.267446 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -23.019188 -262.943174 51.775282 61.267446 
+
+  Voxel 141 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -64.214804 -877.422524 -174.587169 -907.881733 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -64.214804 -877.422524 -174.587169 -907.881733 
+
+  Voxel 142 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -81.976918 -380.860176 -120.486538 31.766707 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -81.976918 -380.860176 -120.486538 31.766707 
+
+  Voxel 143 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 166.641360 285.638837 -70.240368 96.531523 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 166.641360 285.638837 -70.240368 96.531523 
+
+  Voxel 144 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -3.348392 235.595275 -235.762414 383.005699 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -3.348392 235.595275 -235.762414 383.005699 
+
+  Voxel 145 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 44.365142 194.541040 -129.506950 157.771088 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 44.365142 194.541040 -129.506950 157.771088 
+
+  Voxel 146 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: 31.262437 -176.039105 -108.361503 40.348561 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 31.262437 -176.039105 -108.361503 40.348561 
+
+  Voxel 147 of 147
+    Starting iteration 11 of 10
+
+    Final parameter estimates (4x1) are: -22.644056 24.412732 130.037065 78.360713 
+
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: -22.644056 24.412732 130.037065 78.360713 
+
+    Preparing to save results...
+    Writing paramnames.txt...
+      Parameter_1
+      Parameter_2
+      Parameter_3
+      Parameter_4
+    Same information using DumpParameters:
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 1.000000 2.000000 3.000000 4.000000 
+
+    Writing means...
+    Writing means...
+    Writing means...
+    Writing means...
+    Done writing results.
+FABBER is all done.
+Start time: Wed Sep 28 11:11:26 2016
+End time: Wed Sep 28 11:11:27 2016
+Duration: 1 seconds.

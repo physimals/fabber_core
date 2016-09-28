@@ -1,0 +1,195 @@
+Logfile started: outdata_linear_nlls/logfile
+Start time: Wed Sep 28 12:08:40 2016
+FABBER release v2.0 
+Command line and effective options:
+/usr/share/fsl/5.0/bin/fabber
+--output='outdata_linear_nlls'
+--basis='test_linear_design.mat'
+--data1='test_data.nii.gz'
+--mask='test_mask_small.nii.gz'
+--method='nlls'
+--model='linear'
+--------------------
+    Reading design file: test_linear_design.mat
+      Loaded 4 basis functions of length 106
+    Forward Model version:
+      $Id: fwdmodel_linear.cc,v 1.18 2011/08/04 13:36:35 chappell Exp $
+    Loading mask data from 'test_mask_small.nii.gz'
+Dimensions: x=64, y=64, z=42, vols=1
+Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=1 sec
+Intents: 0, 0, 0, 0
+  Loading data from multiple files...
+    Loading data1 from 'test_data.nii.gz'
+      Dimensions: x=64, y=64, z=42, vols=106
+      Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=4.2 sec
+      Intents: 0, 0, 0, 0
+    Applying mask to all data sets...
+    Combining data into one big matrix by interleaving...
+    Done loading data, size = 106 timepoints by 147 voxels
+  Voxel 1 of 147
+  Voxel 2 of 147
+  Voxel 3 of 147
+  Voxel 4 of 147
+  Voxel 5 of 147
+  Voxel 6 of 147
+  Voxel 7 of 147
+  Voxel 8 of 147
+  Voxel 9 of 147
+  Voxel 10 of 147
+  Voxel 11 of 147
+  Voxel 12 of 147
+  Voxel 13 of 147
+  Voxel 14 of 147
+  Voxel 15 of 147
+  Voxel 16 of 147
+  Voxel 17 of 147
+  Voxel 18 of 147
+  Voxel 19 of 147
+  Voxel 20 of 147
+  Voxel 21 of 147
+  Voxel 22 of 147
+  Voxel 23 of 147
+  Voxel 24 of 147
+  Voxel 25 of 147
+  Voxel 26 of 147
+  Voxel 27 of 147
+  Voxel 28 of 147
+  Voxel 29 of 147
+  Voxel 30 of 147
+  Voxel 31 of 147
+  Voxel 32 of 147
+  Voxel 33 of 147
+  Voxel 34 of 147
+  Voxel 35 of 147
+  Voxel 36 of 147
+  Voxel 37 of 147
+  Voxel 38 of 147
+  Voxel 39 of 147
+  Voxel 40 of 147
+  Voxel 41 of 147
+  Voxel 42 of 147
+  Voxel 43 of 147
+  Voxel 44 of 147
+  Voxel 45 of 147
+  Voxel 46 of 147
+  Voxel 47 of 147
+  Voxel 48 of 147
+  Voxel 49 of 147
+  Voxel 50 of 147
+  Voxel 51 of 147
+  Voxel 52 of 147
+  Voxel 53 of 147
+  Voxel 54 of 147
+  Voxel 55 of 147
+  Voxel 56 of 147
+  Voxel 57 of 147
+  Voxel 58 of 147
+  Voxel 59 of 147
+  Voxel 60 of 147
+  Voxel 61 of 147
+  Voxel 62 of 147
+  Voxel 63 of 147
+  Voxel 64 of 147
+  Voxel 65 of 147
+  Voxel 66 of 147
+  Voxel 67 of 147
+  Voxel 68 of 147
+  Voxel 69 of 147
+  Voxel 70 of 147
+  Voxel 71 of 147
+  Voxel 72 of 147
+  Voxel 73 of 147
+  Voxel 74 of 147
+  Voxel 75 of 147
+  Voxel 76 of 147
+  Voxel 77 of 147
+  Voxel 78 of 147
+  Voxel 79 of 147
+  Voxel 80 of 147
+  Voxel 81 of 147
+  Voxel 82 of 147
+  Voxel 83 of 147
+  Voxel 84 of 147
+  Voxel 85 of 147
+  Voxel 86 of 147
+  Voxel 87 of 147
+  Voxel 88 of 147
+  Voxel 89 of 147
+  Voxel 90 of 147
+  Voxel 91 of 147
+  Voxel 92 of 147
+  Voxel 93 of 147
+  Voxel 94 of 147
+  Voxel 95 of 147
+  Voxel 96 of 147
+  Voxel 97 of 147
+  Voxel 98 of 147
+  Voxel 99 of 147
+  Voxel 100 of 147
+  Voxel 101 of 147
+  Voxel 102 of 147
+  Voxel 103 of 147
+  Voxel 104 of 147
+  Voxel 105 of 147
+  Voxel 106 of 147
+  Voxel 107 of 147
+  Voxel 108 of 147
+  Voxel 109 of 147
+  Voxel 110 of 147
+  Voxel 111 of 147
+  Voxel 112 of 147
+  Voxel 113 of 147
+  Voxel 114 of 147
+  Voxel 115 of 147
+  Voxel 116 of 147
+  Voxel 117 of 147
+  Voxel 118 of 147
+  Voxel 119 of 147
+  Voxel 120 of 147
+  Voxel 121 of 147
+  Voxel 122 of 147
+  Voxel 123 of 147
+  Voxel 124 of 147
+  Voxel 125 of 147
+  Voxel 126 of 147
+  Voxel 127 of 147
+  Voxel 128 of 147
+  Voxel 129 of 147
+  Voxel 130 of 147
+  Voxel 131 of 147
+  Voxel 132 of 147
+  Voxel 133 of 147
+  Voxel 134 of 147
+  Voxel 135 of 147
+  Voxel 136 of 147
+  Voxel 137 of 147
+  Voxel 138 of 147
+  Voxel 139 of 147
+  Voxel 140 of 147
+  Voxel 141 of 147
+  Voxel 142 of 147
+  Voxel 143 of 147
+  Voxel 144 of 147
+  Voxel 145 of 147
+  Voxel 146 of 147
+  Voxel 147 of 147
+    Preparing to save results...
+    Writing paramnames.txt...
+      Parameter_1
+      Parameter_2
+      Parameter_3
+      Parameter_4
+    Same information using DumpParameters:
+      Parameters mean nothing to me!  I am a mere linear model.
+        Vector: 1.000000 2.000000 3.000000 4.000000 
+
+    Writing means...
+    Writing means...
+    Writing means...
+    Writing means...
+Free energy wasn't recorded, so no freeEnergy.nii.gz created.
+    Done writing results.
+FABBER is all done.
+Start time: Wed Sep 28 12:08:40 2016
+End time: Wed Sep 28 12:08:41 2016
+Duration: 1 seconds.

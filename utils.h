@@ -13,8 +13,6 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
-
 /**
  * Template factory class.
  *
@@ -40,7 +38,7 @@ class TemplateFactory {
      * accessed.
      * @param function Function pointer.
      */
-    void Add(const string& name, Function function);
+    void Add(const std::string& name, Function function);
     /**
      * Invoke the function pointer with the given name and return a
      * pointer to an object.
@@ -48,21 +46,21 @@ class TemplateFactory {
      * @return pointer, or NULL if name is
      * not known.
      */ 
-    T* Create(const string& name);
+    T* Create(const std::string& name);
     /** 
      * Get the list of names.
      * @return list of names.
      */
-    vector<string> GetNames();
+    std::vector<std::string> GetNames();
     /** 
      * Is there a function pointer with the given name?
      * @param name
      * @return true if so, false otherwise.
      */
-    bool HasName(const string& name);
+    bool HasName(const std::string& name);
   private:
     /** Map from names to function pointers. */
-    map<string, Function> functionMap_;
+    std::map<std::string, Function> functionMap_;
 };
 
 template <class T>
@@ -76,9 +74,9 @@ TemplateFactory<T>::~TemplateFactory() {
 }
 
 template <class T>
-vector<string> TemplateFactory<T>::GetNames() {
-  vector<string> names;
-  for (typename map<string, Function>::iterator it = 
+std::vector<std::string> TemplateFactory<T>::GetNames() {
+	std::vector<std::string> names;
+  for (typename std::map<std::string, Function>::iterator it =
        functionMap_.begin(); it != functionMap_.end(); it++) {
     names.push_back(it->first);
   }
@@ -86,17 +84,17 @@ vector<string> TemplateFactory<T>::GetNames() {
 }
 
 template <class T>
-bool TemplateFactory<T>::HasName(const string& name) {
+bool TemplateFactory<T>::HasName(const std::string& name) {
   return (functionMap_.find(name) != functionMap_.end());
 }
 
 template <class T>
-void TemplateFactory<T>::Add(const string& name, Function function) {
+void TemplateFactory<T>::Add(const std::string& name, Function function) {
   functionMap_[name] = function;
 }
 
 template <class T>
-T* TemplateFactory<T>::Create(const string& name) {
+T* TemplateFactory<T>::Create(const std::string& name) {
   if (functionMap_.count(name)) {
     return functionMap_[name]();
   }
@@ -170,7 +168,7 @@ class FactoryRegistration {
      * Constructor.
      * @param name Name by which U's function will be registered,
      */
-    FactoryRegistration(string name) {
+    FactoryRegistration(std::string name) {
       (T::GetInstance())->Add(name, &U::NewInstance);
     }
 };
@@ -201,26 +199,26 @@ class Dispatcher {
      * accessed.
      * @param function Function pointer.
      */
-    void Add(const string& name, Function function);
+    void Add(const std::string& name, Function function);
     /**
      * Invoke the function pointer with the given name.
      * @param name
      */ 
-    void Dispatch(const string& name);
+    void Dispatch(const std::string& name);
     /** 
      * Get the list of names.
      * @return list of names.
      */
-    vector<string> GetNames();
+    std::vector<std::string> GetNames();
     /** 
      * Is there a function pointer with the given name?
      * @param name
      * @return true if so, false otherwise.
      */
-    bool HasName(const string& name);
+    bool HasName(const std::string& name);
   private:
     /** Map from names to function pointers. */
-    map<string, Function> functionMap_;
+    std::map<std::string, Function> functionMap_;
 };
 
 #endif // __FABBER_UTILS_H

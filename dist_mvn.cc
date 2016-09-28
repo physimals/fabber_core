@@ -7,10 +7,8 @@
 /*  CCOPYRIGHT */
 
 #include "dist_mvn.h"
-#include "miscmaths/miscmaths.h"
 
 using namespace Utilities;
-using namespace MISCMATHS;
 
 // Constructors
 

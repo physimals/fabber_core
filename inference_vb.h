@@ -44,10 +44,10 @@ protected:
 	void PassModelData(int voxel);
 
 	ConvergenceDetector* conv;
-	const MVNDist* initialFwdPrior;
-	const MVNDist* initialFwdPosterior;
-	const NoiseParams* initialNoisePrior;
-	const NoiseParams* initialNoisePosterior;
+	std::auto_ptr<MVNDist> initialFwdPrior;
+	MVNDist* initialFwdPosterior;
+	NoiseParams* initialNoisePrior;
+	NoiseParams* initialNoisePosterior;
 
 	const Matrix *m_origdata;
 	const Matrix *m_coords;

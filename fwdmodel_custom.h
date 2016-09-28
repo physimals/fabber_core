@@ -19,9 +19,6 @@
 
 #include "fwdmodel.h"
 
-using namespace NEWMAT;
-using namespace std;
-
 /* Ideally you should create your own fwdmodel_*.h and .cc files to implement your models.
  * This "custom" model gives you a place to put your code and quickly start fitting your model.
  */

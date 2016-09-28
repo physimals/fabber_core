@@ -9,12 +9,12 @@
 #include "newmat.h"
 
 #include "easylog.h"
-//#include "tracer_plus.h"
+#include "utils/tracer_plus.h"
 #include "inference.h"
 
 using namespace std;
-using namespace MISCMATHS;
 using namespace NEWMAT;
+using namespace Utilities;
 
 InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 {
@@ -193,13 +193,38 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 			data.SaveVoxelData("modelfit", modelFit);
 		}
 	}
+
+	if (true)
+	{
+		LOG << "InferenceTechnique::Writing model variances..." << endl;
+		Matrix modelStd;
+		Matrix datamtx = data.GetMainVoxelData();
+		modelStd.ReSize(datamtx.Nrows(), nVoxels);
+		for (int vox = 1; vox <= nVoxels; vox++)
+		{
+			LinearizedFwdModel lin(model);
+			lin.ReCentre(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params));
+			Matrix var = resultMVNs.at(vox - 1)->GetCovariance().SymSubMatrix(1, m_num_params);
+
+			Matrix mvar = lin.Jacobian() * var * lin.Jacobian().t();
+			ColumnVector tmp(datamtx.Nrows());
+			for (unsigned i = 1; i <= datamtx.Nrows(); i++)
+			{
+				tmp(i) = sqrt(mvar(i, i));
+			}
+
+			modelStd.Column(vox) = tmp;
+		}
+		data.SaveVoxelData("modelstd", modelStd);
+
+	}
 	LOG << "InferenceTechnique::Done writing results." << endl;
 }
 
 void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData& allData, string paramFilename = "")
 {
-	// Loads in a MVN to set it as inital values for inference
-	// can cope with the special scenario in which extra parameters have been added to the inference
+// Loads in a MVN to set it as inital values for inference
+// can cope with the special scenario in which extra parameters have been added to the inference
 	Tracer_Plus tr("InferenceTechnique::InitMVNFromFile");
 
 	LOG << "InferenceTechnique::Merging supplied MVN with model intialization." << endl;
@@ -369,11 +394,11 @@ MCobj::MCobj(const FabberRunData& allData, int dof)
 {
 	Tracer_Plus tr("MCobj::MCobj");
 
-	//initialise
+//initialise
 	mask = allData.GetMask();
 	userdof=dof;
 	num_iter=10;
-	// the following sets up an initial zero deformation field
+// the following sets up an initial zero deformation field
 	Matrix datamat = allData.GetVoxelData();
 	wholeimage.setmatrix(datamat,mask);
 	modelpred=wholeimage;

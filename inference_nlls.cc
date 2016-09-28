@@ -1,3 +1,5 @@
+#ifndef NO_NLLS
+
 /* inference_nlls.h - Non-Linear Least Squares class declarations
 
  Adrian Groves Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
@@ -6,8 +8,12 @@
 
 /*  CCOPYRIGHT  */
 
-#include "dataset.h"
 #include "inference_nlls.h"
+
+#include "dataset.h"
+#include "utils/tracer_plus.h"
+
+using Utilities::Tracer_Plus;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
@@ -269,4 +275,4 @@ boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_pt
 
 	return (hessm);
 }
-
+#endif

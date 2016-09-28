@@ -13,8 +13,6 @@
 #include "easylog.h"
 #include "dataset.h"
 
-using namespace NEWMAT;
-
 /**
  * Multivariate Normal Distribution
  *

@@ -10,6 +10,8 @@
 
 #include "noisemodel.h"
 
+using namespace Utilities;
+
 NoiseModel* NoiseModel::NewFromName(const string& name)
 {
 	NoiseModelFactory* factory = NoiseModelFactory::GetInstance();

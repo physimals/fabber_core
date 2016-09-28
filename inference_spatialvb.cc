@@ -107,7 +107,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	{
 		if (spatialPriorsTypes[k - 1] == 'I')
 		{
-			imagepriorstr[k - 1] = args.GetString("image-prior" + stringify(k));
+			imagepriorstr[k - 1] = args.GetString("PSP_byname" + stringify(k) + "_image");
 		}
 	}
 
@@ -382,8 +382,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 			string fname = imagepriorstr[k - 1];
 			LOG_ERR("Reading Image prior ("<<k<<"): " << fname << endl);
-			// FIXME hacky
-			allData.Set(fname, fname);
 			ImagePrior[k - 1] = allData.GetVoxelData(fname).AsColumn();
 		}
 	}
@@ -783,7 +781,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					if (useEvidenceOptimization)
 					{
 						Warning::IssueAlways("Using R... mistake??");
-						delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k, initialFwdPrior, delta(k), true, &rho(
+						delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k, initialFwdPrior.get(), delta(k), true, &rho(
 								k));
 						LOG_ERR("\nSpatialPrior " << k << " type R eo : " << delta(k) << " " << rho(k) << " 0\n");
 					}
@@ -804,7 +802,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					// Spatial priors with only delta
 					if (useEvidenceOptimization)
 					{
-						delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k, initialFwdPrior, delta(k));
+						delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k, initialFwdPrior.get(), delta(k));
 						LOG_ERR("\nSpatialPrior " << k << " type D eo : " << delta(k) << " 0 0\n");
 					}
 					else

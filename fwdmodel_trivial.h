@@ -9,7 +9,6 @@
 #include "fwdmodel.h"
 #include "inference.h"
 #include <string>
-using namespace std;
 
 class TrivialFwdModel: public FwdModel
 {

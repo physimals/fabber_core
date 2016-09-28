@@ -21,7 +21,7 @@ public:
 	using VariationalBayesInferenceTechnique::ImagePrior;
 };
 
-class VbTest: public ::testing::Test
+class VbTest: public ::testing::TestWithParam<string>
 {
 protected:
 	VbTest()
@@ -38,8 +38,8 @@ protected:
 
 	virtual void SetUp()
 	{
-		vb
-				= reinterpret_cast<PublicVersion*> (static_cast<VariationalBayesInferenceTechnique*> (InferenceTechnique::NewFromName(
+		vb =
+				reinterpret_cast<PublicVersion*>(static_cast<VariationalBayesInferenceTechnique*>(InferenceTechnique::NewFromName(
 						"vb")));
 		model = FwdModel::NewFromName("trivial");
 	}
@@ -51,8 +51,7 @@ protected:
 
 	void Run()
 	{
-		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(
-				rundata.GetString("model")));
+		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata.GetString("model")));
 		fwd_model->Initialize(rundata);
 
 		vb->Initialize(fwd_model.get(), rundata);
@@ -73,10 +72,72 @@ protected:
 	PublicVersion *vb;
 };
 
+// Test multiple image priors. Note that this just
+// checks the code works when they are specified
+// not that they are actually having any effect!
+TEST_P(VbTest, ImagePriorsMultiple)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data, iprior_data1, iprior_data2;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
+	iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
+				}
+				iprior_data1(1, v) = VAL * 1.5;
+				iprior_data2(1, v) = VAL * 2.5;
+				v++;
+			}
+		}
+	}
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", "2");
+	rundata.Set("method", GetParam());
+
+	rundata.Set("PSP_byname1", "c0");
+	rundata.Set("PSP_byname1_type", "I");
+	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
+	rundata.Set("PSP_byname2", "c2");
+	rundata.Set("PSP_byname2_type", "I");
+	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
+	ASSERT_NO_THROW(Run());
+
+	ASSERT_EQ(3, vb->ImagePrior.size());
+	NEWMAT::RowVector iprior1 = vb->ImagePrior[0];
+	NEWMAT::RowVector iprior2 = vb->ImagePrior[1];
+	NEWMAT::RowVector iprior3 = vb->ImagePrior[2];
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior1.Ncols());
+	ASSERT_EQ(0, iprior2.Ncols());
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior3.Ncols());
+}
+
 // Test image priors. Note that this just
 // checks the code works when they are specified
 // not that they are actually having any effect!
-TEST_F(VbTest, ImagePriors)
+TEST_P(VbTest, ImagePriors)
 {
 	int NTIMES = 10; // needs to be even
 	int VSIZE = 5;
@@ -113,7 +174,7 @@ TEST_F(VbTest, ImagePriors)
 	rundata.SetMainVoxelData(data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
-	rundata.Set("method", "vb");
+	rundata.Set("method", GetParam());
 
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
@@ -122,20 +183,20 @@ TEST_F(VbTest, ImagePriors)
 
 	ASSERT_EQ(1, vb->ImagePrior.size());
 	NEWMAT::RowVector iprior = vb->ImagePrior[0];
-	ASSERT_EQ(VSIZE*VSIZE*VSIZE, iprior.Ncols());
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL*2);
-		ASSERT_FLOAT_EQ(VAL*1.5, iprior(i+1));
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
+		ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
 	}
 }
 
 // Test image priors when stored in a file
-TEST_F(VbTest, ImagePriorsFile)
+TEST_P(VbTest, ImagePriorsFile)
 {
 	int NTIMES = 10; // needs to be even
 	int VSIZE = 5;
@@ -144,10 +205,10 @@ TEST_F(VbTest, ImagePriorsFile)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data, iprior_data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	iprior_data.ReSize(1, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -159,10 +220,12 @@ TEST_F(VbTest, ImagePriorsFile)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					if (n % 2 == 0) data(n + 1, v) = VAL;
-					else data(n + 1, v) = VAL*3;
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
 				}
-				iprior_data(1, v) = VAL*1.5;
+				iprior_data(1, v) = VAL * 1.5;
 				v++;
 			}
 		}
@@ -179,7 +242,7 @@ TEST_F(VbTest, ImagePriorsFile)
 	rundata.SetMainVoxelData(data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
-	rundata.Set("method", "vb");
+	rundata.Set("method", GetParam());
 
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
@@ -189,18 +252,18 @@ TEST_F(VbTest, ImagePriorsFile)
 
 	ASSERT_EQ(1, vb->ImagePrior.size());
 	NEWMAT::RowVector iprior = vb->ImagePrior[0];
-	ASSERT_EQ(VSIZE*VSIZE*VSIZE, iprior.Ncols());
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL*2);
-		ASSERT_FLOAT_EQ(VAL*1.5, iprior(i+1));
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
+		ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
 	}
 
-	remove(FILENAME.c_str());
+	remove(string(FILENAME + ".nii.gz").c_str());
 }
 
 // Test restarting VB run
@@ -215,9 +278,9 @@ TEST_F(VbTest, Restart)
 	// Create coordinates and data matrices
 	// Data fitted to a quadratic function
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -229,7 +292,7 @@ TEST_F(VbTest, Restart)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1);
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
 				}
 				v++;
 			}
@@ -249,17 +312,18 @@ TEST_F(VbTest, Restart)
 	// Make sure not converged after first iteration!
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	ASSERT_NE(VAL, mean(1, 1));
 
 	mean = rundata.GetVoxelData("mean_c2");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	ASSERT_NE(VAL*1.5, mean(1, 1));
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	ASSERT_NE(VAL * 1.5, mean(1, 1));
 
 	// Save results and repeat. Should converge even though we
 	// only do 1 iteration each time.
-	for (int repeat=0; repeat<REPEATS; repeat++) {
+	for (int repeat = 0; repeat < REPEATS; repeat++)
+	{
 		NEWMAT::Matrix mvns = rundata.GetVoxelData("finalMVN");
 		//ASSERT_EQ(mvns.Nrows(), 7);
 		rundata.Set("max-iterations", "1");
@@ -278,25 +342,25 @@ TEST_F(VbTest, Restart)
 
 	mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(VAL, mean(1, i+1));
+		ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
 	}
 	mean = rundata.GetVoxelData("mean_c1");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
 		// GTEST has difficulty with comparing floats to 0
-		ASSERT_FLOAT_EQ(1, mean(1, i+1)+1);
+		ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
 	}
 	mean = rundata.GetVoxelData("mean_c2");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(VAL*1.5, mean(1, i+1));
+		ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
 	}
 }
 
@@ -313,9 +377,9 @@ TEST_F(VbTest, RestartFromFile)
 	// Create coordinates and data matrices
 	// Data fitted to a quadratic function
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -327,7 +391,7 @@ TEST_F(VbTest, RestartFromFile)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1);
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
 				}
 				v++;
 			}
@@ -347,17 +411,18 @@ TEST_F(VbTest, RestartFromFile)
 	// Make sure not converged after first iteration!
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	ASSERT_NE(VAL, mean(1, 1));
 
 	mean = rundata.GetVoxelData("mean_c2");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	ASSERT_NE(VAL*1.5, mean(1, 1));
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	ASSERT_NE(VAL * 1.5, mean(1, 1));
 
 	// Save results and repeat. Should converge even though we
 	// only do 1 iteration each time.
-	for (int repeat=0; repeat<REPEATS; repeat++) {
+	for (int repeat = 0; repeat < REPEATS; repeat++)
+	{
 		NEWMAT::Matrix mvns = rundata.GetVoxelData("finalMVN");
 		NEWIMAGE::volume4D<float> data_out(VSIZE, VSIZE, VSIZE, mvns.Nrows());
 		data_out.setmatrix(mvns);
@@ -385,27 +450,28 @@ TEST_F(VbTest, RestartFromFile)
 
 	mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(VAL, mean(1, i+1));
+		ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
 	}
 	mean = rundata.GetVoxelData("mean_c1");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
 		// GTEST has difficulty with comparing floats to 0
-		ASSERT_FLOAT_EQ(1, mean(1, i+1)+1);
+		ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
 	}
 	mean = rundata.GetVoxelData("mean_c2");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(VAL*1.5, mean(1, i+1));
+		ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
 	}
 }
 
+INSTANTIATE_TEST_CASE_P(VbSpatialTests, VbTest, ::testing::Values("vb", "spatialvb"));
 }
 

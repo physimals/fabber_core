@@ -6,3 +6,6 @@ CVS
 depend.mk
 fabber
 mvntool
+testfabber
+doc
+.sconsign.dblite

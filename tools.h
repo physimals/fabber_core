@@ -7,7 +7,6 @@
 /*  CCOPYRIGHT */
 
 #include <newmatio.h>
-using namespace NEWMAT;
 #include <math.h>
 #include <assert.h>
 

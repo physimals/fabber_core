@@ -1,0 +1,60 @@
+FABBER release v4.0pre
+Start time: Wed Sep 28 11:18:06 2016
+FabberRunData::Parameter =./fabber
+FabberRunData::Parameter data=test/test_data.nii.gz
+FabberRunData::Parameter degree=2
+FabberRunData::Parameter mask=test/test_mask_small.nii.gz
+FabberRunData::Parameter method=vb
+FabberRunData::Parameter model=poly
+FabberRunData::Parameter noise=white
+FabberRunData::Parameter output=out
+FabberRunData::Forward Model version 0
+InferenceTechnique::Model has 3 parameters
+WhiteNoiseMode::Pattern of phis used is [ 1 ]
+VariationalBayesInferenceTechnique::Noise has 1 parameters
+CountingConvergenceDetector::Max iterations=10
+VbInferenceTechnique::Note: numerical errors in voxels will cause the program to halt.
+VbInferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on calculating.
+FabberRunData::Loading data from 'test/test_data.nii.gz'
+FabberRunData::Dimensions: x=64, y=64, z=42, vols=106
+FabberRunData::Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=4.2 sec
+FabberRunData::Intents: 0, 0, 0, 0
+FabberRunData::Loading mask data from 'test/test_mask_small.nii.gz'
+FabberRunData::Dimensions: x=64, y=64, z=42, vols=1
+FabberRunData::Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=1 sec
+FabberRunData::Intents: 0, 0, 0, 0
+FabberRunData::Setting voxel coordinates from mask
+     Applying mask to data...
+VbInferenceTechnique::Prior type for param 1 is  
+VbInferenceTechnique::Prior type for param 2 is  
+VbInferenceTechnique::Prior type for param 3 is  
+WhiteNoiseMode::Pattern of phis used is [ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]
+InferenceTechnique::Preparing to save results...
+FabberRunData::Saving to nifti: finalMVN
+InferenceTechnique::Same information using DumpParameters:
+      1.000000 
+2.000000 
+3.000000 
+
+InferenceTechnique::Writing means...
+FabberRunData::Saving to nifti: mean_c0
+FabberRunData::Saving to nifti: zstat_c0
+FabberRunData::Saving to nifti: std_c0
+FabberRunData::Saving to nifti: mean_c1
+FabberRunData::Saving to nifti: zstat_c1
+FabberRunData::Saving to nifti: std_c1
+FabberRunData::Saving to nifti: mean_c2
+FabberRunData::Saving to nifti: zstat_c2
+FabberRunData::Saving to nifti: std_c2
+InferenceTechnique::Writing noise
+FabberRunData::Saving to nifti: noise_means
+FabberRunData::Saving to nifti: noise_stdevs
+InferenceTechnique::Writing free energy
+FabberRunData::Saving to nifti: freeEnergy
+InferenceTechnique::Writing model variances...
+FabberRunData::Saving to nifti: modelstd
+InferenceTechnique::Done writing results.
+FABBER is all done.
+Start time: Wed Sep 28 11:18:06 2016
+End time: Wed Sep 28 11:18:07 2016
+Duration: 1 seconds.

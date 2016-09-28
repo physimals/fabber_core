@@ -5,10 +5,6 @@
 #include "newimage/newimageall.h"
 #include "warpfns/warpfns.h"
 
-using namespace std;
-using namespace NEWMAT;
-using namespace NEWIMAGE;
-
 void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>& modelpred, int no_iter,
 		       const volume4D<float>& prevdefx, 
 		       const volume4D<float>& prevdefy, const volume4D<float>& prevdefz,
