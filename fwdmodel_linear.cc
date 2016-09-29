@@ -27,11 +27,14 @@ string LinearFwdModel::ModelVersion() const
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-	{	"basis", "File containing design matrix", false, ""}};
+{ "basis", OPT_FILE, "File containing design matrix", false, "" } };
 
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {
-	//return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+	for (int i = 0; i < NUM_OPTIONS; i++)
+	{
+		opts.push_back(OPTIONS[i]);
+	}
 }
 
 FwdModel* LinearFwdModel::NewInstance()

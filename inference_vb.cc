@@ -17,22 +17,22 @@ using Utilities::Tracer_Plus;
 static int NUM_OPTIONS = 16;
 static OptionSpec OPTIONS[] =
 {
-{ "noise", "Noise model to use (white or ar1)", false, "" },
-{ "PSP_byname<n>", "Name of model parameter to use image prior", true, "" },
-{ "PSP_byname<n>_type", "Type of image prior to use fo parameter <n> - I=image prior", true, "" },
-{ "PSP_byname<n>_image", "File containing image prior for parameter <n>", true, "" },
-{ "save-model-fit", "Save the model prediction as a 4d volume", true, "" },
-{ "save-residuals", "Save the difference between the data and the model prediction as a 4d volume", true, "" },
-{ "mcsteps", "Number of motion correction steps", true, "0" },
-{ "convergence", "Name of method for detecting convergence", true, "maxits" },
-{ "print-free-energy", "Output the free energy", true, "" },
-{ "continue-from-mvn", "Continue previous run from output MVN files", true, "" },
-{ "fwd-initial-prior", "MVN file containing initial model prior", true, "" },
-{ "fwd-initial-posterior", "MVN file containing initial model posterior", true, "" },
-{ "noise-initial-prior", "MVN file containing initial noise prior", true, "" },
-{ "noise-initial-posterior", "MVN file containing initial noise posterior", true, "" },
-{ "locked-linear-mvn", "MVN file containing fixed centres for linearization", true, "" },
-{ "allow-bad-voxels", "Continue if numerical error found in a voxel, rather than stopping", true, "" }, };
+{ "noise", OPT_STR, "Noise model to use (white or ar1)", false, "" },
+{ "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", true, "" },
+{ "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior", true, "" },
+{ "PSP_byname<n>_image", OPT_FILE, "File containing image prior for parameter <n>", true, "" },
+{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", true, "" },
+{ "save-residuals", OPT_BOOL, "Save the difference between the data and the model prediction as a 4d volume", true, "" },
+{ "mcsteps", OPT_INT, "Number of motion correction steps", true, "0" },
+{ "convergence", OPT_STR, "Name of method for detecting convergence", true, "maxits" },
+{ "print-free-energy", OPT_BOOL, "Output the free energy", true, "" },
+{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", true, "" },
+{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", true, "" },
+{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", true, "" },
+{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", true, "" },
+{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", true, "" },
+{ "locked-linear-mvn", OPT_FILE, "MVN file containing fixed centres for linearization", true, "" },
+{ "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping", true, "" }, };
 
 InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 {

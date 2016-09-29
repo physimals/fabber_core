@@ -11,7 +11,7 @@
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-	{	"degree", "Maximum power in the polynomial function", false, ""}};
+	{	"degree", OPT_INT, "Maximum power in the polynomial function", false, ""}};
 
 FwdModel* PolynomialFwdModel::NewInstance()
 {

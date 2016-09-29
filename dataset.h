@@ -26,6 +26,12 @@
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
 
+enum OptionType {
+	OPT_BOOL,
+	OPT_STR,
+	OPT_INT,
+	OPT_FILE,
+};
 /**
  * Describes a runtime option for a model, inference method, etc
  */
@@ -33,6 +39,8 @@ struct OptionSpec
 {
 	/** Option name as used on command line --name */
 	std::string name;
+	/** Option type - string or boolean */
+	OptionType type;
 	/** Human readable description */
 	std::string description;
 	/** true if does not need to be specified */
