@@ -26,12 +26,16 @@
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
 
-enum OptionType {
-	OPT_BOOL,
-	OPT_STR,
-	OPT_INT,
-	OPT_FILE,
+/**
+ * Option types
+ */
+enum OptionType
+{
+	OPT_BOOL, OPT_STR, OPT_INT, OPT_FILE,
 };
+
+std::ostream& operator<<(std::ostream& out, const OptionType value);
+
 /**
  * Describes a runtime option for a model, inference method, etc
  */
@@ -48,6 +52,8 @@ struct OptionSpec
 	/** Default value if there is one */
 	std::string def;
 };
+
+std::ostream& operator<<(std::ostream& out, const OptionSpec &value);
 
 /**
  * Functor which is be called to monitor progress.
@@ -448,7 +454,7 @@ private:
 #endif
 	NEWMAT::Matrix m_voxelCoords;
 
-	void AddKeyEqualsValue(const std::string key, bool trim_comments=false);
+	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
 	void CheckSize(std::string key, NEWMAT::Matrix &mat);
 	void GetMainVoxelDataMultiple();
 

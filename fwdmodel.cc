@@ -13,6 +13,12 @@
 #include <sstream> 
 #include <memory>
 
+std::vector<std::string> FwdModel::GetKnown()
+{
+	FwdModelFactory* factory = FwdModelFactory::GetInstance();
+	return factory->GetNames();
+}
+
 FwdModel* FwdModel::NewFromName(const string& name)
 {
 	FwdModelFactory* factory = FwdModelFactory::GetInstance();
@@ -35,8 +41,7 @@ void FwdModel::UsageFromName(const string& name, std::ostream &stream)
 	{
 		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
 		{
-			stream << "  " << iter->name << " : " << iter->description << " "
-					<< (iter->optional ? "(optional, default=" + iter->def : "(mandatory)") << endl;
+			stream << *iter;
 		}
 	}
 	else {

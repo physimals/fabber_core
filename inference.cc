@@ -17,6 +17,12 @@ using namespace std;
 using namespace NEWMAT;
 using Utilities::Tracer_Plus;
 
+std::vector<std::string> InferenceTechnique::GetKnown()
+{
+	InferenceTechniqueFactory* factory = InferenceTechniqueFactory::GetInstance();
+	return factory->GetNames();
+}
+
 InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 {
 	InferenceTechniqueFactory* factory = InferenceTechniqueFactory::GetInstance();
@@ -40,8 +46,7 @@ void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
 	{
 		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
 		{
-			stream << "  " << iter->name << " : " << iter->description << " "
-					<< (iter->optional ? "(optional, default=" + iter->def + ")" : "(mandatory)") << endl;
+			stream << *iter;
 		}
 	}
 }

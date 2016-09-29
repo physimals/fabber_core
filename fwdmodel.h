@@ -30,6 +30,12 @@ class FwdModel
 public:
 
 	/**
+	 * Static member function to return the names of all known
+	 * models
+	 */
+	static std::vector<std::string> GetKnown();
+
+	/**
 	 * Static member function, to pick a forward model from a name
 	 */
 	static FwdModel* NewFromName(const std::string& name);

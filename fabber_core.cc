@@ -33,15 +33,36 @@ int execute(int argc, char** argv)
 	bool gzLog = false;
 	try
 	{
-		cout << "----------------------" << endl;
-		cout << "Welcome to FABBER v" << VERSION << endl;
-		cout << "----------------------" << endl;
-
 		// Create a new Fabber run
 		FabberRunData params;
 		PercentProgressCheck percent;
 		params.SetProgressCheck(&percent);
 		params.Parse(argc, argv);
+
+		if (params.GetBool("listmodels"))
+		{
+			vector<string> models = FwdModel::GetKnown();
+			vector<string>::iterator iter;
+			for (iter=models.begin(); iter!=models.end(); iter++) {
+				cout << *iter << endl;
+			}
+
+			return 0;
+		}
+		if (params.GetBool("listmethods"))
+		{
+			vector<string> infers = InferenceTechnique::GetKnown();
+			vector<string>::iterator iter;
+			for (iter=infers.begin(); iter!=infers.end(); iter++) {
+				cout << *iter << endl;
+			}
+
+			return 0;
+		}
+
+		cout << "----------------------" << endl;
+		cout << "Welcome to FABBER v" << VERSION << endl;
+		cout << "----------------------" << endl;
 
 		// Print usage information if no arguments given, or
 		// if --help specified

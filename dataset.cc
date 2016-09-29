@@ -25,6 +25,36 @@
 using namespace std;
 using Utilities::Tracer_Plus;
 
+std::ostream& operator<<(std::ostream& out, const OptionType value)
+{
+	const char* s = 0;
+	switch (value)
+	{
+	case OPT_BOOL:
+		s = "BOOL";
+		break;
+	case OPT_STR:
+		s = "STRING";
+		break;
+	case OPT_INT:
+		s = "INTEGER";
+		break;
+	case OPT_FILE:
+		s = "FILENAME";
+		break;
+	default:
+		s = "UNKNOWN";
+	}
+
+	return out << s;
+}
+
+std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
+{
+	out << "  " << value.name << " [" << value.type << "] : " << value.description << " "
+			<< (value.optional ? "(optional, default=" + value.def : "(mandatory)") << endl;
+}
+
 void PercentProgressCheck::operator()(int voxel, int nVoxels)
 {
 	int percent = (100 * voxel) / nVoxels;

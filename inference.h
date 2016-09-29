@@ -31,6 +31,12 @@ class InferenceTechnique
 
 public:
 	/**
+	 * Static member function to return the names of all known
+	 * inference techniques
+	 */
+	static std::vector<std::string> GetKnown();
+
+	/**
 	 * Static member function, to pick an inference technique from a name
 	 */
 	static InferenceTechnique* NewFromName(const string& name);
