@@ -6,14 +6,17 @@
 
 /*  CCOPYRIGHT */
 
+#include "easylog.h"
+
 #include "assert.h"
 #include <stdexcept>
 #include <fstream>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <stdlib.h>
 
-#include "easylog.h"
+using namespace std;
 
 ostream* EasyLog::filestream = NULL;
 string EasyLog::outDir = "";
@@ -31,7 +34,7 @@ void EasyLog::StartLog(const string& basename, bool overwrite)
 	{
 		if (count >= 50) // I'm using a lot for some things
 		{
-			throw Runtime_error(("Cannot create directory (bad path, or too many + signs?):\n    " + outDir).c_str());
+			throw std::runtime_error(("Cannot create directory (bad path, or too many + signs?):\n    " + outDir).c_str());
 		}
 
 		// not portable!
@@ -49,7 +52,7 @@ void EasyLog::StartLog(const string& basename, bool overwrite)
 				break;
 			else
 				// Other error -- might be a problem!
-				throw Runtime_error(
+				throw std::runtime_error(
 						("Unexpected problem creating directory in --overwrite mode:\n    " + outDir).c_str());
 		}
 
@@ -101,7 +104,7 @@ void EasyLog::StopLog(bool gzip)
 		{
 			int retVal = system(("gzip " + outDir + "/logfile").c_str());
 			if (retVal != 0)
-				cout << "Failed to gzip logfile.  Oh well." << endl;
+				cout << "Failed to gzip logfile.  Oh well." << std::endl;
 		}
 		// We created this ofstream and need to tidy it up
 		delete filestream;
@@ -118,13 +121,13 @@ map<string, int> Warning::issueCount;
 void Warning::IssueOnce(const string& text)
 {
 	if (++issueCount[text] == 1)
-		LOG_ERR("WARNING ONCE: " << text << endl);
+		LOG_ERR("WARNING ONCE: " << text << std::endl);
 }
 
 void Warning::IssueAlways(const string& text)
 {
 	++issueCount[text];
-	LOG_ERR("WARNING ALWAYS: " << text << endl);
+	LOG_ERR("WARNING ALWAYS: " << text << std::endl);
 }
 
 void Warning::ReissueAll()
@@ -138,5 +141,5 @@ void Warning::ReissueAll()
 				( (it->second==1)?
 						"once: " :
 						stringify(it->second)+" times: "
-				) << it->first << endl);
+				) << it->first << std::endl);
 }

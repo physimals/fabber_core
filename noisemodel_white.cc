@@ -7,12 +7,16 @@
 /*  CCOPYRIGHT */
 
 #include "noisemodel_white.h"
+
 #include "noisemodel.h"
-#include <stdexcept>
-//using namespace MISCMATHS;
-using namespace Utilities;
 #include "dataset.h"
 #include "easylog.h"
+
+#include "utils/tracer_plus.h"
+
+#include <stdexcept>
+
+using Utilities::Tracer_Plus;
 
 NoiseModel* WhiteNoiseModel::NewInstance()
 {

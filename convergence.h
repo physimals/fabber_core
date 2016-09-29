@@ -6,10 +6,10 @@
 
 /*  CCOPYRIGHT */
 
-#include <ostream>
-
 #include "utils.h"
 #include "dataset.h"
+
+#include <ostream>
 
 /**
  * Abstract base class for method of testing whether the free energy maximisation algorithm has converged.

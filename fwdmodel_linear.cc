@@ -7,12 +7,16 @@
 /*  CCOPYRIGHT */
 
 #include "fwdmodel_linear.h"
-#include <iostream>
-#include "newmatio.h"
-#include <stdexcept>
-#include "easylog.h"
 
-using namespace Utilities;
+#include "easylog.h"
+#include "utils/tracer_plus.h"
+
+#include "newmatio.h"
+
+#include <iostream>
+#include <stdexcept>
+
+using Utilities::Tracer_Plus;
 using namespace std;
 
 string LinearFwdModel::ModelVersion() const
@@ -25,9 +29,9 @@ static OptionSpec OPTIONS[] =
 {
 	{	"basis", "File containing design matrix", false, ""}};
 
-vector<OptionSpec> LinearFwdModel::GetOptions() const
+void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {
-	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+	//return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
 }
 
 FwdModel* LinearFwdModel::NewInstance()

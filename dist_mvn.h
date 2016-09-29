@@ -8,10 +8,8 @@
 
 #pragma once
 
-#include <stdexcept>
-#include "assert.h"
-#include "easylog.h"
 #include "dataset.h"
+#include "easylog.h"
 
 /**
  * Multivariate Normal Distribution

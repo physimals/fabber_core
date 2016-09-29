@@ -7,9 +7,6 @@
 /*  CCOPYRIGHT */
 
 #pragma once
-#include <stdexcept>
-#include <vector>
-#include <map>
 
 #include "newmat.h"
 
@@ -21,6 +18,10 @@
 #define NIFTI_INTENT_NONE 1
 #define NIFTI_INTENT_SYMMATRIX 2
 #endif
+
+#include <stdexcept>
+#include <vector>
+#include <map>
 
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7

@@ -6,15 +6,16 @@
 
 /*  CCOPYRIGHT */
 
-#include "newmat.h"
+#include "inference.h"
 
 #include "easylog.h"
 #include "utils/tracer_plus.h"
-#include "inference.h"
+
+#include "newmat.h"
 
 using namespace std;
 using namespace NEWMAT;
-using namespace Utilities;
+using Utilities::Tracer_Plus;
 
 InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 {
@@ -33,7 +34,8 @@ void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
 
 	std::auto_ptr<InferenceTechnique> method(NewFromName(name));
 	stream << method->GetDescription() << endl << endl << "Options: " << endl << endl;
-	vector<OptionSpec> options = method->GetOptions();
+	vector<OptionSpec> options;
+	method->GetOptions(options);
 	if (options.size() > 0)
 	{
 		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)

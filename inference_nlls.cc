@@ -20,9 +20,12 @@ static OptionSpec OPTIONS[] =
 {
 { "basis", "File containing basis matrix in VEST format", false, "" }, };
 
-vector<OptionSpec> NLLSInferenceTechnique::GetOptions() const
+void NLLSInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
-	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
+	for (int i = 0; i < NUM_OPTIONS; i++)
+	{
+		opts.push_back(OPTIONS[i]);
+	}
 }
 
 std::string NLLSInferenceTechnique::GetDescription() const

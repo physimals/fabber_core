@@ -6,8 +6,6 @@
 
 /*  CCOPYRIGHT */
 
-#include <iostream>
-
 #include "fwdmodel_poly.h"
 
 static int NUM_OPTIONS = 1;
@@ -15,25 +13,32 @@ static OptionSpec OPTIONS[] =
 {
 	{	"degree", "Maximum power in the polynomial function", false, ""}};
 
-vector<OptionSpec> PolynomialFwdModel::GetOptions() const
-{
-	return vector<OptionSpec>(OPTIONS, OPTIONS+NUM_OPTIONS);
-}
-
 FwdModel* PolynomialFwdModel::NewInstance()
 {
 	return new PolynomialFwdModel();
 }
 
-void PolynomialFwdModel::Initialize(FabberRunData& args)
+void PolynomialFwdModel::GetOptions(vector<OptionSpec> &opts) const
 {
-	m_degree = convertTo<int> (args.GetString("degree"));
-	//	m_coeffs.resize(m_degree);
+	for (int i=0; i<NUM_OPTIONS; i++) {
+		opts.push_back(OPTIONS[i]);
+	}
+}
+
+std::string PolynomialFwdModel::GetDescription() const
+{
+	return "Model which fits data to a simple polynomial function: c0 + c1x + c2x^2 ... etc";
 }
 
 string PolynomialFwdModel::ModelVersion() const
 {
-	return "0"; // This model does not really deserve a version
+	return "1.0";
+}
+
+
+void PolynomialFwdModel::Initialize(FabberRunData& args)
+{
+	m_degree = convertTo<int> (args.GetString("degree"));
 }
 
 void PolynomialFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
@@ -54,9 +59,9 @@ void PolynomialFwdModel::Evaluate(const ColumnVector& params, ColumnVector& resu
 	}
 }
 
-void PolynomialFwdModel::DumpParameters(const ColumnVector& vec, const string& indent) const
+int PolynomialFwdModel::NumParams() const
 {
-	LOG << indent << vec << endl;
+	return m_degree + 1;
 }
 
 void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const

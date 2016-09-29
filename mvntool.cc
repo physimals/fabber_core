@@ -5,12 +5,6 @@
  Copyright (C) 2007 University of Oxford  */
 /*  CCOPYRIGHT  */
 
-#include <iostream>
-#include <exception>
-#include <stdexcept>
-#include <map>
-#include <string>
-
 #include "dist_mvn.h"
 
 #ifdef USE_NEWIMAGE
@@ -18,8 +12,14 @@
 using namespace NEWIMAGE;
 #endif
 
+#include <iostream>
+#include <exception>
+#include <stdexcept>
+#include <map>
+#include <string>
+
 using namespace std;
-using namespace Utilities;
+using Utilities::Tracer_Plus;
 
 /* Function declarations */
 void Usage(const string& errorString = "");

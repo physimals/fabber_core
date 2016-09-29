@@ -7,7 +7,9 @@
 /*  CCOPYRIGHT */
 
 #include "fwdmodel.h"
+
 #include "inference.h"
+
 #include <string>
 
 class SimpleFwdModelIdStruct

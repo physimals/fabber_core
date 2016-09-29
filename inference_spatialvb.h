@@ -104,7 +104,7 @@ protected:
 			// const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
 					const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
 					// const vector<SymmetricMatrix>& Si,
-					int k, const MVNDist* initialFwdPrior, double guess, bool allowRhoToVary = false, double* rhoOut =
+					int k, const MVNDist* ifp, double guess, bool allowRhoToVary = false, double* rhoOut =
 							NULL) const;
 };
 

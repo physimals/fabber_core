@@ -24,15 +24,6 @@ class LinearFwdModel: public FwdModel
 public:
 	static FwdModel* NewInstance();
 
-#if 0
-	LinearFwdModel(const Matrix& jac, const ColumnVector& ctr, const ColumnVector& off) :
-	jacobian(jac), centre(ctr), offset(off)
-	{
-		assert(jac.Nrows() == ctr.Ncols());
-		assert(jac.Ncols() == off.Ncols());
-	}
-#endif
-
 	/**
 	 * Evaluate the model.
 	 *
@@ -80,7 +71,7 @@ public:
 	}
 
 	virtual string ModelVersion() const;
-	std::vector<OptionSpec> GetOptions() const;
+	virtual void GetOptions(std::vector<OptionSpec> &opts) const;
 	virtual void Initialize(FabberRunData& args);
 	virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
 

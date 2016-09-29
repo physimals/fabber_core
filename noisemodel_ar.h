@@ -7,7 +7,9 @@
 /*  CCOPYRIGHT */
 
 #include "noisemodel.h"
+
 #include "dist_gamma.h"
+
 #include <vector>
 
 class Ar1cParams;

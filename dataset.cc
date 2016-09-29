@@ -6,23 +6,24 @@
 
 /*  CCOPYRIGHT */
 
-#include <stdexcept>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "newmat.h"
+#include "dataset.h"
 
 #include "utils/tracer_plus.h"
 #include "easylog.h"
 #include "setup.h"
 #include "fwdmodel.h"
 #include "inference.h"
-#include "dataset.h"
+
+#include "newmat.h"
+
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 using namespace std;
-using namespace Utilities;
+using Utilities::Tracer_Plus;
 
 void PercentProgressCheck::operator()(int voxel, int nVoxels)
 {

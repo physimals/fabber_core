@@ -7,6 +7,7 @@
 /*  CCOPYRIGHT */
 
 #include "noisemodel.h"
+
 #include "dist_gamma.h"
 
 /**

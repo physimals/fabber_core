@@ -8,9 +8,10 @@
 
 #include "fwdmodel.h"
 
+#include "easylog.h"
+
 #include <sstream> 
 #include <memory>
-#include "easylog.h"
 
 FwdModel* FwdModel::NewFromName(const string& name)
 {
@@ -28,7 +29,8 @@ void FwdModel::UsageFromName(const string& name, std::ostream &stream)
 	stream << "Usage information for model: " << name << endl << endl;
 	std::auto_ptr<FwdModel> model(NewFromName(name));
 	stream << model->GetDescription() << endl << endl << "Options: " << endl << endl;
-	vector<OptionSpec> options = model->GetOptions();
+	vector<OptionSpec> options;
+	model->GetOptions(options);
 	if (options.size() > 0)
 	{
 		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
@@ -70,11 +72,12 @@ void FwdModel::DumpParameters(const ColumnVector& params, const string& indent) 
 	LOG << indent << "Parameters:" << endl;
 	vector<string> names;
 	NameParams(names);
+	assert(names.size() == params.Nrows());
 
-	for (int i = 1; i <= NumParams(); i++)
-		LOG << indent << "  " << names[i - 1] << " == " << params(i) << endl;
+	for (int i = 1; i <= names.size(); i++)
+		LOG << indent << "  " << names[i - 1] << " = " << params(i) << endl;
 
-	LOG << indent << "Total of " << NumParams() << " parameters." << endl;
+	LOG << indent << "Total of " << names.size() << " parameters" << endl;
 }
 
 void FwdModel::pass_in_coords(const ColumnVector& coords)

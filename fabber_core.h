@@ -9,6 +9,11 @@
 #ifndef __FABBER_CORE_H
 #define __FABBER_CORE_H 1
 
+#include "easylog.h"
+#include "fabber_core.h"
+#include "setup.h"
+#include "utils.h"
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -17,11 +22,6 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
-
-#include "easylog.h"
-#include "fabber_core.h"
-#include "setup.h"
-#include "utils.h"
 
 /**
  * Run FABBER.

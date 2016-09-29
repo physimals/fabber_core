@@ -6,11 +6,13 @@
 
 /*  CCOPYRIGHT */
 
-#include <math.h>
-
 #include "noisemodel.h"
 
-using namespace Utilities;
+#include "utils/tracer_plus.h"
+
+#include <math.h>
+
+using Utilities::Tracer_Plus;
 
 NoiseModel* NoiseModel::NewFromName(const string& name)
 {

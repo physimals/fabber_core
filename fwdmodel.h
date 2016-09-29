@@ -17,14 +17,13 @@
 #ifndef __FABBER_FWDMODEL_H
 #define __FABBER_FWDMODEL_H
 
-#include "assert.h"
+#include "utils.h"
+#include "dist_mvn.h"
+
+#include "newmat.h"
+
 #include <string>
 #include <vector>
-
-#include "newmatap.h"
-
-#include "dist_mvn.h"
-#include "utils.h"
 
 class FwdModel
 {
@@ -33,18 +32,18 @@ public:
 	/**
 	 * Static member function, to pick a forward model from a name
 	 */
-	static FwdModel* NewFromName(const string& name);
+	static FwdModel* NewFromName(const std::string& name);
 
 	/**
 	 * Get usage information for a named model
 	 */
-	static void UsageFromName(const string& name, std::ostream &stream);
+	static void UsageFromName(const std::string& name, std::ostream &stream);
 
 	/**
 	 * Get option descriptions for this model. The default returns
 	 * nothing to enable compatibility with older model code
 	 */
-	virtual vector<OptionSpec> GetOptions() const {return vector<OptionSpec>();}
+	virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
 	
 	/**
 	 * @return human-readable description of the model.
@@ -61,7 +60,7 @@ public:
 	 *
 	 * @return a string indicating the model version. 
 	 */
-	virtual string ModelVersion() const;
+	virtual std::string ModelVersion() const;
 
 	/**
 	 * Initialize a new instance using configuration from the given
@@ -88,7 +87,7 @@ public:
 	 *
 	 * See fwdmodel_linear.h for a generic implementation
 	 */
-	virtual void NameParams(vector<string>& names) const = 0;
+	virtual void NameParams(std::vector<std::string>& names) const = 0;
 	
 	/**
 	 * Load up some sensible suggestions for initial prior & posterior values
@@ -112,7 +111,7 @@ public:
 	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
 	 *                number of values that are in this vector
 	 */
-	virtual void pass_in_data(const ColumnVector& voxdata)
+	virtual void pass_in_data(const NEWMAT::ColumnVector& voxdata)
 	{
 		data = voxdata;
 	}
@@ -126,7 +125,7 @@ public:
 	 *                number of values that are in this vector
 	 * @param voxsuppdata Supplementary data if provided. Must be the same length as voxdata.
 	 */
-	virtual void pass_in_data(const ColumnVector& voxdata, const ColumnVector& voxsuppdata)
+	virtual void pass_in_data(const NEWMAT::ColumnVector& voxdata, const NEWMAT::ColumnVector& voxsuppdata)
 	{
 		data = voxdata;
 		suppdata = voxsuppdata;
@@ -139,7 +138,7 @@ public:
 	 * 
 	 * @param coords Vector of length 3 containing x, y, z coords
 	 */
-	virtual void pass_in_coords(const ColumnVector& coords);
+	virtual void pass_in_coords(const NEWMAT::ColumnVector& coords);
 
 	/**
 	 * Voxelwise initialization of the posterior, i.e. a parameter initialisation
@@ -170,7 +169,7 @@ public:
 	 *               The length of this vector will be set to the same as the number of
 	 *               data points passed in via pass_in_data
 	 */
-	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const = 0;
+	virtual void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const = 0;
 
 	/**
 	 * Evaluate the gradient
@@ -181,7 +180,7 @@ public:
 	 * 
 	 * @return false if no valid gradient is returned by the model, true if it is
 	 */
-	virtual bool Gradient(const ColumnVector& params, Matrix& grad) const;
+	virtual bool Gradient(const NEWMAT::ColumnVector& params, Matrix& grad) const;
 
 	/**
 	 * An ARD update step can be specified in the model
@@ -215,7 +214,7 @@ public:
 	 *
 	 * Default implementation uses NameParams to give reasonably meaningful output
 	 */
-	virtual void DumpParameters(const ColumnVector& params, const string& indent = "") const;
+	virtual void DumpParameters(const NEWMAT::ColumnVector& params, const std::string& indent = "") const;
 
 	/**
 	 * Return model usage information.
@@ -237,9 +236,10 @@ protected:
 	int coord_x;
 	int coord_y;
 	int coord_z;
+
 	//storage for data
-	ColumnVector data;
-	ColumnVector suppdata;
+	NEWMAT::ColumnVector data;
+	NEWMAT::ColumnVector suppdata;
 };
 
 /** 

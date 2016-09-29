@@ -8,11 +8,12 @@
 
 #include "fwdmodel_simple.h"
 
-#include <iostream>
-#include <newmatio.h>
-#include <stdexcept>
-
 #include "easylog.h"
+
+#include <newmatio.h>
+
+#include <iostream>
+#include <stdexcept>
 
 string SimpleFwdModel::ModelVersion() const
 {

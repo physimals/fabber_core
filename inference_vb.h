@@ -22,7 +22,7 @@ public:
 	 */
 	static InferenceTechnique* NewInstance();
 
-	virtual vector<OptionSpec> GetOptions() const;
+	virtual void GetOptions(std::vector<OptionSpec> &opts) const;
 	virtual std::string GetDescription() const;
 	virtual string GetVersion() const;
 

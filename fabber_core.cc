@@ -6,6 +6,13 @@
 
 /*  CCOPYRIGHT */
 
+#include "fabber_core.h"
+
+#include "fwdmodel.h"
+#include "inference.h"
+
+#include "utils/tracer_plus.h"
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -16,11 +23,7 @@
 #include <memory>
 #include <vector>
 
-#include "fwdmodel.h"
-#include "inference.h"
-#include "fabber_core.h"
-
-using namespace Utilities;
+using Utilities::Tracer_Plus;
 
 /**
  * Run the default command line program

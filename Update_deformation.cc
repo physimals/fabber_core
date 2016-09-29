@@ -1,12 +1,15 @@
-#include <cmath>
-#include <iostream>
+#include "Update_deformation.h"
+
+#include "easylog.h"
+
 #include <newmatio.h>
-#include <stdexcept>
 #include "warpfns/warpfns.h"
 #include "newimage/newimageall.h"
 using namespace NEWIMAGE;
-#include "easylog.h"
-#include "Update_deformation.h"
+
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
 
 /////////////////// Diffeomorphic code
 

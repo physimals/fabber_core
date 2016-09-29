@@ -9,12 +9,6 @@
 #ifndef __FABBER_INFERENCE_H
 #define __FABBER_INFERENCE_H 1
 
-#include <map>
-#include <string>
-#include <typeinfo>
-#include <vector>
-#include <memory>
-
 #include "dataset.h"
 #include "fwdmodel.h"
 #include "easylog.h"
@@ -25,6 +19,13 @@
 #include "Update_deformation.h"
 #include "mcflirt/rigidreglib.h"
 #endif //__FABBER_MOTION
+
+#include <map>
+#include <string>
+#include <typeinfo>
+#include <vector>
+#include <memory>
+
 class InferenceTechnique
 {
 
@@ -56,7 +57,7 @@ public:
 	/**
 	 * Get option descriptions for this inference method.
 	 */
-	virtual vector<OptionSpec> GetOptions() const = 0;
+	virtual void GetOptions(std::vector<OptionSpec> &opts) const {};
 
 	/**
 	 * @return human-readable description of the inference method.

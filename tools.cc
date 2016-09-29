@@ -8,9 +8,12 @@
 
 #include "tools.h"
 #include "easylog.h"
+
+#include "utils/tracer_plus.h"
+
 #include <limits>
 
-using namespace Utilities;
+using Utilities::Tracer_Plus;
 
 double DescendingZeroFinder::FindZero() const
 {

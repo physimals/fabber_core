@@ -7,9 +7,12 @@
 /*  CCOPYRIGHT */
 
 #include "inference_vb.h"
+
 #include "convergence.h"
 
-using namespace Utilities;
+#include "utils/tracer_plus.h"
+
+using Utilities::Tracer_Plus;
 
 static int NUM_OPTIONS = 16;
 static OptionSpec OPTIONS[] =
@@ -36,9 +39,12 @@ InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 	return new VariationalBayesInferenceTechnique();
 }
 
-vector<OptionSpec> VariationalBayesInferenceTechnique::GetOptions() const
+void VariationalBayesInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
-	return vector < OptionSpec > (OPTIONS, OPTIONS + NUM_OPTIONS);
+	for (int i = 0; i < NUM_OPTIONS; i++)
+	{
+		opts.push_back(OPTIONS[i]);
+	}
 }
 
 std::string VariationalBayesInferenceTechnique::GetDescription() const
@@ -48,7 +54,7 @@ std::string VariationalBayesInferenceTechnique::GetDescription() const
 
 string VariationalBayesInferenceTechnique::GetVersion() const
 {
-	return "1.0";
+	return "1.0"; // FIXME
 }
 
 void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& args, MVNDist *dist, string param_key)
@@ -527,7 +533,8 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 #endif
 
 				resultMVNs.at(voxel - 1) = new MVNDist(fwdPosterior, noisePosterior->OutputAsMVN());
-				if (needF) {
+				if (needF)
+				{
 					resultFs.at(voxel - 1) = F;
 				}
 				// get the model prediction which is stored within the linearized forward model

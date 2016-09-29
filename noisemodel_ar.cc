@@ -7,14 +7,17 @@
 /*  CCOPYRIGHT */
 
 #include "noisemodel_ar.h"
-#include <stdexcept>
-//#include "miscmaths/miscmaths.h"
-//using namespace MISCMATHS;
-using namespace Utilities;
+
 #include "easylog.h"
 #include "dataset.h"
 
+#include "utils/tracer_plus.h"
+
+#include <stdexcept>
+
 #define AR1_BANDWIDTH 3
+
+using Utilities::Tracer_Plus;
 
 int Ar1cNoiseModel::NumParams()
 {
@@ -610,7 +613,7 @@ void Ar1cMatrixCache::Update(const Ar1cParams& dist, int nTimes)
 					// for (int count = 0; count < nTimes-1; count++, row++, col++)
 					for (int count = 0; count < nTimes - 1; count++, row += nPhis, col += nPhis)
 					{
-						// LOG << "row="<<row<<",col="<<col<<endl;
+		 				// LOG << "row="<<row<<",col="<<col<<endl;
 						mat(row, col) = value;
 						assert(row<=mat.Nrows() && col<=mat.Ncols());
 					}

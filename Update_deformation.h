@@ -1,9 +1,11 @@
+
+#include "newimage/newimageall.h"
+#include "warpfns/warpfns.h"
+
 #include <ostream>
 #include <string>
 #include <map>
 #include <newmat.h>
-#include "newimage/newimageall.h"
-#include "warpfns/warpfns.h"
 
 void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>& modelpred, int no_iter,
 		       const volume4D<float>& prevdefx, 

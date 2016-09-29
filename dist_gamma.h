@@ -7,8 +7,9 @@
 /*  CCOPYRIGHT */
 
 #pragma once
-#include <math.h>
 #include "easylog.h"
+
+#include <math.h>
 
 class GammaDist
 {

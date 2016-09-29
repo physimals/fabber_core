@@ -5,7 +5,9 @@
 /*  CCOPYRIGHT */
 
 #include "fwdmodel.h"
+
 #include "inference.h"
+
 #include <string>
 
 /**
@@ -14,29 +16,26 @@
  *
  * The parameter 'degree' can be used to set the maximum power
  * in the polynomial, e.g. if degree=3, there will be 4 parameters
+ *
+ * Note that this class is mostly for testing purposes and is not
+ * designed to be overriden.
  */
 class PolynomialFwdModel: public FwdModel
 {
 public:
 	static FwdModel* NewInstance();
+	void GetOptions(std::vector<OptionSpec> &opts) const;
+	std::string GetDescription() const;
+	std::string ModelVersion() const;
+
 	void Initialize(FabberRunData& args);
-	virtual std::vector<OptionSpec> GetOptions() const;
+	int NumParams() const;
+	void NameParams(std::vector<std::string>& names) const;
 
-	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
-
-	virtual void DumpParameters(const ColumnVector& vec, const std::string& indents = "") const;
-	virtual void NameParams(std::vector<std::string>& names) const;
-	virtual int NumParams() const
-	{
-		return m_degree + 1;
-	}
-	string ModelVersion() const;
 	void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
+	void Evaluate(const ColumnVector& params, ColumnVector& result) const;
 
-	virtual ~PolynomialFwdModel()
-	{
-	}
-protected:
+private:
 	int m_degree;
 };
 

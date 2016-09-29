@@ -6,12 +6,13 @@
 
 /*  CCOPYRIGHT */
 
-#include <iostream>
-#include "assert.h"
+#include "convergence.h"
 
 #include "easylog.h"
 #include "dataset.h"
-#include "convergence.h"
+
+#include "assert.h"
+#include <iostream>
 
 using namespace std;
 

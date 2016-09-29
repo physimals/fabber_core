@@ -8,7 +8,10 @@
 
 #include "dist_mvn.h"
 
-using namespace Utilities;
+#include "easylog.h"
+#include "utils/tracer_plus.h"
+
+using Utilities::Tracer_Plus;
 
 // Constructors
 

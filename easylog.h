@@ -8,12 +8,13 @@
 
 #pragma once
 
+#include <map>
+#include <vector>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <stdexcept>
 #include "assert.h"
-
-#include "utils/tracer_plus.h"
 
 #define PRINTNOTE fprintf(stderr, "Note: %s line %d\n", __FILE__, __LINE__);
 
@@ -25,7 +26,7 @@
  * flushed to the log once StartLog is called.
  *
  * If you want to dump variables directly to this stream, just implement
- * ostream& operator<<(ostream& stream, const your_type& data);
+ * std::ostream& operator<<(std::ostream& stream, const your_type& data);
  */
 #define LOG (*EasyLog::CurrentLog())
 
@@ -46,7 +47,7 @@ public:
 	 * The result can be used with the << operator, e.g.
 	 *   *CurrentLog() << "Hello World" << endl;
 	 */
-	static ostream* CurrentLog()
+	static std::ostream* CurrentLog()
 	{
 		if (filestream == NULL)
 		{
@@ -62,7 +63,7 @@ public:
 	 * Get the output directory for the log file, or
 	 * an empty string if not logging to a file.
 	 */
-	static const string& GetOutputDirectory()
+	static const std::string& GetOutputDirectory()
 	{
 		assert(filestream != NULL);
 		return outDir;
@@ -80,7 +81,7 @@ public:
 	 *                  be created with a '+' added to basename, e.g.
 	 *                  'out', 'out+', 'out++', etc...
 	 */
-	static void StartLog(const string& basename, bool overwrite);
+	static void StartLog(const std::string& basename, bool overwrite);
 
 	/**
 	 * Log output to an existing stream
@@ -88,7 +89,7 @@ public:
 	 * This might be std::cout/cerr or something else, e.g. a
 	 * stringstream.
 	 */
-	static void StartLog(ostream& s);
+	static void StartLog(std::ostream& s);
 
 	/**
 	 * Stop logging.
@@ -106,9 +107,9 @@ public:
 	}
 
 private:
-	static stringstream templog;
-	static ostream* filestream;
-	static string outDir;
+	static std::stringstream templog;
+	static std::ostream* filestream;
+	static std::string outDir;
 };
 
 // Other useful functions:
@@ -117,17 +118,16 @@ private:
 #include <sstream>
 #include <stdexcept>
 template<typename type>
-inline string stringify(type from)
+inline std::string stringify(type from)
 {
-	ostringstream s;
+	std::ostringstream s;
 	if (!(s << from))
-		throw logic_error("Stringify failed");
+		throw std::logic_error("Stringify failed");
 	return s.str();
 }
 
 // output a vector<int>
-#include <vector>
-inline ostream& operator<<(ostream& out, vector<int> x)
+inline std::ostream& operator<<(std::ostream& out, std::vector<int> x)
 {
 	out << "[ ";
 	for (unsigned i = 0; i < x.size(); i++)
@@ -135,8 +135,6 @@ inline ostream& operator<<(ostream& out, vector<int> x)
 	out << "]";
 	return out;
 }
-
-#include <map>
 
 /**
  * Allows code to issue warnings which can be recorded
@@ -152,7 +150,7 @@ public:
 	 * If the same warning occurs again, it will not
 	 * be repeated.
 	 */
-	static void IssueOnce(const string& text);
+	static void IssueOnce(const std::string& text);
 
 	/**
 	 * Issue a warning
@@ -160,12 +158,12 @@ public:
 	 * The warning will appear in the current log
 	 * each time it is issued.
 	 */
-	static void IssueAlways(const string& text);
+	static void IssueAlways(const std::string& text);
 
 	/**
 	 * Resend all warnings recorded so far to the current log
 	 */
 	static void ReissueAll();
 private:
-	static map<string, int> issueCount;
+	static std::map<std::string, int> issueCount;
 };

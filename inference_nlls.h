@@ -8,9 +8,11 @@
 /*  CCOPYRIGHT  */
 
 #include "inference.h"
+
 #include "miscmaths/nonlin.h"
-#include <boost/shared_ptr.hpp>
 #include "miscmaths/bfmatrix.h"
+
+#include <boost/shared_ptr.hpp>
 
 /**
  * Inference technique using non-linear least squares
@@ -29,7 +31,7 @@ public:
 	 */
 	static InferenceTechnique* NewInstance();
 
-	virtual vector<OptionSpec> GetOptions() const;
+	virtual void GetOptions(std::vector<OptionSpec> &opts) const;
 	virtual std::string GetDescription() const;
 	virtual string GetVersion() const;
 

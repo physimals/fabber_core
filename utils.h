@@ -101,8 +101,6 @@ T* TemplateFactory<T>::Create(const std::string& name) {
   return NULL;
 }
 
-
-
 /**
  * Singleton template factory class.
  *

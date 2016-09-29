@@ -6,10 +6,14 @@
 
 /*  CCOPYRIGHT */
 
-#include "easylog.h"
-using namespace Utilities;
 #include "inference_spatialvb.h"
+
+#include "easylog.h"
 #include "convergence.h"
+
+#include "utils/tracer_plus.h"
+
+using Utilities::Tracer_Plus;
 
 #define NOCACHE 1
 
