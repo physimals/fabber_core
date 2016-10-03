@@ -15,6 +15,9 @@
  */
 
 #include "fwdmodel_custom.h"
+#include "utils/tracer_plus.h"
+
+using Utilities::Tracer_Plus;
 
 // Constructor:
 CustomFwdModel::CustomFwdModel(ArgsType& args)
@@ -45,7 +48,7 @@ CustomFwdModel::CustomFwdModel(ArgsType& args)
 	return;
 }
 
-void CustomFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
+void CustomFwdModel::Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const
 {
 	assert(params.Nrows() == NumParams());
 
@@ -105,7 +108,7 @@ void CustomFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) c
 	assert(prior.means.Nrows() == NumParams());
 
 	prior.means = 0;
-	prior.SetPrecisions(IdentityMatrix(NumParams()) * 1e-12);
+	prior.SetPrecisions(NEWMAT::IdentityMatrix(NumParams()) * 1e-12);
 	posterior = prior;
 
 	// Ask Adrian for help if you want to modify this!

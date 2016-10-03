@@ -12,12 +12,15 @@
 #include "dataset.h"
 
 #include "utils/tracer_plus.h"
+#include "miscmaths/miscmaths.h"
 
 #include <stdexcept>
 
 #define AR1_BANDWIDTH 3
 
 using Utilities::Tracer_Plus;
+
+using MISCMATHS::digamma;
 
 int Ar1cNoiseModel::NumParams()
 {
@@ -213,8 +216,8 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePri
 		checkVars << alphaPrecisions.i();
 		if (checkVars.Minimum() < 0)
 		{
-			OUT(alphaPrecisions.i());
-			OUT(checkVars);
+			LOG << (alphaPrecisions.i());
+			LOG << (checkVars);
 			throw overflow_error("Negative variance!");
 		}
 

@@ -34,6 +34,14 @@ enum OptionType
 	OPT_BOOL, OPT_STR, OPT_INT, OPT_FILE,
 };
 
+/**
+ * Option required
+ */
+enum OptionReq
+{
+	OPT_REQ=0, OPT_NONREQ=1,
+};
+
 std::ostream& operator<<(std::ostream& out, const OptionType value);
 
 /**
@@ -47,8 +55,8 @@ struct OptionSpec
 	OptionType type;
 	/** Human readable description */
 	std::string description;
-	/** true if does not need to be specified */
-	bool optional;
+	/** Whether option needs to be specified */
+	OptionReq optional;
 	/** Default value if there is one */
 	std::string def;
 };

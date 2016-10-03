@@ -13,27 +13,27 @@ class CovarianceCache
 public:
 
 	void CalcDistances(const NEWMAT::Matrix& voxelCoords, const string& distanceMeasure);
-	const SymmetricMatrix& GetDistances() const
+	const NEWMAT::SymmetricMatrix& GetDistances() const
 	{
 		return distances;
 	}
 
-	const ReturnMatrix GetC(double delta) const; // quick to calculate
-	const SymmetricMatrix& GetCinv(double delta) const;
+	const NEWMAT::ReturnMatrix GetC(double delta) const; // quick to calculate
+	const NEWMAT::SymmetricMatrix& GetCinv(double delta) const;
 
 	//  const Matrix& GetCiCodist(double delta) const;
-	const SymmetricMatrix& GetCiCodistCi(double delta, double* CiCodistTrace = NULL) const;
+	const NEWMAT::SymmetricMatrix& GetCiCodistCi(double delta, double* CiCodistTrace = NULL) const;
 
 	bool GetCachedInRange(double *guess, double lower, double upper, bool allowEndpoints = false) const;
 	// If there's a cached value in (lower, upper), set *guess = value and
 	// return true; otherwise return false and don't change *guess.
 
 private:
-	SymmetricMatrix distances;
-	typedef map<double, SymmetricMatrix> Cinv_cache_type;
+	NEWMAT::SymmetricMatrix distances;
+	typedef map<double, NEWMAT::SymmetricMatrix> Cinv_cache_type;
 	mutable Cinv_cache_type Cinv_cache;
 
-	typedef map<double, pair<SymmetricMatrix, double> > CiCodistCi_cache_type;
+	typedef map<double, pair<NEWMAT::SymmetricMatrix, double> > CiCodistCi_cache_type;
 	//  mutable CiCodist_cache_type CiCodist_cache; // only really use the Trace
 	mutable CiCodistCi_cache_type CiCodistCi_cache;
 };
@@ -67,7 +67,7 @@ protected:
 
 	vector<vector<int> > neighbours; // Sparse matrix would be easier
 	vector<vector<int> > neighbours2; // Sparse matrix would be easier
-	void CalcNeighbours(const Matrix& voxelCoords);
+	void CalcNeighbours(const NEWMAT::Matrix& voxelCoords);
 
 	//vector<string> imagepriorstr; now inherited from spatialvb
 
@@ -94,9 +94,9 @@ protected:
 
 	bool bruteForceDeltaSearch;
 
-	double OptimizeSmoothingScale(const DiagonalMatrix& covRatio,
+	double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix& covRatio,
 			//const SymmetricMatrix& covRatioSupplemented,
-			const ColumnVector& meanDiffRatio, double guess, double* optimizedRho = NULL, bool allowRhoToVary = true,
+			const NEWMAT::ColumnVector& meanDiffRatio, double guess, double* optimizedRho = NULL, bool allowRhoToVary = true,
 			bool allowDeltaToVary = true) const;
 
 	double

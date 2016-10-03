@@ -44,12 +44,12 @@ public:
 	 * @param result Result vector, R in above equation. Length equal to number of time samples
 	 *               i.e. number of rows in design matrix.
 	 */
-	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
+	virtual void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
 
 	/**
 	 * @return the Jacobian, or design matrix
 	 */
-	ReturnMatrix Jacobian() const
+	NEWMAT::ReturnMatrix Jacobian() const
 	{
 		return jacobian;
 	}
@@ -57,7 +57,7 @@ public:
 	/**
 	 * @return the vector used to recentre the parameters
 	 */
-	ReturnMatrix Centre() const
+	NEWMAT::ReturnMatrix Centre() const
 	{
 		return centre;
 	}
@@ -65,11 +65,13 @@ public:
 	/**
 	 * @return the vector used to offset the result vector
 	 */
-	ReturnMatrix Offset() const
+	NEWMAT::ReturnMatrix Offset() const
 	{
 		return offset;
 	}
 
+
+	virtual std::string GetDescription() const;
 	virtual string ModelVersion() const;
 	virtual void GetOptions(std::vector<OptionSpec> &opts) const;
 	virtual void Initialize(FabberRunData& args);
@@ -80,15 +82,15 @@ public:
 		return centre.Nrows();
 	}
 
-	virtual void DumpParameters(const ColumnVector& vec, const string& indent = "") const;
+	virtual void DumpParameters(const NEWMAT::ColumnVector& vec, const string& indent = "") const;
 
 	virtual void NameParams(vector<string>& names) const;
 
 protected:
 
-	Matrix jacobian; // J (tranposed?)
-	ColumnVector centre; // m
-	ColumnVector offset; // g(m)
+	NEWMAT::Matrix jacobian; // J (tranposed?)
+	NEWMAT::ColumnVector centre; // m
+	NEWMAT::ColumnVector offset; // g(m)
 	// The amount to effectively subtract from Y is g(m)-J*m
 };
 
@@ -142,7 +144,7 @@ public:
 	 * implemented by numerical differentiation about the
 	 * new centre
 	 */
-	void ReCentre(const ColumnVector& about);
+	void ReCentre(const NEWMAT::ColumnVector& about);
 
 	/**
 	 * Pass on request for initial parameter distributions to the
@@ -154,7 +156,7 @@ public:
 		fcn->HardcodedInitialDists(prior, posterior);
 	}
 
-	virtual void DumpParameters(const ColumnVector& vec, const string& indent = "") const;
+	virtual void DumpParameters(const NEWMAT::ColumnVector& vec, const string& indent = "") const;
 	virtual void NameParams(vector<string>& names) const
 	{
 		assert(fcn);

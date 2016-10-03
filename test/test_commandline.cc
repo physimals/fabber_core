@@ -146,6 +146,28 @@ TEST_F(ClTestTest, PolyModel)
 	compareNifti("out.tmp/std_c2.nii.gz", "test/outdata_poly/std_c2.nii.gz");
 }
 
+TEST_F(ClTestTest, ListModels)
+{
+	string args = "--listmodels";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getStdout();
+	ASSERT_TRUE(contains(out, "poly"));
+	ASSERT_TRUE(contains(out, "linear"));
+	ASSERT_TRUE(contains(out, "trivial"));
+}
+
+TEST_F(ClTestTest, ListMethods)
+{
+	string args = "--listmethods";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getStdout();
+	ASSERT_TRUE(contains(out, "nlls"));
+	ASSERT_TRUE(contains(out, "vb"));
+	ASSERT_TRUE(contains(out, "spatialvb"));
+}
+
 INSTANTIATE_TEST_CASE_P(ClMethodTests,
 		ClTestTest,
 		::testing::Values("vb", "nlls", "spatialvb"));

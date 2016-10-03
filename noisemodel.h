@@ -104,7 +104,7 @@ public:
 	 * reasons), based on the length of the data... if you don't know what
 	 * this is for then just ignore it.
 	 */
-	virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const ColumnVector& sampleData) const
+	virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const NEWMAT::ColumnVector& sampleData) const
 	{
 	}
 
@@ -120,17 +120,17 @@ public:
 	// would call all the other functions in some order.
 
 	virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const LinearFwdModel& model, const ColumnVector& data) const = 0;
+		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const = 0;
 
 	virtual void UpdateTheta(const NoiseParams& noise,
 			//    const NoiseParams& noisePrior,
-			MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data,
+			MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data,
 			MVNDist* thetaWithoutPrior = NULL,
 			// for --spatial-prior-output-correction
 			float LMalpha = 0) const = 0;
 
 	virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data) const = 0;
+		const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const = 0;
 
 	// ARD things
 	double SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const;

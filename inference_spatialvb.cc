@@ -1695,6 +1695,11 @@ inline int binarySearch(const ColumnVector& data, int num)
 	return -1;
 }
 
+//static int sign(double d1)
+//{
+//	return (double(0) < d1) - (d1 < double(0));
+//}
+
 /**
  * Check voxels are listed in order
  *
@@ -1755,7 +1760,6 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 	// could be zero but not negative
 	int xsize = m_coords->Row(1).Maximum() + 1;
 	int ysize = m_coords->Row(2).Maximum() + 1;
-	int zsize = m_coords->Row(3).Maximum() + 1;
 	for (int v = 1; v <= nVoxels; v++)
 	{
 		int x = (*m_coords)(1, v);
@@ -1798,7 +1802,7 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 		int pos = int(offsets(vid));
 
 		// Now search for neighbours
-		for (unsigned n = 0; n <= max_delta; n++)
+		for (int n = 0; n <= max_delta; n++)
 		{
 			// is there a voxel at this neighbour position?
 			// indexed from 1; id == -1 if not found.
@@ -1817,7 +1821,6 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 			if (n <= 4)
 			{
 				bool ignore = false;
-				int p1;
 				if (delta[n] > 0)
 				{
 					int test = delta[n + 2];

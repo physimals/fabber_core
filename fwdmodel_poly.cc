@@ -11,7 +11,7 @@
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-	{	"degree", OPT_INT, "Maximum power in the polynomial function", false, ""}};
+	{	"degree", OPT_INT, "Maximum power in the polynomial function", OPT_REQ, ""}};
 
 FwdModel* PolynomialFwdModel::NewInstance()
 {
@@ -41,7 +41,7 @@ void PolynomialFwdModel::Initialize(FabberRunData& args)
 	m_degree = convertTo<int> (args.GetString("degree"));
 }
 
-void PolynomialFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
+void PolynomialFwdModel::Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const
 {
 	assert(params.Nrows() == m_degree+1);
 	result.ReSize(data.Nrows());
@@ -69,7 +69,7 @@ void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterio
 	// Have to implement this
 	assert(prior.means.Nrows() == m_degree+1);
 	prior.means = 0;
-	prior.SetPrecisions(IdentityMatrix(m_degree + 1) * 1e-12);
+	prior.SetPrecisions(NEWMAT::IdentityMatrix(m_degree + 1) * 1e-12);
 	posterior = prior;
 }
 

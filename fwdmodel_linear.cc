@@ -19,6 +19,11 @@
 using Utilities::Tracer_Plus;
 using namespace std;
 
+std::string LinearFwdModel::GetDescription() const
+{
+	return "Model in which output is a linear combination of input parameters";
+}
+
 string LinearFwdModel::ModelVersion() const
 {
 	return "$Id: fwdmodel_linear.cc,v 1.19 2012/01/13 12:00:59 adriang Exp $";
@@ -27,7 +32,7 @@ string LinearFwdModel::ModelVersion() const
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-{ "basis", OPT_FILE, "File containing design matrix", false, "" } };
+{ "basis", OPT_FILE, "File containing design matrix", OPT_REQ, "" } };
 
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {

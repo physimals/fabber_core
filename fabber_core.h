@@ -42,9 +42,8 @@ string vectorToString(vector<string> str_vector, const char* separator = " ");
 
 /**
  * Print usage information.
- * @param errorString Optional error string.
  */
-void Usage(const string& errorString = "");
+void Usage();
 
 /**
  * Print usage information for a specific forward model.

@@ -186,7 +186,7 @@ public:
 	 * 
 	 * @return false if no valid gradient is returned by the model, true if it is
 	 */
-	virtual bool Gradient(const NEWMAT::ColumnVector& params, Matrix& grad) const;
+	virtual bool Gradient(const NEWMAT::ColumnVector& params, NEWMAT::Matrix& grad) const;
 
 	/**
 	 * An ARD update step can be specified in the model

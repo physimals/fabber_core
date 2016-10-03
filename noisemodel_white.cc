@@ -13,10 +13,12 @@
 #include "easylog.h"
 
 #include "utils/tracer_plus.h"
+#include "miscmaths/miscmaths.h"
 
 #include <stdexcept>
 
 using Utilities::Tracer_Plus;
+using MISCMATHS::digamma;
 
 NoiseModel* WhiteNoiseModel::NewInstance()
 {

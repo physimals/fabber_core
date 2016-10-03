@@ -14,25 +14,29 @@
 
 using Utilities::Tracer_Plus;
 
-static int NUM_OPTIONS = 16;
 static OptionSpec OPTIONS[] =
 {
-{ "noise", OPT_STR, "Noise model to use (white or ar1)", false, "" },
-{ "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", true, "" },
-{ "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior", true, "" },
-{ "PSP_byname<n>_image", OPT_FILE, "File containing image prior for parameter <n>", true, "" },
-{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", true, "" },
-{ "save-residuals", OPT_BOOL, "Save the difference between the data and the model prediction as a 4d volume", true, "" },
-{ "mcsteps", OPT_INT, "Number of motion correction steps", true, "0" },
-{ "convergence", OPT_STR, "Name of method for detecting convergence", true, "maxits" },
-{ "print-free-energy", OPT_BOOL, "Output the free energy", true, "" },
-{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", true, "" },
-{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", true, "" },
-{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", true, "" },
-{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", true, "" },
-{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", true, "" },
-{ "locked-linear-mvn", OPT_FILE, "MVN file containing fixed centres for linearization", true, "" },
-{ "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping", true, "" }, };
+{ "noise", OPT_STR, "Noise model to use (white or ar1)", OPT_REQ, "" },
+{ "max-iterations", OPT_STR, "number of iterations of VB to use", OPT_NONREQ, "10" },
+{ "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", OPT_NONREQ, "" },
+{ "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior", OPT_NONREQ, "" },
+{ "PSP_byname<n>_image", OPT_FILE, "File containing image prior for parameter <n>", OPT_NONREQ, "" },
+{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
+{ "save-residuals", OPT_BOOL, "Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
+{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
+{ "convergence", OPT_STR, "Name of method for detecting convergence", OPT_NONREQ, "maxits" },
+{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
+{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", OPT_NONREQ, "" },
+{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", OPT_NONREQ, "" },
+{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", OPT_NONREQ, "" },
+{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", OPT_NONREQ, "" },
+{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", OPT_NONREQ, "" },
+{ "noise-pattern", OPT_STR, "repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)", OPT_NONREQ, "1" },
+{ "locked-linear-mvn", OPT_FILE, "MVN file containing fixed centres for linearization", OPT_NONREQ, "" },
+{ "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping", OPT_NONREQ, "" },
+{ "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)", OPT_NONREQ, "dual" },
+{ ""},
+};
 
 InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 {
@@ -41,7 +45,7 @@ InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 
 void VariationalBayesInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
-	for (int i = 0; i < NUM_OPTIONS; i++)
+	for (int i = 0; OPTIONS[i].name != ""; i++)
 	{
 		opts.push_back(OPTIONS[i]);
 	}

@@ -49,12 +49,12 @@ protected:
 	NoiseParams* initialNoisePrior;
 	NoiseParams* initialNoisePosterior;
 
-	const Matrix *m_origdata;
-	const Matrix *m_coords;
-	const Matrix *m_suppdata;
+	const NEWMAT::Matrix *m_origdata;
+	const NEWMAT::Matrix *m_coords;
+	const NEWMAT::Matrix *m_suppdata;
 
 	// specification of priors from command line
-	vector<RowVector> ImagePrior;
+	vector<NEWMAT::RowVector> ImagePrior;
 	vector<unsigned int> PSPidx;
 	vector<char> PriorsTypes;
 	vector<string> imagepriorstr;

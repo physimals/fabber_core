@@ -18,7 +18,7 @@ using Utilities::Tracer_Plus;
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-{ "basis", OPT_FILE, "File containing basis matrix in VEST format", false, "" }, };
+{ "basis", OPT_FILE, "File containing basis matrix in VEST format", OPT_REQ, "" }, };
 
 void NLLSInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {

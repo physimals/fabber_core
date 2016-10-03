@@ -9,10 +9,13 @@
 #include "noisemodel.h"
 
 #include "utils/tracer_plus.h"
+#include "miscmaths/miscmaths.h"
 
 #include <math.h>
 
 using Utilities::Tracer_Plus;
+
+using MISCMATHS::digamma;
 
 NoiseModel* NoiseModel::NewFromName(const string& name)
 {

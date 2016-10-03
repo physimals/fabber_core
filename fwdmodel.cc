@@ -32,7 +32,7 @@ FwdModel* FwdModel::NewFromName(const string& name)
 
 void FwdModel::UsageFromName(const string& name, std::ostream &stream)
 {
-	stream << "Usage information for model: " << name << endl << endl;
+	stream << "Description: " << name << endl << endl;
 	std::auto_ptr<FwdModel> model(NewFromName(name));
 	stream << model->GetDescription() << endl << endl << "Options: " << endl << endl;
 	vector<OptionSpec> options;
@@ -66,13 +66,13 @@ void FwdModel::Usage(std::ostream &stream) const
 	stream << "No usage information available" << endl;
 }
 
-bool FwdModel::Gradient(const ColumnVector& params, Matrix& grad) const
+bool FwdModel::Gradient(const NEWMAT::ColumnVector& params, NEWMAT::Matrix& grad) const
 {
 	// By default return false -> no gradient is supplied by this model
 	return false;
 }
 
-void FwdModel::DumpParameters(const ColumnVector& params, const string& indent) const
+void FwdModel::DumpParameters(const NEWMAT::ColumnVector& params, const string& indent) const
 {
 	LOG << indent << "Parameters:" << endl;
 	vector<string> names;
@@ -85,7 +85,7 @@ void FwdModel::DumpParameters(const ColumnVector& params, const string& indent) 
 	LOG << indent << "Total of " << names.size() << " parameters" << endl;
 }
 
-void FwdModel::pass_in_coords(const ColumnVector& coords)
+void FwdModel::pass_in_coords(const NEWMAT::ColumnVector& coords)
 {
 	coord_x = coords(1);
 	coord_y = coords(2);

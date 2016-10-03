@@ -51,8 +51,8 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 
 std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
 {
-	out << "  " << value.name << " [" << value.type << "] : " << value.description << " "
-			<< (value.optional ? "(optional, default=" + value.def : "(mandatory)") << endl;
+	return out << "--" << value.name << " [" << value.type << "," << (value.optional ? "NOT REQUIRED" : "REQUIRED") << "]" << endl
+			<< "        " << value.description << " " << ((value.def == "") ? "" : " (default=" + value.def + ")") << endl;
 }
 
 void PercentProgressCheck::operator()(int voxel, int nVoxels)
@@ -71,7 +71,7 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 }
 
 FabberRunData::FabberRunData() :
-		m_save_files(false), m_progress(0), m_have_coords(false), m_nvoxels(-1)
+		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0)
 {
 	FabberSetup::SetupDefaults();
 }
@@ -92,6 +92,12 @@ void FabberRunData::LogParams()
 void FabberRunData::Run()
 {
 	Tracer_Plus tr2("FabberRunData::Run");
+
+	LOG << "FABBER release v" << VERSION << endl;
+
+	time_t startTime;
+	time(&startTime);
+	LOG << "Start time: " << ctime(&startTime);
 
 	LogParams();
 
@@ -117,7 +123,8 @@ void FabberRunData::Run()
 
 	// FIXME this is a hack but seems to be expected that the command line
 	// tool will output parameter names to a file. Really should be an option!
-	if (m_save_files) {
+	if (m_save_files)
+	{
 		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
 		vector<string> paramNames;
 		fwd_model->NameParams(paramNames);
@@ -127,17 +134,25 @@ void FabberRunData::Run()
 		}
 		paramFile.close();
 	}
+
+	LOG << "FABBER is all done." << endl;
+
+	time_t endTime;
+	time(&endTime);
+	LOG << "Start time: " << ctime(&startTime); // Bizarrely, ctime() ends with a \n.
+	LOG << "End time: " << ctime(&endTime);
+	LOG << "Duration: " << endTime - startTime << " seconds." << endl;
 }
 
 static string trim(string const& str)
 {
-    if(str.empty())
-        return str;
+	if (str.empty())
+		return str;
 
-    size_t firstScan = str.find_first_not_of(' ');
-    size_t first     = firstScan == string::npos ? str.length() : firstScan;
-    size_t last      = str.find_last_not_of(' ');
-    return str.substr(first, last-first+1);
+	size_t firstScan = str.find_first_not_of(' ');
+	size_t first = firstScan == string::npos ? str.length() : firstScan;
+	size_t last = str.find_last_not_of(' ');
+	return str.substr(first, last - first + 1);
 }
 
 void FabberRunData::ParseParamFile(const string filename)
@@ -149,7 +164,6 @@ void FabberRunData::ParseParamFile(const string filename)
 		LOG << "FabberRunData::Couldn't read input options file: '" << filename << "'";
 		throw Invalid_option("Couldn't read input options file:" + filename);
 	}
-	char c;
 	string param;
 	while (is.good())
 	{
@@ -247,10 +261,12 @@ void FabberRunData::AddKeyEqualsValue(const string exp, bool trim_comments)
 	string key = trim(string(exp, 0, eqPos));
 	if (m_params.count(key) > 0)
 		throw Invalid_option("Duplicated option: '" + key + "'\n");
-	else if (eqPos != (exp.npos)) {
+	else if (eqPos != (exp.npos))
+	{
 		string::size_type end = exp.npos;
-		if (trim_comments) end = exp.find("#");
-		string value = trim(exp.substr(eqPos + 1, end-(eqPos+1)));
+		if (trim_comments)
+			end = exp.find("#");
+		string value = trim(exp.substr(eqPos + 1, end - (eqPos + 1)));
 		m_params[key] = value;
 	}
 	else
@@ -730,7 +746,7 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 		string output_dir = GetStringDefault("output", ".");
 		save_volume4D(output, output_dir + "/" + filename);
 #else
-		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version")
+		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");
 #endif
 	}
 }

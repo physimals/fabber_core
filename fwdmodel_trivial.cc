@@ -55,6 +55,6 @@ void TrivialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) 
 	// Have to implement this
 	assert(prior.means.Nrows() == 1);
 	prior.means = 0;
-	prior.SetPrecisions(IdentityMatrix(1) * 1e-12);
+	prior.SetPrecisions(NEWMAT::IdentityMatrix(1) * 1e-12);
 	posterior = prior;
 }

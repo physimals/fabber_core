@@ -32,7 +32,7 @@ public:
 		return;
 	}
 
-	virtual void Evaluate(const ColumnVector& params, ColumnVector& result) const;
+	virtual void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
 	virtual string ModelVersion() const;
 	virtual int NumParams() const;
 	virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;

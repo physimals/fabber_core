@@ -46,7 +46,7 @@ void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
 	{
 		for (vector<OptionSpec>::iterator iter = options.begin(); iter != options.end(); iter++)
 		{
-			stream << *iter;
+			stream << *iter << endl;
 		}
 	}
 }
@@ -215,7 +215,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 
 			Matrix mvar = lin.Jacobian() * var * lin.Jacobian().t();
 			ColumnVector tmp(datamtx.Nrows());
-			for (unsigned i = 1; i <= datamtx.Nrows(); i++)
+			for (int i = 1; i <= datamtx.Nrows(); i++)
 			{
 				tmp(i) = sqrt(mvar(i, i));
 			}
@@ -294,7 +294,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		vector<int> oldloc(m_num_params, 0);
 		// Vector of bools, one for each parameter in the file. True to flag matched to a file parameter
 		vector<bool> hasmatched(m_num_params, false);
-		for (unsigned p = 0; p < m_num_params; p++)
+		for (int p = 0; p < m_num_params; p++)
 		{
 			usefile[p] = false;
 			for (unsigned q = 0; q < paramNames.size(); q++)
@@ -359,7 +359,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 			SymmetricMatrix filecov = fwddist.GetCovariance();
 			for (unsigned int p = 0; p < ModelparamNames.size(); p++)
 			{
-				for (int q = 0; q <= p; q++)
+				for (unsigned int q = 0; q <= p; q++)
 				{
 					if (usefile[p])
 					{

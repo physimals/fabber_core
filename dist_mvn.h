@@ -108,7 +108,7 @@ public:
 	 * resized - should encapsulate it to protect
 	 * against misuse
 	 */
-	ColumnVector means;
+	NEWMAT::ColumnVector means;
 
 	/**
 	 * Get the precisions
@@ -121,14 +121,14 @@ public:
 	 * as in 1-dimension the precision of a random
 	 * variable is the reciprocol of the variance
 	 */
-	const SymmetricMatrix& GetPrecisions() const;
+	const NEWMAT::SymmetricMatrix& GetPrecisions() const;
 
 	/**
 	 * Get the covariances
 	 *
 	 * @see GetPrecisions
 	 */
-	const SymmetricMatrix& GetCovariance() const;
+	const NEWMAT::SymmetricMatrix& GetCovariance() const;
 
 	/**
 	 * Set the precisions
@@ -139,7 +139,7 @@ public:
 	 * Covariances will be updated lazily on next
 	 * call to GetCovariances
 	 */
-	void SetPrecisions(const SymmetricMatrix& from);
+	void SetPrecisions(const NEWMAT::SymmetricMatrix& from);
 
 	/**
 	 * Set the covariances
@@ -150,7 +150,7 @@ public:
 	 * Precisions will be updated lazily on next
 	 * call to GetPrecisions
 	 */
-	void SetCovariance(const SymmetricMatrix& from);
+	void SetCovariance(const NEWMAT::SymmetricMatrix& from);
 
 	/**
 	 * Dump info to the default log
@@ -207,8 +207,8 @@ protected:
 private:
 	// Mutable, because they're a cache calculated on first use --
 	// to the outside world, changes here don't affect const-ness.
-	mutable SymmetricMatrix precisions;
-	mutable SymmetricMatrix covariance;
+	mutable NEWMAT::SymmetricMatrix precisions;
+	mutable NEWMAT::SymmetricMatrix covariance;
 	mutable bool precisionsValid;
 	mutable bool covarianceValid;
 	// Note that you shouldn't store the references from GetPrecisions/GetCovariance

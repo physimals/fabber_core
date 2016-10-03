@@ -80,7 +80,7 @@ void FchangeConvergenceDetector::Reset(double F)
 	m_revert = false;
 }
 
-bool FchangeConvergenceDetector::FchangeConvergenceDetector::Test(double F)
+bool FchangeConvergenceDetector::Test(double F)
 {
 	//    if (F == 1234.5678)
 	//        throw logic_error("FchangeConvergenceDetector needs F, but it seems it isn't being calculated!  Internal bug... should have needF = true");
@@ -98,7 +98,7 @@ bool FchangeConvergenceDetector::FchangeConvergenceDetector::Test(double F)
 		return CountingConvergenceDetector::Test(F);
 }
 
-void FchangeConvergenceDetector::FchangeConvergenceDetector::DumpTo(ostream& out, const string indent) const
+void FchangeConvergenceDetector::DumpTo(ostream& out, const string indent) const
 {
 	out << indent << "Iteration " << m_its << " of at most " << m_max_its << endl;
 	out << indent << "Previous Free Energy == " << m_prev_f << endl;
@@ -110,7 +110,7 @@ void FreduceConvergenceDetector::Initialize(FabberRunData &params)
 	Reset();
 }
 
-bool FreduceConvergenceDetector::FreduceConvergenceDetector::Test(double F)
+bool FreduceConvergenceDetector::Test(double F)
 {
 	double diff = F - m_prev_f;
 
@@ -237,7 +237,7 @@ void LMConvergenceDetector::Reset(double F)
 	LM = false;
 }
 
-bool LMConvergenceDetector::LMConvergenceDetector::Test(double F)
+bool LMConvergenceDetector::Test(double F)
 {
 	double diff = F - prev;
 

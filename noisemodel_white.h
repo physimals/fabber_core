@@ -85,17 +85,17 @@ public:
 	 * Update the noise parameters
 	 */
 	virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const LinearFwdModel& model, const ColumnVector& data) const;
+		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 	/**
 	 * Update the model parameters?
 	 */
 	virtual void
 	UpdateTheta(const NoiseParams& noise, MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model,
-			const ColumnVector& data, MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
+	const NEWMAT::ColumnVector& data, MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
 	virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data) const;
+		const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 	int NumParams();
 
@@ -106,6 +106,6 @@ protected:
 	double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)
 
 	// Diagonal matrices, indicating which data points use each phi
-	mutable vector<DiagonalMatrix> Qis; // mutable because it's used as a cache
+	mutable vector<NEWMAT::DiagonalMatrix> Qis; // mutable because it's used as a cache
 	void MakeQis(int dataLen) const;
 };

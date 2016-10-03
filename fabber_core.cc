@@ -25,6 +25,51 @@
 
 using Utilities::Tracer_Plus;
 
+static OptionSpec OPTIONS[] =
+{
+{ "help", OPT_BOOL, "Print this usage method. If given with --method or --model, display relevant method/model usage information", OPT_NONREQ, "" },
+{ "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
+{ "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
+{ "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
+{ "method", OPT_STR, "Use this inference method", OPT_NONREQ, "" },
+{ "model", OPT_STR, "Use this forward model", OPT_NONREQ, "" },
+{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
+{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
+{ "data-order", OPT_STR, "If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.", OPT_NONREQ, "interleave" },
+{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
+{ "save-residuals", OPT_BOOL, "Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
+{""},
+};
+
+/**
+ * Print usage information.
+ */
+void Usage()
+{
+	cout << "\n\nUsage: fabber [--<option>|--<option>=<value> ...]" << endl << endl
+			<< "Use -@ <file> to read additional arguments in command line form from a text file (DEPRECATED)." << endl
+			<< "Use -f <file> to read options in option=value form" << endl << endl << "General options " << endl << endl;
+
+	for (int i = 0; OPTIONS[i].name != ""; i++)
+	{
+		cout << OPTIONS[i] << endl;
+	}
+#if 0
+			<< " Spatial VB options: " << endl << endl << "  --param-spatial-priors=<choice_of_prior_forms> " << endl
+			<< "                             Specify a type of prior to use for each forward " << endl
+			<< "                             model parameter.  One letter per parameter.  " << endl
+			<< "                             S=spatial, N=nonspatial, D=Gaussian-process-based" << endl
+			<< "                             combined prior" << endl << "  --fwd-initial-prior=<prior_vest_file> "
+			<< endl << "                             Specify the nonspatial prior distributions on the" << endl
+			<< "                             forward model parameters.  The vest file is the " << endl
+			<< "                             covariance matrix supplemented by the prior means" << endl
+			<< "                             See the documentation for details.  Very important" << endl
+			<< "                             if 'D' prior is used." << endl << endl;
+#endif
+}
+
+
 /**
  * Run the default command line program
  */
@@ -38,31 +83,6 @@ int execute(int argc, char** argv)
 		PercentProgressCheck percent;
 		params.SetProgressCheck(&percent);
 		params.Parse(argc, argv);
-
-		if (params.GetBool("listmodels"))
-		{
-			vector<string> models = FwdModel::GetKnown();
-			vector<string>::iterator iter;
-			for (iter=models.begin(); iter!=models.end(); iter++) {
-				cout << *iter << endl;
-			}
-
-			return 0;
-		}
-		if (params.GetBool("listmethods"))
-		{
-			vector<string> infers = InferenceTechnique::GetKnown();
-			vector<string>::iterator iter;
-			for (iter=infers.begin(); iter!=infers.end(); iter++) {
-				cout << *iter << endl;
-			}
-
-			return 0;
-		}
-
-		cout << "----------------------" << endl;
-		cout << "Welcome to FABBER v" << VERSION << endl;
-		cout << "----------------------" << endl;
 
 		// Print usage information if no arguments given, or
 		// if --help specified
@@ -85,17 +105,35 @@ int execute(int argc, char** argv)
 
 			return 0;
 		}
+		else if (params.GetBool("listmodels"))
+		{
+			vector < string > models = FwdModel::GetKnown();
+			vector<string>::iterator iter;
+			for (iter = models.begin(); iter != models.end(); iter++)
+			{
+				cout << *iter << endl;
+			}
+
+			return 0;
+		}
+		else if (params.GetBool("listmethods"))
+		{
+			vector < string > infers = InferenceTechnique::GetKnown();
+			vector<string>::iterator iter;
+			for (iter = infers.begin(); iter != infers.end(); iter++)
+			{
+				cout << *iter << endl;
+			}
+
+			return 0;
+		}
+
+		cout << "----------------------" << endl;
+		cout << "Welcome to FABBER v" << VERSION << endl;
+		cout << "----------------------" << endl;
 
 		EasyLog::StartLog(params.GetStringDefault("output", "."), true);
 		cout << "Logfile started: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
-		string outputDir = params.GetStringDefault("output", ".");
-
-		// Diagnostic information: software versions
-		LOG << "FABBER release v" << VERSION << endl;
-
-		time_t startTime;
-		time(&startTime);
-		LOG << "Start time: " << ctime(&startTime);
 
 		// Start timing/tracing if requested
 		bool recordTimings = false;
@@ -120,16 +158,7 @@ int execute(int argc, char** argv)
 		// Start a new tracer for timing purposes
 		{
 			params.Run();
-
-			LOG << "FABBER is all done." << endl;
-
-			time_t endTime;
-			time(&endTime);
-			LOG << "Start time: " << ctime(&startTime); // Bizarrely, ctime() ends with a \n.
-			LOG << "End time: " << ctime(&endTime);
-			LOG << "Duration: " << endTime - startTime << " seconds." << endl;
-
-		} // End of timings
+		}
 
 		if (recordTimings)
 		{
@@ -176,81 +205,3 @@ int execute(int argc, char** argv)
 
 	return 1;
 }
-
-/**
- * Concatenate a vector of strings into a single string.
- * @param str_vector Vector of strings.
- * @param separator Separator for each string in the new string.
- * @return single string.
- */
-string vectorToString(vector<string> str_vector, const char* separator)
-{
-	stringstream str_stream;
-	copy(str_vector.begin(), str_vector.end(), ostream_iterator<string>(str_stream, separator));
-	string str = str_stream.str();
-	// Trim trailing delimiter.
-	if (str.size() > 0)
-	{
-		str.resize(str.size() - 1);
-	}
-	return str;
-}
-
-/**
- * Print usage information.
- * @param errorString Optional error string.
- */
-void Usage(const string& errorString)
-{
-	string fwdmodels = vectorToString(FwdModelFactory::GetInstance()->GetNames(), "|");
-	string methods = vectorToString(InferenceTechniqueFactory::GetInstance()->GetNames(), "|");
-	string noisemodels = vectorToString(NoiseModelFactory::GetInstance()->GetNames(), "|");
-
-	cout << "\n\nUsage: fabber <arguments>" << endl << "Use -@ argfile to read additional arguments from a text file."
-
-	<< endl << endl << " General options " << endl << endl
-			<< "  --help                     Print this usage message. When --method or --model" << endl
-			<< "                             are specified in addition, display relevant model" << endl
-			<< "                             / inference method options" << endl
-			<< "  --output=<dir>             Directory for output files (including logfile)" << endl
-			<< "  --method=<method>          Use this inference method " << endl
-			<< "                             (known inference methods: " << methods << ")" << endl
-			<< "  --model=<model name>       Forward model to use. Known forward models are: " << endl
-			<< "                            " << fwdmodels << endl
-			<< "  --data=<file>              Specify a single input data file" << endl
-			<< "  --data1=<file>, --data2=<file2>" << endl
-			<< "                             Specify multiple input data files (see data-order)" << endl
-			<< "  --data-order=[interleave|concatenate|singlefile]  " << endl
-			<< "                             If multiple data files are specified, how they will" << endl
-			<< "                             be handled: concatenate = one after the other, " << endl
-			<< "                             interleave = first record from each file, then " << endl
-			<< "                             second, etc." << endl
-			<< "  --mask=<file>              Mask file. Inference will only be performed where " << endl
-			<< "                             mask value > 0" << endl
-			<< "  --save-model-fit           Save a file containing the mean model prediction " << endl
-			<< "                             at each voxel" << endl << "  --save-residuals           " << endl
-			<< "  --allow-bad-voxels         Skip to next voxel if a numerical exception occurs" << endl << endl
-			<< " Noise options " << endl << endl << "  --ar1-cross-terms={dual|same|none}]  " << endl
-			<< "                             Two types of cross-linking, or none (default: dual)" << endl
-			<< "  --noise-pattern=<phi_index_pattern>] " << endl
-			<< "                             repeating pattern of noise variances for each point" << endl
-			<< "                             (e.g. --noise-pattern=12 gives odd and even data " << endl
-			<< "                             points different noise variances)" << endl << endl << " VB options "
-			<< endl << endl << "  --noise=<noise model name> Noise model to use. Known noise models are: " << endl
-			<< "                            " << noisemodels << endl
-			<< "  --max-iterations=<n>       number of iterations of VB to use (default: 10)" << endl
-			<< "  --print-free-energy        Calculate & dump F to the logfile after each update" << endl << endl
-			<< " Spatial VB options: " << endl << endl << "  --param-spatial-priors=<choice_of_prior_forms> " << endl
-			<< "                             Specify a type of prior to use for each forward " << endl
-			<< "                             model parameter.  One letter per parameter.  " << endl
-			<< "                             S=spatial, N=nonspatial, D=Gaussian-process-based" << endl
-			<< "                             combined prior" << endl << "  --fwd-initial-prior=<prior_vest_file> "
-			<< endl << "                             Specify the nonspatial prior distributions on the" << endl
-			<< "                             forward model parameters.  The vest file is the " << endl
-			<< "                             covariance matrix supplemented by the prior means" << endl
-			<< "                             See the documentation for details.  Very important" << endl
-			<< "                             if 'D' prior is used." << endl << endl;
-	if (errorString.length() > 0)
-		cout << "\nImmediate cause of error: " << errorString << endl;
-}
-

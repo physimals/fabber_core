@@ -33,7 +33,7 @@ public:
 	void NameParams(std::vector<std::string>& names) const;
 
 	void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-	void Evaluate(const ColumnVector& params, ColumnVector& result) const;
+	void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
 
 private:
 	int m_degree;

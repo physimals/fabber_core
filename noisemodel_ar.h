@@ -18,8 +18,8 @@ class Ar1cParams;
 class Ar1cMatrixCache
 {
 public:
-	const SymmetricBandMatrix& GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
-	const SymmetricBandMatrix& GetMarginal(unsigned n) const;
+	const NEWMAT::SymmetricBandMatrix& GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
+	const NEWMAT::SymmetricBandMatrix& GetMarginal(unsigned n) const;
 
 	void Update(const Ar1cParams& dist, int nTimes);
 
@@ -35,7 +35,7 @@ public:
 	}
 
 private:
-	vector<SymmetricBandMatrix> alphaMarginals;
+	vector<NEWMAT::SymmetricBandMatrix> alphaMarginals;
 	// recalculated whenever alpha changes
 	unsigned FlattenIndex(unsigned n, unsigned a12pow, unsigned a34pow) const
 	{
@@ -43,7 +43,7 @@ private:
 		return n - 1 + 2 * (a12pow + 3 * (a34pow));
 	}
 
-	vector<SymmetricBandMatrix> alphaMatrices;
+	vector<NEWMAT::SymmetricBandMatrix> alphaMatrices;
 	// should only be calculated once
 	// Note that if more than one model is being inferred upon at a time,
 	// this will be unnecessarily duplicated in every one of them --
@@ -119,7 +119,7 @@ public:
 	//  virtual void LoadPrior( const string& filename );
 	// loads priors from file, and also initializes posteriors
 
-	virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const ColumnVector& sampleData) const;
+	virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const NEWMAT::ColumnVector& sampleData) const;
 	// Used to pre-evaluate the alpha matrices in the cache
 
 	// virtual void AdjustPrior(...) might be needed for multi-voxel methods...
@@ -145,25 +145,25 @@ public:
 	// VB Updates
 
 	virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const LinearFwdModel& linear, const ColumnVector& data) const
+		const LinearFwdModel& linear, const NEWMAT::ColumnVector& data) const
 	{
 		UpdateAlpha(noise, noisePrior, theta, linear, data);
 		UpdatePhi(noise, noisePrior, theta, linear, data);
 	}
 
 	virtual void UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const LinearFwdModel& model, const ColumnVector& data) const;
+		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 	virtual void UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const LinearFwdModel& model, const ColumnVector& data) const;
+		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 	virtual void UpdateTheta(const NoiseParams& noise,
 			//    const NoiseParams& noisePrior,
-			MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data,
+			MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data,
 			MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
 	virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-			const MVNDist& thetaPrior, const LinearFwdModel& model, const ColumnVector& data) const;
+		const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 	int NumParams();
 

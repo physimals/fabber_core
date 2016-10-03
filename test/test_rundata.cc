@@ -88,7 +88,7 @@ TEST_F(RunDataTest, ConcatenatedData)
 		for (int t=0; t<NTIMES*3; t++)
 		{
 			if (t < NTIMES) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL);
-			else if (t < NTIMES*2 == 1) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
+			else if (t < NTIMES*2) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
 			else ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*3);
 		}
 	}

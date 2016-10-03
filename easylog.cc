@@ -43,7 +43,6 @@ void EasyLog::StartLog(const string& basename, bool overwrite)
 		// Is this portable?
 		errno = 0; // Clear errno so it can be inspected later; result is only meaningful if mkdir fails.
 		int ret = mkdir(outDir.c_str(), 0777);
-
 		if (ret == 0) // Success, directory created
 			break;
 		else if (overwrite)
