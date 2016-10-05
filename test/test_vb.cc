@@ -1,7 +1,8 @@
 //
 // Tests specifically for the VB method
-
+#ifdef USE_NEWIMAGE
 #include "newimage/newimageall.h"
+#endif
 
 #include "gtest/gtest.h"
 
@@ -19,6 +20,7 @@ class PublicVersion: public VariationalBayesInferenceTechnique
 {
 public:
 	using VariationalBayesInferenceTechnique::ImagePrior;
+	using VariationalBayesInferenceTechnique::PriorsPrec;
 };
 
 class VbTest: public ::testing::TestWithParam<string>
@@ -179,7 +181,7 @@ TEST_P(VbTest, ImagePriors)
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
 	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
-	ASSERT_NO_THROW(Run());
+	Run();
 
 	ASSERT_EQ(1, vb->ImagePrior.size());
 	NEWMAT::RowVector iprior = vb->ImagePrior[0];
@@ -194,7 +196,139 @@ TEST_P(VbTest, ImagePriors)
 		ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
 	}
 }
+// Test image priors with a precision which is to
+// high for convergence
+TEST_P(VbTest, ImagePriorsPrecTooHigh)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
 
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data, iprior_data;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
+				}
+				iprior_data(1, v) = VAL * 1.5;
+				v++;
+			}
+		}
+	}
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("model", "trivial");
+	rundata.Set("method", GetParam());
+
+	rundata.Set("PSP_byname1", "p");
+	rundata.Set("PSP_byname1_type", "I");
+	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
+	rundata.Set("PSP_byname1_prec", "1234567");
+	Run();
+
+	ASSERT_EQ(1, vb->ImagePrior.size());
+	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
+
+	ASSERT_EQ(1, vb->PriorsPrec.size());
+	ASSERT_FLOAT_EQ(1234567, vb->PriorsPrec[0]);
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		// We do not expect the parameter to be 'right' because
+		// we specified an image prior with high precision
+		ASSERT_NE(mean(1, i + 1), VAL * 2);
+		ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
+	}
+}
+
+// Test image priors with a precision that is low enough
+// to get to the 'right' answer
+TEST_P(VbTest, ImagePriorsPrecLow)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data, iprior_data;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
+				}
+				iprior_data(1, v) = VAL * 1.5;
+				v++;
+			}
+		}
+	}
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("model", "trivial");
+	rundata.Set("method", GetParam());
+
+	rundata.Set("PSP_byname1", "p");
+	rundata.Set("PSP_byname1_type", "I");
+	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
+	rundata.Set("PSP_byname1_prec", "1e-5");
+	Run();
+
+	ASSERT_EQ(1, vb->ImagePrior.size());
+	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
+
+	ASSERT_EQ(1, vb->PriorsPrec.size());
+	ASSERT_FLOAT_EQ(1e-5, vb->PriorsPrec[0]);
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		// We expect the parameter to be about 'right' because
+		// we specified an image prior with low precision
+		ASSERT_NEAR(mean(1, i + 1), VAL * 2, 0.1);
+		ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
+	}
+}
+
+#ifdef USE_NEWIMAGE
 // Test image priors when stored in a file
 TEST_P(VbTest, ImagePriorsFile)
 {
@@ -265,6 +399,7 @@ TEST_P(VbTest, ImagePriorsFile)
 
 	remove(string(FILENAME + ".nii.gz").c_str());
 }
+#endif
 
 // Test restarting VB run
 TEST_F(VbTest, Restart)
@@ -364,6 +499,7 @@ TEST_F(VbTest, Restart)
 	}
 }
 
+#ifdef USE_NEWIMAGE
 // Test restarting VB run from a file
 TEST_F(VbTest, RestartFromFile)
 {
@@ -471,6 +607,7 @@ TEST_F(VbTest, RestartFromFile)
 		ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
 	}
 }
+#endif
 
 INSTANTIATE_TEST_CASE_P(VbSpatialTests, VbTest, ::testing::Values("vb", "spatialvb"));
 }

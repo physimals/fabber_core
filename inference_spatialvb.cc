@@ -17,6 +17,38 @@ using Utilities::Tracer_Plus;
 
 #define NOCACHE 1
 
+static OptionSpec OPTIONS[] =
+{
+{ "spatial-dims", OPT_INT, "Number of spatial dimensions", OPT_NONREQ, "3" },
+{ "spatial-speed", OPT_STR, "Number of spatial dimensions", OPT_NONREQ, "-1" },
+{ "distance-measure", OPT_STR, "", OPT_NONREQ, "dist1" },
+{ "param-spatial-priors", OPT_STR, "", OPT_NONREQ, "S+" },
+{ "fixed-delta", OPT_STR, "", OPT_NONREQ, "-1" },
+{ "fixed-rho", OPT_STR, "", OPT_NONREQ, "0" },
+{ "new-delta-iterations", OPT_INT, "", OPT_NONREQ, "10" },
+{ "always-initial-delta-guess", OPT_STR, "", OPT_NONREQ, "-1" },
+{ "update-spatial-prior-on-first-iteration", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "use-simultaneous-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "use-full-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "use-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "use-covariance-marginals", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "keep-interparameter-covariances", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "brute-force-delta-search", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "no-eo", OPT_BOOL, "", OPT_NONREQ, "" },
+{ "slow-eo", OPT_BOOL, "", OPT_NONREQ, "" },
+{ ""},
+};
+
+void SpatialVariationalBayes::GetOptions(vector<OptionSpec> &opts) const
+{
+	VariationalBayesInferenceTechnique::GetOptions(opts);
+
+	for (int i = 0; OPTIONS[i].name != ""; i++)
+	{
+		opts.push_back(OPTIONS[i]);
+	}
+}
+
 InferenceTechnique* SpatialVariationalBayes::NewInstance()
 {
 	return new SpatialVariationalBayes();

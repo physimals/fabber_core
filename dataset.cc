@@ -51,8 +51,9 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 
 std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
 {
-	return out << "--" << value.name << " [" << value.type << "," << (value.optional ? "NOT REQUIRED" : "REQUIRED") << "]" << endl
-			<< "        " << value.description << " " << ((value.def == "") ? "" : " (default=" + value.def + ")") << endl;
+	return out << "--" << value.name << " [" << value.type << "," << (value.optional ? "NOT REQUIRED" : "REQUIRED")
+			<< "," << ((value.def == "") ? "NO DEFAULT" : "DEFAULT=" + value.def) << "]" << endl << "        "
+			<< value.description << endl;
 }
 
 void PercentProgressCheck::operator()(int voxel, int nVoxels)
@@ -743,8 +744,10 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 		}
 		output.set_intent(nifti_intent_code, 0, 0, 0);
 		output.setDisplayMaximumMinimum(output.max(), output.min());
-		string output_dir = GetStringDefault("output", ".");
-		save_volume4D(output, output_dir + "/" + filename);
+		//string output_dir = GetStringDefault("output", ".");
+		// FIXME need to use logger to get outdir as this does the ++ appending, however
+		// this assumes use of CL tool and log to file
+		save_volume4D(output, EasyLog::GetOutputDirectory() + "/" + filename);
 #else
 		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");
 #endif

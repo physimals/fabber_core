@@ -17,7 +17,8 @@
 
 #ifdef __FABBER_MOTION
 #include "Update_deformation.h"
-#include "mcflirt/rigidreglib.h"
+//#include "mcflirt/rigidreglib.h"
+#include "newimage/newimage.h"
 #endif //__FABBER_MOTION
 
 #include <map>
@@ -196,25 +197,25 @@ class MCobj
 {
 public:
 	MCobj(const FabberRunData& allData, int dof);
-	void run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat);
+	void run_mc(const NEWMAT::Matrix& modelpred_mat, NEWMAT::Matrix& finalimage_mat);
 	void set_num_iter(int nit)
 	{	num_iter=nit;}
 private:
 	int userdof; // anything over 13 is full nonlinear
 	int num_iter; // default 10
-	volume<float> mask;
-	Matrix affmat;
-	mcflirt mcf;
-	volume4D<float> defx;
-	volume4D<float> defy;
-	volume4D<float> defz;
+	NEWIMAGE::volume<float> mask;
+	NEWMAT::Matrix affmat;
+//	mcflirt mcf;
+	NEWIMAGE::volume4D<float> defx;
+	NEWIMAGE::volume4D<float> defy;
+	NEWIMAGE::volume4D<float> defz;
 	// things below are kept for efficiency (?) in order to avoid repeated allocation/destruction
-	volume4D<float> tmpx;
-	volume4D<float> tmpy;
-	volume4D<float> tmpz;
-	volume4D<float> modelpred;
-	volume4D<float> finalimage;
-	volume4D<float> wholeimage;
+	NEWIMAGE::volume4D<float> tmpx;
+	NEWIMAGE::volume4D<float> tmpy;
+	NEWIMAGE::volume4D<float> tmpz;
+	NEWIMAGE::volume4D<float> modelpred;
+	NEWIMAGE::volume4D<float> finalimage;
+	NEWIMAGE::volume4D<float> wholeimage;
 };
 
 #endif // __FABBER_MOTION

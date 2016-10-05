@@ -397,7 +397,7 @@ InferenceTechnique::~InferenceTechnique()
 
 #ifdef __FABBER_MOTION
 
-MCobj::MCobj(const FabberRunData& allData, int dof)
+MCobj::MCobj(FabberRunData& allData, int dof)
 {
 	Tracer_Plus tr("MCobj::MCobj");
 
@@ -406,7 +406,7 @@ MCobj::MCobj(const FabberRunData& allData, int dof)
 	userdof=dof;
 	num_iter=10;
 // the following sets up an initial zero deformation field
-	Matrix datamat = allData.GetVoxelData();
+	Matrix datamat = allData.GetMainVoxelData();
 	wholeimage.setmatrix(datamat,mask);
 	modelpred=wholeimage;
 	modelpred=0.0f;

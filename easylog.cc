@@ -16,13 +16,37 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include "Shlwapi.h"
+#else
+#include <sys/stat.h>
+#endif
+
 using namespace std;
 
 ostream* EasyLog::filestream = NULL;
 string EasyLog::outDir = "";
 stringstream EasyLog::templog;
 
-void EasyLog::StartLog(const string& basename, bool overwrite)
+static bool is_dir(string path)
+{
+#ifdef _WIN32
+	return PathIsDirectory(path.c_str())
+#else
+	struct stat s;
+	if (stat(path.c_str(), &s) == 0)
+	{
+		return (s.st_mode & S_IFDIR);
+	}
+	else
+	{
+		// Does not exist, so not a directory...
+		return false;
+	}
+#endif
+}
+
+void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
 {
 	assert(filestream == NULL);
 	assert(basename != "");
@@ -34,20 +58,26 @@ void EasyLog::StartLog(const string& basename, bool overwrite)
 	{
 		if (count >= 50) // I'm using a lot for some things
 		{
-			throw std::runtime_error(("Cannot create directory (bad path, or too many + signs?):\n    " + outDir).c_str());
+			throw std::runtime_error(
+					("Cannot create directory (bad path, or too many + signs?):\n    " + outDir).c_str());
 		}
 
-		// not portable!
-		//int ret = system(("mkdir "+ outDir + " 2>/dev/null").c_str());
+		// Clear errno so it can be inspected later; result is only meaningful if mkdir fails.
+		errno = 0;
+		int ret = 0;
 
-		// Is this portable?
-		errno = 0; // Clear errno so it can be inspected later; result is only meaningful if mkdir fails.
-		int ret = mkdir(outDir.c_str(), 0777);
+#ifdef _WIN32
+		ret = _mkdir(sPath.c_str());
+#else
+		ret = mkdir(outDir.c_str(), 0777);
+#endif
+
 		if (ret == 0) // Success, directory created
 			break;
 		else if (overwrite)
 		{
-			if (errno == EEXIST) // Directory already exists -- that's fine.  Although note it might not be a directory.
+			if ((errno == EEXIST) && is_dir(outDir))
+				// If directory already exists -- that's fine.
 				break;
 			else
 				// Other error -- might be a problem!
@@ -65,19 +95,22 @@ void EasyLog::StartLog(const string& basename, bool overwrite)
 	{
 		delete filestream;
 		filestream = NULL;
-		cout << "Cannot open logfile in " << outDir;
+		cout << "Cannot open logfile in " << outDir << endl;
 		throw runtime_error("Cannot open logfile!");
 	}
 
+#ifdef _WIN32
+#else
 	// Might be useful for jobs running on the queue:
 	system(("uname -a > " + outDir + "/uname.txt").c_str());
 
-	// try to make a link to the latest version
-	// REMOVED because it's annoying, not terribly useful, and implemented
-	// badly (only really works output dir is in current dir).
-	// PUT BACK because Michael uses it and finds it useful!
-	system(("ln -sfn '" + outDir + "' '" + basename + "_latest'").c_str());
-	// If this fails, it doesn't really matter.  This'll fail (hopefully silently) in Windows.
+	if (link_to_latest)
+	{
+		// try to make a link to the latest version
+		// If this fails, it doesn't really matter.
+		system(("ln -sfn '" + outDir + "' '" + basename + "_latest'").c_str());
+	}
+#endif
 
 	// Flush any temporary logging
 	*filestream << templog.str() << flush;
@@ -101,9 +134,13 @@ void EasyLog::StopLog(bool gzip)
 	{
 		if (gzip)
 		{
+#ifdef _WIN32
+			LOG << "EasyLog::GZIP logfile not supported under Windows" << std::endl;
+#else
 			int retVal = system(("gzip " + outDir + "/logfile").c_str());
 			if (retVal != 0)
-				cout << "Failed to gzip logfile.  Oh well." << std::endl;
+				LOG << "Failed to gzip logfile.  Oh well." << std::endl;
+#endif
 		}
 		// We created this ofstream and need to tidy it up
 		delete filestream;
@@ -136,9 +173,6 @@ void Warning::ReissueAll()
 
 	LOG_ERR("\nSummary of warnings (" << issueCount.size() << " distinct warnings)\n");
 	for (map<string, int>::iterator it = issueCount.begin(); it != issueCount.end(); it++)
-		LOG_ERR("Issued " <<
-				( (it->second==1)?
-						"once: " :
-						stringify(it->second)+" times: "
-				) << it->first << std::endl);
+		LOG_ERR(
+				"Issued " << ( (it->second==1)? "once: " : stringify(it->second)+" times: " ) << it->first << std::endl);
 }

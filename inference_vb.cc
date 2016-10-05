@@ -15,28 +15,38 @@
 using Utilities::Tracer_Plus;
 
 static OptionSpec OPTIONS[] =
-{
-{ "noise", OPT_STR, "Noise model to use (white or ar1)", OPT_REQ, "" },
-{ "max-iterations", OPT_STR, "number of iterations of VB to use", OPT_NONREQ, "10" },
-{ "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", OPT_NONREQ, "" },
-{ "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior", OPT_NONREQ, "" },
-{ "PSP_byname<n>_image", OPT_FILE, "File containing image prior for parameter <n>", OPT_NONREQ, "" },
-{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
-{ "save-residuals", OPT_BOOL, "Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
-{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
-{ "convergence", OPT_STR, "Name of method for detecting convergence", OPT_NONREQ, "maxits" },
-{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
-{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", OPT_NONREQ, "" },
-{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", OPT_NONREQ, "" },
-{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", OPT_NONREQ, "" },
-{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", OPT_NONREQ, "" },
-{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", OPT_NONREQ, "" },
-{ "noise-pattern", OPT_STR, "repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)", OPT_NONREQ, "1" },
-{ "locked-linear-mvn", OPT_FILE, "MVN file containing fixed centres for linearization", OPT_NONREQ, "" },
-{ "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping", OPT_NONREQ, "" },
-{ "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)", OPT_NONREQ, "dual" },
-{ ""},
-};
+		{
+		{ "noise", OPT_STR, "Noise model to use (white or ar1)", OPT_REQ, "" },
+		{ "convergence", OPT_STR, "Name of method for detecting convergence", OPT_NONREQ, "maxits" },
+		{ "max-iterations", OPT_STR, "number of iterations of VB to use with the maxits convergence detector",
+				OPT_NONREQ, "10" },
+		{ "min-fchange", OPT_STR, "When using the fchange convergence detector, the change in F to stop at", OPT_NONREQ,
+				"10" },
+				{ "max-trials", OPT_STR,
+						"When using the trial mode convergence detector, the maximum number of trials after an initial reduction in F",
+						OPT_NONREQ, "10" },
+				{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
+				{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
+				{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", OPT_NONREQ, "" },
+				{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", OPT_NONREQ, "" },
+				{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", OPT_NONREQ, "" },
+				{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", OPT_NONREQ, "" },
+				{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", OPT_NONREQ, "" },
+				{ "noise-pattern", OPT_STR,
+						"repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)",
+						OPT_NONREQ, "1" },
+				{ "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", OPT_NONREQ, "" },
+				{ "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior",
+						OPT_NONREQ, "" },
+				{ "PSP_byname<n>_image", OPT_FILE, "File containing image prior for parameter <n>", OPT_NONREQ, "" },
+				{ "PSP_byname<n>_prec", OPT_FILE, "Precision to apply to image prior for parameter <n>", OPT_NONREQ, "" },
+				{ "locked-linear-from-mvn", OPT_FILE, "MVN file containing fixed centres for linearization", OPT_NONREQ,
+						"" },
+				{ "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping",
+						OPT_NONREQ, "" },
+				{ "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)", OPT_NONREQ,
+						"dual" },
+				{ "" }, };
 
 InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 {
@@ -45,6 +55,7 @@ InferenceTechnique* VariationalBayesInferenceTechnique::NewInstance()
 
 void VariationalBayesInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
+	InferenceTechnique::GetOptions(opts);
 	for (int i = 0; OPTIONS[i].name != ""; i++)
 	{
 		opts.push_back(OPTIONS[i]);
@@ -132,6 +143,7 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 	model->NameParams(modnames);
 	imagepriorstr.resize(m_num_params);
 	PriorsTypes.resize(m_num_params, ' ');
+	PriorsPrec.resize(m_num_params, 0);
 	int current_psp = 0;
 	while (true)
 	{
@@ -149,12 +161,18 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 				found = true;
 				char psp_type = convertTo<char>(args.GetString("PSP_byname" + stringify(current_psp) + "_type"));
 				PriorsTypes[p] = psp_type;
-				//record the index at which a PSP has been defined for use in spatialvb setup
+
+				// A precision is optional. 0 means not set
+				double prec = convertTo<double>(
+						args.GetStringDefault("PSP_byname" + stringify(current_psp) + "_prec", "0"));
+				PriorsPrec[p] = prec;
+
+				// Record the index at which a PSP has been defined for use in spatialvb setup
 				PSPidx.push_back(p);
 				LOG << "VbInferenceTechnique::PSP_byname parameter " << param_name << " at entry " << p << ", type: "
 						<< psp_type << ":" << PSPidx.size() << endl;
 
-				// now read in file name for an image prior (if appropriate)
+				// Record the data key for an image prior (if appropriate)
 				if (psp_type == 'I')
 				{
 					imagepriorstr[p] = "PSP_byname" + stringify(current_psp) + "_image";
@@ -358,12 +376,22 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			MVNDist fwdPosterior;
 
 			// We may have an image priors. This is a way of setting the mean of the
-			// prior for each parameter on a per-voxel basis
+			// prior for each parameter on a per-voxel basis. We can also optionally
+			// set the precision on an image prior parameter
 			for (int k = 1; k <= m_num_params; k++)
 			{
 				if (PriorsTypes[k - 1] == 'I')
 				{
 					fwdPrior.means(k) = ImagePrior[k - 1](voxel);
+					SymmetricMatrix prec = fwdPrior.GetPrecisions();
+					bool changed=false;
+					if (PriorsPrec[k - 1] != 0)
+					{
+						prec(k, k) = PriorsPrec[k - 1];
+						changed = true;
+					}
+					LOG << prec << "," << prec.Nrows() << "," << prec.Ncols() << endl;
+					if (changed) fwdPrior.SetPrecisions(prec);
 				}
 			}
 

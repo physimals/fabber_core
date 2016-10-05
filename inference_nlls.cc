@@ -22,6 +22,7 @@ static OptionSpec OPTIONS[] =
 
 void NLLSInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
+	InferenceTechnique::GetOptions(opts);
 	for (int i = 0; i < NUM_OPTIONS; i++)
 	{
 		opts.push_back(OPTIONS[i]);

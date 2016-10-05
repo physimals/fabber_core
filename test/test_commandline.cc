@@ -1,3 +1,4 @@
+#ifdef USE_NEWIMAGE
 // Tests fabber when run from the command line
 
 #include "gtest/gtest.h"
@@ -172,4 +173,5 @@ INSTANTIATE_TEST_CASE_P(ClMethodTests,
 		ClTestTest,
 		::testing::Values("vb", "nlls", "spatialvb"));
 }
+#endif
 

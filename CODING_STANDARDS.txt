@@ -39,11 +39,13 @@ with Fabber code at present is that too much is crammed into a single function!
 Use of this style will emphasise this and encourage refactoring (hopefully).
 
 Eclipse contains this style as a built in option. Once selected, SHIFT-CTRL-F will
-reformat your current file in this style.
+reformat your current file in this style. The only difference from the Eclipse
+default is that lines up to 120 characters long are allowed - Eclipse wraps at
+80 characters which seems anachronistic.
 
 2. Tabs/spaces
 
-Tabs are used for all indentation, and should normally be viewed as 4 spaces. Spaces can be used
+Tabs are used for all indentation, and would normally be viewed as 4 spaces. Spaces can be used
 for other whitespace.
 
 3. Naming conventions
@@ -86,7 +88,7 @@ Header files should not generally contain function implementations.
 As a general rule, only empty functions or one-line functions (e.g.
 getters/setters) should be implemented in a header file.
 
-Do not put "using namespace" in a header file, as it will affect
+Never put "using namespace" in a header file, as it will affect
 any code which includes that header.
 
 5. Documentation and comments

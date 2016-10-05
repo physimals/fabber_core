@@ -43,10 +43,11 @@ class SpatialVariationalBayes: public VariationalBayesInferenceTechnique
 public:
 	static InferenceTechnique* NewInstance();
 
+	virtual void GetOptions(vector<OptionSpec> &opts) const;
+
 	SpatialVariationalBayes() :
-		VariationalBayesInferenceTechnique(), spatialDims(-1)
+			VariationalBayesInferenceTechnique(), spatialDims(-1)
 	{
-		return;
 	}
 	virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
 	virtual void DoCalculations(FabberRunData& data);
@@ -95,16 +96,16 @@ protected:
 	bool bruteForceDeltaSearch;
 
 	double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix& covRatio,
-			//const SymmetricMatrix& covRatioSupplemented,
-			const NEWMAT::ColumnVector& meanDiffRatio, double guess, double* optimizedRho = NULL, bool allowRhoToVary = true,
-			bool allowDeltaToVary = true) const;
+	//const SymmetricMatrix& covRatioSupplemented,
+			const NEWMAT::ColumnVector& meanDiffRatio, double guess, double* optimizedRho = NULL, bool allowRhoToVary =
+					true, bool allowDeltaToVary = true) const;
 
 	double
-			OptimizeEvidence(
-			// const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
-					const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
-					// const vector<SymmetricMatrix>& Si,
-					int k, const MVNDist* ifp, double guess, bool allowRhoToVary = false, double* rhoOut =
-							NULL) const;
+	OptimizeEvidence(
+	// const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
+			const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
+			// const vector<SymmetricMatrix>& Si,
+			int k, const MVNDist* ifp, double guess, bool allowRhoToVary = false, double* rhoOut =
+			NULL) const;
 };
 

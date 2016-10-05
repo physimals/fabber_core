@@ -27,8 +27,8 @@ public:
 	virtual string GetVersion() const;
 
 	VariationalBayesInferenceTechnique() :
-		conv(NULL), initialFwdPrior(NULL), initialFwdPosterior(NULL), initialNoisePrior(NULL), initialNoisePosterior(
-				NULL)
+			conv(NULL), initialFwdPrior(NULL), initialFwdPosterior(NULL), initialNoisePrior(NULL), initialNoisePosterior(
+			NULL)
 	{
 	}
 
@@ -57,6 +57,7 @@ protected:
 	vector<NEWMAT::RowVector> ImagePrior;
 	vector<unsigned int> PSPidx;
 	vector<char> PriorsTypes;
+	vector<double> PriorsPrec;
 	vector<string> imagepriorstr;
 
 	// These are used for resuming a previous calculation

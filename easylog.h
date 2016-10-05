@@ -81,7 +81,7 @@ public:
 	 *                  be created with a '+' added to basename, e.g.
 	 *                  'out', 'out+', 'out++', etc...
 	 */
-	static void StartLog(const std::string& basename, bool overwrite);
+	static void StartLog(const std::string& basename, bool overwrite, bool link_to_latest=false);
 
 	/**
 	 * Log output to an existing stream
