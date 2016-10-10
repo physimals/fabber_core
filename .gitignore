@@ -1,3 +1,6 @@
+out.tmp*
+logfile
+build
 CVS
 *.o
 *~
@@ -9,3 +12,4 @@ mvntool
 testfabber
 doc
 .sconsign.dblite
+.*

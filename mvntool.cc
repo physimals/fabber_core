@@ -18,6 +18,8 @@ using namespace NEWIMAGE;
 #include <map>
 #include <string>
 
+#include "utils/tracer_plus.h"
+
 using namespace std;
 using Utilities::Tracer_Plus;
 
