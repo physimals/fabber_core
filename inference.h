@@ -144,8 +144,21 @@ protected:
 	 */
 	std::auto_ptr<NoiseModel> noise;
 
+	/**
+	 * If true, save the model prediction
+	 */
 	bool saveModelFit;
+
+	/**
+	 * If true, save the difference between the data and the model prediction
+	 */
 	bool saveResiduals;
+
+	/**
+	 * If true, stop if we get a numerical execption in any voxel. If false,
+	 * simply print a warning and continue
+	 */
+	bool haltOnBadVoxel;
 
 	/**
 	 * Results of the inference method

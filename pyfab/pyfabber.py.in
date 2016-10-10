@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+import sys
+sys.path.append("@CMAKE_INSTALL_PREFIX@/lib/python")
+
+import PySide.QtGui
+
+from pyfab.ui import MainWindow
+
+if __name__ == '__main__':
+	app = PySide.QtGui.QApplication(sys.argv)
+
+	win = MainWindow()
+	win.show()
+	if len(sys.argv) > 1:
+		win.refresh(RunFile(sys.argv[1]))
+		
+	sys.exit(app.exec_())

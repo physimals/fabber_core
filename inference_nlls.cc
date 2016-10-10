@@ -47,7 +47,7 @@ InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
 	Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
-	LOG << "Initialising NLLS method" << endl;
+	LOG << "NLLSInferenceTechnique::Initialising" << endl;
 	InferenceTechnique::Initialize(fwd_model, args);
 
 	// Determine whether NLLS is being run in isolation or as a pre-step for VB
@@ -63,7 +63,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 	string filePosterior = args.GetStringDefault("fwd-inital-posterior", "modeldefault");
 	if (filePosterior != "modeldefault")
 	{
-		LOG << "File posterior" << endl;
+		LOG << "NLLSInferenceTechnique::File posterior" << endl;
 		loadPosterior->Load(filePosterior);
 	}
 
@@ -72,7 +72,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 
 	// Determine whether we use L (default) or LM convergence
 	lm = args.GetBool("lm");
-	LOG << "Done initialising" << endl;
+	LOG << "NLLSInferenceTechnique::Done initialising" << endl;
 }
 
 void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
@@ -144,8 +144,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 			NonlinOut status = nonlin(nlinpar, costfn);
 
 #if 0
-			LOG << "The solution is: " << nlinpar.Par() << endl;
-			LOG << "and this is the process " << endl;
+			LOG << "NLLSInferenceTechnique::The solution is: " << nlinpar.Par() << endl;
+			LOG << "NLLSInferenceTechnique::and this is the process " << endl;
 			for (int i=0; i<nlinpar.CFHistory().size(); i++)
 			{
 				LOG << " cf: " << (nlinpar.CFHistory())[i] <<endl;
@@ -183,11 +183,11 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 			fwdPosterior.GetCovariance();
 		} catch (Exception &e)
 		{
-			LOG << "   NEWMAT Exception in this voxel:\n" << e.what() << endl;
+			LOG << "NLLSInferenceTechnique::NEWMAT Exception in this voxel:\n" << e.what() << endl;
 
-			//if (haltOnBadVoxel) throw;
+			if (haltOnBadVoxel) throw;
 
-			LOG << "   Estimates in this voxel may be unreliable" << endl
+			LOG << "NLLSInferenceTechnique::Estimates in this voxel may be unreliable" << endl
 					<< "   (precision matrix will be set manually)" << endl << "   Going on to the next voxel" << endl;
 
 			// output the results where we are

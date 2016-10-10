@@ -63,6 +63,21 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 	saveModelFit = args.GetBool("save-model-fit");
 	saveResiduals = args.GetBool("save-residuals");
 
+	haltOnBadVoxel = !args.GetBool("allow-bad-voxels");
+	if (haltOnBadVoxel)
+	{
+		LOG << "InferenceTechnique::Note: numerical errors in voxels will cause the program to halt.\n"
+				<< "InferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on calculating.\n";
+	}
+	else
+	{
+		LOG << "InferenceTechnique::Using --allow-bad-voxels: numerical errors in a voxel will\n"
+				<< "InferenceTechnique::simply stop the calculation of that voxel.\n"
+				<< "InferenceTechnique::Check log for 'Going on to the next voxel' messages.\n"
+				<< "InferenceTechnique::Note that you should get very few (if any) exceptions like this;"
+				<< "InferenceTechnique::they are probably due to bugs or a numerically unstable model.";
+	}
+
 	// Motion correction related setup - by default no motion correction
 	Nmcstep = convertTo<int>(args.GetStringDefault("mcsteps", "0"));
 }

@@ -229,20 +229,6 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	printF = args.GetBool("print-free-energy");
 	needF = conv->UseF() || printF;
 
-	haltOnBadVoxel = !args.GetBool("allow-bad-voxels");
-	if (haltOnBadVoxel)
-	{
-		LOG << "VbInferenceTechnique::Note: numerical errors in voxels will cause the program to halt.\n"
-				<< "VbInferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on calculating.\n";
-	}
-	else
-	{
-		LOG << "VbInferenceTechnique::Using --allow-bad-voxels: numerical errors in a voxel will\n"
-				<< "VbInferenceTechnique::simply stop the calculation of that voxel.\n"
-				<< "VbInferenceTechnique::Check log for 'Going on to the next voxel' messages.\n"
-				<< "VbInferenceTechnique::Note that you should get very few (if any) exceptions like this;"
-				<< "VbInferenceTechnique::they are probably due to bugs or a numerically unstable model.";
-	}
 }
 
 void VariationalBayesInferenceTechnique::LoadImagePriors(FabberRunData &allData)

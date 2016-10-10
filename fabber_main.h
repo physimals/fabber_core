@@ -10,7 +10,6 @@
 #define __FABBER_CORE_H 1
 
 #include "easylog.h"
-#include "fabber_core.h"
 #include "setup.h"
 #include "utils.h"
 

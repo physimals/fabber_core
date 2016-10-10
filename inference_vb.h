@@ -69,7 +69,6 @@ protected:
 	// voxelwise linearizations (probably loaded from an MVN)
 	string lockedLinearFile;
 
-	bool haltOnBadVoxel;
 	bool printF;
 	bool needF;
 };
