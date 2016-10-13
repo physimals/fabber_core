@@ -20,10 +20,12 @@ if (FSL_BUILD)
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
 else (FSL_BUILD)
 
+  find_path(FSL_INCLUDE_DIR utils/tracer_plus.h
+            HINTS $ENV{FSLDIR}/include REQUIRED)
+  find_path(FSL_EXTRAS_INCLUDE_DIR cprob/cprob.h
+            HINTS $ENV{FSLDIR}/extras/include REQUIRED)
   find_path(NEWMAT_INCLUDE_DIR newmat.h
-            HINTS $ENV{FSLDIR}/extras/src/newmat REQUIRED)
-  find_path(UTILS_INCLUDE_DIR tracer_plus.h
-            HINTS $ENV{FSLDIR}/src/utils REQUIRED)
+            HINTS $ENV{FSLDIR}/extras/include/newmat REQUIRED)
 
   find_library(ZNZ_LIBRARY NAMES znz libznz
                HINTS $ENV{FSLDIR}/lib REQUIRED )
@@ -39,8 +41,16 @@ else (FSL_BUILD)
                HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
   find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
                HINTS $ENV{FSLDIR}/lib REQUIRED )
-  find_library(Z_LIBRARY NAMES z libz REQUIRED )
+  find_library(Z_LIBRARY NAMES z libz zlib zlibd 
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
 
+  find_package(Boost)
+  if(NOT Boost_FOUND)
+      find_path(Boost_INCLUDE_DIRS boost/shared_ptr.hpp
+                HINTS $ENV{FSLDIR}/extras/include/boost REQUIRED)
+  endif(NOT Boost_FOUND)
+   
+Message("-- FSL headers in ${FSL_INCLUDE_DIR}")
 Message("-- Using libznz: ${ZNZ_LIBRARY}")
 Message("-- Using libutils: ${UTILS_LIBRARY} ${UTILS_INCLUDE_DIR}")
 Message("-- Using miscmaths: ${MISCMATHS_LIBRARY}")
@@ -50,7 +60,7 @@ Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
 Message("-- Using libz: ${Z_LIBRARY}")
 
-include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}/.. ${UTILS_INCLUDE_DIR}/..)
+include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
 set(LIBS ${NEWIMAGE_LIBRARY} 
          ${FSLIO_LIBRARY} 
@@ -109,17 +119,23 @@ INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include/fabber_core FI
 
 find_library(GTEST_LIBRARY NAMES gtest libgtest OPTIONAL )
 find_library(PTHREAD_LIBRARY NAMES pthread libpthread OPTIONAL )
+find_path(GTEST_INCLUDE_DIR gtest/gtest.h OPTIONAL )
 
 if (GTEST_LIBRARY)
-  Message("-- Using gtest: ${GTEST_LIBRARY}")
+  Message("-- Using gtest: ${GTEST_LIBRARY} ${GTEST_INCLUDE_DIR}")  
+  if (PTHREAD_LIBRARY)
+    set(PTH_LIB ${PTHREAD_LIBRARY})
+  endif(PTHREAD_LIBRARY)
+  include_directories(${GTEST_INCLUDE_DIR})
+  
   set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_spatialvb.cc test/test_vb.cc
                test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc)
   add_executable(testfabber ${TEST_SRC})
-  target_link_libraries(testfabber fabbercore ${LIBS} ${GTEST_LIBRARY} ${PTHREAD_LIBRARY})
+  target_link_libraries(testfabber fabbercore ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
   enable_testing()
   add_test(COMMAND testfabber)
 else(GTEST_LIBRARY)
-  Message("-- Gtest not found - will not build unit tests")
+  Message("-- Gtest NOT found - will not build unit tests")
 endif(GTEST_LIBRARY)
 
 find_package(Doxygen)
