@@ -13,6 +13,7 @@
 
 #include "utils/tracer_plus.h"
 #include "miscmaths/miscmaths.h"
+#include "newmatio.h"
 
 #include <stdexcept>
 

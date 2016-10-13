@@ -363,8 +363,8 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 	rundata.SetMainVoxelData(data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
-	rundata.Set("degree", stringify(DEGREE));
 	rundata.Set("max-iterations", "50");
+	rundata.Set("degree", stringify(DEGREE));
 	rundata.Set("method", GetParam());
 	rundata.Run();
 

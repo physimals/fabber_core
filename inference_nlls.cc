@@ -18,7 +18,8 @@ using Utilities::Tracer_Plus;
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
 {
-{ "basis", OPT_FILE, "File containing basis matrix in VEST format", OPT_REQ, "" }, };
+{ "vb-init", OPT_BOOL, "Whether NLLS is being run in isolation or as a pre-step for VB", OPT_NONREQ, "" },
+{ "lm", OPT_BOOL, "Whether to use LM convergence (default is L)", OPT_NONREQ, "" }, };
 
 void NLLSInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
@@ -52,7 +53,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 
 	// Determine whether NLLS is being run in isolation or as a pre-step for VB
 	// This alters what we do if result is ill conditioned
-	vbinit = args.GetBool("vb-init");
+	m_vbinit = args.GetBool("vb-init");
 
 	// Initialize the model with MVN distributions for its parameters
 	MVNDist* loadPosterior = new MVNDist(model->NumParams());
@@ -71,7 +72,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 	loadPosterior = NULL;
 
 	// Determine whether we use L (default) or LM convergence
-	lm = args.GetBool("lm");
+	m_lm = args.GetBool("lm");
 	LOG << "NLLSInferenceTechnique::Done initialising" << endl;
 }
 
@@ -126,7 +127,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 		// Set the convergence method
 		// either Levenberg (L) or Levenberg-Marquardt (LM)
 		NonlinParam nlinpar(Nparams, NL_LM);
-		if (!lm)
+		if (!m_lm)
 		{
 			nlinpar.SetGaussNewtonType(LM_L);
 		}
@@ -185,7 +186,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 		{
 			LOG << "NLLSInferenceTechnique::NEWMAT Exception in this voxel:\n" << e.what() << endl;
 
-			if (haltOnBadVoxel) throw;
+			if (haltOnBadVoxel)
+				throw;
 
 			LOG << "NLLSInferenceTechnique::Estimates in this voxel may be unreliable" << endl
 					<< "   (precision matrix will be set manually)" << endl << "   Going on to the next voxel" << endl;
@@ -214,14 +216,14 @@ double NLLSCF::cf(const ColumnVector& p) const
 	Tracer_Plus tr("NLLSCF::cf");
 
 	// p = parameters
-	// yhat = data predicted by model
-	ColumnVector yhat;
-	model->Evaluate(p, yhat);
+	// data_pred = data predicted by model
+	ColumnVector data_pred;
+	m_model->Evaluate(p, data_pred);
 
-	// y = actual data. Find sum of squares of differences
+	// m_data = actual data. Find sum of squares of differences
 	// between this and the model data using a scalar product.
-	double cfv = ((y - yhat).t() * (y - yhat)).AsScalar();
-	return (cfv);
+	double cfv = ((m_data - data_pred).t() * (m_data - data_pred)).AsScalar();
+	return cfv;
 }
 
 ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
@@ -233,18 +235,18 @@ ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
 	gradv = 0.0;
 
 	// Need to recenter the linearised model to the current parameter values
-	linear.ReCentre(p);
-	const Matrix& J = linear.Jacobian();
+	m_linear.ReCentre(p);
+	const Matrix& J = m_linear.Jacobian();
 
 #if 0 // FIXME Old code?
 	//this is g(w) i.e. model evaluated at current parameters?
 	//const ColumnVector gm = linear.Offset();
 #endif
 	// Evaluate the model given the parameters
-	ColumnVector yhat;
-	model->Evaluate(p, yhat);
+	ColumnVector data_pred;
+	m_model->Evaluate(p, data_pred);
 
-	gradv = -2 * J.t() * (y - yhat);
+	gradv = -2 * J.t() * (m_data - data_pred);
 	gradv.Release();
 	return (gradv);
 }
@@ -265,8 +267,8 @@ boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_pt
 	}
 
 	// need to recenter the linearised model to the current parameter values
-	linear.ReCentre(p);
-	const Matrix& J = linear.Jacobian();
+	m_linear.ReCentre(p);
+	const Matrix& J = m_linear.Jacobian();
 	Matrix hesstemp = 2 * J.t() * J; //Make the G-N approximation to the hessian
 
 	//(*hessm) = J.t()*J;
@@ -279,4 +281,5 @@ boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_pt
 
 	return (hessm);
 }
+
 #endif

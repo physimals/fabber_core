@@ -12,6 +12,7 @@
 #include "convergence.h"
 
 #include "utils/tracer_plus.h"
+#include "newmatio.h"
 
 using Utilities::Tracer_Plus;
 
@@ -308,10 +309,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		Tracer_Plus tr("SpatialVariationalBayes::DoCalculations - initialization");
 
 		// If we're continuing from previous saved results, load them here:
-		continuingFromFile = (continueFromFile != "");
+		continuingFromFile = (m_continueFromFile != "");
 		if (continuingFromFile)
 		{
-			InitMVNFromFile(continueFromFile, allData, paramFilename);
+			InitMVNFromFile(m_continueFromFile, allData, paramFilename);
 		}
 
 		// Locked linearizations, if requested
@@ -528,7 +529,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		 // END OLD METHOD */
 	}
 
-	conv->Reset();
+	m_conv->Reset();
 	bool isFirstIteration = true; // slightly different behaviour in first iteratio
 
 	//  if (!useShrinkageMethod) LOG_ERR("HACK: using --fixed-delta value on first iteration instead of automatically determining delta from priors\n");
@@ -537,7 +538,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	do
 	{
 		Tracer_Plus tr("Main iteration loop");
-		conv->DumpTo(LOG);
+		m_conv->DumpTo(LOG);
 
 		// UPDATE SPATIAL SHRINKAGE PRIOR PARAMETERS
 
@@ -1216,14 +1217,14 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				// Definitely a minus here.
 			}
 
-			if (needF)
+			if (m_needF)
 			{
 				F = noise->CalcFreeEnergy(*noiseVox[v - 1], *noiseVoxPrior[v - 1], fwdPosteriorVox[v - 1],
 						fwdPriorVox[v - 1], linearVox[v - 1], m_origdata->Column(v));
 				F += Fard;
 			}
 
-			if (printF)
+			if (m_printF)
 				LOG << "      Fbefore == " << F << endl;
 
 			// Produces heaps of output and not very useful for debugging:
@@ -1232,7 +1233,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			noise->UpdateTheta(*noiseVox[v - 1], fwdPosteriorVox[v - 1], fwdPriorVox[v - 1], linearVox[v - 1],
 					m_origdata->Column(v), fwdPosteriorWithoutPrior.at(v - 1));
 
-			if (needF)
+			if (m_needF)
 			{
 				F = noise->CalcFreeEnergy(*noiseVox[v - 1], *noiseVoxPrior[v - 1], fwdPosteriorVox[v - 1],
 						fwdPriorVox[v - 1], linearVox[v - 1], m_origdata->Column(v));
@@ -1240,7 +1241,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				// Fard does NOT change because we haven't updated fwdPriorVox yet.
 			}
 
-			if (printF)
+			if (m_printF)
 				LOG << "      Ftheta == " << F << endl;
 
 			/* MOVED BELOW -- 2007-11-23
@@ -1535,10 +1536,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			noise->UpdateNoise(*noiseVox[v - 1], *noiseVoxPrior[v - 1], fwdPosteriorVox[v - 1], linearVox[v - 1],
 					m_origdata->Column(v));
 
-			if (needF)
+			if (m_needF)
 				F = noise->CalcFreeEnergy(*noiseVox[v - 1], *noiseVoxPrior[v - 1], fwdPosteriorVox[v - 1],
 						fwdPriorVox[v - 1], linearVox[v - 1], m_origdata->Column(v));
-			if (printF)
+			if (m_printF)
 				LOG << "      Fnoise == " << F << endl;
 
 			//} catch (...)
@@ -1548,10 +1549,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			if (!lockedLinearEnabled)
 				linearVox[v - 1].ReCentre(fwdPosteriorVox[v - 1].means);
 
-			if (needF)
+			if (m_needF)
 				F = noise->CalcFreeEnergy(*noiseVox[v - 1], *noiseVoxPrior[v - 1], fwdPosteriorVox[v - 1],
 						fwdPriorVox[v - 1], linearVox[v - 1], m_origdata->Column(v));
-			if (printF)
+			if (m_printF)
 				LOG << "      Flin == " << F << endl;
 			// */
 
@@ -1570,7 +1571,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		isFirstIteration = false;
 
 		// next iteration:
-	} while (!conv->Test(globalF));
+	} while (!m_conv->Test(globalF));
 
 	// Phew!
 
@@ -1643,7 +1644,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 	// resultFs are already stored as we go along.
 
-	if (!needF)
+	if (!m_needF)
 	{
 		for (int v = 1; v <= Nvoxels; v++)
 			assert(resultFs.at(v-1) == 9999);
@@ -1698,7 +1699,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 // Binary search for data(index) == num
 // Assumes data is sorted ascending!!
 // Either returns an index such that data(index) == num
-//   or -1 if num is not present in data. 
+//   or -1 if num is not present in data.
 inline int binarySearch(const ColumnVector& data, int num)
 {
 	int first = 1, last = data.Nrows();
@@ -1916,7 +1917,7 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
  * voxels of interest
  *
  * @param mask Input mask volume whose entries are 1 for voxels of interest, 0 otherwise
- * @param voxelCoords Return matrix in which every column is a the xyz vector or a 
+ * @param voxelCoords Return matrix in which every column is a the xyz vector or a
  *                    voxel's co-ordinates
  */
 void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoords)
@@ -1999,9 +2000,9 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
 }
 #endif
 
-/** 
+/**
  * Calculate a distance matrix
- * 
+ *
  * FIXME voxelCoords should really be in MM, not indices; only really matters if it's aniostropic or you're using the
  * smoothness values directly.
  *

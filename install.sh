@@ -1,8 +1,20 @@
 #!/bin/sh
 #
-# Build using Cmake
+# Install 
 
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$HOME
+if [ -z $1 ] 
+then
+  TYPE=Debug
+else
+  TYPE=$1
+fi
+
+if [ -z $PREFIX ]
+then
+  PREFIX=$HOME
+fi
+
+cd Release
+cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX
 make install
 

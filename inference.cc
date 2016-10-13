@@ -291,8 +291,8 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		vector<MVNDist*> MVNfile;
 		MVNDist::Load(MVNfile, continueFromFile, allData);
 
-		// Get defaults from the model
-
+		// Get defaults from the model. The prior is not used, the posterior is used
+		// if we don't have a posterior for a parameter in the file
 		MVNDist tempprior(m_num_params);
 		MVNDist tempposterior(m_num_params);
 		model->HardcodedInitialDists(tempprior, tempposterior);

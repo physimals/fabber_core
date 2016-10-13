@@ -10,6 +10,7 @@
 
 #include "easylog.h"
 #include "utils/tracer_plus.h"
+#include "newmatio.h"
 
 using Utilities::Tracer_Plus;
 

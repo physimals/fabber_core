@@ -12,3 +12,5 @@ testfabber
 doc
 .sconsign.dblite
 .*
+Debug
+Release

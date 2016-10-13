@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 # Basic objects - things that have nothing directly to do with inference
-set(BASIC_SRC tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
+set(BASIC_SRC fabber_core.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc utils.cc fwdmodel_linear.cc
@@ -14,26 +14,32 @@ set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
 set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
 
 # Main dependencies
-find_path(NEWMAT_INCLUDE_DIR newmat.h
-          HINTS /home/martinc/dev/fsl/extras/src/newmat REQUIRED)
-find_path(UTILS_INCLUDE_DIR tracer_plus.h
-          HINTS /home/martinc/dev/fsl/src/utils REQUIRED)
 
-find_library(ZNZ_LIBRARY NAMES znz libznz
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(UTILS_LIBRARY NAMES utils libutils
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(FSLIO_LIBRARY NAMES fslio libfslio
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(NIFTIIO_LIBRARY NAMES niftiio libniftiio
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(NEWMAT_LIBRARY NAMES newmat libnewmat
-             HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
-find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
-find_library(Z_LIBRARY NAMES z libz REQUIRED )
+if (FSL_BUILD)
+  set(LIBS newimage fslio miscmaths niftiio utils newmat znz z)
+  include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
+else (FSL_BUILD)
+
+  find_path(NEWMAT_INCLUDE_DIR newmat.h
+            HINTS $ENV{FSLDIR}/extras/src/newmat REQUIRED)
+  find_path(UTILS_INCLUDE_DIR tracer_plus.h
+            HINTS $ENV{FSLDIR}/src/utils REQUIRED)
+
+  find_library(ZNZ_LIBRARY NAMES znz libznz
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(UTILS_LIBRARY NAMES utils libutils
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(FSLIO_LIBRARY NAMES fslio libfslio
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(NIFTIIO_LIBRARY NAMES niftiio libniftiio
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(NEWMAT_LIBRARY NAMES newmat libnewmat
+               HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
+  find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
+               HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(Z_LIBRARY NAMES z libz REQUIRED )
 
 Message("-- Using libznz: ${ZNZ_LIBRARY}")
 Message("-- Using libutils: ${UTILS_LIBRARY} ${UTILS_INCLUDE_DIR}")
@@ -44,8 +50,7 @@ Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
 Message("-- Using libz: ${Z_LIBRARY}")
 
-# Basic build configuration
-include_directories(SYSTEM ${CMAKE_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${UTILS_INCLUDE_DIR}/..)
+include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}/.. ${UTILS_INCLUDE_DIR}/..)
 
 set(LIBS ${NEWIMAGE_LIBRARY} 
          ${FSLIO_LIBRARY} 
@@ -53,10 +58,36 @@ set(LIBS ${NEWIMAGE_LIBRARY}
          ${NIFTIIO_LIBRARY} 
          ${UTILS_LIBRARY}   
          ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${Z_LIBRARY})
+endif(FSL_BUILD)
 
-add_definitions(-DUSE_NEWIMAGE -DUSE_NLLS -DVERSION="4.0pre" 
-                -DFABBER_SRC_DIR="${CMAKE_SOURCE_DIR}"
-                -DFABBER_BUILD_DIR="${CMAKE_BINARY_DIR}")
+# Basic build configuration
+
+# the commit's SHA1, and whether the building workspace was dirty or not
+execute_process(COMMAND
+  git describe --match=NeVeRmAtCh --always --abbrev=40 --dirty
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_SHA1
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# the date of the commit
+execute_process(COMMAND
+  git log -1 --format=%ad --date=local
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_DATE
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+
+if (NOT GIT_SHA1)
+  set(GIT_SHA1 unknown)
+endif(NOT GIT_SHA1)
+
+if (NOT GIT_DATE)
+  set(GIT_DATE unknown)
+endif(NOT GIT_DATE)
+
+add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
+                -DFABBER_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+                -DFABBER_BUILD_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 
 # Main Targets
 add_library(fabbercore ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
@@ -71,6 +102,8 @@ INSTALL(TARGETS fabber mvntool fabbercore
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
+
+INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include/fabber_core FILES_MATCHING PATTERN "*.h" )
 
 # Conditional Targets
 
@@ -92,12 +125,14 @@ endif(GTEST_LIBRARY)
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
- configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
- add_custom_target(doc
- ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
- WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
- COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  add_custom_target(doc ALL
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+  )
+  INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION share/doc/fabber)
+
 else(DOXYGEN_FOUND)
   Message("-- Doxygen not found - will not build API documentation")
 endif(DOXYGEN_FOUND)
@@ -113,10 +148,11 @@ if (PYSIDE_UIC)
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_mainwin.ui >ui_qtd.py
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_optdialog.ui >>ui_qtd.py
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_logview.ui >>ui_qtd.py
+                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_chooserun.ui >>ui_qtd.py
                    )
 
   INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pyfab/pyfabber.py DESTINATION bin)
-  INSTALL(FILES ${PY_SRC} DESTINATION lib/python/pyfab)
+  INSTALL(DIRECTORY pyfab/pyfab DESTINATION lib/python/)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ui_qtd.py DESTINATION lib/python/pyfab)
 
 else(PYSIDE_UIC)

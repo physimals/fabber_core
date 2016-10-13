@@ -8,12 +8,13 @@
 
 #include "dataset.h"
 
-#include "utils/tracer_plus.h"
+#include "fabber_version.h"
 #include "easylog.h"
 #include "setup.h"
 #include "fwdmodel.h"
 #include "inference.h"
 
+#include "utils/tracer_plus.h"
 #include "newmat.h"
 
 #include <stdexcept>
@@ -41,6 +42,9 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 		break;
 	case OPT_FILE:
 		s = "FILENAME";
+		break;
+	case OPT_MATRIX:
+		s = "MATRIXFILE";
 		break;
 	default:
 		s = "UNKNOWN";
@@ -71,6 +75,31 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 	}
 }
 
+string FabberRunData::GetVersion()
+{
+	stringstream v;
+	v << V_MAJ << "." << V_MIN << "." << V_PAT << V_FL;
+	return v.str();
+}
+
+string FabberRunData::GetRevision()
+{
+#ifdef GIT_SHA1
+	return GIT_SHA1;
+#else
+	return "unknown";
+#endif
+}
+
+string FabberRunData::GetDate()
+{
+#ifdef GIT_DATE
+	return GIT_DATE;
+#else
+	return "unknown";
+#endif
+}
+
 FabberRunData::FabberRunData() :
 		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0)
 {
@@ -94,11 +123,13 @@ void FabberRunData::Run()
 {
 	Tracer_Plus tr2("FabberRunData::Run");
 
-	LOG << "FABBER release v" << VERSION << endl;
+	LOG << "FabberRunData::FABBER release v" << GetVersion() << endl;
+	LOG << "FabberRunData::Revision " << GetRevision() << endl;
+	LOG << "FabberRunData::Last commit: " << GetDate() << endl;
 
 	time_t startTime;
 	time(&startTime);
-	LOG << "Start time: " << ctime(&startTime);
+	LOG << "FabberRunData::Start time: " << ctime(&startTime);
 
 	LogParams();
 
@@ -136,13 +167,13 @@ void FabberRunData::Run()
 		paramFile.close();
 	}
 
-	LOG << "FABBER is all done." << endl;
+	LOG << "FabberRunData::All done." << endl;
 
 	time_t endTime;
 	time(&endTime);
-	LOG << "Start time: " << ctime(&startTime); // Bizarrely, ctime() ends with a \n.
-	LOG << "End time: " << ctime(&endTime);
-	LOG << "Duration: " << endTime - startTime << " seconds." << endl;
+	LOG << "FabberRunData::Start time: " << ctime(&startTime); // Bizarrely, ctime() ends with a \n.
+	LOG << "FabberRunData::End time: " << ctime(&endTime);
+	LOG << "FabberRunData::Duration: " << endTime - startTime << " seconds." << endl;
 }
 
 static string trim(string const& str)
@@ -478,18 +509,18 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 	// data is optional?
 	if (m_voxel_data.count(key) == 0)
 	{
-#ifdef USE_NEWIMAGE
+#ifdef NO_NEWIMAGE
+		throw DataNotFound(key);
+#else
 		string filename = GetStringDefault(key, "");
 		LoadVoxelData(filename, key);
-#else
-		throw DataNotFound(key);
 #endif
 	}
 
 	return m_voxel_data.find(key)->second;
 }
 
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 #include "newimage/newimageall.h"
 using namespace NEWIMAGE;
 
@@ -731,7 +762,7 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 	}
 	else
 	{
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 		LOG << "FabberRunData::Saving to nifti: " << filename << endl;
 		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
 		if (m_mask.xsize() > 0)

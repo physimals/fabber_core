@@ -1,6 +1,6 @@
 //
 // Tests specifically for the VB method
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 #include "newimage/newimageall.h"
 #endif
 
@@ -328,7 +328,7 @@ TEST_P(VbTest, ImagePriorsPrecLow)
 	}
 }
 
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 // Test image priors when stored in a file
 TEST_P(VbTest, ImagePriorsFile)
 {
@@ -499,7 +499,7 @@ TEST_F(VbTest, Restart)
 	}
 }
 
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 // Test restarting VB run from a file
 TEST_F(VbTest, RestartFromFile)
 {
@@ -608,6 +608,168 @@ TEST_F(VbTest, RestartFromFile)
 	}
 }
 #endif
+
+// Test fitting to a simple polynomial model with noise
+TEST_P(VbTest, ArNoise)
+{
+	int NTIMES = 10;
+	int VSIZE = 5;
+	float VAL = 2;
+	int DEGREE = 3;
+	int n_voxels = VSIZE*VSIZE*VSIZE;
+
+	// Create coordinates and data matrices
+	// Data fitted to a cubic function
+	NEWMAT::Matrix voxelCoords, data;
+	data.ReSize(NTIMES, n_voxels);
+	voxelCoords.ReSize(3, n_voxels);
+	int v=1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					// function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
+					float noise = (float(rand())/RAND_MAX - 0.5) * VAL/100;
+					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1)-2*VAL*(n+1)*(n+1)*(n+1) +noise;
+				}
+				v++;
+			}
+		}
+	}
+
+	// Do just 1 iteration
+
+	FabberRunData rundata;
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "ar");
+	rundata.Set("model", "poly");
+	rundata.Set("max-iterations", "50");
+	rundata.Set("degree", stringify(DEGREE));
+	rundata.Set("method", GetParam());
+	rundata.Run();
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(VAL, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c1");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		// GTEST has difficulty with comparing floats to 0
+		EXPECT_NEAR(0, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c2");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(VAL*1.5, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c3");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(-VAL*2, mean(1, i+1), 0.2);
+	}
+}
+
+// Test fitting to a simple polynomial model with noise
+TEST_P(VbTest, WhiteNoise)
+{
+	int NTIMES = 10;
+	int VSIZE = 5;
+	float VAL = 2;
+	int DEGREE = 3;
+	int n_voxels = VSIZE*VSIZE*VSIZE;
+
+	// Create coordinates and data matrices
+	// Data fitted to a cubic function
+	NEWMAT::Matrix voxelCoords, data;
+	data.ReSize(NTIMES, n_voxels);
+	voxelCoords.ReSize(3, n_voxels);
+	int v=1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					// function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
+					float noise = (float(rand())/RAND_MAX - 0.5) * VAL/100;
+					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1)-2*VAL*(n+1)*(n+1)*(n+1) +noise;
+				}
+				v++;
+			}
+		}
+	}
+
+	// Do just 1 iteration
+
+	FabberRunData rundata;
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("model", "poly");
+	rundata.Set("max-iterations", "50");
+	rundata.Set("degree", stringify(DEGREE));
+	rundata.Set("method", GetParam());
+	rundata.Run();
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(VAL, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c1");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		// GTEST has difficulty with comparing floats to 0
+		EXPECT_NEAR(0, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c2");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(VAL*1.5, mean(1, i+1), 0.2);
+	}
+
+	mean = rundata.GetVoxelData("mean_c3");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), n_voxels);
+	for (int i=0; i<n_voxels; i++)
+	{
+		EXPECT_NEAR(-VAL*2, mean(1, i+1), 0.2);
+	}
+}
 
 INSTANTIATE_TEST_CASE_P(VbSpatialTests, VbTest, ::testing::Values("vb", "spatialvb"));
 }

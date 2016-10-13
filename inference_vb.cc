@@ -11,6 +11,7 @@
 #include "convergence.h"
 
 #include "utils/tracer_plus.h"
+#include "newmatio.h"
 
 using Utilities::Tracer_Plus;
 
@@ -207,15 +208,15 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	// distribution of the model parameters, and possibly the noise as well. So we may
 	// not need the initial posterior distributions we have created. We choose not to delete
 	// them here as the memory involved is not large (they are not per voxel).
-	continueFromFile = args.GetStringDefault("continue-from-mvn", "");
+	m_continueFromFile = args.GetStringDefault("continue-from-mvn", "");
 	paramFilename = args.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
 
 	// Get the spatial prior options for each parameter, if specified
 	GetPriorTypes(args);
 
 	// Create convergence-testing method:
-	conv = ConvergenceDetector::NewFromName(args.GetStringDefault("convergence", "maxits"));
-	conv->Initialize(args);
+	m_conv = ConvergenceDetector::NewFromName(args.GetStringDefault("convergence", "maxits"));
+	m_conv->Initialize(args);
 
 	// Fix the linearization centres? FIXME don't know what this is
 	lockedLinearFile = args.GetStringDefault("locked-linear-from-mvn", "");
@@ -226,8 +227,8 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	}
 
 	// Figure out if F needs to be calculated every iteration
-	printF = args.GetBool("print-free-energy");
-	needF = conv->UseF() || printF;
+	m_printF = args.GetBool("print-free-energy");
+	m_needF = m_conv->UseF() || m_printF;
 
 }
 
@@ -323,10 +324,10 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 	// If we're continuing from previous saved results, load the current
 	// values of the parameters here: FIXME paramFilename is broken and ignored
-	if (continueFromFile != "")
+	if (m_continueFromFile != "")
 	{
-		LOG << "VbInferenceTechnique::Continuing from file " << continueFromFile << endl;
-		InitMVNFromFile(continueFromFile, allData, paramFilename);
+		LOG << "VbInferenceTechnique::Continuing from file " << m_continueFromFile << endl;
+		InitMVNFromFile(m_continueFromFile, allData, paramFilename);
 		continueFromPrevious = true;
 	}
 
@@ -370,14 +371,15 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				{
 					fwdPrior.means(k) = ImagePrior[k - 1](voxel);
 					SymmetricMatrix prec = fwdPrior.GetPrecisions();
-					bool changed=false;
+					bool changed = false;
 					if (PriorsPrec[k - 1] != 0)
 					{
 						prec(k, k) = PriorsPrec[k - 1];
 						changed = true;
 					}
 					LOG << prec << "," << prec.Nrows() << "," << prec.Ncols() << endl;
-					if (changed) fwdPrior.SetPrecisions(prec);
+					if (changed)
+						fwdPrior.SetPrecisions(prec);
 				}
 			}
 
@@ -423,13 +425,13 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			{
 				linear.ReCentre(fwdPosterior.means);
 				noise->Precalculate(*noisePosterior, *noisePrior, m_origdata->Column(voxel));
-				conv->Reset();
+				m_conv->Reset();
 
 				// START the VB updates and run through the relevant iterations (according to the convergence testing)
 				int iteration = 0; //count the iterations
 				do
 				{
-					if (conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
+					if (m_conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
 					{
 						*noisePosterior = *noisePosteriorSave;
 						fwdPosterior = fwdPosteriorSave;
@@ -437,21 +439,21 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 						linear.ReCentre(fwdPosterior.means);
 					}
 
-					if (needF)
+					if (m_needF)
 					{
 						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
-					if (printF)
+					if (m_printF)
 					{
 						LOG << "VbInferenceTechnique::Fbefore == " << F << endl;
 					}
 
 					// Save old values if called for
-					if (conv->NeedSave())
+					if (m_conv->NeedSave())
 					{
-						*noisePosteriorSave = *noisePosterior; // copy values, not pointers!
+						*noisePosteriorSave = *noisePosterior; // copy values, not pointer!
 						fwdPosteriorSave = fwdPosterior;
 						fwdPriorSave = fwdPrior;
 					}
@@ -465,15 +467,15 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 					// Theta update
 					noise->UpdateTheta(*noisePosterior, fwdPosterior, fwdPrior, linear, m_origdata->Column(voxel), NULL,
-							conv->LMalpha());
+							m_conv->LMalpha());
 
-					if (needF)
+					if (m_needF)
 					{
 						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
-					if (printF)
+					if (m_printF)
 					{
 						LOG << "VbInferenceTechnique::Ftheta == " << F << endl;
 					}
@@ -481,13 +483,13 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 					// Alpha & Phi updates
 					noise->UpdateNoise(*noisePosterior, *noisePrior, fwdPosterior, linear, m_origdata->Column(voxel));
 
-					if (needF)
+					if (m_needF)
 					{
 						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
-					if (printF)
+					if (m_printF)
 					{
 						LOG << "VbInferenceTechnique::Fphi == " << F << endl;
 					}
@@ -496,22 +498,22 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 					// Update the linear model before doing Free energy calculation (and ready for next round of theta and phi updates)
 					linear.ReCentre(fwdPosterior.means);
 
-					if (needF)
+					if (m_needF)
 					{
 						F = noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
 								m_origdata->Column(voxel));
 						F = F + Fard;
 					}
-					if (printF)
+					if (m_printF)
 					{
 						LOG << "VbInferenceTechnique::Fnoise == " << F << endl;
 					}
 
 					iteration++;
-				} while (!conv->Test(F));
+				} while (!m_conv->Test(F));
 
 				// Revert to old values at last stage if required
-				if (conv->NeedRevert())
+				if (m_conv->NeedRevert())
 				{
 					*noisePosterior = *noisePosteriorSave; // copy values, not pointers!
 					fwdPosterior = fwdPosteriorSave;
@@ -551,7 +553,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 #endif
 
 				resultMVNs.at(voxel - 1) = new MVNDist(fwdPosterior, noisePosterior->OutputAsMVN());
-				if (needF)
+				if (m_needF)
 				{
 					resultFs.at(voxel - 1) = F;
 				}
@@ -568,7 +570,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 				tmp->SetCovariance(IdentityMatrix(tmp->means.Nrows()));
 				resultMVNs.at(voxel - 1) = tmp;
 
-				if (needF)
+				if (m_needF)
 					resultFs.at(voxel - 1) = F;
 				modelpred.Column(voxel) = linear.Offset(); // get the model prediction which is stored within the linearized forward model
 			}
@@ -592,7 +594,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 
 VariationalBayesInferenceTechnique::~VariationalBayesInferenceTechnique()
 {
-	delete conv;
+	delete m_conv;
 	//delete initialFwdPrior;
 	delete initialFwdPosterior;
 }

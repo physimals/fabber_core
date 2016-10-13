@@ -27,7 +27,7 @@ public:
 	virtual string GetVersion() const;
 
 	VariationalBayesInferenceTechnique() :
-			conv(NULL), initialFwdPrior(NULL), initialFwdPosterior(NULL), initialNoisePrior(NULL), initialNoisePosterior(
+			m_conv(NULL), initialFwdPrior(NULL), initialFwdPosterior(NULL), initialNoisePrior(NULL), initialNoisePosterior(
 			NULL)
 	{
 	}
@@ -43,7 +43,7 @@ protected:
 	void LoadImagePriors(FabberRunData &allData);
 	void PassModelData(int voxel);
 
-	ConvergenceDetector* conv;
+	ConvergenceDetector* m_conv;
 	std::auto_ptr<MVNDist> initialFwdPrior;
 	MVNDist* initialFwdPosterior;
 	NoiseParams* initialNoisePrior;
@@ -61,7 +61,7 @@ protected:
 	vector<string> imagepriorstr;
 
 	// These are used for resuming a previous calculation
-	string continueFromFile; // if empty, use initial posterior dists above
+	string m_continueFromFile; // if empty, use initial posterior dists above
 	string paramFilename;
 	bool continueFwdOnly; // Only have fwd-model information
 
@@ -69,7 +69,7 @@ protected:
 	// voxelwise linearizations (probably loaded from an MVN)
 	string lockedLinearFile;
 
-	bool printF;
-	bool needF;
+	bool m_printF;
+	bool m_needF;
 };
 

@@ -13,7 +13,6 @@
 #include "miscmaths/bfmatrix.h"
 
 #include <boost/shared_ptr.hpp>
-
 /**
  * Inference technique using non-linear least squares
  */
@@ -40,8 +39,8 @@ public:
 	virtual ~NLLSInferenceTechnique();
 protected:
 	const MVNDist* initialFwdPosterior;
-	bool vbinit;
-	bool lm;
+	bool m_vbinit;
+	bool m_lm;
 };
 
 /**
@@ -58,7 +57,7 @@ public:
 	 *            adjust to fit the data
 	 */
 	NLLSCF(const ColumnVector& pdata, const FwdModel* pm) :
-		y(pdata), model(pm), linear(pm)
+			m_data(pdata), m_model(pm), m_linear(pm)
 	{
 	}
 
@@ -96,8 +95,8 @@ public:
 	 */
 	virtual boost::shared_ptr<BFMatrix> hess(const ColumnVector& p, boost::shared_ptr<BFMatrix> iptr) const;
 private:
-	const ColumnVector y;
-	const FwdModel* model;
-	mutable LinearizedFwdModel linear;
+	const ColumnVector m_data;
+	const FwdModel* m_model;
+	mutable LinearizedFwdModel m_linear;
 };
 #endif

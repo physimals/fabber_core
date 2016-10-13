@@ -194,8 +194,8 @@ private:
 	}
 };
 
-/** 
- * \ref SingletonFactory that returns pointers to 
+/**
+ * \ref SingletonFactory that returns pointers to
  * \ref InferenceTechnique.
  */
 typedef SingletonFactory<InferenceTechnique> InferenceTechniqueFactory;

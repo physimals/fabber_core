@@ -10,18 +10,19 @@
 
 #include "newmat.h"
 
-#ifdef USE_NEWIMAGE
-#include "newimage/newimage.h"
-#else
+#ifdef NO_NEWIMAGE
 // This is harmless because we do not create actual NIFTI files
 // without NEWIMAGE
 #define NIFTI_INTENT_NONE 1
 #define NIFTI_INTENT_SYMMATRIX 2
+#else
+#include "newimage/newimage.h"
 #endif
 
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <sstream>
 
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
@@ -31,7 +32,7 @@
  */
 enum OptionType
 {
-	OPT_BOOL, OPT_STR, OPT_INT, OPT_FILE,
+	OPT_BOOL, OPT_STR, OPT_INT, OPT_FILE, OPT_MATRIX
 };
 
 /**
@@ -114,6 +115,27 @@ private:
 class FabberRunData
 {
 public:
+
+	/**
+	 * Get current version string
+         *
+         * @return A version string in form major.minor.patch[_flag], e.g. 1.2.3_rc1
+	 */
+	static std::string GetVersion();
+
+	/**
+         * Get SHA1 hash of current Git revision, if available
+         *
+         * @return an SHA1 hash, or 'unknown' if not available at build time
+         */
+	static std::string GetRevision();
+
+	/**
+         * Get date of last commit, if available
+         *
+         * @return date string, or 'unknown' if not available at build time
+         */
+	static std::string GetDate();
 
 	FabberRunData();
 	~FabberRunData();
@@ -446,7 +468,7 @@ public:
 	 */
 	void LogParams();
 private:
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 	NEWIMAGE::volume<float> m_mask;
 
 	/**

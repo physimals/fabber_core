@@ -1,7 +1,7 @@
 from PySide import QtCore, QtGui
-from PySide.QtGui import QMainWindow, QDialog, QMessageBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QFileDialog, QTableWidgetItem, QPlainTextEdit, QSpinBox, QCheckBox, QPushButton
+from PySide.QtGui import QMainWindow, QDialog
 
-from ui_qtd import Ui_LogViewer, Ui_MainWindow, Ui_ModelOptionsDialog
+from ui_qtd import Ui_LogViewer, Ui_MainWindow, Ui_ModelOptionsDialog, Ui_ChooseRunDialog
 
 from pyfab.views import *
 from pyfab.plotviews import OrthoView, FitView
@@ -18,6 +18,11 @@ class ModelOptionsDialog(QDialog, Ui_ModelOptionsDialog):
 		super(ModelOptionsDialog, self).__init__(parent)
 		self.setupUi(self)
 
+class ChooseRunDialog(QDialog, Ui_ChooseRunDialog):
+    def __init__(self, parent=None):
+        QDialog.__init__(self, parent)
+        self.setupUi(self)
+
 class MainWindow(QMainWindow, Ui_MainWindow):
 	def __init__(self, parent=None):
 		QMainWindow.__init__(self, parent)
@@ -26,9 +31,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 		self.views = [
 		  OrthoView(self.orthoFrame),
 		  FitView(self.fitFrame),
-		  ExtraOptionsView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
+		  ParamValuesView(table=self.paramTable),
+          ExtraOptionsView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
 		  InputDataView(table=self.inputFilesTable, combo=self.dataModeCombo, dataBtn=self.dataBtn, maskBtn=self.maskBtn),
-		  OutputDataView(LogViewerDialog(), table=self.outputFilesTable, runCombo=self.runCombo, logBtn=self.showLogBtn),
+		  OutputDataView(LogViewerDialog(), ChooseRunDialog(), table=self.outputFilesTable, dateLabel=self.dateLabel, logBtn=self.showLogBtn, chooseRunBtn=self.chooseRunBtn),
 		  CurrentDataView(slider=self.alphaSlider, cb=self.visibleCB, cmCombo=self.cmCombo, valueEdit=self.dataValueEdit, currentEdit=self.currentEdit),
 		  FocusView(slider=self.timeSlider, sbX=self.sbX, sbY=self.sbY, sbZ=self.sbZ, sbT=self.sbT),
 		  ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn),

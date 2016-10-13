@@ -1,4 +1,4 @@
-#ifdef USE_NEWIMAGE
+#ifndef NO_NEWIMAGE
 // Tests fabber when run from the command line
 
 #include "gtest/gtest.h"
