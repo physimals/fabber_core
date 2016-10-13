@@ -7,11 +7,6 @@
 
 #include "dist_mvn.h"
 
-#ifdef USE_NEWIMAGE
-#include "newimage/newimageall.h"
-using namespace NEWIMAGE;
-#endif
-
 #include <iostream>
 #include <exception>
 #include <stdexcept>

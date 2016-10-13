@@ -778,7 +778,9 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 		//string output_dir = GetStringDefault("output", ".");
 		// FIXME need to use logger to get outdir as this does the ++ appending, however
 		// this assumes use of CL tool and log to file
-		save_volume4D(output, EasyLog::GetOutputDirectory() + "/" + filename);
+		string outDir = EasyLog::GetOutputDirectory();
+		if (outDir != "") filename = outDir + "/" + filename;
+		save_volume4D(output, filename);
 #else
 		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");
 #endif
