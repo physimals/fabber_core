@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.7)
 
 # Basic objects - things that have nothing directly to do with inference
 set(BASIC_SRC fabber_core.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
