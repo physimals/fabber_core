@@ -14,4 +14,4 @@ mkdir $TYPE
 cd $TYPE
 cmake .. -DCMAKE_BUILD_TYPE=$TYPE
 make all
-
+make test

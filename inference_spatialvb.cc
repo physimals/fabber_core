@@ -414,6 +414,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	vector<ColumnVector> ImagePrior(m_num_params);
 	for (int k = 1; k <= m_num_params; k++)
 	{
+		if (k > spatialPriorsTypes.size()) break;
+
 		if (spatialPriorsTypes[k - 1] == 'I')
 		{
 
@@ -1851,7 +1853,7 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 			// PREVIOUSLY		if (delta.size() >= n + 2)
 			// Changed (fixed)? because if spatialDims != 3 we still need
 			// to check for wrap around in y-coordinate FIXME check
-			if (n <= 4)
+			if (n < 4)
 			{
 				bool ignore = false;
 				if (delta[n] > 0)
