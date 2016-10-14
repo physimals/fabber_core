@@ -40,6 +40,9 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 	case OPT_INT:
 		s = "INTEGER";
 		break;
+	case OPT_FLOAT:
+		s = "FLOAT";
+		break;
 	case OPT_FILE:
 		s = "FILENAME";
 		break;
