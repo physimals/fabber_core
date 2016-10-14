@@ -16,7 +16,7 @@ set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
 # Main dependencies
 
 if (FSL_BUILD)
-  set(LIBS newimage fslio miscmaths niftiio utils newmat znz z)
+  set(LIBS newimage fslio miscmaths niftiio utils newmat znz ${ZLIB_LIBRARY})
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
 else (FSL_BUILD)
 
@@ -49,6 +49,12 @@ else (FSL_BUILD)
       find_path(Boost_INCLUDE_DIRS boost/shared_ptr.hpp
                 HINTS $ENV{FSLDIR}/extras/include/boost REQUIRED)
   endif(NOT Boost_FOUND)
+  
+  find_package(ZLIB)
+  if (NOT ZLIB_FOUND)
+    find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd 
+                 HINTS $ENV{FSLDIR}/lib REQUIRED )
+  endif(NOT ZLIB_FOUND)
    
 Message("-- FSL headers in ${FSL_INCLUDE_DIR}")
 Message("-- Using libznz: ${ZNZ_LIBRARY}")
@@ -58,7 +64,7 @@ Message("-- Using fslio: ${FSLIO_LIBRARY}")
 Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
 Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
-Message("-- Using libz: ${Z_LIBRARY}")
+Message("-- Using zlib: ${ZLIB_LIBRARY}")
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
@@ -67,7 +73,7 @@ set(LIBS ${NEWIMAGE_LIBRARY}
          ${MISCMATHS_LIBRARY} 
          ${NIFTIIO_LIBRARY} 
          ${UTILS_LIBRARY}   
-         ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${Z_LIBRARY})
+         ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
 endif(FSL_BUILD)
 
 # Basic build configuration
