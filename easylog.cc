@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #ifdef _WIN32
-#include "Shlwapi.h"
+#include "direct.h"
 #else
 #include <sys/stat.h>
 #endif
@@ -31,10 +31,12 @@ stringstream EasyLog::templog;
 static bool is_dir(string path)
 {
 #ifdef _WIN32
-	return PathIsDirectory(path.c_str())
+	struct _stat s;
+	if (_stat(path.c_str(), &s) == 0)
 #else
 	struct stat s;
 	if (stat(path.c_str(), &s) == 0)
+#endif
 	{
 		return (s.st_mode & S_IFDIR);
 	}
@@ -43,7 +45,6 @@ static bool is_dir(string path)
 		// Does not exist, so not a directory...
 		return false;
 	}
-#endif
 }
 
 void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
@@ -67,7 +68,7 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 		int ret = 0;
 
 #ifdef _WIN32
-		ret = _mkdir(sPath.c_str());
+		ret = _mkdir(outDir.c_str());
 #else
 		ret = mkdir(outDir.c_str(), 0777);
 #endif
