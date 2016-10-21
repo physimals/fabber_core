@@ -16,8 +16,8 @@ class PublicVersion: public SpatialVariationalBayes
 {
 public:
 	using SpatialVariationalBayes::CalcNeighbours;
-	using SpatialVariationalBayes::neighbours;
-	using SpatialVariationalBayes::neighbours2;
+	using SpatialVariationalBayes::m_neighbours;
+	using SpatialVariationalBayes::m_neighbours2;
 };
 
 // The fixture for testing class Foo.
@@ -71,8 +71,8 @@ TEST_F(SpatialVbTest, CalcNeighboursOneVoxel)
 	Initialize();
 
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), 1);
-	ASSERT_EQ(svb->neighbours[0].size(), 0);
+	ASSERT_EQ(svb->m_neighbours.size(), 1);
+	ASSERT_EQ(svb->m_neighbours[0].size(), 0);
 }
 
 // Tests the CalcNeighbours method for a single voxel at zero
@@ -84,8 +84,8 @@ TEST_F(SpatialVbTest, CalcNeighboursOneVoxelZero)
 	Initialize();
 
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), 1);
-	ASSERT_EQ(svb->neighbours[0].size(), 0);
+	ASSERT_EQ(svb->m_neighbours.size(), 1);
+	ASSERT_EQ(svb->m_neighbours[0].size(), 0);
 }
 
 // Tests the CalcNeighbours method for multi voxels in X direction
@@ -104,13 +104,13 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsX)
 	Initialize();
 
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	for (int v=1; v<=NVOXELS; v++)
 	{
 		int expected=2;
 		if (v == 1 || v == NVOXELS) expected=1;
-		ASSERT_EQ(svb->neighbours[v-1].size(), expected);
+		ASSERT_EQ(svb->m_neighbours[v-1].size(), expected);
 	}
 }
 
@@ -130,13 +130,13 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsY)
 	Initialize();
 
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	for (int v=1; v<=NVOXELS; v++)
 	{
 		int expected=2;
 		if (v == 1 || v == NVOXELS) expected=1;
-		ASSERT_EQ(svb->neighbours[v-1].size(), expected);
+		ASSERT_EQ(svb->m_neighbours[v-1].size(), expected);
 	}
 }
 
@@ -156,13 +156,13 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsZ)
 	Initialize();
 
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	for (int v=1; v<=NVOXELS; v++)
 	{
 		int expected=2;
 		if (v == 1 || v == NVOXELS) expected=1;
-		ASSERT_EQ(svb->neighbours[v-1].size(), expected);
+		ASSERT_EQ(svb->m_neighbours[v-1].size(), expected);
 	}
 }
 
@@ -191,7 +191,7 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
 
 	Initialize();
 	ASSERT_NO_THROW(svb->CalcNeighbours(voxelCoords));
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	v=1;
 	for (int z = 0; z < VSIZE; z++)
@@ -208,8 +208,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
 				if (z != 0) expected.push_back(v-VSIZE*VSIZE);
 				if (z != VSIZE-1) expected.push_back(v+VSIZE*VSIZE);
 				//                cout << "voxel " << v << " expected=" << expected.size() << endl;
-				ASSERT_EQ(svb->neighbours[v-1].size(), expected.size());
-				vector<int> nb = svb->neighbours[v-1];
+				ASSERT_EQ(svb->m_neighbours[v-1].size(), expected.size());
+				vector<int> nb = svb->m_neighbours[v-1];
 				for (vector<int>::iterator iter=nb.begin(); iter!=nb.end(); iter++)
 				{
 					vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
@@ -247,7 +247,7 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
 	rundata->Set("spatial-dims", "1");
 	Initialize();
 	ASSERT_NO_THROW(svb->CalcNeighbours(voxelCoords));
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	v=1;
 	for (int z = 0; z < VSIZE; z++)
@@ -260,8 +260,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
 				if (x != 0) expected.push_back(v-1);
 				if (x != VSIZE-1) expected.push_back(v+1);
 				//                cout << "voxel " << v << " expected=" << expected.size() << endl;
-				ASSERT_EQ(svb->neighbours[v-1].size(), expected.size());
-				vector<int> nb = svb->neighbours[v-1];
+				ASSERT_EQ(svb->m_neighbours[v-1].size(), expected.size());
+				vector<int> nb = svb->m_neighbours[v-1];
 				for (vector<int>::iterator iter=nb.begin(); iter!=nb.end(); iter++)
 				{
 					vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
@@ -299,7 +299,7 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
 	rundata->Set("spatial-dims", "2");
 	Initialize();
 	ASSERT_NO_THROW(svb->CalcNeighbours(voxelCoords));
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	v=1;
 	for (int z = 0; z < VSIZE; z++)
@@ -314,8 +314,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
 				if (y != 0) expected.push_back(v-VSIZE);
 				if (y != VSIZE-1) expected.push_back(v+VSIZE);
 				//                cout << "voxel " << v << " expected=" << expected.size() << endl;
-				ASSERT_EQ(svb->neighbours[v-1].size(), expected.size());
-				vector<int> nb = svb->neighbours[v-1];
+				ASSERT_EQ(svb->m_neighbours[v-1].size(), expected.size());
+				vector<int> nb = svb->m_neighbours[v-1];
 				for (vector<int>::iterator iter=nb.begin(); iter!=nb.end(); iter++)
 				{
 					vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
@@ -352,7 +352,7 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
 
 	Initialize();
 	ASSERT_NO_THROW(svb->CalcNeighbours(voxelCoords));
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	v=1;
 	for (int z = 0; z < VSIZE; z++)
@@ -390,8 +390,8 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
 					if ((y<= VSIZE-2) && (z <= VSIZE-2)) expected.push_back(v+VSIZE+(VSIZE*VSIZE));
 				}
 				//                cout << "voxel " << v << " expected=" << expected.size() << endl;
-				ASSERT_EQ(svb->neighbours2[v-1].size(), expected.size());
-				vector<int> nb = svb->neighbours2[v-1];
+				ASSERT_EQ(svb->m_neighbours2[v-1].size(), expected.size());
+				vector<int> nb = svb->m_neighbours2[v-1];
 				for (vector<int>::iterator iter=nb.begin(); iter!=nb.end(); iter++)
 				{
 					vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
@@ -428,7 +428,7 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
 
 	Initialize();
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	v=1;
 	for (int z = 0; z < VSIZE; z++)
@@ -445,8 +445,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
 				if (z != 0) expected.push_back(v-VSIZE*VSIZE);
 				if (z != VSIZE-1) expected.push_back(v+VSIZE*VSIZE);
 				//                cout << "voxel " << v << " expected=" << expected.size() << endl;
-				ASSERT_EQ(svb->neighbours[v-1].size(), expected.size());
-				vector<int> nb = svb->neighbours[v-1];
+				ASSERT_EQ(svb->m_neighbours[v-1].size(), expected.size());
+				vector<int> nb = svb->m_neighbours[v-1];
 				for (vector<int>::iterator iter=nb.begin(); iter!=nb.end(); iter++)
 				{
 					vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
@@ -470,22 +470,22 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dIrregular)
 
 	Initialize();
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	vector<int> n;
-	n = svb->neighbours[0];
+	n = svb->m_neighbours[0];
 	ASSERT_EQ(n.size(), 3);
 
-	n = svb->neighbours[1];
+	n = svb->m_neighbours[1];
 	ASSERT_EQ(n.size(), 2);
 
-	n = svb->neighbours[2];
+	n = svb->m_neighbours[2];
 	ASSERT_EQ(n.size(), 2);
 
-	n = svb->neighbours[3];
+	n = svb->m_neighbours[3];
 	ASSERT_EQ(n.size(), 2);
 
-	n = svb->neighbours[4];
+	n = svb->m_neighbours[4];
 	ASSERT_EQ(n.size(), 1);
 }
 
@@ -503,27 +503,27 @@ TEST_F(SpatialVbTest, CalcNeighbours2MultiVoxels3dIrregular)
 
 	Initialize();
 	svb->CalcNeighbours(voxelCoords);
-	ASSERT_EQ(svb->neighbours.size(), NVOXELS);
+	ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
 	vector<int> n;
 	// 1 neighbour2, two ways to get there
-	n = svb->neighbours2[0];
+	n = svb->m_neighbours2[0];
 	ASSERT_EQ(n.size(), 2);
 
 	// 2 neighbour2s, one has two ways to get there
-	n = svb->neighbours2[1];
+	n = svb->m_neighbours2[1];
 	ASSERT_EQ(n.size(), 3);
 
 	// 2 neighbour2s, one has two ways to get there
-	n = svb->neighbours2[2];
+	n = svb->m_neighbours2[2];
 	ASSERT_EQ(n.size(), 3);
 
 	// 1 neighbour2s, two ways to get there
-	n = svb->neighbours2[3];
+	n = svb->m_neighbours2[3];
 	ASSERT_EQ(n.size(), 2);
 
 	// 2 neighbour2s, one way to get there
-	n = svb->neighbours2[4];
+	n = svb->m_neighbours2[4];
 	ASSERT_EQ(n.size(), 2);
 }
 

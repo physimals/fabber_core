@@ -8,11 +8,24 @@
 
 #pragma once
 #include "inference.h"
+#include "convergence.h"
 
-// Forward declaration -- see convergence.h, which is only actually
-// #included in inference_vb.cc.  For now it's good enough just to know
-// that the class exists. FIXME why not just include it?
-class ConvergenceDetector;
+class PriorType
+{
+public:
+	PriorType();
+	PriorType(int idx, string param_name, FabberRunData &data);
+	std::string m_param_name;
+	int m_idx;
+	char m_type;
+	double m_prec;
+	std::string m_filename;
+	NEWMAT::RowVector m_image;
+
+	void SetPrior(MVNDist *dist, int voxel);
+};
+
+std::ostream& operator<<(std::ostream& out, const PriorType value);
 
 class VariationalBayesInferenceTechnique: public InferenceTechnique
 {
@@ -53,21 +66,16 @@ protected:
 	const NEWMAT::Matrix *m_coords;
 	const NEWMAT::Matrix *m_suppdata;
 
-	// specification of priors from command line
-	vector<NEWMAT::RowVector> ImagePrior;
-	vector<unsigned int> PSPidx;
-	vector<char> PriorsTypes;
-	vector<double> PriorsPrec;
-	vector<string> imagepriorstr;
+	std::vector<PriorType> m_prior_types;
 
 	// These are used for resuming a previous calculation
-	string m_continueFromFile; // if empty, use initial posterior dists above
-	string paramFilename;
+	std::string m_continueFromFile; // if empty, use initial posterior dists above
+	std::string paramFilename;
 	bool continueFwdOnly; // Only have fwd-model information
 
 	// Reduce this to a linear problem, using the given
 	// voxelwise linearizations (probably loaded from an MVN)
-	string lockedLinearFile;
+	std::string lockedLinearFile;
 
 	bool m_printF;
 	bool m_needF;

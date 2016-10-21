@@ -46,7 +46,7 @@ public:
 	virtual void GetOptions(vector<OptionSpec> &opts) const;
 
 	SpatialVariationalBayes() :
-			VariationalBayesInferenceTechnique(), spatialDims(-1)
+			VariationalBayesInferenceTechnique(), m_spatial_dims(-1)
 	{
 	}
 	virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
@@ -55,8 +55,15 @@ public:
 
 protected:
 
-	int spatialDims; // 0 = no spatial norm; 2 = slice only; 3 = volume
-	bool continuingFromFile;
+	/**
+	 * Number of spatial dimensions
+	 *
+	 * 0 = no spatial smoothing
+	 * 1 = Probably not sensible!
+	 * 2 = Smoothing in slices only
+	 * 3 = Smoothing by volume
+	 */
+	int m_spatial_dims; // 0 = no spatial norm; 2 = slice only; 3 = volume
 
 	//    bool useDataDrivenSmoothness;
 	//    bool useShrinkageMethod;
@@ -64,34 +71,82 @@ protected:
 	//    bool useMRF;
 	//    bool useMRF2; // without the dirichlet bcs
 
-	double maxPrecisionIncreasePerIteration; // Should be >1, or -1 = unlimited
+	/**
+	 * Maximum precision increase per iteration
+	 */
+	double m_spatial_speed; // Should be >1, or -1 = unlimited
 
-	vector<vector<int> > neighbours; // Sparse matrix would be easier
-	vector<vector<int> > neighbours2; // Sparse matrix would be easier
+	/**
+	 * Type of spatial prior to use for each parameter. Should be one
+	 * character per parameter, however if string ends with + then
+	 * the last character is repeated for remaining parameters
+	 */
+	std::string m_prior_types_str;
+
+	char m_shrinkage_type;
+
+	/**
+	 * Nearest-neighbours of each voxel. Vector size is number of voxels,
+	 * each entry is vector of indices of nearest neighbours, starting at 1.
+	 *
+	 * FIXME Sparse matrix would be better?
+	 */
+	vector<vector<int> > m_neighbours;
+
+	/**
+	 * Next-nearest-neighbours of each voxel. Vector size is number of voxels,
+	 * each entry is vector of indices of second nearest neighbours, starting at 1.
+	 *
+	 * FIXME Sparse matrix would be better?
+	 */
+	vector<vector<int> > m_neighbours2;
+
+	/**
+	 * Calculate first and second nearest neighbours of each voxel
+	 */
 	void CalcNeighbours(const NEWMAT::Matrix& voxelCoords);
-
-	//vector<string> imagepriorstr; now inherited from spatialvb
 
 	// For the new (Sahani-based) smoothing method:
 	CovarianceCache covar;
-	string distanceMeasure;
+
+	/**
+	 * How to measure distances between voxels.
+	 *
+	 * dist1 = Euclidian distance
+	 * dist2 = squared Euclidian distance
+	 * mdist = Manhattan distance (|dx| + |dy|)
+	 */
+	std::string m_dist_measure;
 
 	double fixedDelta;
 	double fixedRho;
-	bool updateSpatialPriorOnFirstIteration;
-	bool useEvidenceOptimization;
+
+	/**
+	 * Update spatial priors on first iteration?
+	 */
+	bool m_update_first_iter;
+
+	/**
+	 * Use evidence optimization
+	 */
+	bool m_use_evidence;
 	double alwaysInitialDeltaGuess;
 
-	bool useFullEvidenceOptimization;
-	bool useSimultaneousEvidenceOptimization;
+	/**
+	 * Use full evidence optimization
+	 */
+	bool m_use_full_evidence;
+
+	/**
+	 * Use simultaneous evidence optimization
+	 */
+	bool m_use_sim_evidence;
+
 	int firstParameterForFullEO;
 	bool useCovarianceMarginalsRatherThanPrecisions;
 	bool keepInterparameterCovariances;
 
 	int newDeltaEvaluations;
-
-	string spatialPriorsTypes; // one character per parameter
-	//    bool spatialPriorOutputCorrection;
 
 	bool bruteForceDeltaSearch;
 

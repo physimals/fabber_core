@@ -6,6 +6,7 @@
 
 /*  CCOPYRIGHT */
 
+#pragma once
 #include "utils.h"
 #include "dataset.h"
 
