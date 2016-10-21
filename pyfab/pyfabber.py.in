@@ -40,7 +40,7 @@ def read_vest(fname):
 
 if __name__ == '__main__':
  
-    print(read_vest("/home/martinc/dev/fabber_gui/design.mat"))
+    #print(read_vest("/home/martinc/dev/fabber_gui/design.mat"))
     
     app = PySide.QtGui.QApplication(sys.argv)
 
