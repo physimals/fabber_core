@@ -122,6 +122,7 @@ void FabberRunData::LogParams()
 		LOG << "FabberRunData::Parameter " << iter->first << "=" << iter->second << endl;
 	}
 }
+
 void FabberRunData::Run()
 {
 	Tracer_Plus tr2("FabberRunData::Run");
@@ -361,6 +362,46 @@ bool FabberRunData::GetBool(const string key)
 	throw Invalid_option("Value should not be given for boolean option --" + key);
 }
 
+int FabberRunData::GetInt(const string key)
+{
+	string val = GetString(key, "Mandatory option not specified: " + key);
+	try
+	{
+		return convertTo<int>(val);
+	} catch (invalid_argument&)
+	{
+		throw Invalid_option(key + " must be an integer");
+	}
+}
+
+double FabberRunData::GetDouble(const string key)
+{
+	string val = GetString(key, "Mandatory option not specified: " + key);
+	try
+	{
+		return convertTo<double>(val);
+	} catch (invalid_argument&)
+	{
+		throw Invalid_option(key + " must be a number (was: " + val + ")");
+	}
+}
+
+int FabberRunData::GetIntDefault(const string key, int def)
+{
+	if (m_params.count(key) == 0)
+		return def;
+	else
+		return GetInt(key);
+}
+
+double FabberRunData::GetDoubleDefault(const string key, double def)
+{
+	if (m_params.count(key) == 0)
+		return def;
+	else
+		return GetDouble(key);
+}
+
 string FabberRunData::GetStringDefault(const string key, const string def)
 {
 	if (m_params.count(key) == 0)
@@ -466,12 +507,11 @@ void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
 		throw Invalid_option("Co-ordinates must be 3 dimensional");
 	}
 
-	// FIXME we assume coords will start at 0 in any
-	// volume that is output but will not be negative
+	// FIXME we assume coords will not be negative
 	m_size.resize(3);
-	m_size[0] = coords.Row(1).Maximum() + 1;
-	m_size[1] = coords.Row(2).Maximum() + 1;
-	m_size[2] = coords.Row(3).Maximum() + 1;
+	m_size[0] = coords.Row(1).Maximum() - coords.Row(1).Minimum() + 1;
+	m_size[1] = coords.Row(2).Maximum() - coords.Row(2).Minimum() + 1;
+	m_size[2] = coords.Row(3).Maximum() - coords.Row(3).Minimum() + 1;
 
 	m_dims.resize(3);
 	m_dims[0] = 1.0;
@@ -531,22 +571,22 @@ void DumpVolumeInfo(const volume4D<float>& info, ostream& out = LOG)
 {
 	Tracer_Plus tr("DumpVolumeInfo");
 	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-	<< ", vols=" << info.tsize() << endl;
+			<< ", vols=" << info.tsize() << endl;
 	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-	<< "mm, TR=" << info.tdim() << " sec\n";
+			<< "mm, TR=" << info.tdim() << " sec\n";
 	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
+			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
 void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
 {
 	Tracer_Plus tr("DumpVolumeInfo");
 	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-	<< ", vols=1" << endl;
+			<< ", vols=1" << endl;
 	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-	<< "mm, TR=1" << " sec\n";
+			<< "mm, TR=1" << " sec\n";
 	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
+			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
 void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> first_data)
@@ -635,8 +675,7 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 		try
 		{
 			read_volume4D(data, filename);
-		}
-		catch (Exception &e)
+		} catch (Exception &e)
 		{
 			throw DataNotFound(key, filename);
 		}
@@ -660,8 +699,7 @@ void FabberRunData::LoadVoxelData(std::string filename, std::string key)
 			{
 				m_voxel_data[key] = data.matrix();
 			}
-		}
-		catch (exception &e)
+		} catch (exception &e)
 		{
 			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
 			throw e;
@@ -782,7 +820,8 @@ void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, in
 		// FIXME need to use logger to get outdir as this does the ++ appending, however
 		// this assumes use of CL tool and log to file
 		string outDir = EasyLog::GetOutputDirectory();
-		if (outDir != "") filename = outDir + "/" + filename;
+		if (outDir != "")
+			filename = outDir + "/" + filename;
 		save_volume4D(output, filename);
 #else
 		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");

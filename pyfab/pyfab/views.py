@@ -109,8 +109,8 @@ def get_label(text, size=None, bold=False, italic=False):
     return label
 
 class OptionView(ModelView):
-    def __init__(self, opt, rescan=False):
-        ModelView.__init__(self)
+    def __init__(self, opt, rescan=False, **kwargs):
+        ModelView.__init__(self, **kwargs)
         self.key, self.dtype, self.req, self.default, self.desc = opt
         self.req = (self.req == "REQUIRED")
         self.rescan = rescan
@@ -269,9 +269,13 @@ class MatrixFileOptionView(FileOptionView):
         return mat
 
     def edit_file(self):
-        print(self.edit.text())
-        print(self.read_vest(self.edit.text()))
-        
+        try:
+            mat = self.read_vest(self.edit.text())
+            self.mat_dialog.set_matrix(mat)
+            self.mat_dialog.exec_()
+        except:
+            traceback.print_exc()
+            
 class OptionsView(ModelView):
     def __init__(self, **kwargs):
         ModelView.__init__(self, **kwargs)
@@ -323,13 +327,13 @@ class OptionsView(ModelView):
                 next, actual = self.get_concrete_opts(opt_base, opt_suffix)
                 for key in actual:
                     newopt = [key,] + opt[1:]
-                    view = get_option_view(newopt, rescan=True)
+                    view = get_option_view(newopt, rescan=True, mat_dialog=self.mat_dialog)
                     view.add(self.dialog.grid, row+startrow)
                     self.views[key] = view
                     row += 1
                 
             else:
-                view = get_option_view(opt)
+                view = get_option_view(opt, mat_dialog=self.mat_dialog)
                 view.add(self.dialog.grid, row+startrow)
                 self.views[opt[0]] = view
                 row += 1

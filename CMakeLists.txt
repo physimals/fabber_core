@@ -26,6 +26,22 @@ else (FSL_BUILD)
             HINTS $ENV{FSLDIR}/extras/include REQUIRED)
   find_path(NEWMAT_INCLUDE_DIR newmat.h
             HINTS $ENV{FSLDIR}/extras/include/newmat REQUIRED)
+  
+  find_path(MCFLIRT_INCLUDE_DIR /mcflirt/rigidreglib.h
+            HINTS $ENV{FSLDIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/.. OPTIONAL)
+  if(NOT MCFLIRT_INCLUDE_DIR)
+     Message("-- MCFLIRT not found - will not enable motion corrrection")
+  else(NOT MCFLIRT_INCLUDE_DIR)
+     Message("-- Found MCFLIRT ${MCFLIRT_INCLUDE_DIR}")
+     find_library(WARPFNS_LIBRARY NAMES warpfns libwarpfns
+               HINTS $ENV{FSLDIR}/lib OPTIONAL )
+     if(WARPFNS_LIBRARY)
+       Message("-- Found warpfns ${WARPFNS_LIBRARY}")
+       include_directories(${MCFLIRT_INCLUDE_DIR})
+       add_definitions(-D__FABBER_MOTION -DEXPOSE_TREACHEROUS)
+       set(CORE_SRC ${CORE_SRC} Update_deformation.cc)
+     endif(WARPFNS_LIBRARY)
+  endif(NOT MCFLIRT_INCLUDE_DIR)
 
   find_library(ZNZ_LIBRARY NAMES znz libznz
                HINTS $ENV{FSLDIR}/lib REQUIRED )
@@ -68,7 +84,7 @@ Message("-- Using zlib: ${ZLIB_LIBRARY}")
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-set(LIBS ${NEWIMAGE_LIBRARY} 
+set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
          ${FSLIO_LIBRARY} 
          ${MISCMATHS_LIBRARY} 
          ${NIFTIIO_LIBRARY} 
@@ -136,7 +152,7 @@ if (GTEST_LIBRARY)
   include_directories(${GTEST_INCLUDE_DIR})
   
   set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_spatialvb.cc test/test_vb.cc
-               test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc)
+               test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc test/test_priors.cc)
   add_executable(testfabber ${TEST_SRC})
   target_link_libraries(testfabber fabbercore ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
   enable_testing()
@@ -172,6 +188,7 @@ if (PYSIDE_UIC)
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_optdialog.ui >>ui_qtd.py
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_logview.ui >>ui_qtd.py
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_chooserun.ui >>ui_qtd.py
+                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_matrix.ui >>ui_qtd.py
                    )
 
   INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pyfab/pyfabber.py DESTINATION bin)

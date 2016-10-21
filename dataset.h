@@ -24,6 +24,8 @@
 #include <map>
 #include <sstream>
 
+#include <boost/shared_ptr.hpp>
+
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
 
@@ -40,7 +42,7 @@ enum OptionType
  */
 enum OptionReq
 {
-	OPT_REQ=0, OPT_NONREQ=1,
+	OPT_REQ = 0, OPT_NONREQ = 1,
 };
 
 std::ostream& operator<<(std::ostream& out, const OptionType value);
@@ -118,23 +120,23 @@ public:
 
 	/**
 	 * Get current version string
-         *
-         * @return A version string in form major.minor.patch[_flag], e.g. 1.2.3_rc1
+	 *
+	 * @return A version string in form major.minor.patch[_flag], e.g. 1.2.3_rc1
 	 */
 	static std::string GetVersion();
 
 	/**
-         * Get SHA1 hash of current Git revision, if available
-         *
-         * @return an SHA1 hash, or 'unknown' if not available at build time
-         */
+	 * Get SHA1 hash of current Git revision, if available
+	 *
+	 * @return an SHA1 hash, or 'unknown' if not available at build time
+	 */
 	static std::string GetRevision();
 
 	/**
-         * Get date of last commit, if available
-         *
-         * @return date string, or 'unknown' if not available at build time
-         */
+	 * Get date of last commit, if available
+	 *
+	 * @return date string, or 'unknown' if not available at build time
+	 */
 	static std::string GetDate();
 
 	FabberRunData();
@@ -254,6 +256,38 @@ public:
 	bool GetBool(const std::string key);
 
 	/**
+	 * Get an integer option
+	 *
+	 * @param key Name of the option
+	 * @throw if option not specified, or not an integer
+	 */
+	int GetInt(const std::string key);
+
+	/**
+	 * Get an integer option, returning default if not specified
+	 *
+	 * @param key Name of the option
+	 * @throw if option specified, but not a valid integer
+	 */
+	int GetIntDefault(const std::string key, int def);
+
+	/**
+	 * Get an double option
+	 *
+	 * @param key Name of the option
+	 * @throw if option not specified, or not a double
+	 */
+	double GetDouble(const std::string key);
+
+	/**
+	 * Get an double option, returning default if not specified
+	 *
+	 * @param key Name of the option
+	 * @throw if option specified, but not a valid number
+	 */
+	double GetDoubleDefault(const std::string key, double def);
+
+	/**
 	 * Check that all key/value parameters have been consumed
 	 *
 	 * Used by the command line tool to detect if options
@@ -262,7 +296,7 @@ public:
 	 */
 	void CheckEmpty();
 
-	void LoadVest(std::string filename, std::string key);
+	//void LoadVest(std::string filename, std::string key);
 
 	/**
 	 * Save the specified voxel data
@@ -437,6 +471,10 @@ public:
 	 * using the << operator.
 	 */
 	friend ostream& operator<<(ostream& out, const FabberRunData& opts);
+
+#ifndef NO_NEWIMAGE
+	NEWIMAGE::volume<float> GetMask() {return m_mask;}
+#endif
 
 	// Following methods present for compatibility only
 #ifdef DEPRECATED
