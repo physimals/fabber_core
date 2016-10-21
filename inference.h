@@ -17,7 +17,7 @@
 
 #ifdef __FABBER_MOTION
 #include "Update_deformation.h"
-//#include "mcflirt/rigidreglib.h"
+#include "mcflirt/rigidreglib.h"
 #include "newimage/newimage.h"
 #endif //__FABBER_MOTION
 
@@ -209,7 +209,7 @@ typedef SingletonFactory<InferenceTechnique> InferenceTechniqueFactory;
 class MCobj
 {
 public:
-	MCobj(const FabberRunData& allData, int dof);
+	MCobj(FabberRunData& allData, int dof);
 	void run_mc(const NEWMAT::Matrix& modelpred_mat, NEWMAT::Matrix& finalimage_mat);
 	void set_num_iter(int nit)
 	{	num_iter=nit;}
@@ -218,7 +218,7 @@ private:
 	int num_iter; // default 10
 	NEWIMAGE::volume<float> mask;
 	NEWMAT::Matrix affmat;
-//	mcflirt mcf;
+	mcflirt mcf;
 	NEWIMAGE::volume4D<float> defx;
 	NEWIMAGE::volume4D<float> defy;
 	NEWIMAGE::volume4D<float> defz;

@@ -19,8 +19,7 @@ namespace
 class PublicVersion: public VariationalBayesInferenceTechnique
 {
 public:
-	using VariationalBayesInferenceTechnique::ImagePrior;
-	using VariationalBayesInferenceTechnique::PriorsPrec;
+	using VariationalBayesInferenceTechnique::m_prior_types;
 };
 
 class VbTest: public ::testing::TestWithParam<string>
@@ -127,10 +126,13 @@ TEST_P(VbTest, ImagePriorsMultiple)
 	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
 	ASSERT_NO_THROW(Run());
 
-	ASSERT_EQ(3, vb->ImagePrior.size());
-	NEWMAT::RowVector iprior1 = vb->ImagePrior[0];
-	NEWMAT::RowVector iprior2 = vb->ImagePrior[1];
-	NEWMAT::RowVector iprior3 = vb->ImagePrior[2];
+	ASSERT_EQ(3, vb->m_prior_types.size());
+	ASSERT_EQ('I', vb->m_prior_types[0].m_type);
+	ASSERT_EQ('-', vb->m_prior_types[1].m_type);
+	ASSERT_EQ('I', vb->m_prior_types[2].m_type);
+	NEWMAT::RowVector iprior1 = vb->m_prior_types[0].m_image;
+	NEWMAT::RowVector iprior2 = vb->m_prior_types[1].m_image;
+	NEWMAT::RowVector iprior3 = vb->m_prior_types[2].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior1.Ncols());
 	ASSERT_EQ(0, iprior2.Ncols());
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior3.Ncols());
@@ -183,8 +185,9 @@ TEST_P(VbTest, ImagePriors)
 	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
 	Run();
 
-	ASSERT_EQ(1, vb->ImagePrior.size());
-	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(1, vb->m_prior_types.size());
+	ASSERT_EQ('I', vb->m_prior_types[0].m_type);
+	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
@@ -243,12 +246,11 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
 	rundata.Set("PSP_byname1_prec", "1234567");
 	Run();
 
-	ASSERT_EQ(1, vb->ImagePrior.size());
-	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(1, vb->m_prior_types.size());
+	ASSERT_EQ('I', vb->m_prior_types[0].m_type);
+	ASSERT_FLOAT_EQ(1234567, vb->m_prior_types[0].m_prec);
+	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
-
-	ASSERT_EQ(1, vb->PriorsPrec.size());
-	ASSERT_FLOAT_EQ(1234567, vb->PriorsPrec[0]);
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
@@ -309,12 +311,11 @@ TEST_P(VbTest, ImagePriorsPrecLow)
 	rundata.Set("PSP_byname1_prec", "1e-5");
 	Run();
 
-	ASSERT_EQ(1, vb->ImagePrior.size());
-	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(1, vb->m_prior_types.size());
+	ASSERT_EQ('I', vb->m_prior_types[0].m_type);
+	ASSERT_FLOAT_EQ(1e-5, vb->m_prior_types[0].m_prec);
+	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
-
-	ASSERT_EQ(1, vb->PriorsPrec.size());
-	ASSERT_FLOAT_EQ(1e-5, vb->PriorsPrec[0]);
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
@@ -384,8 +385,9 @@ TEST_P(VbTest, ImagePriorsFile)
 
 	Run();
 
-	ASSERT_EQ(1, vb->ImagePrior.size());
-	NEWMAT::RowVector iprior = vb->ImagePrior[0];
+	ASSERT_EQ(1, vb->m_prior_types.size());
+	ASSERT_EQ('I', vb->m_prior_types[0].m_type);
+	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
@@ -770,6 +772,77 @@ TEST_P(VbTest, WhiteNoise)
 		EXPECT_NEAR(-VAL*2, mean(1, i+1), 0.2);
 	}
 }
+
+#ifdef __FABBER_MOTION
+// Turn motion correction on, but no motion to correct!
+TEST_F(VbTest, MotionCorNull)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+	int REPEATS = 50;
+	int DEGREE = 5;
+	string FILENAME = "temp_mvns";
+
+	// Create coordinates and data matrices
+	// Data fitted to a quadratic function
+	NEWMAT::Matrix voxelCoords, data;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
+				}
+				v++;
+			}
+		}
+	}
+
+	// Do just 1 iteration
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetMainVoxelData(data);
+	rundata.Set("noise", "white");
+	rundata.Set("mcsteps", "5");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", stringify(DEGREE));
+	rundata.Set("method", "vb");
+	rundata.Set("max-iterations", "50");
+	Run();
+
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
+	}
+	mean = rundata.GetVoxelData("mean_c1");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		// GTEST has difficulty with comparing floats to 0
+		ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
+	}
+	mean = rundata.GetVoxelData("mean_c2");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
+	}
+}
+#endif
 
 INSTANTIATE_TEST_CASE_P(VbSpatialTests, VbTest, ::testing::Values("vb", "spatialvb"));
 }
