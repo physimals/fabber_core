@@ -144,7 +144,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 			break;
 
 		default:
-			throw Invalid_option("Unrecognized spatial prior type: " + type);
+			throw Invalid_option("Unrecognized spatial prior type: " + string(1, type));
 		}
 	}
 
