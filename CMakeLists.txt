@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.7)
 
+if(APPLE)
+  # Force use of libstdc++ on Mac as FSL uses this and we cannot link otherwise
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++")
+endif(APPLE)
+
 # Basic objects - things that have nothing directly to do with inference
 set(BASIC_SRC fabber_core.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
 
