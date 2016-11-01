@@ -216,7 +216,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		}
 	}
 
-	if (true)
+	if (false)
 	{
 		LOG << "InferenceTechnique::Writing model variances..." << endl;
 		Matrix modelStd;
