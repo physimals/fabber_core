@@ -135,7 +135,10 @@ target_link_libraries(fabber fabbercore ${LIBS})
 add_executable(mvntool mvntool/mvntool.cc )
 target_link_libraries(mvntool fabbercore ${LIBS})
 
-INSTALL(TARGETS fabber mvntool fabbercore
+add_executable(niftidiff test/niftidiff.cc )
+target_link_libraries(niftidiff ${LIBS})
+
+INSTALL(TARGETS fabber mvntool niftidiff fabbercore
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
