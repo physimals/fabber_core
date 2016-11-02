@@ -7,8 +7,8 @@
 /*  CCOPYRIGHT */
 
 #include "fabber_version.h"
-#include "fwdmodel.h"
 #include "inference.h"
+#include "fwdmodel.h"
 
 #include "utils/tracer_plus.h"
 
@@ -41,6 +41,9 @@ static OptionSpec OPTIONS[] =
 						OPT_NONREQ, "" },
 				{ "method", OPT_STR, "Use this inference method", OPT_NONREQ, "" },
 				{ "model", OPT_STR, "Use this forward model", OPT_NONREQ, "" },
+				{ "loadmodels", OPT_FILE,
+						"Load models dynamically from the specified filename, which should be a DLL/shared library",
+						OPT_NONREQ, "" },
 				{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
 				{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
 				{ "data-order", OPT_STR,
@@ -95,6 +98,12 @@ int execute(int argc, char** argv)
 		PercentProgressCheck percent;
 		params.SetProgressCheck(&percent);
 		params.Parse(argc, argv);
+
+		string load_models = params.GetString("loadmodels");
+		if (load_models != "")
+		{
+			FwdModel::LoadFromDynamicLibrary(load_models);
+		}
 
 		// Print usage information if no arguments given, or
 		// if --help specified

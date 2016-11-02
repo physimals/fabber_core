@@ -97,6 +97,10 @@ set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
          ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
 endif(FSL_BUILD)
 
+if (UNIX)
+  set(LIBS ${LIBS} dl)
+endif(UNIX)
+
 # Basic build configuration
 
 # the commit's SHA1, and whether the building workspace was dirty or not
