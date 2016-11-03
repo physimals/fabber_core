@@ -13,19 +13,40 @@
 #include <sstream> 
 #include <memory>
 
-#ifdef _WIN32
-#include <>windows.h>
-#define GETSYMBOL GetProcAddress
-#define GETERROR GetLastError
-#else
-#include <dlfcn.h>
-#define GETSYMBOL dlsym
-#define GETERROR dlerror
-#endif
-
 typedef int (*GetNumModelsFptr)(void);
 typedef const char* (*GetModelNameFptr)(int);
 typedef NewInstanceFptr (*GetNewInstanceFptrFptr)(const char *);
+
+#ifdef _WIN32
+  // This stops Windows defining a load of macros which clash with FSL
+  #define WIN32_LEAN_AND_MEAN
+  #include "windows.h"
+  #define GETSYMBOL GetProcAddress
+  #define GETERROR GetLastErrorAsString
+
+std::string GetLastErrorAsString()
+{
+	//Get the error message, if any.
+	DWORD errorMessageID = ::GetLastError();
+	if (errorMessageID == 0)
+		return std::string(); //No error message has been recorded
+
+	LPSTR messageBuffer = nullptr;
+	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+	std::string message(messageBuffer, size);
+
+	//Free the buffer.
+	LocalFree(messageBuffer);
+
+	return message;
+}
+#else
+  #include <dlfcn.h>
+  #define GETSYMBOL dlsym
+  #define GETERROR dlerror
+#endif
 
 void FwdModel::LoadFromDynamicLibrary(std::string filename)
 {
@@ -48,19 +69,19 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename)
 	get_num_models = (GetNumModelsFptr) GETSYMBOL(libptr, "get_num_models");
 	if (!get_num_models)
 	{
-		throw runtime_error(GETERROR());
+		throw runtime_error(string("Failed to resolve symbol 'get_num_models' ") + GETERROR());
 	}
 
 	get_model_name = (GetModelNameFptr) GETSYMBOL(libptr, "get_model_name");
 	if (!get_model_name)
 	{
-		throw runtime_error(GETERROR());
+		throw runtime_error(string("Failed to resolve symbol 'get_model_name' ") + GETERROR());
 	}
 
 	get_new_instance_fptr = (GetNewInstanceFptrFptr) GETSYMBOL(libptr, "get_new_instance_func");
 	if (!get_new_instance_fptr)
 	{
-		throw runtime_error(GETERROR());
+		throw runtime_error(string("Failed to resolve symbol 'get_new_instance_func' ") + GETERROR());
 	}
 
 	int num_models = get_num_models();
