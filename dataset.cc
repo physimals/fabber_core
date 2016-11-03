@@ -13,6 +13,7 @@
 #include "setup.h"
 #include "fwdmodel.h"
 #include "inference.h"
+#include "fabber_io.h"
 
 #include "utils/tracer_plus.h"
 #include "newmat.h"
@@ -103,8 +104,14 @@ string FabberRunData::GetDate()
 #endif
 }
 
+FabberRunData::FabberRunData(FabberIo *io)
+ : m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(io)
+{
+	FabberSetup::SetupDefaults();
+}
+
 FabberRunData::FabberRunData() :
-		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0)
+		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(0)
 {
 	FabberSetup::SetupDefaults();
 }
@@ -552,165 +559,33 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 	// data is optional?
 	if (m_voxel_data.count(key) == 0)
 	{
-#ifdef NO_NEWIMAGE
-		throw DataNotFound(key);
-#else
 		string filename = GetStringDefault(key, "");
-		LoadVoxelData(filename, key);
-#endif
+		if (m_io && (filename != ""))
+		{
+			// If this is the first data to be loaded, load any
+			// mask first
+			if (!m_have_coords)
+			{
+				string mask_filename = GetStringDefault("mask", "");
+				if (mask_filename != "") m_io->LoadMask(mask_filename);
+			}
+			m_voxel_data[key] = m_io->LoadVoxelData(filename);
+
+			// Set the coords last as they may have come either
+			// from the mask or from the data
+			if (!m_have_coords) {
+				Matrix coords = m_io->GetVoxelCoords();
+				SetVoxelCoords(coords);
+			}
+		}
+		else
+		{
+			throw DataNotFound(key);
+		}
 	}
 
 	return m_voxel_data.find(key)->second;
 }
-
-#ifndef NO_NEWIMAGE
-#include "newimage/newimageall.h"
-using namespace NEWIMAGE;
-
-void DumpVolumeInfo(const volume4D<float>& info, ostream& out = LOG)
-{
-	Tracer_Plus tr("DumpVolumeInfo");
-	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-			<< ", vols=" << info.tsize() << endl;
-	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-			<< "mm, TR=" << info.tdim() << " sec\n";
-	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
-void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
-{
-	Tracer_Plus tr("DumpVolumeInfo");
-	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-			<< ", vols=1" << endl;
-	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-			<< "mm, TR=1" << " sec\n";
-	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
-void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> first_data)
-{
-	// First try to get the coords from a mask. This
-	// can't be set as voxel data, as it defines what the
-	// voxel data is. If present it must be loaded from a file
-
-	// FIXME code duplication
-	string mask = GetStringDefault("mask", "");
-	if (mask != "")
-	{
-		LoadVoxelCoordsFromMask(GetString("mask"));
-	}
-	else
-	{
-		LOG << "FabberRunData::Setting voxel coordinates from first volume to be loaded" << endl;
-		// Create coordinates matrix from the first volume to
-		// be loaded
-		int nx = first_data.xsize();
-		int ny = first_data.ysize();
-		int nz = first_data.zsize();
-		volume4D<float> coordvol(nx, ny, nz, 3);
-		for (int i = 0; i < nx; i++)
-		{
-			for (int j = 0; j < ny; j++)
-			{
-				for (int k = 0; k < nz; k++)
-				{
-					ColumnVector vcoord(3);
-					vcoord << i << j << k;
-					coordvol.setvoxelts(vcoord, i, j, k);
-				}
-			}
-		}
-
-		Matrix coords = coordvol.matrix();
-		SetVoxelCoords(coords);
-	}
-	m_have_coords = true;
-}
-
-void FabberRunData::LoadVoxelCoordsFromMask(std::string mask_filename)
-{
-	Tracer_Plus tr("LoadMask");
-
-	LOG_ERR("FabberRunData::Loading mask data from '" + mask_filename << "'" << endl);
-	read_volume(m_mask, mask_filename);
-	m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
-	DumpVolumeInfo(m_mask);
-
-	// Create coordinates matrix using mask
-	LOG << "FabberRunData::Setting voxel coordinates from mask" << endl;
-
-	int nx = m_mask.xsize();
-	int ny = m_mask.ysize();
-	int nz = m_mask.zsize();
-	volume4D<float> coordvol(nx, ny, nz, 3);
-	for (int i = 0; i < nx; i++)
-	{
-		for (int j = 0; j < ny; j++)
-		{
-			for (int k = 0; k < nz; k++)
-			{
-				ColumnVector vcoord(3);
-				vcoord << i << j << k;
-				coordvol.setvoxelts(vcoord, i, j, k);
-			}
-		}
-	}
-
-	Matrix coords = coordvol.matrix(m_mask);
-	SetVoxelCoords(coords);
-}
-
-void FabberRunData::LoadVoxelData(std::string filename, std::string key)
-{
-	Tracer_Plus tr("LoadVoxelData");
-
-	if (filename != "")
-	{
-		// Load the files.  Note: these functions don't throw errors if file doesn't exist --
-		// they just crash.  Hence the detailed logging before we try anything.
-		LOG << "FabberRunData::Loading data from '" + filename << "'" << endl;
-		volume4D<float> data;
-		try
-		{
-			read_volume4D(data, filename);
-		} catch (Exception &e)
-		{
-			throw DataNotFound(key, filename);
-		}
-		DumpVolumeInfo(data);
-
-		if (!m_have_coords)
-		{
-			// First data set! Set our co-ords from this
-			SetVoxelCoordsFromVolume(data);
-		}
-
-		try
-		{
-			// FIXME m_have_mask would be better
-			if (m_mask.xsize() > 0)
-			{
-				LOG << "     Applying mask to data..." << endl;
-				m_voxel_data[key] = data.matrix(m_mask);
-			}
-			else
-			{
-				m_voxel_data[key] = data.matrix();
-			}
-		} catch (exception &e)
-		{
-			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
-			throw e;
-		}
-	}
-	else
-	{
-		throw DataNotFound(key);
-	}
-}
-#endif
 
 void FabberRunData::GetMainVoxelDataMultiple()
 {
@@ -791,41 +666,17 @@ void FabberRunData::GetMainVoxelDataMultiple()
 			<< voxelDataMain.Ncols() << " voxels" << endl;
 }
 
-void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, int nifti_intent_code)
+void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
-	int data_size = data.Nrows();
-
-	if (!m_save_files)
+	if (m_io && m_save_files)
 	{
-		LOG << "FabberRunData::Saving to memory: " << filename << endl;
-		// FIXME what should we do with NIFTI_INTENT_CODE?
-		SetVoxelData(filename, data);
+		m_io->SaveVoxelData(data, m_size, filename, data_type);
 	}
 	else
 	{
-#ifndef NO_NEWIMAGE
-		LOG << "FabberRunData::Saving to nifti: " << filename << endl;
-		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
-		if (m_mask.xsize() > 0)
-		{
-			output.setmatrix(data, m_mask);
-		}
-		else
-		{
-			output.setmatrix(data);
-		}
-		output.set_intent(nifti_intent_code, 0, 0, 0);
-		output.setDisplayMaximumMinimum(output.max(), output.min());
-		//string output_dir = GetStringDefault("output", ".");
-		// FIXME need to use logger to get outdir as this does the ++ appending, however
-		// this assumes use of CL tool and log to file
-		string outDir = EasyLog::GetOutputDirectory();
-		if (outDir != "")
-			filename = outDir + "/" + filename;
-		save_volume4D(output, filename);
-#else
-		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");
-#endif
+		LOG << "FabberRunData::Saving to memory: " << filename << endl;
+		// FIXME what should we do with data_type?
+		SetVoxelData(filename, data);
 	}
 }
 

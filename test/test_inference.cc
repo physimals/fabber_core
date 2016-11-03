@@ -11,6 +11,8 @@
 #include "setup.h"
 #include "easylog.h"
 
+#include <fstream>
+
 namespace
 {
 

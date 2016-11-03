@@ -14,6 +14,7 @@
 #include "utils/tracer_plus.h"
 
 using Utilities::Tracer_Plus;
+using namespace MISCMATHS;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =

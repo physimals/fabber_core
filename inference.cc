@@ -7,11 +7,13 @@
 /*  CCOPYRIGHT */
 
 #include "inference.h"
-
+#include "fabber_mc.h"
 #include "easylog.h"
-#include "utils/tracer_plus.h"
 
+#include "utils/tracer_plus.h"
 #include "newmat.h"
+
+#include "math.h"
 
 using namespace std;
 using namespace NEWMAT;
@@ -409,75 +411,3 @@ InferenceTechnique::~InferenceTechnique()
 		resultMVNsWithoutPrior.pop_back();
 	}
 }
-
-#ifdef __FABBER_MOTION
-
-MCobj::MCobj(FabberRunData& allData, int dof)
-{
-	Tracer_Plus tr("MCobj::MCobj");
-
-//initialise
-	mask = allData.GetMask();
-	// No mask? make one
-	if (mask.xsize() == 0)
-	{
-		std::vector<int> size = allData.GetVolumeSize();
-		mask = volume<float>(size[0], size[1], size[2]);
-		mask = 1.0;
-	}
-
-	userdof=dof;
-	num_iter=10;
-// the following sets up an initial zero deformation field
-	Matrix datamat = allData.GetMainVoxelData();
-	wholeimage.setmatrix(datamat,mask);
-	modelpred=wholeimage;
-	modelpred=0.0f;
-	if (userdof > 12)
-	{
-		defx=modelpred;
-		defx.setROIlimits(0,2);
-		defx.activateROI();
-		defx=defx.ROI();
-		defy=defx;
-		defz=defx;
-		// Unnecessary initialisations?!?
-		tmpx=defx;
-		tmpy=defx;
-		tmpz=defx;
-	}
-	else
-	{
-		mcf.setparams("verbose",false);
-	}
-	affmat=IdentityMatrix(4);
-	finalimage=modelpred;
-}
-
-void MCobj::run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat)
-{
-	Tracer_Plus tr("MCobj::run_mc");
-
-	modelpred.setmatrix(modelpred_mat,mask);
-	if (userdof>12)
-	{
-		UpdateDeformation(wholeimage,modelpred,num_iter,defx,defy,defz,finalimage,tmpx,tmpy,tmpz);
-		defx=tmpx;
-		defy=tmpy;
-		defz=tmpz;
-	}
-	else
-	{
-		// mcf.register_volumes(4D reference,4D input image,refweight,inweight,4D output image);
-		affmat = mcf.register_volumes(modelpred,wholeimage,mask,mask,finalimage);
-
-		// apply transforms to wholeimage to get finalimage (the above is a dummy)
-		for (int n=0; n<wholeimage.maxt(); n++)
-		{
-			affine_transform(wholeimage[n],finalimage[n],affmat.Rows(n*4+1, n*4+4));
-		}
-	}
-	finalimage_mat = finalimage.matrix(mask);
-}
-
-#endif //__FABBER_MOTION

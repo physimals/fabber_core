@@ -12,9 +12,13 @@
 #include "convergence.h"
 
 #include "utils/tracer_plus.h"
+#include "miscmaths/miscmaths.h"
 #include "newmatio.h"
 
+#include "math.h"
+
 using Utilities::Tracer_Plus;
+using MISCMATHS::sign;
 
 #define NOCACHE 1
 

@@ -9,6 +9,7 @@
 #include "inference_vb.h"
 
 #include "convergence.h"
+#include "fabber_mc.h"
 
 #include "utils/tracer_plus.h"
 #include "newmatio.h"

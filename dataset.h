@@ -8,23 +8,16 @@
 
 #pragma once
 
+#include "fabber_io.h"
+
 #include "newmat.h"
 
-#ifdef NO_NEWIMAGE
-// This is harmless because we do not create actual NIFTI files
-// without NEWIMAGE
-#define NIFTI_INTENT_NONE 1
-#define NIFTI_INTENT_SYMMATRIX 2
-#else
-#include "newimage/newimage.h"
-#endif
+#include <boost/shared_ptr.hpp>
 
 #include <stdexcept>
 #include <vector>
 #include <map>
 #include <sstream>
-
-#include <boost/shared_ptr.hpp>
 
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
@@ -139,6 +132,7 @@ public:
 	 */
 	static std::string GetDate();
 
+	FabberRunData(FabberIo *io);
 	FabberRunData();
 	~FabberRunData();
 
@@ -313,7 +307,7 @@ public:
 	 * @param data Data as a matrix in which each column is a voxel, and
 	 *        rows contain a series of data values for that voxel
 	 */
-	void SaveVoxelData(std::string filename, NEWMAT::Matrix &coords, int nifti_intent_code = NIFTI_INTENT_NONE);
+	void SaveVoxelData(std::string filename, NEWMAT::Matrix &coords, VoxelDataType data_type=VDT_SCALAR);
 
 	/**
 	 * Get the voxel co-ordinates
@@ -472,10 +466,6 @@ public:
 	 */
 	friend ostream& operator<<(ostream& out, const FabberRunData& opts);
 
-#ifndef NO_NEWIMAGE
-	NEWIMAGE::volume<float> GetMask() {return m_mask;}
-#endif
-
 	// Following methods present for compatibility only
 #ifdef DEPRECATED
 	/** @deprecated Use GetString instead */
@@ -506,20 +496,7 @@ public:
 	 */
 	void LogParams();
 private:
-#ifndef NO_NEWIMAGE
-	NEWIMAGE::volume<float> m_mask;
-
-	/**
-	 * Load voxel data from a NIFTI file
-	 *
-	 * @param filename NIFTI file which must contain a volume
-	 *        of the same dimensions as the basic data.
-	 * @key Key name to associate with this data
-	 */
-	void LoadVoxelData(std::string filename, std::string key);
-	void SetVoxelCoordsFromVolume(NEWIMAGE::volume4D<float> vol);
-	void LoadVoxelCoordsFromMask(std::string mask_filename);
-#endif
+	FabberIo *m_io;
 	NEWMAT::Matrix m_voxelCoords;
 
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);

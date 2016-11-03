@@ -11,8 +11,12 @@
 #include "easylog.h"
 #include "utils/tracer_plus.h"
 #include "newmatio.h"
+#include "miscmaths/miscmaths.h"
+
+#include "math.h"
 
 using Utilities::Tracer_Plus;
+using MISCMATHS::read_vest;
 
 // Constructors
 
@@ -364,6 +368,6 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 	}
 	// Write the file
 
-	data.SaveVoxelData(filename, vols, NIFTI_INTENT_SYMMATRIX);
+	data.SaveVoxelData(filename, vols, VDT_MVN);
 }
 

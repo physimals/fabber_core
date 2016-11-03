@@ -11,6 +11,7 @@
 #include "dataset.h"
 #include "setup.h"
 #include "easylog.h"
+#include "fabber_io_newimage.h"
 
 namespace
 {
@@ -25,9 +26,8 @@ public:
 class VbTest: public ::testing::TestWithParam<string>
 {
 protected:
-	VbTest()
+	VbTest() : rundata(&io)
 	{
-		FabberSetup::SetupDefaults();
 		EasyLog::StartLog(".", true);
 	}
 
@@ -68,6 +68,7 @@ protected:
 	}
 
 	NEWMAT::Matrix voxelCoords;
+	FabberIoNewimage io;
 	FabberRunData rundata;
 	FwdModel *model;
 	PublicVersion *vb;

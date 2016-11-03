@@ -6,11 +6,11 @@ if(APPLE)
 endif(APPLE)
 
 # Basic objects - things that have nothing directly to do with inference
-set(BASIC_SRC fabber_core.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
+set(BASIC_SRC fabber_io.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc utils.cc fwdmodel_linear.cc
-	     fwdmodel_trivial.cc fwdmodel_poly.cc convergence.cc)
+	     fwdmodel_trivial.cc fwdmodel_poly.cc convergence.cc fabber_mc.cc)
 
 # Inference methods
 set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
@@ -133,11 +133,14 @@ add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
 # Main Targets
 add_library(fabbercore ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 
+# Main Targets
+add_library(fabberexec fabber_io_newimage.cc fabber_core.cc )
+
 add_executable(fabber fabber_main.cc)
-target_link_libraries(fabber fabbercore ${LIBS})
+target_link_libraries(fabber fabberexec fabbercore ${LIBS})
 
 add_executable(mvntool mvntool/mvntool.cc )
-target_link_libraries(mvntool fabbercore ${LIBS})
+target_link_libraries(mvntool fabberexec fabbercore ${LIBS})
 
 add_executable(niftidiff test/niftidiff.cc )
 target_link_libraries(niftidiff ${LIBS})
@@ -166,7 +169,7 @@ if (GTEST_LIBRARY)
   set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_spatialvb.cc test/test_vb.cc
                test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc test/test_priors.cc)
   add_executable(testfabber ${TEST_SRC})
-  target_link_libraries(testfabber fabbercore ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
+  target_link_libraries(testfabber fabbercore fabberexec ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
   enable_testing()
   add_test(COMMAND testfabber)
 else(GTEST_LIBRARY)

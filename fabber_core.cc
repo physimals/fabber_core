@@ -6,9 +6,11 @@
 
 /*  CCOPYRIGHT */
 
+#include "fabber_core.h"
 #include "fabber_version.h"
 #include "inference.h"
 #include "fwdmodel.h"
+#include "fabber_io_newimage.h"
 
 #include "utils/tracer_plus.h"
 
@@ -58,7 +60,7 @@ static OptionSpec OPTIONS[] =
 /**
  * Print usage information.
  */
-void Usage()
+static void Usage()
 {
 	cout << "\n\nUsage: fabber [--<option>|--<option>=<value> ...]" << endl << endl
 			<< "Use -@ <file> to read additional arguments in command line form from a text file (DEPRECATED)." << endl
@@ -94,12 +96,13 @@ int execute(int argc, char** argv)
 	try
 	{
 		// Create a new Fabber run
-		FabberRunData params;
+		FabberIoNewimage io;
+		FabberRunData params(&io);
 		PercentProgressCheck percent;
 		params.SetProgressCheck(&percent);
 		params.Parse(argc, argv);
 
-		string load_models = params.GetString("loadmodels");
+		string load_models = params.GetStringDefault("loadmodels", "");
 		if (load_models != "")
 		{
 			FwdModel::LoadFromDynamicLibrary(load_models);
