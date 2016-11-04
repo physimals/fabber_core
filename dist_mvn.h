@@ -97,7 +97,7 @@ public:
 	 */
 	int GetSize() const
 	{
-		assert(m_size == means.Nrows() || m_size<0);
+		assert(m_size == means.Nrows() || m_size < 0);
 		return m_size;
 	}
 
@@ -183,11 +183,19 @@ public:
 	void Load(const string& filename);
 
 	/**
+	 * Load a per-voxel vector of MVN distributions from existing voxel data
+	 *
+	 * @param mvns One MVN for each voxel
+	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
+	 */
+	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data);
+
+	/**
 	 * Load a per-voxel vector of MVN distributions from a NIFTI file
 	 *
 	 * @param mvns One MVN for each voxel
 	 */
-	static void Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
+	static void Load(std::vector<MVNDist*>& mvns, const std::string& filename, FabberRunData &data);
 
 	/**
 	 * Save a per-voxel vector of MVN distributions to a NIFTI file

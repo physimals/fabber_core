@@ -268,11 +268,12 @@ void MVNDist::Load(const string& filename)
 	assert(means.Nrows() == m_size);
 }
 
+
 void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
 {
 	Tracer_Plus tr("MVNDist::Load (static)");
 
-	Matrix vols;
+	Matrix voxel_data;
 	LOG << "MVNDist::Reading MVNs from " << filename << endl;
 
 	// Input matrix contains 3d voxels with the
@@ -281,10 +282,14 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 	// Load. First this is converted into
 	// a matrix whose columns are the voxels
 	// and rows are the data
-	vols = data.GetVoxelData(filename);
+	voxel_data = data.GetVoxelData(filename);
+	MVNDist::Load(mvns, voxel_data);
+}
 
+void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
+{
 	// Prepare an output vector of the correct size
-	const int nVoxels = vols.Ncols();
+	const int nVoxels = voxel_data.Ncols();
 	for (unsigned i = 0; i < mvns.size(); i++)
 		assert(mvns[i] == NULL); // should've deleted everything first.
 	mvns.resize(nVoxels, NULL);
@@ -293,8 +298,8 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 	// the number of rows, N, is found by inverting the formula
 	// for N as a function of P given in Load, using the quadratic
 	// formula.
-	const int nParams = ((int) sqrt(8 * vols.Nrows() + 1) - 3) / 2;
-	assert( vols.Nrows() == nParams*(nParams+1)/2 + nParams+1 );
+	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
+	assert( voxel_data.Nrows() == nParams*(nParams+1)/2 + nParams+1 );
 
 	SymmetricMatrix tmp(nParams);
 
@@ -310,13 +315,13 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 		int index = 0;
 		for (int r = 1; r <= nParams; r++)
 			for (int c = 1; c <= r; c++)
-				tmp(r, c) = vols(++index, vox);
+				tmp(r, c) = voxel_data(++index, vox);
 
 		assert(index == nParams*(nParams+1)/2);
 		mvn->SetCovariance(tmp);
-		mvn->means = vols.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
+		mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
 
-		assert(vols(vols.Nrows(), vox) == 1);
+		assert(voxel_data(voxel_data.Nrows(), vox) == 1);
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);
 		mvns[vox - 1] = mvn;
