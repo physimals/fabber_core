@@ -26,42 +26,71 @@ class MVNDist
 public:
 
 	/**
+	 * Load a per-voxel vector of MVN distributions from existing voxel data
+	 *
+	 * @param mvns One MVN for each voxel
+	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
+	 */
+	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data);
+
+	/**
+	 * Load a per-voxel vector of MVN distributions from run data
+	 *
+	 * This may load from a NIFTI file or from data explicitly provided
+	 * using SetVoxelData.
+	 *
+	 * @param mvns Vector which should initially be empty. If non-empty, all entries must be NULL. Will
+	 *             be resized to one MVN per voxel and the contents will be allocated using new and
+	 *             must be freed after use.
+	 * @param key Voxel data key in the run data. Equivalent to the option used to specify the
+	 *            filename using the command line tool
+	 * @param data Options and voxel data
+	 */
+	static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData &data);
+
+	/**
+	 * Save a per-voxel vector of MVN distributions.
+	 *
+	 * This may save to a NIFTI file if the run has been configured to save
+	 * files, or alternatively will save the matrix to the run data where
+	 * it can be retrieved using GetVoxelData.
+	 *
+	 * The matrix will be an N+1xN+1 symmetric matrix as described in /ref Load,
+	 * however only the lower triangle data is specified. When saving to a NIFTI
+	 * file NIFTI_INTENT_SYMMATRIX will be set. The resulting data is in the same
+	 * format expected by Load.
+	 *
+	 * @param mvns One MVN for each voxel
+	 */
+	static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
+
+	/**
 	 * Default constructor
 	 *
-	 * Size will be undefined -- will be fixed by first SetPrecisions/SetCovariance
+	 * Size will be undefined -- will be fixed by first SetPrecisions/SetCovariance. Any
+	 * attempt to get data before this will throw an exception.
 	 */
 	MVNDist();
 
 	/**
 	 * Create distribution of known size
 	 */
-	MVNDist(int dim)
-	{
-		m_size = -1;
-		SetSize(dim);
-	}
+	MVNDist(int dim);
 
 	/**
 	 * Copy constructor
 	 */
-	MVNDist(const MVNDist& from)
-	{
-		m_size = -1;
-		*this = from;
-	}
+	MVNDist(const MVNDist& from);
+
 	/**
 	 * Concatentate two MVNs
 	 */
 	MVNDist(const MVNDist& from1, const MVNDist& from2);
 
 	/**
-	 * Create from NIFTI file
+	 * Create from VEST file
 	 */
-	MVNDist(const string filename)
-	{
-		m_size = -1;
-		Load(filename);
-	}
+	MVNDist(const string filename);
 
 	/**
 	 * Copy using a subset of another MVN distribution's parameters
@@ -71,12 +100,7 @@ public:
 	/**
 	 * Get a subset of this MVN distribution as another MVN distribution
 	 */
-	MVNDist GetSubmatrix(int first, int last, bool checkIndependence = true)
-	{
-		MVNDist ret;
-		ret.CopyFromSubmatrix(*this, first, last, checkIndependence);
-		return ret;
-	}
+	MVNDist GetSubmatrix(int first, int last, bool checkIndependence = true);
 
 	/**
 	 * Assignment operator
@@ -95,11 +119,7 @@ public:
 	 *
 	 * @return size or -1 if not initialized
 	 */
-	int GetSize() const
-	{
-		assert(m_size == means.Nrows() || m_size < 0);
-		return m_size;
-	}
+	int GetSize() const;
 
 	/**
 	 * Mean values of each parameter
@@ -120,6 +140,10 @@ public:
 	 * Precision is the inverse of covariance, just
 	 * as in 1-dimension the precision of a random
 	 * variable is the reciprocol of the variance
+	 *
+	 * The reference returned is only valid temporarily -
+	 * it could become out of date if a subsequent call
+	 * to SetXXX is made. It should not be stored for future use.
 	 */
 	const NEWMAT::SymmetricMatrix& GetPrecisions() const;
 
@@ -155,10 +179,7 @@ public:
 	/**
 	 * Dump info to the default log
 	 */
-	void Dump(const string indent = "") const
-	{
-		DumpTo(LOG, indent);
-	}
+	void Dump(const string indent = "") const;
 
 	/**
 	 * Dump info to the specified output stream
@@ -179,49 +200,20 @@ public:
 	 *
 	 * Precisions will be updated lazily on next
 	 * call to GetPrecisions
-	 */
-	void Load(const string& filename);
-
-	/**
-	 * Load a per-voxel vector of MVN distributions from existing voxel data
 	 *
-	 * @param mvns One MVN for each voxel
-	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
+	 * @param filename VEST matrix file
 	 */
-	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data);
-
-	/**
-	 * Load a per-voxel vector of MVN distributions from a NIFTI file
-	 *
-	 * @param mvns One MVN for each voxel
-	 */
-	static void Load(std::vector<MVNDist*>& mvns, const std::string& filename, FabberRunData &data);
-
-	/**
-	 * Save a per-voxel vector of MVN distributions to a NIFTI file
-	 *
-	 * The file will contain an N+1xN+1 symmetric matrix
-	 * as described in /ref Load, however the use
-	 * of NIFTI_INTENT_SYMMATRIX means that only the
-	 * lower triangle data needs to be specified
-	 *
-	 * @param mvns One MVN for each voxel
-	 */
-	static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
-
-protected:
-	int m_size; // should only be changed explicitly
+	void LoadVest(const string& filename);
 
 private:
-	// Mutable, because they're a cache calculated on first use --
-	// to the outside world, changes here don't affect const-ness.
+	int m_size; // should only be changed explicitly
+
+	// Mutable, because they're a lazily calculated on first use
+	// even for const instance.
 	mutable NEWMAT::SymmetricMatrix precisions;
 	mutable NEWMAT::SymmetricMatrix covariance;
 	mutable bool precisionsValid;
 	mutable bool covarianceValid;
-	// Note that you shouldn't store the references from GetPrecisions/GetCovariance
-	// to use later, because they may be out of date if a Set function has been
-	// called since.  That kinda violates const-ness.. sorry.
 };
 
 inline ostream& operator<<(ostream& out, const MVNDist& dist)

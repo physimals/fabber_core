@@ -173,7 +173,7 @@ void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& a
 	if (filename != "modeldefault")
 	{
 		LOG << "VbInferenceTechnique::Loading " << param_key << " MVNDist from " << filename << endl;
-		dist->Load(filename);
+		dist->LoadVest(filename);
 		// Check the file we've loaded has the right number of parameters
 		if (dist->GetSize() != m_num_params)
 		{
