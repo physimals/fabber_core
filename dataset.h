@@ -501,13 +501,13 @@ public:
 	 */
 	void LogParams();
 private:
-	FabberIo *m_io;
-	NEWMAT::Matrix m_voxelCoords;
-
+	void init();
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
 	void CheckSize(std::string key, NEWMAT::Matrix &mat);
 	void GetMainVoxelDataMultiple();
 
+	FabberIo *m_io;
+	NEWMAT::Matrix m_voxelCoords;
 	bool m_save_files;
 	bool m_have_coords;
 	int m_nvoxels;

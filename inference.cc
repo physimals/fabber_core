@@ -96,46 +96,56 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 
 	int nVoxels = resultMVNs.size();
 
-	MVNDist::Save(resultMVNs, "finalMVN", data);
-
-	if (resultMVNsWithoutPrior.size() > 0)
+	if (data.GetBool("save-mvn"))
 	{
-		assert(resultMVNsWithoutPrior.size() == (unsigned )nVoxels);
-		MVNDist::Save(resultMVNsWithoutPrior, "finalMVNwithoutPrior", data);
+		MVNDist::Save(resultMVNs, "finalMVN", data);
+		if (resultMVNsWithoutPrior.size() > 0)
+		{
+			assert(resultMVNsWithoutPrior.size() == (unsigned )nVoxels);
+			MVNDist::Save(resultMVNsWithoutPrior, "finalMVNwithoutPrior", data);
+		}
 	}
 
 	vector<string> paramNames;
 	model->NameParams(paramNames);
 
+#if 0
 	LOG << "InferenceTechnique::Same information using DumpParameters:" << endl;
 	ColumnVector indices(m_num_params);
 	for (int i = 1; i <= indices.Nrows(); i++)
-		indices(i) = i;
+	indices(i) = i;
 
 	model->DumpParameters(indices, "      ");
+#endif
 
 	// Create individual files for each parameter's mean and Z-stat
 
-	LOG << "InferenceTechnique::Writing means..." << endl;
-
-	for (unsigned i = 1; i <= paramNames.size(); i++)
+	if (data.GetBool("save-mean") | data.GetBool("save-std") | data.GetBool("save-zstat"))
 	{
-		Matrix paramMean, paramZstat, paramStd;
-		paramMean.ReSize(1, nVoxels);
-		paramZstat.ReSize(1, nVoxels);
-		paramStd.ReSize(1, nVoxels);
 
-		for (int vox = 1; vox <= nVoxels; vox++)
+		LOG << "InferenceTechnique::Writing means..." << endl;
+		for (unsigned i = 1; i <= paramNames.size(); i++)
 		{
-			paramMean(1, vox) = resultMVNs[vox - 1]->means(i);
-			float std = sqrt(resultMVNs[vox - 1]->GetCovariance()(i, i));
-			paramZstat(1, vox) = paramMean(1, vox) / std;
-			paramStd(1, vox) = std;
-		}
+			Matrix paramMean, paramZstat, paramStd;
+			paramMean.ReSize(1, nVoxels);
+			paramZstat.ReSize(1, nVoxels);
+			paramStd.ReSize(1, nVoxels);
 
-		data.SaveVoxelData("mean_" + paramNames.at(i - 1), paramMean);
-		data.SaveVoxelData("zstat_" + paramNames.at(i - 1), paramZstat);
-		data.SaveVoxelData("std_" + paramNames.at(i - 1), paramStd);
+			for (int vox = 1; vox <= nVoxels; vox++)
+			{
+				paramMean(1, vox) = resultMVNs[vox - 1]->means(i);
+				float std = sqrt(resultMVNs[vox - 1]->GetCovariance()(i, i));
+				paramZstat(1, vox) = paramMean(1, vox) / std;
+				paramStd(1, vox) = std;
+			}
+
+			if (data.GetBool("save-mean"))
+				data.SaveVoxelData("mean_" + paramNames.at(i - 1), paramMean);
+			if (data.GetBool("save-zstat"))
+				data.SaveVoxelData("zstat_" + paramNames.at(i - 1), paramZstat);
+			if (data.GetBool("save-std"))
+				data.SaveVoxelData("std_" + paramNames.at(i - 1), paramStd);
+		}
 	}
 
 	// That's it! We've written our outputs to the "means" and "stdevs" output matrices.
@@ -143,29 +153,35 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 
 	// We know how many noise parameters we have because it's the difference between
 	// the size of the output matrix and the number of parameters in the model.
-	const int nParams = paramNames.size();
-	const int nNoise = resultMVNs[0]->means.Nrows() - paramNames.size();
-	if (nNoise > 0)
+	if (data.GetBool("save-noise-mean") | data.GetBool("save-noise-std"))
 	{
-		LOG << "InferenceTechnique::Writing noise" << endl;
-		Matrix noiseMean, noiseStd;
-		noiseMean.ReSize(nNoise, nVoxels);
-		noiseStd.ReSize(nNoise, nVoxels);
-		for (int vox = 1; vox <= nVoxels; vox++)
+
+		const int nParams = paramNames.size();
+		const int nNoise = resultMVNs[0]->means.Nrows() - paramNames.size();
+		if (nNoise > 0)
 		{
-			for (int i = 1; i <= nNoise; i++)
+			LOG << "InferenceTechnique::Writing noise" << endl;
+			Matrix noiseMean, noiseStd;
+			noiseMean.ReSize(nNoise, nVoxels);
+			noiseStd.ReSize(nNoise, nVoxels);
+			for (int vox = 1; vox <= nVoxels; vox++)
 			{
-				noiseStd(i, vox) = sqrt(resultMVNs[vox - 1]->GetCovariance()(i + nParams, i + nParams));
-				noiseMean(i, vox) = resultMVNs[vox - 1]->means(i + nParams);
+				for (int i = 1; i <= nNoise; i++)
+				{
+					noiseStd(i, vox) = sqrt(resultMVNs[vox - 1]->GetCovariance()(i + nParams, i + nParams));
+					noiseMean(i, vox) = resultMVNs[vox - 1]->means(i + nParams);
+				}
 			}
+			// FIXME was this being saved before? Should it be?
+			if (data.GetBool("save-noise-mean"))
+				data.SaveVoxelData("noise_means", noiseMean);
+			if (data.GetBool("save-noise-std"))
+				data.SaveVoxelData("noise_stdevs", noiseStd);
 		}
-		// FIXME was this being saved before? Should it be?
-		data.SaveVoxelData("noise_means", noiseMean);
-		data.SaveVoxelData("noise_stdevs", noiseStd);
 	}
 
 	// Save the Free Energy estimates
-	if (!resultFs.empty())
+	if (data.GetBool("save-free-energy") && !resultFs.empty())
 	{
 		LOG << "InferenceTechnique::Writing free energy" << endl;
 		assert((int )resultFs.size() == nVoxels);

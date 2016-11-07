@@ -107,6 +107,27 @@ static OptionSpec OPTIONS[] =
 				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
 				{ "save-residuals", OPT_BOOL,
 						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
+				{ "save-mvn", OPT_BOOL,
+						"Save the final MVN distributions. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-mean", OPT_BOOL,
+						"Save the parameter means. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-std", OPT_BOOL,
+						"Save the parameter standard deviations. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-zstat", OPT_BOOL,
+						"Save the parameter Zstats. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-noise-mean", OPT_BOOL,
+						"Save the noise means. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-noise-std", OPT_BOOL,
+						"Save the noise standard deviations. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-free-energy", OPT_BOOL,
+						"Save the free energy, if calculated. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
 				{ "" }, };
 
 void FabberRunData::GetOptions(std::vector<OptionSpec> &opts)
@@ -142,16 +163,30 @@ string FabberRunData::GetDate()
 #endif
 }
 
-FabberRunData::FabberRunData(FabberIo *io)
- : m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(io)
+FabberRunData::FabberRunData(FabberIo *io) :
+		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(io)
 {
-	FabberSetup::SetupDefaults();
+	init();
 }
 
 FabberRunData::FabberRunData() :
 		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(0)
 {
+	init();
+}
+
+void FabberRunData::init()
+{
 	FabberSetup::SetupDefaults();
+
+	// For backwards compatibility with previous version of Fabber, save these data items by default
+	SetBool("save-mean");
+	SetBool("save-std");
+	SetBool("save-zstat");
+	SetBool("save-noise-mean");
+	SetBool("save-noise-std");
+	SetBool("save-free-energy");
+	SetBool("save-mvn");
 }
 
 FabberRunData::~FabberRunData()
@@ -605,13 +640,15 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 			if (!m_have_coords)
 			{
 				string mask_filename = GetStringDefault("mask", "");
-				if (mask_filename != "") m_io->LoadMask(mask_filename);
+				if (mask_filename != "")
+					m_io->LoadMask(mask_filename);
 			}
 			m_voxel_data[key] = m_io->LoadVoxelData(filename);
 
 			// Set the coords last as they may have come either
 			// from the mask or from the data
-			if (!m_have_coords) {
+			if (!m_have_coords)
+			{
 				Matrix coords = m_io->GetVoxelCoords();
 				SetVoxelCoords(coords);
 			}
