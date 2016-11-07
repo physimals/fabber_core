@@ -208,6 +208,14 @@ public:
 	void Set(const std::string key, double value);
 
 	/**
+	 * 'Unset' an option
+	 *
+	 * If the option is normally treated as a bool its
+	 * value will now be 'false'
+	 */
+	void Unset(const std::string key);
+
+	/**
 	 * Set boolean option.
 	 *
 	 * Will overwrite any string option of the same name

@@ -409,6 +409,11 @@ void FabberRunData::SetBool(const string key, bool value)
 		m_params.erase(key);
 }
 
+void FabberRunData::Unset(const std::string key)
+{
+  m_params.erase(key);
+}
+
 string FabberRunData::GetString(const string key)
 {
 	return GetString(key, "Missing mandatory option: --" + key + "\n");

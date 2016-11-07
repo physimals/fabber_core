@@ -230,4 +230,19 @@ TEST_F(RunDataTest, OptionsFileEmbeddedComment)
 	ASSERT_EQ("trivial", rundata.GetString("model"));
 }
 
+// Tests unsetting an option
+TEST_F(RunDataTest, Unset)
+{
+	FabberRunData rundata;
+	rundata.Set("wibble", "wobble");
+	rundata.SetBool("bobble");
+
+	ASSERT_EQ("wobble", rundata.GetStringDefault("wibble", "squabble"));
+	rundata.Unset("wibble");
+	ASSERT_EQ("squabble", rundata.GetStringDefault("wibble", "squabble"));
+	ASSERT_EQ(true, rundata.GetBool("bobble"));
+	rundata.Unset("bobble");
+	ASSERT_EQ(false, rundata.GetBool("bobble"));
+}
+
 }
