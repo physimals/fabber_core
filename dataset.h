@@ -132,6 +132,11 @@ public:
 	 */
 	static std::string GetDate();
 
+	/**
+	 * Get general Fabber option descriptions
+	 */
+	static void GetOptions(std::vector<OptionSpec> &opts);
+
 	FabberRunData(FabberIo *io);
 	FabberRunData();
 	~FabberRunData();
@@ -307,7 +312,7 @@ public:
 	 * @param data Data as a matrix in which each column is a voxel, and
 	 *        rows contain a series of data values for that voxel
 	 */
-	void SaveVoxelData(std::string filename, NEWMAT::Matrix &coords, VoxelDataType data_type=VDT_SCALAR);
+	void SaveVoxelData(std::string filename, NEWMAT::Matrix &coords, VoxelDataType data_type = VDT_SCALAR);
 
 	/**
 	 * Get the voxel co-ordinates
@@ -512,6 +517,7 @@ private:
 	std::vector<float> m_dims;
 	std::map<std::string, NEWMAT::Matrix> m_voxel_data;
 	std::map<std::string, NEWMAT::Matrix> m_misc_data;
+
 	ProgressCheck *m_progress;
 };
 

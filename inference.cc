@@ -218,7 +218,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		}
 	}
 
-	if (false)
+#if 0
 	{
 		LOG << "InferenceTechnique::Writing model variances..." << endl;
 		Matrix modelStd;
@@ -242,6 +242,8 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		data.SaveVoxelData("modelstd", modelStd);
 
 	}
+#endif
+
 	LOG << "InferenceTechnique::Done writing results." << endl;
 }
 

@@ -79,6 +79,44 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 	}
 }
 
+static OptionSpec OPTIONS[] =
+		{
+				{ "help", OPT_BOOL,
+						"Print this usage method. If given with --method or --model, display relevant method/model usage information",
+						OPT_NONREQ, "" },
+				{ "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
+				{ "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
+				{ "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
+				{ "overwrite", OPT_BOOL,
+						"If set will overwrite existing output. If not set, new output directories will be created by appending '+' to the directory name ",
+						OPT_NONREQ, "" },
+				{ "link-to-latest", OPT_BOOL,
+						"If set will try to create a link to the most recent output directory with the prefix _latest",
+						OPT_NONREQ, "" },
+				{ "method", OPT_STR, "Use this inference method", OPT_NONREQ, "" },
+				{ "model", OPT_STR, "Use this forward model", OPT_NONREQ, "" },
+				{ "loadmodels", OPT_FILE,
+						"Load models dynamically from the specified filename, which should be a DLL/shared library",
+						OPT_NONREQ, "" },
+				{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
+				{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
+				{ "data-order", OPT_STR,
+						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
+						OPT_NONREQ, "interleave" },
+				{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
+				{ "save-residuals", OPT_BOOL,
+						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
+				{ "" }, };
+
+void FabberRunData::GetOptions(std::vector<OptionSpec> &opts)
+{
+	for (int i = 0; OPTIONS[i].name != ""; i++)
+	{
+		opts.push_back(OPTIONS[i]);
+	}
+}
+
 string FabberRunData::GetVersion()
 {
 	stringstream v;
