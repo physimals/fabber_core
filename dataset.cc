@@ -191,7 +191,6 @@ void FabberRunData::init()
 
 FabberRunData::~FabberRunData()
 {
-	FabberSetup::Destroy();
 }
 
 void FabberRunData::LogParams()
@@ -582,7 +581,7 @@ void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
 
 void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
 {
-	// This will also set m_nvoxels if it's the first data set
+	// This will set m_numvoxels if not already set
 	CheckSize("coords", coords);
 	m_voxelCoords = coords;
 
