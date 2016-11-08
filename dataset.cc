@@ -410,7 +410,7 @@ void FabberRunData::SetBool(const string key, bool value)
 
 void FabberRunData::Unset(const std::string key)
 {
-  m_params.erase(key);
+	m_params.erase(key);
 }
 
 string FabberRunData::GetString(const string key)
@@ -619,10 +619,33 @@ void FabberRunData::SetVoxelData(std::string key, NEWMAT::Matrix &data)
 
 void FabberRunData::ClearVoxelData(std::string key)
 {
-	if (m_voxel_data.count(key) != 0)
+	if (key == "")
 	{
-		LOG << "FabberRunData::Erasing data " << key << endl;
-		m_voxel_data.erase(key);
+		m_voxelCoords = m_empty;
+		m_voxel_data.clear();
+		m_size.clear();
+		m_dims.clear();
+		m_have_coords = false;
+		m_nvoxels = -1;
+		if (m_io) m_io->Clear();
+	}
+	else
+	{
+		if (m_voxel_data.count(key) != 0)
+		{
+			LOG << "FabberRunData::Erasing data " << key << endl;
+			m_voxel_data.erase(key);
+		}
+	}
+}
+
+const NEWMAT::Matrix& FabberRunData::GetVoxelCoords() const
+{
+	if (m_have_coords) {
+		return m_voxelCoords;
+	}
+	else {
+		throw DataNotFound("voxel coordinates");
 	}
 }
 

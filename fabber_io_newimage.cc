@@ -157,3 +157,10 @@ void FabberIoNewimage::SetVoxelCoordsFromExtent(int nx, int ny, int nz)
 	}
 	m_have_coords = true;
 }
+
+void FabberIoNewimage::Clear()
+{
+	m_coords = Matrix();
+	m_mask = volume<float>();
+	m_have_mask = m_have_coords = false;
+}

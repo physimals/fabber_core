@@ -60,7 +60,7 @@ public:
 	virtual NEWMAT::Matrix LoadVoxelData(std::string filename) = 0;
 	virtual void SaveVoxelData(NEWMAT::Matrix &data, std::vector<int> extent, std::string filename, VoxelDataType data_type) = 0;
 	virtual NEWMAT::Matrix GetVoxelCoords() = 0;
-
+	virtual void Clear() = 0;
 };
 
 #endif /* __FABBER_IO_H */

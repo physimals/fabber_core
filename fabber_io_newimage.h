@@ -33,6 +33,7 @@ public:
 	NEWMAT::Matrix LoadVoxelData(std::string filename);
 	void SaveVoxelData(NEWMAT::Matrix &data, std::vector<int> extent, std::string filename, VoxelDataType data_type);
 	NEWMAT::Matrix GetVoxelCoords();
+	void Clear();
 
 private:
 	void SetVoxelCoordsFromExtent(int nx, int ny, int nz);

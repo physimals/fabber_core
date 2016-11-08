@@ -245,4 +245,57 @@ TEST_F(RunDataTest, Unset)
 	ASSERT_EQ(false, rundata.GetBool("bobble"));
 }
 
+// Tests clearing voxel data
+TEST_F(RunDataTest, ClearVoxelData)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data1, data2, data3;
+	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
+	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
+	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
+	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
+	int v=1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					data1(n + 1, v) = VAL;
+					data2(n + 1, v) = VAL*2;
+					data3(n + 1, v) = VAL*3;
+				}
+				v++;
+			}
+		}
+	}
+
+	FabberRunData rundata;
+	rundata.SetVoxelCoords(voxelCoords);
+	rundata.SetVoxelData("data1", data1);
+	rundata.SetVoxelData("data2", data2);
+	rundata.SetVoxelData("data3", data3);
+
+	rundata.ClearVoxelData("data1");
+	ASSERT_NO_THROW(rundata.GetVoxelCoords());
+	ASSERT_THROW(rundata.GetVoxelData("data1"), DataNotFound);
+	ASSERT_NO_THROW(rundata.GetVoxelData("data2"));
+	ASSERT_NO_THROW(rundata.GetVoxelData("data3"));
+
+	rundata.ClearVoxelData();
+	ASSERT_THROW(rundata.GetVoxelCoords(), DataNotFound);
+	ASSERT_THROW(rundata.GetVoxelData("data1"), DataNotFound);
+	ASSERT_THROW(rundata.GetVoxelData("data2"), DataNotFound);
+	ASSERT_THROW(rundata.GetVoxelData("data3"), DataNotFound);
+}
+
 }

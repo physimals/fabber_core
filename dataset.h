@@ -329,10 +329,7 @@ public:
 	 *         are the xyz co-ords of the voxel. The co-ordinates are
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
-	const NEWMAT::Matrix& GetVoxelCoords() const
-	{
-		return m_voxelCoords;
-	}
+	const NEWMAT::Matrix& GetVoxelCoords() const;
 
 	/**
 	 * Set the voxel co-ordinates
@@ -375,9 +372,10 @@ public:
 	 *
 	 * If no such data exists, does nothing
 	 *
-	 * @key Name identifying the voxel data to clear
+	 * @key Name identifying the voxel data to clear. If not specified, all voxel
+	 *           data is cleared, including co-ordinates
 	 */
-	void ClearVoxelData(std::string key);
+	void ClearVoxelData(std::string key="");
 
 	/**
 	 * Get the number of data values associated with each voxel for the named data
@@ -524,7 +522,6 @@ private:
 	std::vector<int> m_size;
 	std::vector<float> m_dims;
 	std::map<std::string, NEWMAT::Matrix> m_voxel_data;
-	std::map<std::string, NEWMAT::Matrix> m_misc_data;
 
 	ProgressCheck *m_progress;
 };
