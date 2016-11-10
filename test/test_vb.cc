@@ -466,7 +466,7 @@ TEST_F(VbTest, Restart)
 		//ASSERT_EQ(mvns.Nrows(), 7);
 		rundata.Set("max-iterations", "1");
 		rundata.Set("continue-from-mvn", "mvns");
-		rundata.SetVoxelData("continue-from-mvn", mvns);
+		rundata.SetVoxelData("mvns", mvns);
 		// This was just so you could see the convergence
 		//mean = rundata.GetVoxelData("mean_c0");
 		//cout << mean(1, 1) << " != " << VAL << endl;
@@ -583,7 +583,7 @@ TEST_F(VbTest, RestartFromFile)
 		Run();
 
 		// Do this to stop picking up last run's data
-		rundata.ClearVoxelData("continue-from-mvn");
+		rundata.ClearVoxelData(FILENAME);
 		remove((FILENAME + ".nii.gz").c_str());
 	}
 

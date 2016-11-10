@@ -346,6 +346,7 @@ public:
 	 * @param key Name identifying the voxel data required. If no voxel data
 	 *            matching key is found, will attempt to load data from
 	 *            a NIFTI file using the string parameter matching key.
+	 * @param allowFile Allow key to be interpreted directly as a filename
 	 * @return an NxM matrix where each column contains the data for a single
 	 *         voxel. The rows may contain the time series of data for that voxel
 	 *         however they might be used for other purposes, e.g. storing the mean
@@ -353,7 +354,7 @@ public:
 	 * @throw DataNotFound If no voxel data matching key is found and no data
 	 *                     could be loaded
 	 */
-	const NEWMAT::Matrix& GetVoxelData(std::string key);
+	const NEWMAT::Matrix& GetVoxelData(std::string key, bool allowFile=false);
 
 	/**
 	 * Set named voxel data

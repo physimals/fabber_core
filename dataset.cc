@@ -627,7 +627,8 @@ void FabberRunData::ClearVoxelData(std::string key)
 		m_dims.clear();
 		m_have_coords = false;
 		m_nvoxels = -1;
-		if (m_io) m_io->Clear();
+		if (m_io)
+			m_io->Clear();
 	}
 	else
 	{
@@ -641,15 +642,17 @@ void FabberRunData::ClearVoxelData(std::string key)
 
 const NEWMAT::Matrix& FabberRunData::GetVoxelCoords() const
 {
-	if (m_have_coords) {
+	if (m_have_coords)
+	{
 		return m_voxelCoords;
 	}
-	else {
+	else
+	{
 		throw DataNotFound("voxel coordinates");
 	}
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
+const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFile)
 {
 	// Attempt to load data if not already present. Will
 	// throw an exception if parameter not specified
@@ -659,30 +662,36 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 	// data is optional?
 	if (m_voxel_data.count(key) == 0)
 	{
-		string filename = GetStringDefault(key, "");
-		if (m_io && (filename != ""))
-		{
-			// If this is the first data to be loaded, load any
-			// mask first
-			if (!m_have_coords)
-			{
-				string mask_filename = GetStringDefault("mask", "");
-				if (mask_filename != "")
-					m_io->LoadMask(mask_filename);
-			}
-			m_voxel_data[key] = m_io->LoadVoxelData(filename);
-
-			// Set the coords last as they may have come either
-			// from the mask or from the data
-			if (!m_have_coords)
-			{
-				Matrix coords = m_io->GetVoxelCoords();
-				SetVoxelCoords(coords);
-			}
+		string subkey = GetStringDefault(key, "");
+		if (subkey != "") {
+			return GetVoxelData(subkey, true);
 		}
 		else
 		{
-			throw DataNotFound(key);
+			if (m_io && allowFile)
+			{
+				// If this is the first data to be loaded, load any
+				// mask first
+				if (!m_have_coords)
+				{
+					string mask_filename = GetStringDefault("mask", "");
+					if (mask_filename != "")
+						m_io->LoadMask(mask_filename);
+				}
+				m_voxel_data[key] = m_io->LoadVoxelData(key);
+
+				// Set the coords last as they may have come either
+				// from the mask or from the data
+				if (!m_have_coords)
+				{
+					Matrix coords = m_io->GetVoxelCoords();
+					SetVoxelCoords(coords);
+				}
+			}
+			else
+			{
+				throw DataNotFound(key);
+			}
 		}
 	}
 
