@@ -2508,13 +2508,15 @@ const ReturnMatrix CovarianceCache::GetC(double delta) const
 	Tracer_Plus tr("CovarianceCache::GetC");
 	const int Nvoxels = distances.Nrows();
 
-	if (delta == 0)
-		return IdentityMatrix(Nvoxels);
-
 	SymmetricMatrix C(Nvoxels);
-	for (int a = 1; a <= Nvoxels; a++)
-		for (int b = 1; b <= a; b++)
-			C(a, b) = exp(-0.5 * distances(a, b) / delta);
+	if (delta == 0) {
+		C = IdentityMatrix(Nvoxels);
+	}
+	else {
+		for (int a = 1; a <= Nvoxels; a++)
+			for (int b = 1; b <= a; b++)
+				C(a, b) = exp(-0.5 * distances(a, b) / delta);
+	}
 
 	// NOTE: when distances = squared distance, prior is equivalent to white
 	// noise smoothed with a Gaussian with sigma^2 = 2*delta (haven't actually
@@ -2575,13 +2577,19 @@ bool CovarianceCache::GetCachedInRange(double* guess, double lower, double upper
 const SymmetricMatrix& CovarianceCache::GetCinv(double delta) const
 {
 	Tracer_Plus tr("CovarianceCache::GetCinv");
+#ifdef NOCACHE
+		Warning::IssueOnce("Cache is disabled to avoid memory problems!");
+		cinv = GetC(delta);
+		if (cinv.Nrows() > 0) {
+			// Appears to be memory problem with inverting a 0x0 matrix
+			cinv = cinv.i();
+		}
+
+		return cinv;
+#else
 	if (Cinv_cache[delta].Nrows() == 0)
 	{
 
-#ifdef NOCACHE
-		Warning::IssueOnce("Cache is disabled to avoid memory problems!");
-		Cinv_cache.clear();
-#endif
 
 		//      LOG << "[" << flush;
 		//      LOG << "GetCinv cache miss... " << flush;
@@ -2601,6 +2609,7 @@ const SymmetricMatrix& CovarianceCache::GetCinv(double delta) const
 	}
 
 	return Cinv_cache[delta];
+#endif
 }
 
 const SymmetricMatrix& CovarianceCache::GetCiCodistCi(double delta, double* CiCodistTrace) const

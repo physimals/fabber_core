@@ -32,6 +32,7 @@ private:
 	NEWMAT::SymmetricMatrix distances;
 	typedef map<double, NEWMAT::SymmetricMatrix> Cinv_cache_type;
 	mutable Cinv_cache_type Cinv_cache;
+	mutable NEWMAT::SymmetricMatrix cinv;
 
 	typedef map<double, pair<NEWMAT::SymmetricMatrix, double> > CiCodistCi_cache_type;
 	//  mutable CiCodist_cache_type CiCodist_cache; // only really use the Trace
