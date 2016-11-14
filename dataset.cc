@@ -216,6 +216,9 @@ void FabberRunData::Run()
 
 	LogParams();
 
+	// Initialize data loader, if we have one
+	if (m_io) m_io->Initialize(*this);
+
 	//Set the forward model
 	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
 	fwd_model->Initialize(*this);
@@ -670,22 +673,14 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFil
 		{
 			if (m_io && allowFile)
 			{
-				// If this is the first data to be loaded, load any
-				// mask first
-				if (!m_have_coords)
-				{
-					string mask_filename = GetStringDefault("mask", "");
-					if (mask_filename != "")
-						m_io->LoadMask(mask_filename);
-				}
 				m_voxel_data[key] = m_io->LoadVoxelData(key);
 
-				// Set the coords last as they may have come either
-				// from the mask or from the data
+				// If this is the first data to be loaded, get the voxel
+				// coords as well
 				if (!m_have_coords)
 				{
-					Matrix coords = m_io->GetVoxelCoords();
-					SetVoxelCoords(coords);
+					Matrix m = m_io->GetVoxelCoords();
+					SetVoxelCoords(m);
 				}
 			}
 			else

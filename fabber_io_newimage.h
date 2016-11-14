@@ -29,7 +29,7 @@ class FabberIoNewimage : public FabberIo
 {
 public:
 	FabberIoNewimage();
-	void LoadMask(std::string filename);
+	void Initialize(FabberRunData &rundata);
 	NEWMAT::Matrix LoadVoxelData(std::string filename);
 	void SaveVoxelData(NEWMAT::Matrix &data, std::vector<int> extent, std::string filename, VoxelDataType data_type);
 	NEWMAT::Matrix GetVoxelCoords();

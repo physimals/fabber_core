@@ -23,6 +23,9 @@ enum VoxelDataType
   VDT_SCALAR, VDT_MVN
 };
 
+// ugly forward declaration
+class FabberRunData;
+
 /**
  * Thrown when data cannot be loaded from the specified location
  */
@@ -56,7 +59,7 @@ public:
 	virtual ~FabberIo()
 	{
 	}
-	virtual void LoadMask(std::string filename) = 0;
+	virtual void Initialize(FabberRunData &rundata) = 0;
 	virtual NEWMAT::Matrix LoadVoxelData(std::string filename) = 0;
 	virtual void SaveVoxelData(NEWMAT::Matrix &data, std::vector<int> extent, std::string filename, VoxelDataType data_type) = 0;
 	virtual NEWMAT::Matrix GetVoxelCoords() = 0;
