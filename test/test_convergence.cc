@@ -35,7 +35,7 @@ TEST_F(ConvergenceTest, TestCounting)
 	int MAXITERS = 37;
 	double F = 12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	ConvergenceDetector *c = ConvergenceDetector::NewFromName("maxits");
 	c->Initialize(rundata);
@@ -61,7 +61,7 @@ TEST_F(ConvergenceTest, TestFchangeConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("pointzeroone");
@@ -88,7 +88,7 @@ TEST_F(ConvergenceTest, TestFchangeConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("pointzeroone");
@@ -120,7 +120,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -147,7 +147,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -178,7 +178,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorReduce)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -205,7 +205,7 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);
@@ -234,7 +234,7 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);
@@ -268,7 +268,7 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorReduce)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);

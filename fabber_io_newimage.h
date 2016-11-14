@@ -25,22 +25,18 @@
 /**
  * IO module which uses NEWIMAGE to load NIFTII files
  */
-class FabberIoNewimage : public FabberIo
+class FabberIoNewimage : public FabberIoMemory
 {
 public:
 	FabberIoNewimage();
 	void Initialize(FabberRunData &rundata);
-	NEWMAT::Matrix LoadVoxelData(std::string filename);
-	void SaveVoxelData(NEWMAT::Matrix &data, std::vector<int> extent, std::string filename, VoxelDataType data_type);
-	NEWMAT::Matrix GetVoxelCoords();
-	void Clear();
+	const NEWMAT::Matrix &GetVoxelData(std::string key);
+	void SaveVoxelData(NEWMAT::Matrix &data, std::string filename, VoxelDataType data_type);
 
 private:
 	void SetVoxelCoordsFromExtent(int nx, int ny, int nz);
 	NEWIMAGE::volume<float> m_mask;
-	NEWMAT::Matrix m_coords;
 	bool m_have_mask;
-	bool m_have_coords;
 };
 
 #endif /* NO_NEWIMAGE */

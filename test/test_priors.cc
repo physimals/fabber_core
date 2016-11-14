@@ -30,7 +30,7 @@ TEST_F(PriorsTest, DefaultPriors)
 	string PARAM_NAME = "abc";
 	int PARAM_IDX = 7;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 
 	PriorType prior(PARAM_IDX, PARAM_NAME, rundata);
 	ASSERT_EQ(PARAM_NAME, prior.m_param_name);
@@ -43,7 +43,7 @@ TEST_F(PriorsTest, DefaultPriors)
 
 TEST_F(PriorsTest, MultiplePriorsSpatialMethod)
 {
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("param-spatial-priors", "ABC");
 
 	PriorType prior(0, "a", rundata);
@@ -73,7 +73,7 @@ TEST_F(PriorsTest, MultiplePriorsSpatialMethod)
 
 TEST_F(PriorsTest, SinglePlus)
 {
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("param-spatial-priors", "+");
 
 	PriorType prior(0, "a", rundata);
@@ -86,7 +86,7 @@ TEST_F(PriorsTest, SinglePlus)
 
 TEST_F(PriorsTest, MultiplePriorsSpatialMethodPlus)
 {
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("param-spatial-priors", "AB+");
 
 	PriorType prior(0, "a", rundata);
@@ -145,9 +145,10 @@ TEST_F(PriorsTest, ImagePriorSpatialMethod)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("param-spatial-priors", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);
@@ -183,10 +184,11 @@ TEST_F(PriorsTest, ImagePriorSpatialMethodMultiple)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
+	io.SetVoxelData("PSP_byname2_image", iprior_data2);
 	rundata.Set("param-spatial-priors", "II");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
-	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);
@@ -229,10 +231,11 @@ TEST_F(PriorsTest, ImagePriorByName)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("PSP_byname1", "a");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);
@@ -268,10 +271,11 @@ TEST_F(PriorsTest, ImagePriorByNameCorrectParam)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("PSP_byname1", "b");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);
@@ -314,13 +318,14 @@ TEST_F(PriorsTest, ImagePriorByNameMultiple)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
+	io.SetVoxelData("PSP_byname2_image", iprior_data2);
 	rundata.Set("PSP_byname1", "z");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("PSP_byname2", "a");
 	rundata.Set("PSP_byname2_type", "I");
-	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);
@@ -371,15 +376,16 @@ TEST_F(PriorsTest, ImagePriorPrec)
 		}
 	}
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
+	io.SetVoxelData("PSP_byname2_image", iprior_data2);
 	rundata.Set("PSP_byname1", "z");
 	rundata.Set("PSP_byname1_type", "I");
 	rundata.Set("PSP_byname1_prec", "42");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("PSP_byname2", "a");
 	rundata.Set("PSP_byname2_type", "I");
 	rundata.Set("PSP_byname2_prec", "24");
-	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
 
 	PriorType prior(0, "a", rundata);
 	ASSERT_EQ("a", prior.m_param_name);

@@ -164,13 +164,7 @@ string FabberRunData::GetDate()
 }
 
 FabberRunData::FabberRunData(FabberIo *io) :
-		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(io)
-{
-	init();
-}
-
-FabberRunData::FabberRunData() :
-		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0), m_io(0)
+		m_progress(0), m_io(io)
 {
 	init();
 }
@@ -231,27 +225,15 @@ void FabberRunData::Run()
 
 	// Arguments should all have been used by now, so complain if there's anything left.
 	// FIXME ineffective at present
-	CheckEmpty();
+	//CheckEmpty();
 
 	// Calculations
-	Progress(0, m_nvoxels);
+	int nvoxels = m_io->GetVoxelCoords().Ncols();
+	Progress(0, nvoxels);
 	infer->DoCalculations(*this);
-	Progress(m_nvoxels, m_nvoxels);
+	Progress(nvoxels, nvoxels);
 	infer->SaveResults(*this);
 
-	// FIXME this is a hack but seems to be expected that the command line
-	// tool will output parameter names to a file. Really should be an option!
-	if (m_save_files)
-	{
-		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
-		vector<string> paramNames;
-		fwd_model->NameParams(paramNames);
-		for (unsigned i = 0; i < paramNames.size(); i++)
-		{
-			paramFile << paramNames[i] << endl;
-		}
-		paramFile.close();
-	}
 
 	LOG << "FabberRunData::All done." << endl;
 
@@ -345,7 +327,6 @@ void FabberRunData::ParseOldStyleParamFile(const string filename)
 void FabberRunData::Parse(int argc, char** argv)
 {
 	Tracer_Plus tr("FabberRunData::Parse");
-	m_save_files = true; // FIXME hack for CL tool
 
 	m_params[""] = argv[0];
 	for (int a = 1; a < argc; a++)
@@ -500,17 +481,6 @@ string FabberRunData::GetStringDefault(const string key, const string def)
 	return ret;
 }
 
-void FabberRunData::CheckEmpty()
-{
-	m_params.erase(""); // not worth complaining about this
-
-	if (m_params.empty())
-		return;
-
-	//    string msg = "\nUnused arguments:\n" + stringify(*this);
-	//    throw Invalid_option(msg);
-}
-
 ostream& operator<<(ostream& out, const FabberRunData& opts)
 {
 	for (map<string, string>::const_iterator i = opts.m_params.begin(); i != opts.m_params.end(); i++)
@@ -532,14 +502,8 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 		return GetVoxelData("data");
 	} catch (DataNotFound &e)
 	{
-		GetMainVoxelDataMultiple();
-		return GetVoxelData("data");
+		return GetMainVoxelDataMultiple();
 	}
-}
-
-void FabberRunData::SetMainVoxelData(NEWMAT::Matrix &data)
-{
-	FabberRunData::SetVoxelData("data", data);
 }
 
 const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
@@ -554,105 +518,15 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
 	}
 }
 
-void FabberRunData::SetVoxelSuppData(NEWMAT::Matrix &data)
-{
-	FabberRunData::SetVoxelData("suppdata", data);
-}
-
-/**
- * Check matrix is per-voxel, i.e. the number of columns
- * equals the number of voxels
- */
-void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
-{
-	// If this is the first data set provided, it gets to
-	// decide the number of voxels
-	if (m_nvoxels == -1)
-	{
-		m_nvoxels = mat.Ncols();
-	}
-	else
-	{
-		if (mat.Ncols() != m_nvoxels)
-		{
-			throw Invalid_option(
-					"Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols()) + " should be "
-							+ stringify(m_nvoxels) + ")");
-		}
-	}
-}
-
-void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
-{
-	// This will set m_numvoxels if not already set
-	CheckSize("coords", coords);
-	m_voxelCoords = coords;
-
-	// FIXME we assume 3D coordinates
-	if (coords.Nrows() != 3)
-	{
-		throw Invalid_option("Co-ordinates must be 3 dimensional");
-	}
-
-	// FIXME we assume coords will not be negative
-	m_size.resize(3);
-	m_size[0] = coords.Row(1).Maximum() - coords.Row(1).Minimum() + 1;
-	m_size[1] = coords.Row(2).Maximum() - coords.Row(2).Minimum() + 1;
-	m_size[2] = coords.Row(3).Maximum() - coords.Row(3).Minimum() + 1;
-
-	m_dims.resize(3);
-	m_dims[0] = 1.0;
-	m_dims[1] = 1.0;
-	m_dims[2] = 1.0;
-
-	m_have_coords = true;
-}
-
 int FabberRunData::GetVoxelDataSize(std::string key)
 {
 	NEWMAT::Matrix mat = GetVoxelData(key);
 	return mat.Nrows();
 }
 
-void FabberRunData::SetVoxelData(std::string key, NEWMAT::Matrix &data)
-{
-	CheckSize(key, data);
-	m_voxel_data[key] = data;
-}
-
-void FabberRunData::ClearVoxelData(std::string key)
-{
-	if (key == "")
-	{
-		m_voxelCoords = m_empty;
-		m_voxel_data.clear();
-		m_size.clear();
-		m_dims.clear();
-		m_have_coords = false;
-		m_nvoxels = -1;
-		if (m_io)
-			m_io->Clear();
-	}
-	else
-	{
-		if (m_voxel_data.count(key) != 0)
-		{
-			LOG << "FabberRunData::Erasing data " << key << endl;
-			m_voxel_data.erase(key);
-		}
-	}
-}
-
 const NEWMAT::Matrix& FabberRunData::GetVoxelCoords() const
 {
-	if (m_have_coords)
-	{
-		return m_voxelCoords;
-	}
-	else
-	{
-		throw DataNotFound("voxel coordinates");
-	}
+	return m_io->GetVoxelCoords();
 }
 
 const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFile)
@@ -663,37 +537,15 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFil
 	//
 	// FIXME different exceptions? What about use case where
 	// data is optional?
-	if (m_voxel_data.count(key) == 0)
-	{
-		string subkey = GetStringDefault(key, "");
-		if (subkey != "") {
-			return GetVoxelData(subkey, true);
-		}
-		else
-		{
-			if (m_io && allowFile)
-			{
-				m_voxel_data[key] = m_io->LoadVoxelData(key);
-
-				// If this is the first data to be loaded, get the voxel
-				// coords as well
-				if (!m_have_coords)
-				{
-					Matrix m = m_io->GetVoxelCoords();
-					SetVoxelCoords(m);
-				}
-			}
-			else
-			{
-				throw DataNotFound(key);
-			}
-		}
+	string data_key = "";
+	while (key != "") {
+		data_key = key;
+		key = GetStringDefault(key, "");
 	}
-
-	return m_voxel_data.find(key)->second;
+	return m_io->GetVoxelData(data_key);
 }
 
-void FabberRunData::GetMainVoxelDataMultiple()
+const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 {
 	Tracer_Plus tr("GetMainVoxelDataMultiple");
 
@@ -724,7 +576,6 @@ void FabberRunData::GetMainVoxelDataMultiple()
 		throw Invalid_option("data-order=singlefile but more than one file specified");
 	}
 
-	Matrix voxelDataMain;
 	if (order == "interleave")
 	{
 		LOG << "FabberRunData::Combining data into one big matrix by interleaving..." << endl;
@@ -732,7 +583,7 @@ void FabberRunData::GetMainVoxelDataMultiple()
 		// has 3 time points 1, 2, 3 the final time series will be
 		// A1B1C1A2B2C2A3B3C3
 		int nTimes = dataSets[0].Nrows();
-		voxelDataMain.ReSize(nTimes * nSets, dataSets[0].Ncols());
+		m_mainDataMultiple.ReSize(nTimes * nSets, dataSets[0].Ncols());
 		for (int i = 0; i < nTimes; i++)
 		{
 			for (int j = 0; j < nSets; j++)
@@ -742,7 +593,7 @@ void FabberRunData::GetMainVoxelDataMultiple()
 					// Data sets need same number of time points if they are to be interleaved
 					throw Invalid_option("Data sets must all have the same number of time points");
 				}
-				voxelDataMain.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
+				m_mainDataMultiple.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
 			}
 		}
 	}
@@ -752,37 +603,28 @@ void FabberRunData::GetMainVoxelDataMultiple()
 		// Concatentate - For example if the data sets are A, B, C and each
 		// has 3 time points 1, 2, 3 the final time series will be
 		// A1A2A3B1B2B3C1C2C3
-		voxelDataMain = dataSets.at(0);
+		m_mainDataMultiple = dataSets.at(0);
 		for (unsigned j = 1; j < dataSets.size(); j++)
 		{
-			voxelDataMain &= dataSets.at(j);
+			m_mainDataMultiple &= dataSets.at(j);
 		}
 	}
 	else if (order == "singlefile")
 	{
-		voxelDataMain = dataSets[0];
+		m_mainDataMultiple = dataSets[0];
 	}
 	else
 	{
 		throw Invalid_option("data-order not recognized: " + order);
 	}
 
-	m_voxel_data["data"] = voxelDataMain;
-	LOG << "FabberRunData::Done loading data, size = " << voxelDataMain.Nrows() << " timepoints by "
-			<< voxelDataMain.Ncols() << " voxels" << endl;
+	LOG << "FabberRunData::Done loading data, size = " << m_mainDataMultiple.Nrows() << " timepoints by "
+			<< m_mainDataMultiple.Ncols() << " voxels" << endl;
+	return m_mainDataMultiple;
 }
 
 void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
-	if (m_io && m_save_files)
-	{
-		m_io->SaveVoxelData(data, m_size, filename, data_type);
-	}
-	else
-	{
-		LOG << "FabberRunData::Saving to memory: " << filename << endl;
-		// FIXME what should we do with data_type?
-		SetVoxelData(filename, data);
-	}
+	m_io->SaveVoxelData(data, filename, data_type);
 }
 

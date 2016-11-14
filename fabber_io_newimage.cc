@@ -36,14 +36,15 @@ static void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
 }
 
 FabberIoNewimage::FabberIoNewimage() :
-		m_have_mask(false), m_have_coords(false)
+		m_have_mask(false)
 {
 }
 
 void FabberIoNewimage::Initialize(FabberRunData &rundata)
 {
 	string mask_filename = rundata.GetStringDefault("mask", "");
-	if (mask_filename != "") {
+	if (mask_filename != "")
+	{
 		LOG_ERR("FabberIoNewimage::Loading mask data from '" + mask_filename << "'" << endl);
 		read_volume(m_mask, mask_filename);
 		m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
@@ -53,117 +54,124 @@ void FabberIoNewimage::Initialize(FabberRunData &rundata)
 	}
 }
 
-Matrix FabberIoNewimage::LoadVoxelData(std::string filename)
+const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 {
- // Load the data file using Newimage library
-LOG << "FabberIoNewimage::Loading data from '" + filename << "'" << endl;
-volume4D<float> vol;
-Matrix ret;
-try
-{
-read_volume4D(vol, filename);
-} catch (Exception &e)
-{
-throw DataLoadError(filename);
-}
-DumpVolumeInfo(vol);
+	try
+	{
+		return FabberIoMemory::GetVoxelData(filename);
+	} catch (DataNotFound &e)
+	{
+		// Load the data file using Newimage library
+		// FIXME should check for presence of file before trying to load.
+		LOG << "FabberIoNewimage::Loading data from '" + filename << "'" << endl;
+		if (!fsl_imageexists(filename))
+		{
+			throw DataNotFound(filename);
+		}
 
-if (!m_have_coords)
-SetVoxelCoordsFromExtent(vol.xsize(), vol.ysize(), vol.zsize());
+		volume4D<float> vol;
+		try
+		{
+			read_volume4D(vol, filename);
+		} catch (...)
+		{
+			throw DataNotFound(filename);
+		}
+		DumpVolumeInfo(vol);
 
-try
-{
-if (m_have_mask)
-{
-	LOG << "     Applying mask to data..." << endl;
-	ret = vol.matrix(m_mask);
-}
-else
-{
-	ret = vol.matrix();
-}
-} catch (exception &e)
-{
-LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
-throw e;
-}
-return ret;
-}
+		if (!m_have_coords)
+			SetVoxelCoordsFromExtent(vol.xsize(), vol.ysize(), vol.zsize());
 
-void FabberIoNewimage::SaveVoxelData(NEWMAT::Matrix &data, vector<int> extent, string filename, VoxelDataType data_type)
-{
-LOG << "FabberIoNewimage::Saving to nifti: " << filename << endl;
-int nifti_intent_code;
-switch (data_type)
-{
-case VDT_MVN:
-nifti_intent_code = NIFTI_INTENT_SYMMATRIX;
-break;
-default:
-nifti_intent_code = NIFTI_INTENT_NONE;
-}
+		try
+		{
+			if (m_have_mask)
+			{
+				LOG << "     Applying mask to data..." << endl;
+				m_voxel_data[filename] = vol.matrix(m_mask);
+			}
+			else
+			{
+				m_voxel_data[filename] = vol.matrix();
+			}
+		} catch (exception &e)
+		{
+			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
+			throw e;
+		}
 
-int data_size = data.Nrows();
-volume4D<float> output(extent[0], extent[1], extent[2], data_size);
-if (m_have_mask)
-{
-output.setmatrix(data, m_mask);
-}
-else
-{
-output.setmatrix(data);
+		return m_voxel_data[filename];
+	}
 }
 
-output.set_intent(nifti_intent_code, 0, 0, 0);
-output.setDisplayMaximumMinimum(output.max(), output.min());
-
- // FIXME need to use logger to get outdir as this does the ++ appending, however
- // this assumes use of CL tool and log to file
-string outDir = EasyLog::GetOutputDirectory();
-if (outDir != "")
-filename = outDir + "/" + filename;
-save_volume4D(output, filename);
-}
-
-Matrix FabberIoNewimage::GetVoxelCoords()
+void FabberIoNewimage::SaveVoxelData(NEWMAT::Matrix &data, string filename, VoxelDataType data_type)
 {
-return m_coords;
+	LOG << "FabberIoNewimage::Saving to nifti: " << filename << endl;
+	int nifti_intent_code;
+	switch (data_type)
+	{
+	case VDT_MVN:
+		nifti_intent_code = NIFTI_INTENT_SYMMATRIX;
+		break;
+	default:
+		nifti_intent_code = NIFTI_INTENT_NONE;
+	}
+
+	int data_size = data.Nrows();
+	volume4D<float> output(m_extent[0], m_extent[1], m_extent[2], data_size);
+	if (m_have_mask)
+	{
+		output.setmatrix(data, m_mask);
+	}
+	else
+	{
+		output.setmatrix(data);
+	}
+
+	output.set_intent(nifti_intent_code, 0, 0, 0);
+	output.setDisplayMaximumMinimum(output.max(), output.min());
+
+	// FIXME need to use logger to get outdir as this does the ++ appending, however
+	// this assumes use of CL tool and log to file
+	string outDir = EasyLog::GetOutputDirectory();
+	if (outDir != "")
+		filename = outDir + "/" + filename;
+	save_volume4D(output, filename);
 }
 
 void FabberIoNewimage::SetVoxelCoordsFromExtent(int nx, int ny, int nz)
 {
-LOG << "FabberIoNewimage::Setting voxel coordinates from extent" << endl;
-//int nx = vol.xsize();
-//int ny = vol.ysize();
-//int nz = vol.zsize();
-volume4D<float> coordvol(nx, ny, nz, 3);
-for (int i = 0; i < nx; i++)
-{
-for (int j = 0; j < ny; j++)
-{
-	for (int k = 0; k < nz; k++)
+	LOG << "FabberIoNewimage::Setting voxel coordinates from extent" << endl;
+
+	volume4D<float> coordvol(nx, ny, nz, 3);
+	for (int i = 0; i < nx; i++)
 	{
-		ColumnVector vcoord(3);
-		vcoord << i << j << k;
-		coordvol.setvoxelts(vcoord, i, j, k);
+		for (int j = 0; j < ny; j++)
+		{
+			for (int k = 0; k < nz; k++)
+			{
+				ColumnVector vcoord(3);
+				vcoord << i << j << k;
+				coordvol.setvoxelts(vcoord, i, j, k);
+			}
+		}
 	}
-}
-}
 
-if (m_have_mask)
-{
-m_coords = coordvol.matrix(m_mask);
-}
-else
-{
-m_coords = coordvol.matrix();
-}
-m_have_coords = true;
-}
+	if (m_have_mask)
+	{
+		SetVoxelCoords(coordvol.matrix(m_mask));
+	}
+	else
+	{
+		SetVoxelCoords(coordvol.matrix());
+	}
 
-void FabberIoNewimage::Clear()
-{
-m_coords = Matrix();
-m_mask = volume<float>();
-m_have_mask = m_have_coords = false;
+	// Override the setting of extent from co-ordinates since
+	// the presence of a mask may mean that the co-ords do not extent over
+	// the full range from the NIFTI file. But we do want this full range
+	// reflected in our output data!
+	m_extent[0] = nx;
+	m_extent[1] = ny;
+	m_extent[2] = nz;
+
+	m_have_coords = true;
 }

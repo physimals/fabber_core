@@ -39,7 +39,8 @@ protected:
 		svb = reinterpret_cast<PublicVersion*> (static_cast<SpatialVariationalBayes*> (InferenceTechnique::NewFromName(
 				"spatialvb")));
 		model = FwdModel::NewFromName("trivial");
-		rundata = new FabberRunData();
+		io.ClearVoxelData();
+		rundata = new FabberRunData(&io);
 	}
 
 	virtual void TearDown()
@@ -51,11 +52,12 @@ protected:
 
 	void Initialize()
 	{
-		rundata->SetVoxelCoords(voxelCoords);
+		io.SetVoxelCoords(voxelCoords);
 		rundata->Set("noise", "white");
 		svb->Initialize(model, *rundata);
 	}
 
+	FabberIoMemory io;
 	NEWMAT::Matrix voxelCoords;
 	FabberRunData *rundata;
 	FwdModel *model;

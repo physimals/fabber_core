@@ -62,7 +62,7 @@ protected:
 
 	void Initialize()
 	{
-		rundata.SetVoxelCoords(voxelCoords);
+		io.SetVoxelCoords(voxelCoords);
 		rundata.Set("noise", "white");
 		vb->Initialize(model, rundata);
 	}
@@ -112,8 +112,8 @@ TEST_P(VbTest, ImagePriorsMultiple)
 			}
 		}
 	}
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("degree", "2");
@@ -121,10 +121,10 @@ TEST_P(VbTest, ImagePriorsMultiple)
 
 	rundata.Set("PSP_byname1", "c0");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
+	io.SetVoxelData("PSP_byname1_image", iprior_data1);
 	rundata.Set("PSP_byname2", "c2");
 	rundata.Set("PSP_byname2_type", "I");
-	rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
+	io.SetVoxelData("PSP_byname2_image", iprior_data2);
 	ASSERT_NO_THROW(Run());
 
 	ASSERT_EQ(3, vb->m_prior_types.size());
@@ -175,15 +175,15 @@ TEST_P(VbTest, ImagePriors)
 			}
 		}
 	}
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
 
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
+	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	Run();
 
 	ASSERT_EQ(1, vb->m_prior_types.size());
@@ -235,15 +235,15 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
 			}
 		}
 	}
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
 
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
+	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	rundata.Set("PSP_byname1_prec", "1234567");
 	Run();
 
@@ -300,15 +300,15 @@ TEST_P(VbTest, ImagePriorsPrecLow)
 			}
 		}
 	}
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
 
 	rundata.Set("PSP_byname1", "p");
 	rundata.Set("PSP_byname1_type", "I");
-	rundata.SetVoxelData("PSP_byname1_image", iprior_data);
+	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	rundata.Set("PSP_byname1_prec", "1e-5");
 	Run();
 
@@ -374,8 +374,8 @@ TEST_P(VbTest, ImagePriorsFile)
 	save_volume4D(data_out, FILENAME);
 	iprior_data.ReSize(1, 1);
 
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
@@ -438,8 +438,8 @@ TEST_F(VbTest, Restart)
 	}
 
 	// Do just 1 iteration
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("degree", stringify(DEGREE));
@@ -466,7 +466,10 @@ TEST_F(VbTest, Restart)
 		//ASSERT_EQ(mvns.Nrows(), 7);
 		rundata.Set("max-iterations", "1");
 		rundata.Set("continue-from-mvn", "mvns");
-		rundata.SetVoxelData("mvns", mvns);
+		io.ClearVoxelData();
+		io.SetVoxelCoords(voxelCoords);
+		io.SetVoxelData("data",data);
+		io.SetVoxelData("mvns", mvns);
 		// This was just so you could see the convergence
 		//mean = rundata.GetVoxelData("mean_c0");
 		//cout << mean(1, 1) << " != " << VAL << endl;
@@ -479,6 +482,7 @@ TEST_F(VbTest, Restart)
 	}
 
 	mean = rundata.GetVoxelData("mean_c0");
+
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -538,8 +542,8 @@ TEST_F(VbTest, RestartFromFile)
 	}
 
 	// Do just 1 iteration
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("degree", stringify(DEGREE));
@@ -570,6 +574,9 @@ TEST_F(VbTest, RestartFromFile)
 		mvns.ReSize(1, 1);
 
 		//ASSERT_EQ(mvns.Nrows(), 7);
+		io.ClearVoxelData();
+		io.SetVoxelCoords(voxelCoords);
+		io.SetVoxelData("data",data);
 		rundata.Set("max-iterations", "1");
 		rundata.Set("continue-from-mvn", FILENAME);
 		// This was just so you could see the convergence
@@ -582,8 +589,7 @@ TEST_F(VbTest, RestartFromFile)
 		SetUp();
 		Run();
 
-		// Do this to stop picking up last run's data
-		rundata.ClearVoxelData(FILENAME);
+		// Don't pick up last iteration run
 		remove((FILENAME + ".nii.gz").c_str());
 	}
 
@@ -649,9 +655,9 @@ TEST_P(VbTest, ArNoise)
 
 	// Do just 1 iteration
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "ar");
 	rundata.Set("model", "poly");
 	rundata.Set("max-iterations", "50");
@@ -730,9 +736,9 @@ TEST_P(VbTest, WhiteNoise)
 
 	// Do just 1 iteration
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("max-iterations", "50");
@@ -810,8 +816,8 @@ TEST_F(VbTest, MotionCorNull)
 	}
 
 	// Do just 1 iteration
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
 	rundata.Set("noise", "white");
 	rundata.Set("mcsteps", "5");
 	rundata.Set("model", "poly");

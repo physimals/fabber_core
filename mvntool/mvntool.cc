@@ -6,6 +6,7 @@
 /*  CCOPYRIGHT  */
 
 #include "dist_mvn.h"
+#include "fabber_io_newimage.h"
 
 #include <iostream>
 #include <exception>
@@ -27,7 +28,8 @@ int main(int argc, char** argv)
 	{
 		cout << "FABBER: MVNtool" << endl;
 
-		FabberRunData args;
+		FabberIoNewimage io;
+		FabberRunData args(&io);
 		args.Parse(argc, argv);
 
 		if (args.ReadBool("help"))
@@ -37,6 +39,7 @@ int main(int argc, char** argv)
 		}
 
 		EasyLog::StartLog(cout);
+		io.Initialize(args);
 
 		/* parse command line arguments*/
 		bool verbose = args.ReadBool("v");

@@ -138,7 +138,6 @@ public:
 	static void GetOptions(std::vector<OptionSpec> &opts);
 
 	FabberRunData(FabberIo *io);
-	FabberRunData();
 	~FabberRunData();
 
 	/**
@@ -173,19 +172,6 @@ public:
 	 * bool-option
 	 */
 	void ParseParamFile(const std::string file);
-
-	/**
-	 * Set whether to save files or not
-	 *
-	 * @param save if true, voxel data which is saved by
-	 * inference methods will be written to corresponding
-	 * files. Otherwise it will be kept in the run data
-	 * where it can be accessed using GetVoxelData()
-	 */
-	void SetSaveFiles(bool save)
-	{
-		m_save_files = save;
-	}
 
 	/**
 	 * Set string option.
@@ -295,17 +281,6 @@ public:
 	double GetDoubleDefault(const std::string key, double def);
 
 	/**
-	 * Check that all key/value parameters have been consumed
-	 *
-	 * Used by the command line tool to detect if options
-	 * have been specified which have never been used by
-	 * the program. This usually suggests a user error
-	 */
-	void CheckEmpty();
-
-	//void LoadVest(std::string filename, std::string key);
-
-	/**
 	 * Save the specified voxel data
 	 *
 	 * If SetSaveFiles has been set to true, the specified data will be written
@@ -332,21 +307,24 @@ public:
 	const NEWMAT::Matrix& GetVoxelCoords() const;
 
 	/**
-	 * Set the voxel co-ordinates
-	 *
-	 * @param coords an Nx3 matrix where each column is a voxel and the rows
-	 *         are the xyz co-ords of the voxel. The co-ordinates are
-	 *         grid positions (integers), not physical co-ordiantes (mm)
-	 */
-	void SetVoxelCoords(NEWMAT::Matrix &coords);
-
-	/**
 	 * Get named voxel data
 	 *
-	 * @param key Name identifying the voxel data required. If no voxel data
-	 *            matching key is found, will attempt to load data from
-	 *            a NIFTI file using the string parameter matching key.
-	 * @param allowFile Allow key to be interpreted directly as a filename
+	 * GetVoxelData will check recursively for a string option with this key
+	 * until it can resolve the key no further. The last non-empty key will
+	 * then be used to request data from the FabberIo instance.
+	 *
+	 * For example, if GetVoxelData("data") is called, we first check for a
+	 * string option with key "data". If this option is set to "fmri_data",
+	 * then we check for a string option with key "fmri_data", and so on.
+	 * If no option with key "fmri_data" is found, we ask our FabberIo instance
+	 * to get the data with key "fmri_data", which it might, for example,
+	 * load from a file fmri_data.nii.gz.
+	 *
+	 * This sounds complicated, but actually simplifies situations such as
+	 * restarting runs from a file, where the restart might come from memory
+	 * saved data, or an external file.
+	 *
+	 * @param key Name identifying the voxel data required.
 	 * @return an NxM matrix where each column contains the data for a single
 	 *         voxel. The rows may contain the time series of data for that voxel
 	 *         however they might be used for other purposes, e.g. storing the mean
@@ -355,28 +333,6 @@ public:
 	 *                     could be loaded
 	 */
 	const NEWMAT::Matrix& GetVoxelData(std::string key, bool allowFile=false);
-
-	/**
-	 * Set named voxel data
-	 *
-	 * @param key Name identifying the voxel data required
-	 * @param data an NxM matrix where each column contains the data for a single
-	 *        voxel. The rows may contain the time series of data for that voxel
-	 *        however they might be used for other purposes, e.g. storing the mean
-	 *        of each parameter for that voxel.
-	 * @throw If number of columns in data is not equal to the number of voxels
-	 */
-	void SetVoxelData(std::string key, NEWMAT::Matrix &data);
-
-	/**
-	 * Remove previously set voxel data
-	 *
-	 * If no such data exists, does nothing
-	 *
-	 * @key Name identifying the voxel data to clear. If not specified, all voxel
-	 *           data is cleared, including co-ordinates
-	 */
-	void ClearVoxelData(std::string key="");
 
 	/**
 	 * Get the number of data values associated with each voxel for the named data
@@ -388,32 +344,11 @@ public:
 	int GetVoxelDataSize(std::string key);
 
 	/**
-	 * Get the number of voxels in the data
-	 */
-	int GetNVoxels() const
-	{
-		return m_nvoxels;
-	}
-
-	/**
-	 * Get the size of the volume grid, i.e. the number of x, y and z values
-	 * along each axis
-	 */
-	std::vector<int> GetVolumeSize() const
-	{
-		return m_size;
-	}
-
-	/**
-	 * Get the size of each voxel in mm in the x, y and z directions;
-	 */
-	std::vector<float> GetVoxelDims() const
-	{
-		return m_dims;
-	}
-
-	/**
 	 * Get the main voxel data
+	 *
+	 * This will initially call GetVoxelData with the key "data", however if
+	 * this is not found it may attempt to load data from multiple files
+	 * "data1", "data2", etc, using the data-order option.
 	 *
 	 * @return an NxT matrix where each column contains the data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
@@ -421,28 +356,16 @@ public:
 	const NEWMAT::Matrix& GetMainVoxelData();
 
 	/**
-	 * Set the main voxel data
-	 *
-	 * @param coords an NxT matrix where each column contains the data for a single
-	 *         voxel. The rows contain the time series of data for that voxel
-	 */
-	void SetMainVoxelData(NEWMAT::Matrix &data);
-
-	/**
 	 * Get the voxel supplementary data
+	 *
+	 * This is equivalent to calling GetVoxelData("suppdata"), except that if
+	 * no supplemental data is found this method returns an empty matrix rather
+	 * than throwing an exception.
 	 *
 	 * @return an NxT matrix where each column contains the supplementary data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
 	const NEWMAT::Matrix& GetVoxelSuppData();
-
-	/**
-	 * Set the voxel supplementary data
-	 *
-	 * @param coords an NxT matrix where each column contains supplementary data for a single
-	 *         voxel. The rows contain the time series of data for that voxel
-	 */
-	void SetVoxelSuppData(NEWMAT::Matrix &data);
 
 	/**
 	 * Pass a functor which will be called periodically to allow progress to
@@ -510,21 +433,14 @@ public:
 private:
 	void init();
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
-	void CheckSize(std::string key, NEWMAT::Matrix &mat);
-	void GetMainVoxelDataMultiple();
+	const NEWMAT::Matrix &GetMainVoxelDataMultiple();
 
 	FabberIo *m_io;
-	NEWMAT::Matrix m_voxelCoords;
-	bool m_save_files;
-	bool m_have_coords;
-	int m_nvoxels;
-	NEWMAT::Matrix m_empty;
-	std::map<std::string, std::string> m_params;
-	std::vector<int> m_size;
-	std::vector<float> m_dims;
-	std::map<std::string, NEWMAT::Matrix> m_voxel_data;
-
 	ProgressCheck *m_progress;
+
+	NEWMAT::Matrix m_empty;
+	NEWMAT::Matrix m_mainDataMultiple;
+	std::map<std::string, std::string> m_params;
 };
 
 #ifdef DEPRECATED
