@@ -18,7 +18,6 @@ FabberIoMemory::FabberIoMemory() :
 
 void FabberIoMemory::Initialize(FabberRunData &rundata)
 {
-	// No initialization is necessary here
 }
 
 const NEWMAT::Matrix &FabberIoMemory::GetVoxelData(std::string key)
@@ -80,9 +79,13 @@ void FabberIoMemory::SetVoxelData(string key, const NEWMAT::Matrix &data)
 
 void FabberIoMemory::SetVoxelCoords(const NEWMAT::Matrix &coords)
 {
-	// This will set m_numvoxels if not already set
+	if (m_voxel_data.size() == 0) {
+		// No data, so make sure coords overrides existing data
+		m_nvoxels = -1;
+		m_have_coords = false;
+	}
+	// This will set m_nvoxels if we don't already have data
 	CheckSize("coords", coords);
-	m_voxel_coords = coords;
 
 	// We assume 3D coordinates. Fabber could work for different
 	// numbers of dimensions but would require extensive refactoring
@@ -102,6 +105,7 @@ void FabberIoMemory::SetVoxelCoords(const NEWMAT::Matrix &coords)
 	m_dims[1] = 1.0;
 	m_dims[2] = 1.0;
 
+	m_voxel_coords = coords;
 	m_have_coords = true;
 }
 
