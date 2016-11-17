@@ -40,7 +40,7 @@ static void Usage()
 	vector<OptionSpec> options;
 	FabberRunData::GetOptions(options);
 
-	for (int i = 0; i<options.size(); i++)
+	for (int i = 0; i < options.size(); i++)
 	{
 		cout << options[i] << endl;
 	}
@@ -132,6 +132,19 @@ int execute(int argc, char** argv)
 		EasyLog::StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
 				params.GetBool("link-to-latest"));
 		cout << "Logfile started: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
+
+		// FIXME this is a hack but seems to be expected that the command line
+		// tool will output parameter names to a file. Really should be an option!
+		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
+		vector<string> paramNames;
+		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(params.GetString("model")));
+		fwd_model->Initialize(params);
+		fwd_model->NameParams(paramNames);
+		for (unsigned i = 0; i < paramNames.size(); i++)
+		{
+			paramFile << paramNames[i] << endl;
+		}
+		paramFile.close();
 
 		// Start timing/tracing if requested
 		bool recordTimings = false;
