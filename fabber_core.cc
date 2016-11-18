@@ -44,18 +44,6 @@ static void Usage()
 	{
 		cout << options[i] << endl;
 	}
-#if 0
-	<< " Spatial VB options: " << endl << endl << "  --param-spatial-priors=<choice_of_prior_forms> " << endl
-	<< "                             Specify a type of prior to use for each forward " << endl
-	<< "                             model parameter.  One letter per parameter.  " << endl
-	<< "                             S=spatial, N=nonspatial, D=Gaussian-process-based" << endl
-	<< "                             combined prior" << endl << "  --fwd-initial-prior=<prior_vest_file> "
-	<< endl << "                             Specify the nonspatial prior distributions on the" << endl
-	<< "                             forward model parameters.  The vest file is the " << endl
-	<< "                             covariance matrix supplemented by the prior means" << endl
-	<< "                             See the documentation for details.  Very important" << endl
-	<< "                             if 'D' prior is used." << endl << endl;
-#endif
 }
 
 /**

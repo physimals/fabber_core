@@ -123,10 +123,10 @@ static OptionSpec OPTIONS[] =
 				{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
 				{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
 				{ "continue-from-mvn", OPT_FILE, "Continue previous run from output MVN files", OPT_NONREQ, "" },
-				{ "fwd-initial-prior", OPT_FILE, "MVN file containing initial model prior", OPT_NONREQ, "" },
-				{ "fwd-initial-posterior", OPT_FILE, "MVN file containing initial model posterior", OPT_NONREQ, "" },
-				{ "noise-initial-prior", OPT_FILE, "MVN file containing initial noise prior", OPT_NONREQ, "" },
-				{ "noise-initial-posterior", OPT_FILE, "MVN file containing initial noise posterior", OPT_NONREQ, "" },
+				{ "fwd-initial-prior", OPT_FILE, "VEST file containing MVN of initial model prior. Important for spatial VB using D prior", OPT_NONREQ, "" },
+				{ "fwd-initial-posterior", OPT_FILE, "VEST file containing MVN of initial model posterior", OPT_NONREQ, "" },
+				{ "noise-initial-prior", OPT_FILE, "VEST file containing MVN of initial noise prior", OPT_NONREQ, "" },
+				{ "noise-initial-posterior", OPT_FILE, "VEST file containing MVN of initial noise posterior", OPT_NONREQ, "" },
 				{ "noise-pattern", OPT_STR,
 						"repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)",
 						OPT_NONREQ, "1" },
@@ -383,27 +383,27 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	m_origdata = &allData.GetMainVoxelData();
 	m_coords = &allData.GetVoxelCoords();
 	m_suppdata = &allData.GetVoxelSuppData();
-	int Nvoxels = m_origdata->Ncols();
+	m_nvoxels = m_origdata->Ncols();
 
 	PassModelData(1);
 
 #ifdef __FABBER_MOTION
 	MCobj mcobj(allData,6); // hard coded DOF (future TODO item)
 // Copy the data for use in motion correction (FIXME why?)
-	Matrix data(m_origdata->Nrows(), Nvoxels);
+	Matrix data(m_origdata->Nrows(), m_nvoxels);
 	data = *m_origdata;
 #endif //__FABBER_MOTION
 
 // Use this to store the model predictions in to pass to motion correction routine
-	Matrix modelpred(m_origdata->Nrows(), Nvoxels);
+	Matrix modelpred(m_origdata->Nrows(), m_nvoxels);
 
 // Only call DoCalculations once
 	assert(resultMVNs.empty());
 	assert(resultFs.empty());
 
 // Initialize output data structures
-	resultMVNs.resize(Nvoxels, NULL);
-	resultFs.resize(Nvoxels, 9999); // 9999 is a garbage default value
+	resultMVNs.resize(m_nvoxels, NULL);
+	resultFs.resize(m_nvoxels, 9999); // 9999 is a garbage default value
 
 //Indicates that we should continue from a previous run (i.e. after a motion correction step)
 	bool continueFromPrevious = false;
@@ -424,7 +424,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			LOG << "VbInferenceTechnique::Motion correction step " << step << " of " << Nmcstep << endl;
 
 		// Loop over voxels
-		for (int voxel = 1; voxel <= Nvoxels; voxel++)
+		for (int voxel = 1; voxel <= m_nvoxels; voxel++)
 		{
 			PassModelData(voxel);
 
@@ -480,7 +480,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 			MVNDist fwdPriorSave(fwdPrior);
 
 			// Give an indication of the progress through the voxels;
-			allData.Progress(voxel, Nvoxels);
+			allData.Progress(voxel, m_nvoxels);
 			double F = 1234.5678;
 
 			// Create a linearized version of the model

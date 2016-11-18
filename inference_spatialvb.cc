@@ -23,26 +23,27 @@ using MISCMATHS::sign;
 #define NOCACHE 1
 
 static OptionSpec OPTIONS[] =
-{
-{ "spatial-dims", OPT_INT, "Number of spatial dimensions", OPT_NONREQ, "3" },
-{ "spatial-speed", OPT_STR, "Number of spatial dimensions", OPT_NONREQ, "-1" },
-{ "distance-measure", OPT_STR, "", OPT_NONREQ, "dist1" },
-{ "param-spatial-priors", OPT_STR, "Type of spatial priors for each parameter, as a sequence of characters. ",
-		OPT_NONREQ, "S+" },
-{ "fixed-delta", OPT_STR, "", OPT_NONREQ, "-1" },
-{ "fixed-rho", OPT_STR, "", OPT_NONREQ, "0" },
-{ "new-delta-iterations", OPT_INT, "", OPT_NONREQ, "10" },
-{ "always-initial-delta-guess", OPT_STR, "", OPT_NONREQ, "-1" },
-{ "update-spatial-prior-on-first-iteration", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "use-simultaneous-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "use-full-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "use-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "use-covariance-marginals", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "keep-interparameter-covariances", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "brute-force-delta-search", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "no-eo", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "slow-eo", OPT_BOOL, "", OPT_NONREQ, "" },
-{ "" }, };
+		{
+		{ "spatial-dims", OPT_INT, "Number of spatial dimensions", OPT_NONREQ, "3" },
+		{ "spatial-speed", OPT_STR, "Number of spatial dimensions", OPT_NONREQ, "-1" },
+		{ "distance-measure", OPT_STR, "", OPT_NONREQ, "dist1" },
+				{ "param-spatial-priors", OPT_STR,
+						"Type of spatial priors for each parameter, as a sequence of characters. S=spatial, N=nonspatial, D=Gaussian-process-based ",
+						OPT_NONREQ, "S+" },
+				{ "fixed-delta", OPT_STR, "", OPT_NONREQ, "-1" },
+				{ "fixed-rho", OPT_STR, "", OPT_NONREQ, "0" },
+				{ "new-delta-iterations", OPT_INT, "", OPT_NONREQ, "10" },
+				{ "always-initial-delta-guess", OPT_STR, "", OPT_NONREQ, "-1" },
+				{ "update-spatial-prior-on-first-iteration", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "use-simultaneous-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "use-full-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "use-evidence-optimization", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "use-covariance-marginals", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "keep-interparameter-covariances", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "brute-force-delta-search", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "no-eo", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "slow-eo", OPT_BOOL, "", OPT_NONREQ, "" },
+				{ "" }, };
 
 void SpatialVariationalBayes::GetOptions(vector<OptionSpec> &opts) const
 {
@@ -85,7 +86,8 @@ static int GetSpatialDims(FabberRunData& args)
 static string GetPriorTypesStr(vector<PriorType> &priors)
 {
 	string types;
-	for (int i=0; i<priors.size(); i++) {
+	for (int i = 0; i < priors.size(); i++)
+	{
 		types += priors[i].m_type;
 	}
 	return types + "\0";
@@ -118,6 +120,8 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	assert(m_spatial_speed > 1 || m_spatial_speed == -1);
 
 	m_dist_measure = args.GetStringDefault("distance-measure", "dist1");
+
+	//m_shrinkage_type = GetShrinkageType();
 
 	// Which shrinkage prior to use?  For various reasons we can't
 	// yet mix different shinkage priors for different parameters (and I can't
@@ -171,6 +175,13 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	assert(!(m_update_first_iter && !m_use_evidence)); // currently doesn't work, but fixable
 	bruteForceDeltaSearch = args.GetBool("brute-force-delta-search");
 
+	m_alsoSaveWithoutPrior = m_use_evidence; // or other reasons?
+	m_alsoSaveSpatialPriors = false;
+	Warning::IssueOnce("Not saving finalSpatialPriors.nii.gz -- too huge!!");
+
+	// Locked linearizations, if requested
+	m_lockedLinearEnabled = (lockedLinearFile != "");
+
 	// Preferred way of using these options
 	if (!m_use_full_evidence && !args.GetBool("no-eo") && m_prior_types_str.find_first_of("DR") != string::npos)
 	{
@@ -194,138 +205,137 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	}
 }
 
-void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
+void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData& allData)
 {
-	Tracer_Plus tr("SpatialVariationalBayes::DoCalculations");
+	// Initialized in voxel loop below (from file or default as required)
+	noiseVox.resize(m_nvoxels, NULL);
+	noiseVoxPrior.resize(m_nvoxels, NULL);
+	fwdPosteriorVox.resize(m_nvoxels);
 
-	// extract data (and the coords) from allData for the (first) VB run
-	// Rows are volumes
-	// Columns are (time) series
-	// num Rows is size of (time) series
-	// num Cols is size of volumes
-	m_origdata = &allData.GetMainVoxelData();
-	m_coords = &allData.GetVoxelCoords();
-	m_suppdata = &allData.GetVoxelSuppData();
-	int Nvoxels = m_origdata->Ncols();
+	// Initialized in voxel loop if required
+	fwdPosteriorWithoutPrior.resize(m_nvoxels, NULL);
 
-	// pass in some (dummy) data/coords here just in case the model relies upon it
-	// use the first voxel values as our dummies FIXME this shouldn't really be
-	// necessary, need to find way for model to know about the data beforehand.
-	PassModelData(1);
+	// Re-centred in voxel loop below
+	linearVox.resize(m_nvoxels, LinearizedFwdModel(model));
 
-	// Added to diagonal to make sure the spatial precision matrix
-	// doesn't become singular -- and isolated voxels behave sensibly.
-	const double tiny = 0; // turns out to be no longer necessary.
+	// Static initialization for all voxels currently
+	fwdPriorVox.resize(m_nvoxels, *initialFwdPrior);
 
-	// Only call DoCalculations once
-	assert(resultMVNs.empty());
-	assert(resultFs.empty());
-	assert(resultMVNsWithoutPrior.empty());
+	// Loaded from file if required, otherwise initialized during calculation
+	resultMVNs.resize(m_nvoxels, NULL);
 
-	// Initialization:
+	// Initialized during calculation
+	resultFs.resize(m_nvoxels, 9999); // 9999 is a garbage default value
 
-	// Make the neighbours[] lists if required
-	if (m_prior_types_str.find_first_of("mMpPSZ") != string::npos)
+	// Empty by default. Resized and initialized below if required
+	vector<MVNDist*> lockedLinearDists;
+	Matrix lockedLinearCentres;
+
+	const int nNoiseParams = initialNoisePrior->OutputAsMVN().GetSize();
+
+	if (m_lockedLinearEnabled)
 	{
-		CalcNeighbours(allData.GetVoxelCoords());
+		LOG << "Loading fixed linearization centres from the MVN '" << lockedLinearFile
+				<< "'\nNOTE: This does not check if the correct number of parameters is present!\n";
+		MVNDist::Load(lockedLinearDists, lockedLinearFile, allData);
+		lockedLinearCentres.ReSize(m_num_params, m_nvoxels);
 	}
 
-	// Make distance matrix if required
-	if (m_prior_types_str.find_first_of("RDF") != string::npos)
-	{
-		// Note: really ought to know the voxel dimensions and multiply by those, because CalcDistances expects an input in mm, not index.
-		covar.CalcDistances(allData.GetVoxelCoords(), m_dist_measure);
-	}
-
-	// Make each voxel's distributions
-
-	vector<NoiseParams*> noiseVox; // these change
-	vector<NoiseParams*> noiseVoxPrior; // these may change in future
-	vector<MVNDist> fwdPriorVox;
-	vector<MVNDist> fwdPosteriorVox;
-	vector<LinearizedFwdModel> linearVox;
-
-	bool alsoSaveWithoutPrior = m_use_evidence; // or other reasons?
-	bool alsoSaveSpatialPriors = false;
-	Warning::IssueOnce("Not saving finalSpatialPriors.nii.gz -- too huge!!");
-
-	vector<MVNDist*> fwdPosteriorWithoutPrior(Nvoxels, (MVNDist*) NULL);
-	if (alsoSaveWithoutPrior)
-		for (int v = 1; v <= Nvoxels; v++)
-			fwdPosteriorWithoutPrior.at(v - 1) = new MVNDist;
-
-	// Locked linearizations, if requested
-	bool lockedLinearEnabled = (lockedLinearFile != "");
-	Matrix lockedLinearCentres; // empty by default
-
-	// If we're continuing from previous saved results, load the current
-	// values of the parameters here: FIXME paramFilename is broken and ignored
 	if (m_continueFromFile != "")
 	{
 		LOG << "SpatialVbInferenceTechnique::Continuing from file " << m_continueFromFile << endl;
 		InitMVNFromFile(m_continueFromFile, allData, paramFilename);
 	}
 
-	// Locked linearizations, if requested
-	if (lockedLinearEnabled)
+	if (m_alsoSaveWithoutPrior)
 	{
-		LOG_ERR(
-				"Loading fixed linearization centres from the MVN '" << lockedLinearFile << "'\nNOTE: This does not check if the correct number of parameters is present!\n");
-		vector<MVNDist*> lockedLinearDists;
-		MVNDist::Load(lockedLinearDists, lockedLinearFile, allData);
-		lockedLinearCentres.ReSize(m_num_params, Nvoxels);
-
-		for (int v = 1; v <= Nvoxels; v++)
-		{
-			lockedLinearCentres.Column(v) = lockedLinearDists.at(v - 1)->means.Rows(1, m_num_params);
-		}
+		resultMVNsWithoutPrior.resize(m_nvoxels, NULL);
 	}
 
-	const int nNoiseParams = initialNoisePrior->OutputAsMVN().GetSize();
-
-	noiseVox.resize(Nvoxels, NULL); // polymorphic type, so need to use pointers
-	noiseVoxPrior.resize(Nvoxels, NULL);
-	fwdPriorVox.resize(Nvoxels, *initialFwdPrior);
-
-	if (m_continueFromFile != "")
+	for (int v = 1; v <= m_nvoxels; v++)
 	{
-		fwdPosteriorVox.resize(Nvoxels);
-		for (int v = 1; v <= Nvoxels; v++)
+
+		if (m_continueFromFile != "")
 		{
 			fwdPosteriorVox[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
-		}
-	}
-	else
-	{
-		fwdPosteriorVox.resize(Nvoxels, *initialFwdPosterior);
-	}
 
-	linearVox.resize(Nvoxels, LinearizedFwdModel(model));
-	resultMVNs.resize(Nvoxels, NULL);
-
-	if (alsoSaveWithoutPrior)
-		resultMVNsWithoutPrior.resize(Nvoxels, NULL);
-
-	resultFs.resize(Nvoxels, 9999); // 9999 is a garbage default value
-
-	for (int v = 1; v <= Nvoxels; v++)
-	{
-		linearVox[v - 1].ReCentre(lockedLinearEnabled ? lockedLinearCentres.Column(v) : fwdPosteriorVox[v - 1].means);
-
-		if (initialNoisePosterior == NULL) // continuing Noise from file
-		{
 			assert(m_num_params + nNoiseParams == resultMVNs.at(v - 1)->GetSize());
 			noiseVox[v - 1] = noise->NewParams();
 			noiseVox[v - 1]->InputFromMVN(
 					resultMVNs.at(v - 1)->GetSubmatrix(m_num_params + 1, m_num_params + nNoiseParams));
+
 		}
 		else
 		{
+			fwdPosteriorVox[v - 1] = *initialFwdPosterior;
 			noiseVox[v - 1] = initialNoisePosterior->Clone();
 		}
+
+		if (m_lockedLinearEnabled)
+		{
+			lockedLinearCentres.Column(v) = lockedLinearDists.at(v - 1)->means.Rows(1, m_num_params);
+			linearVox[v - 1].ReCentre(lockedLinearCentres.Column(v));
+		}
+		else
+		{
+			linearVox[v - 1].ReCentre(fwdPosteriorVox[v - 1].means);
+		}
+
+		if (m_alsoSaveWithoutPrior)
+		{
+			fwdPosteriorWithoutPrior.at(v - 1) = new MVNDist();
+		}
+
 		noiseVoxPrior[v - 1] = initialNoisePrior->Clone();
 		noise->Precalculate(*noiseVox[v - 1], *noiseVoxPrior[v - 1], m_origdata->Column(v));
+
 	}
+}
+
+void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
+{
+	Tracer_Plus tr("SpatialVariationalBayes::DoCalculations");
+
+// extract data (and the coords) from allData for the (first) VB run
+// Rows are volumes
+// Columns are (time) series
+// num Rows is size of (time) series
+// num Cols is size of volumes
+	m_origdata = &allData.GetMainVoxelData();
+	m_coords = &allData.GetVoxelCoords();
+	m_suppdata = &allData.GetVoxelSuppData();
+	m_nvoxels = m_origdata->Ncols();
+
+// pass in some (dummy) data/coords here just in case the model relies upon it
+// use the first voxel values as our dummies FIXME this shouldn't really be
+// necessary, need to find way for model to know about the data beforehand.
+	PassModelData(1);
+
+// Added to diagonal to make sure the spatial precision matrix
+// doesn't become singular -- and isolated voxels behave sensibly.
+	const double tiny = 0; // turns out to be no longer necessary.
+
+// Only call DoCalculations once
+	assert(resultMVNs.empty());
+	assert(resultFs.empty());
+	assert(resultMVNsWithoutPrior.empty());
+
+// Initialization:
+
+// Make the neighbours[] lists if required
+	if (m_prior_types_str.find_first_of("mMpPSZ") != string::npos)
+	{
+		CalcNeighbours(allData.GetVoxelCoords());
+	}
+
+// Make distance matrix if required
+	if (m_prior_types_str.find_first_of("RDF") != string::npos)
+	{
+		// Note: really ought to know the voxel dimensions and multiply by those, because CalcDistances expects an input in mm, not index.
+		covar.CalcDistances(allData.GetVoxelCoords(), m_dist_measure);
+	}
+
+	SetupPerVoxelDists(allData);
 
 // Make the spatial normalization parameters
 //akmean = 0*distsMaster.theta.means + 1e-8;
@@ -334,34 +344,21 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 	DiagonalMatrix delta(m_num_params);
 	DiagonalMatrix rho(m_num_params);
+
 	delta = fixedDelta; // Hard-coded initial value (in mm!)
 	rho = 0;
 	LOG_ERR("Using initial value for all deltas: " << delta(1) << endl);
-//  delta(1) = delta(3) = .5;
-//  LOG_ERR("Except delta([1 3]) (Q0,M0) = " << delta(3) << endl);
-//  delta(3) = .5;
-//  LOG_ERR("Except delta(3) (M0) = " << delta(3) << endl);
-//delta(7) = 1e12;
-//LOG_ERR("Except delta(7) (dt) = " << delta(7) << endl);
-//  bool HackDelta7NextTime = true;
-	vector < SymmetricMatrix > Sinvs(m_num_params);
 
+	vector < SymmetricMatrix > Sinvs(m_num_params);
 	SymmetricMatrix StS; // Cache for StS matrix in 'S' mode
 
 	const double globalF = 1234.5678; // no sensible updates yet
-//  if (needF)
-//    throw Invalid_option("Can't calculate free energy with --inference=spatialvb yet!\n");
-// Allow calculation to continue even with bad voxels
-// Note that this is a bad idea when spatialDims>0, because the bad voxel
-// will drag its neighbours around... but can never recover!  Maybe a more
-// sensible approach is to reset bad voxels to the prior on each iteration.
-//  vector<bool> keepGoing;
-//  keepGoing.resize(Nvoxels, true);
+// FIXME can't calculate free energy with spatial VB yet
 
 	if (StS.Nrows() == 0 && m_neighbours.size() > 0 && (m_shrinkage_type == 'S' || m_shrinkage_type == 'Z'))
 	{
 		Tracer_Plus tr("Creating StS matrix");
-		assert((int )m_neighbours.size() == Nvoxels);
+		assert((int )m_neighbours.size() == m_nvoxels);
 
 		const double tiny = 1e-6;
 		Warning::IssueOnce(
@@ -370,11 +367,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 // NEW METHOD
 		{
 			Tracer_Plus tr("New method for generating StS matrix");
-			LOG << "Attempting to allocate, Nvoxels = " << Nvoxels << endl;
-			StS.ReSize(Nvoxels);
+			LOG << "Attempting to allocate, m_nvoxels = " << m_nvoxels << endl;
+			StS.ReSize(m_nvoxels);
 			LOG << "Allocated" << endl;
 			StS = 0;
-			for (int v = 1; v <= Nvoxels; v++)
+			for (int v = 1; v <= m_nvoxels; v++)
 			{
 				int Nv = m_neighbours[v - 1].size(); // Number of neighbours v has
 
@@ -401,10 +398,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		/* OLD METHOD
 		 // Slow because connect*connect is O(N^3)
 		 SymmetricMatrix connect =
-		 IdentityMatrix(Nvoxels) * 1e-6;
+		 IdentityMatrix(m_nvoxels) * 1e-6;
 		 Warning::IssueOnce("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
 
-		 for (int v = 1; v <= Nvoxels; v++)
+		 for (int v = 1; v <= m_nvoxels; v++)
 		 {
 		 for (vector<int>::iterator nidIt = neighbours[v-1].begin();
 		 nidIt != neighbours[v-1].end(); nidIt++)
@@ -422,8 +419,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		 // Skip this, since we're just doing a validation check: StS << sTmp;
 
 		 // VALIDATE THAT OLD == NEW
-		 for (int i = 1; i <= Nvoxels; i++)
-		 for (int j = 1; j <= Nvoxels; j++)
+		 for (int i = 1; i <= m_nvoxels; i++)
+		 for (int j = 1; j <= m_nvoxels; j++)
 		 if (sTmp(i,j) != StS(i,j))
 		 LOG << "Mismatch at " << i << "," << j << ": " << sTmp(i,j) << "," << StS(i,j) << endl;
 
@@ -435,9 +432,9 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	m_conv->Reset();
 	bool isFirstIteration = true; // slightly different behaviour in first iteratio
 
-	//  if (!useShrinkageMethod) LOG_ERR("HACK: using --fixed-delta value on first iteration instead of automatically determining delta from priors\n");
+//  if (!useShrinkageMethod) LOG_ERR("HACK: using --fixed-delta value on first iteration instead of automatically determining delta from priors\n");
 
-	// MAIN ITERATION LOOP
+// MAIN ITERATION LOOP
 	do
 	{
 		Tracer_Plus tr("Main iteration loop");
@@ -455,9 +452,9 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			DiagonalMatrix gk(m_num_params); //gk = 0.0/0.0;
 			for (int k = 1; k <= m_num_params; k++)
 			{
-				ColumnVector wk(Nvoxels); //wk = 0.0/0.0;
-				DiagonalMatrix sigmak(Nvoxels); //sigmak=0.0/0.0;
-				for (int v = 1; v <= Nvoxels; v++)
+				ColumnVector wk(m_nvoxels); //wk = 0.0/0.0;
+				DiagonalMatrix sigmak(m_nvoxels); //sigmak=0.0/0.0;
+				for (int v = 1; v <= m_nvoxels; v++)
 				{
 					wk(v) = fwdPosteriorVox.at(v - 1).means(k);
 					sigmak(v, v) = fwdPosteriorVox.at(v - 1).GetCovariance()(k, k);
@@ -478,9 +475,9 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 				{
 					Tracer_Plus tr("S-prior akmean estimation");
-					assert(alsoSaveWithoutPrior);
+					assert(m_alsoSaveWithoutPrior);
 
-					assert(StS.Nrows() == Nvoxels);
+					assert(StS.Nrows() == m_nvoxels);
 
 					// Prior used by penny:
 					//		  double q1 = 10, q2 = 1;
@@ -492,7 +489,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 					gk(k) = 1 / (0.5 * (sigmak * StS).Trace() + (wk.t() * StS * wk).AsScalar() + 1 / q1);
 
-					akmean(k) = gk(k) * (0.5 * Nvoxels + q2);
+					akmean(k) = gk(k) * (0.5 * m_nvoxels + q2);
 				}
 					// only output is akmean(k)
 					break;
@@ -509,7 +506,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					// (since sigmak is diagonal!)
 
 					double tmp1 = 0.0;
-					for (int v = 1; v <= Nvoxels; v++)
+					for (int v = 1; v <= m_nvoxels; v++)
 					{
 						int nn = m_neighbours.at(v - 1).size();
 						//LOG << v << ": " << nn << "," << wk(v) << "," << sigmak(v,v) << endl;
@@ -531,7 +528,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					if (m_shrinkage_type == 'S')
 						Swk = 1e-6 * wk;
 
-					for (int v = 1; v <= Nvoxels; v++)
+					for (int v = 1; v <= m_nvoxels; v++)
 					{
 						for (vector<int>::iterator v2It = m_neighbours[v - 1].begin();
 								v2It != m_neighbours.at(v - 1).end(); v2It++)
@@ -556,7 +553,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					gk(k, k) = 1 / (0.5 * tmp1 + 0.5 * tmp2 + 0.1); // prior q1 == 10 (1/q1 == 0.1)
 					//  end
 
-					akmean(k) = gk(k) * (Nvoxels * 0.5 + 1.0); // prior q2 == 1.0
+					akmean(k) = gk(k) * (m_nvoxels * 0.5 + 1.0); // prior q2 == 1.0
 				}
 
 					break;
@@ -657,13 +654,13 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			case 'D':
 			case 'F':
 				// Reorganize data by parameter (rather than by voxel)
-				DiagonalMatrix covRatio(Nvoxels);
-				ColumnVector meanDiffRatio(Nvoxels);
+				DiagonalMatrix covRatio(m_nvoxels);
+				ColumnVector meanDiffRatio(m_nvoxels);
 				const double priorCov = initialFwdPrior->GetCovariance()(k, k);
 				const double priorCovSqrt = sqrt(priorCov);
 				const double priorMean = initialFwdPrior->means(k);
 
-				for (int v = 1; v <= Nvoxels; v++)
+				for (int v = 1; v <= m_nvoxels; v++)
 				{
 					// Isolate just the dimensionless quantities we need
 
@@ -676,7 +673,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					meanDiffRatio(v) = (fwdPosteriorVox.at(v - 1).means(k) - priorMean) / priorCovSqrt;
 				}
 
-				//	SymmetricMatrix covRatioSupplemented(Nvoxels);
+				//	SymmetricMatrix covRatioSupplemented(m_nvoxels);
 				// Recover the off-diagonal elements of fwdPriorVox/priorCov
 
 				/* TURN COVRATIOSUPPLEMENTED BACK INTO COVRATIO!
@@ -684,10 +681,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				 if (Sinvs.at(k-1).Nrows() != 0)
 				 {
 				 // Implicitly use all zeroes for first iteration
-				 assert(Sinvs.at(k-1).Nrows() == Nvoxels);
+				 assert(Sinvs.at(k-1).Nrows() == m_nvoxels);
 				 covRatioSupplemented = Sinvs.at(k-1);
 
-				 for (int v=1; v<=Nvoxels; v++)
+				 for (int v=1; v<=m_nvoxels; v++)
 				 {
 				 //		LOG << "Should be one: " << initialFwdPrior->GetPrecisions()(k,k) * Sinvs.at(k-1)(v,v) / fwdPriorVox.at(v-1).GetPrecisions()(k,k) << endl;
 				 assert(initialFwdPrior->GetPrecisions()(k,k)*Sinvs.at(k-1)(v,v) == fwdPriorVox.at(v-1).GetPrecisions()(k,k));
@@ -797,12 +794,12 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				{
 					Sinvs.at(k - 1) = covar.GetCinv(delta(k)) * exp(rho(k));
 
-					if (delta(k) == 0 && alsoSaveWithoutPrior)
+					if (delta(k) == 0 && m_alsoSaveWithoutPrior)
 					{
 						assert(
 								(m_prior_types[k - 1].m_type == 'N') | (m_prior_types[k - 1].m_type == 'I')
 										| (m_prior_types[k - 1].m_type == 'A'));
-						Sinvs.at(k - 1) = IdentityMatrix(Nvoxels);
+						Sinvs.at(k - 1) = IdentityMatrix(m_nvoxels);
 					}
 
 					assert(
@@ -811,14 +808,14 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					Sinvs[k - 1] *= initialFwdPrior->GetPrecisions()(k, k);
 				}
 
-				if (delta(k) < 0 && alsoSaveWithoutPrior)
+				if (delta(k) < 0 && m_alsoSaveWithoutPrior)
 				{
 					Tracer_Plus tr("Building spatial precision matrix for Penny prior");
 					assert(m_prior_types[k - 1].m_type == m_shrinkage_type);
 
 					if (m_shrinkage_type == 'S')
 					{
-						assert(StS.Nrows() == Nvoxels);
+						assert(StS.Nrows() == m_nvoxels);
 						Sinvs.at(k - 1) = StS * akmean(k);
 					}
 					else
@@ -826,10 +823,10 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 						assert(m_shrinkage_type == 'p');
 
 						// Build up the second-order matrix directly, row-by-row
-						Matrix sTmp(Nvoxels, Nvoxels);
+						Matrix sTmp(m_nvoxels, m_nvoxels);
 						sTmp = 0;
 
-						for (int v = 1; v <= Nvoxels; v++)
+						for (int v = 1; v <= m_nvoxels; v++)
 						{
 
 							// self = (2*Ndim)^2 + (nn)
@@ -864,7 +861,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		}
 
 		// ITERATE OVER VOXELS
-		for (int v = 1; v <= Nvoxels; v++)
+		for (int v = 1; v <= m_nvoxels; v++)
 		{
 			PassModelData(v);
 
@@ -886,13 +883,13 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				Tracer_Plus tr("shrinkage spatial priors S");
 				Warning::IssueOnce("Using new S VB spatial thingy");
 
-				assert(StS.Nrows() == Nvoxels);
+				assert(StS.Nrows() == m_nvoxels);
 
 				double weight = 1e-6; // weakly pulled to zero
 				ColumnVector contrib(m_num_params);
 				contrib = 0;
 
-				for (int i = 1; i <= Nvoxels; i++)
+				for (int i = 1; i <= m_nvoxels; i++)
 				{
 					if (v != i)
 					{
@@ -1081,7 +1078,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					spatialPrecisions(k) = Sinvs[k - 1](v, v);
 					//	  double testWeights = 0;
 					weightedMeans(k) = 0;
-					for (int n = 1; n <= Nvoxels; n++)
+					for (int n = 1; n <= m_nvoxels; n++)
 						if (n != v)
 						{
 							weightedMeans(k) += Sinvs[k - 1](n, v)
@@ -1137,7 +1134,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				LOG << "      Fbefore == " << F << endl;
 
 			// Produces heaps of output and not very useful for debugging:
-			//        LOG << "Voxel " << v << " of " << Nvoxels << endl;
+			//        LOG << "Voxel " << v << " of " << m_nvoxels << endl;
 
 			noise->UpdateTheta(*noiseVox[v - 1], fwdPosteriorVox[v - 1], fwdPriorVox[v - 1], linearVox[v - 1],
 					m_origdata->Column(v), fwdPosteriorWithoutPrior.at(v - 1));
@@ -1154,7 +1151,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				LOG << "      Ftheta == " << F << endl;
 
 			/* MOVED BELOW -- 2007-11-23
-			 if (!lockedLinearEnabled)
+			 if (!m_lockedLinearEnabled)
 			 linearVox[v-1].ReCentre( fwdPosteriorVox[v-1].means );
 
 			 if (needF)
@@ -1185,37 +1182,37 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			if (!(initialFwdPrior->means == -initialFwdPrior->means))
 				Warning::IssueAlways("Quick hack to avoid assertion with initialFwdPrior->means != 0");
 
-			SymmetricMatrix SigmaInv(m_num_params * Nvoxels);
-			//	SymmetricMatrix Sigma(m_num_params*Nvoxels);
-			ColumnVector Mu(m_num_params * Nvoxels);
+			SymmetricMatrix SigmaInv(m_num_params * m_nvoxels);
+			//	SymmetricMatrix Sigma(m_num_params*m_nvoxels);
+			ColumnVector Mu(m_num_params * m_nvoxels);
 
 			Tracer_Plus tr5("useSimultaneousEvidenceOptimization calculations -- first part");
 			// These matrices consist of NxN matrices blocked together
 			// so parameter k, voxel v is in row (or col): v + (k-1)*m_num_params
-			SymmetricMatrix Ci = -999 * IdentityMatrix(Nvoxels * m_num_params);
-			SymmetricMatrix XXtr = -999 * IdentityMatrix(Nvoxels * m_num_params);
-			ColumnVector XYtr(Nvoxels * m_num_params);
+			SymmetricMatrix Ci = -999 * IdentityMatrix(m_nvoxels * m_num_params);
+			SymmetricMatrix XXtr = -999 * IdentityMatrix(m_nvoxels * m_num_params);
+			ColumnVector XYtr(m_nvoxels * m_num_params);
 			XYtr = -999;
 
 			// Build Ci
 			for (int k = 1; k <= m_num_params; k++)
 			{
-				Ci.SymSubMatrix(Nvoxels * (k - 1) + 1, Nvoxels * k) = Sinvs[k - 1];
+				Ci.SymSubMatrix(m_nvoxels * (k - 1) + 1, m_nvoxels * k) = Sinvs[k - 1];
 				// off-diagonal blocks are zero, by definition of the our priors
 				// (priors between parameters are independent)
 			}
 
 			// Build XXtr and XYtr
-			for (int v = 1; v <= Nvoxels; v++)
+			for (int v = 1; v <= m_nvoxels; v++)
 			{
 				const SymmetricMatrix& tmp = fwdPosteriorWithoutPrior[v - 1]->GetPrecisions();
 				ColumnVector tmp2 = tmp * (fwdPosteriorWithoutPrior[v - 1]->means - initialFwdPrior->means);
 				for (int k1 = 1; k1 <= m_num_params; k1++)
 				{
-					XYtr(v + (k1 - 1) * Nvoxels) = tmp2(k1);
+					XYtr(v + (k1 - 1) * m_nvoxels) = tmp2(k1);
 					for (int k2 = 1; k2 <= m_num_params; k2++)
 					{
-						XXtr(v + (k1 - 1) * Nvoxels, v + (k2 - 1) * Nvoxels) = tmp(k1, k2);
+						XXtr(v + (k1 - 1) * m_nvoxels, v + (k2 - 1) * m_nvoxels) = tmp(k1, k2);
 					}
 				}
 				// XXtr != 0 only where the row and col refer to the same voxel.
@@ -1239,7 +1236,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				Mu = SigmaInv.i() * XYtr;
 			}
 
-			for (int v = 1; v <= Nvoxels; v++)
+			for (int v = 1; v <= m_nvoxels; v++)
 			{
 				Tracer_Plus tr("useSimultaneousEvidenceOptimization calculations -- second loop");
 
@@ -1248,7 +1245,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				assert(firstParameterForFullEO == 1);
 
 				for (int k = 1; k <= m_num_params; k++)
-					fwdPosteriorVox[v - 1].means(k) = Mu(v + (k - 1) * Nvoxels) + initialFwdPrior->means(k);
+					fwdPosteriorVox[v - 1].means(k) = Mu(v + (k - 1) * m_nvoxels) + initialFwdPrior->means(k);
 
 				//	    if ((muBefore - fwdPosteriorVox[v-1].means).MaximumAbsoluteValue() > 1e-10)
 				//	      LOG << "mBef = " << muBefore.t() << "mAft = " << fwdPosteriorVox[v-1].means.t();
@@ -1266,7 +1263,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					{
 						for (int k2 = 1; k2 <= m_num_params; k2++)
 						{
-							cov(k1, k2) = Sigma(v + (k1 - 1) * Nvoxels, v + (k2 - 1) * Nvoxels);
+							cov(k1, k2) = Sigma(v + (k1 - 1) * m_nvoxels, v + (k2 - 1) * m_nvoxels);
 						}
 					}
 					if ((cov - covOld).MaximumAbsoluteValue() > 1e-10)
@@ -1288,7 +1285,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					{
 						for (int k2 = 1; k2 <= m_num_params; k2++)
 						{
-							prec(k1, k2) = SigmaInv(v + (k1 - 1) * Nvoxels, v + (k2 - 1) * Nvoxels);
+							prec(k1, k2) = SigmaInv(v + (k1 - 1) * m_nvoxels, v + (k2 - 1) * m_nvoxels);
 						}
 					}
 
@@ -1330,16 +1327,16 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			{
 				Tracer_Plus tr("useFullEvidenceOptimization calculations -- first loop");
 				const SymmetricMatrix& Ci = Sinvs[k - 1];
-				SymmetricMatrix XXtr(Nvoxels);
-				ColumnVector XYtr(Nvoxels);
+				SymmetricMatrix XXtr(m_nvoxels);
+				ColumnVector XYtr(m_nvoxels);
 
-				ColumnVector XXtrMuOthers(Nvoxels);
+				ColumnVector XXtrMuOthers(m_nvoxels);
 
 				// Initialize to junk values
-				XXtr = -999 * IdentityMatrix(Nvoxels);
+				XXtr = -999 * IdentityMatrix(m_nvoxels);
 				XYtr = -999;
 
-				for (int v = 1; v <= Nvoxels; v++)
+				for (int v = 1; v <= m_nvoxels; v++)
 				{
 					const SymmetricMatrix& tmp = fwdPosteriorWithoutPrior[v - 1]->GetPrecisions();
 					XXtr(v, v) = tmp(k, k);
@@ -1363,7 +1360,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					// values, now just confusing).
 				}
 
-				//	    ColumnVector tmp4(Nvoxels);
+				//	    ColumnVector tmp4(m_nvoxels);
 				//	    tmp4 = initialFwdPrior->means(k);
 				//	    ColumnVector CiMu0 = Ci * tmp4;
 
@@ -1382,7 +1379,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					Mu.at(k - 1) = Sigma[k - 1] * (XYtr - XXtrMuOthers);
 				}
 			}
-			for (int v = 1; v <= Nvoxels; v++)
+			for (int v = 1; v <= m_nvoxels; v++)
 			{
 				Tracer_Plus tr("useFullEvidenceOptimization calculations -- second loop");
 
@@ -1436,7 +1433,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		}
 
 		// Back to your regularly-scheduled voxelwise calculations
-		for (int v = 1; v <= Nvoxels; v++)
+		for (int v = 1; v <= m_nvoxels; v++)
 		{
 			PassModelData(v);
 
@@ -1455,7 +1452,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			//{keepGoing[v-1] = false; LOG << "Bad Voxel! " << v << endl;}
 
 			//* MOVED HERE on Michael's advice -- 2007-11-23
-			if (!lockedLinearEnabled)
+			if (!m_lockedLinearEnabled)
 				linearVox[v - 1].ReCentre(fwdPosteriorVox[v - 1].means);
 
 			if (m_needF)
@@ -1481,15 +1478,15 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		// next iteration:
 	} while (!m_conv->Test(globalF));
 
-	// Phew!
+// Phew!
 
-	// Interesting addition: calculate "coefficient resels" from Penny et al. 2005
+// Interesting addition: calculate "coefficient resels" from Penny et al. 2005
 	for (int k = 1; k <= m_num_params; k++)
 	{
-		ColumnVector gamma_vk(Nvoxels); // might be handy
-		ColumnVector gamma_vk_eo(Nvoxels); // slightly different calculation (differs if using EO)
+		ColumnVector gamma_vk(m_nvoxels); // might be handy
+		ColumnVector gamma_vk_eo(m_nvoxels); // slightly different calculation (differs if using EO)
 		gamma_vk_eo = -999;
-		for (int v = 1; v <= Nvoxels; v++)
+		for (int v = 1; v <= m_nvoxels; v++)
 		{
 			gamma_vk(v) = 1 - fwdPosteriorVox[v - 1].GetCovariance()(k, k) / fwdPriorVox[v - 1].GetCovariance()(k, k);
 			if (fwdPosteriorWithoutPrior.at(v - 1) != NULL)
@@ -1499,48 +1496,48 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			}
 		}
 		LOG_ERR(
-				"Coefficient resels per voxel for param " << k << ": " << gamma_vk.Sum()/Nvoxels << " (vb) or " << gamma_vk_eo.Sum()/Nvoxels << " (eo)\n");
+				"Coefficient resels per voxel for param " << k << ": " << gamma_vk.Sum()/m_nvoxels << " (vb) or " << gamma_vk_eo.Sum()/m_nvoxels << " (eo)\n");
 	}
 
-	//  if (spatialPriorOutputCorrection)
-	//    {
-	//      Tracer_Plus tr("SpatialVariationalBayes::DoCalculations - Spatial Prior Ouput Correction");
-	//
-	//      // Instead of using the diagonal of the precision matrix as the prior
-	//      // precision, use 1/ the diagonal of the covariance matrix!
-	//      // All elements on this diagonal are exactly exp(-rho(k)).
-	//
-	//      DiagonalMatrix spatialCovariance(m_num_params);
-	//      for (int k = 1; k <= m_num_params; k++)
-	//	{
-	//	  spatialCovariance(k) = exp(-rho(k));
-	//	}
-	//
-	//      for (int v = 1; v <= Nvoxels; v++)
-	//	{
-	//	  assert(
-	//		 fwdPosteriorVox[v-1].GetPrecisions()
-	//		 == fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
-	//	 + fwdPriorVox[v-1].GetPrecisions());
-	//
-	//  fwdPosteriorVox[v-1].SetPrecisions(
-	//      fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
-	//      + SP(spatialCovariance.i(), initialFwdPrior->GetPrecisions()) );
-	//
-	//  //	  LOG << "fwdPriorVox[v-1].GetPrecisions:\n"
-	//  //	       << fwdPriorVox[v-1].GetPrecisions()
-	//  //	       << "spatialCovariance.i(): \n"
-	//  //	       << spatialCovariance.i();
-	//
-	//  // Leave the mean unchanged
-	//}
-	//}
+//  if (spatialPriorOutputCorrection)
+//    {
+//      Tracer_Plus tr("SpatialVariationalBayes::DoCalculations - Spatial Prior Ouput Correction");
+//
+//      // Instead of using the diagonal of the precision matrix as the prior
+//      // precision, use 1/ the diagonal of the covariance matrix!
+//      // All elements on this diagonal are exactly exp(-rho(k)).
+//
+//      DiagonalMatrix spatialCovariance(m_num_params);
+//      for (int k = 1; k <= m_num_params; k++)
+//	{
+//	  spatialCovariance(k) = exp(-rho(k));
+//	}
+//
+//      for (int v = 1; v <= m_nvoxels; v++)
+//	{
+//	  assert(
+//		 fwdPosteriorVox[v-1].GetPrecisions()
+//		 == fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
+//	 + fwdPriorVox[v-1].GetPrecisions());
+//
+//  fwdPosteriorVox[v-1].SetPrecisions(
+//      fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
+//      + SP(spatialCovariance.i(), initialFwdPrior->GetPrecisions()) );
+//
+//  //	  LOG << "fwdPriorVox[v-1].GetPrecisions:\n"
+//  //	       << fwdPriorVox[v-1].GetPrecisions()
+//  //	       << "spatialCovariance.i(): \n"
+//  //	       << spatialCovariance.i();
+//
+//  // Leave the mean unchanged
+//}
+//}
 
-	for (int v = 1; v <= Nvoxels; v++)
+	for (int v = 1; v <= m_nvoxels; v++)
 	{
 		resultMVNs[v - 1] = new MVNDist(fwdPosteriorVox[v - 1], noiseVox[v - 1]->OutputAsMVN());
 
-		if (alsoSaveWithoutPrior)
+		if (m_alsoSaveWithoutPrior)
 		{
 			resultMVNsWithoutPrior.at(v - 1) = new MVNDist(*fwdPosteriorWithoutPrior[v - 1],
 					noiseVox[v - 1]->OutputAsMVN());
@@ -1548,11 +1545,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		}
 	}
 
-	// resultFs are already stored as we go along.
+// resultFs are already stored as we go along.
 
 	if (!m_needF)
 	{
-		for (int v = 1; v <= Nvoxels; v++)
+		for (int v = 1; v <= m_nvoxels; v++)
 			assert(resultFs.at(v - 1) == 9999);
 		// check we're not throwing away anything useful
 
@@ -1560,8 +1557,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		// clearing resultFs here should prevent an F image from being saved.
 	}
 
-	// Save Sinvs if possible
-	if (alsoSaveSpatialPriors)
+// Save Sinvs if possible
+	if (m_alsoSaveSpatialPriors)
 	{
 		// Copied from MVNDist::Save.  There are enough subtle differences
 		// to justify duplicating the code here.
@@ -1572,15 +1569,15 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		Tracer_Plus tr("Saving Sinvs");
 		Matrix vols;
 
-		vols.ReSize(m_num_params, Nvoxels * Nvoxels);
+		vols.ReSize(m_num_params, m_nvoxels * m_nvoxels);
 		for (int k = 1; k <= m_num_params; k++)
 		{
-			assert(Sinvs.at(k-1).Nrows() == Nvoxels);
+			assert(Sinvs.at(k-1).Nrows() == m_nvoxels);
 			Matrix full = Sinvs.at(k - 1); // easier to visualize if in full form
 			vols.Row(k) = full.AsColumn().t();
 		}
 
-		volume4D<float> output(Nvoxels, Nvoxels, 1, m_num_params);
+		volume4D<float> output(m_nvoxels, m_nvoxels, 1, m_num_params);
 		output.set_intent(NIFTI_INTENT_SYMMATRIX, 1, 1, 1);
 		output.setdims(1, 1, 1, 1);
 		output.setmatrix(vols);
@@ -1593,8 +1590,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 #endif
 	}
 
-	// Delete stuff (avoid memory leaks)
-	for (int v = 1; v <= Nvoxels; v++)
+// Delete stuff (avoid memory leaks)
+	for (int v = 1; v <= m_nvoxels; v++)
 	{
 		delete noiseVox[v - 1];
 		delete noiseVoxPrior[v - 1];
@@ -1648,14 +1645,14 @@ inline int binarySearch(const ColumnVector& data, int num)
  */
 bool IsCoordMatrixCorrectlyOrdered(const Matrix& voxelCoords)
 {
-	// Only 3D
+// Only 3D
 	assert(voxelCoords.Nrows() == 3);
 
-	// Voxels are stored one per column, each column is the x/y/z coords
-	const int nVoxels = voxelCoords.Ncols();
+// Voxels are stored one per column, each column is the x/y/z coords
+	const int m_nvoxels = voxelCoords.Ncols();
 
-	// Go through each voxel one at a time apart from last
-	for (int v = 1; v <= nVoxels - 1; v++)
+// Go through each voxel one at a time apart from last
+	for (int v = 1; v <= m_nvoxels - 1; v++)
 	{
 		// Find difference between current coords and next
 		ColumnVector diff = voxelCoords.Column(v + 1) - voxelCoords.Column(v);
@@ -1684,19 +1681,19 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 	const int nVoxels = voxelCoords.Ncols();
 	assert(nVoxels > 0);
 
-	// Voxels must be ordered by increasing z, y and x values respectively in order
-	// of priority otherwise binary search for voxel by offset will not work
+// Voxels must be ordered by increasing z, y and x values respectively in order
+// of priority otherwise binary search for voxel by offset will not work
 	if (!IsCoordMatrixCorrectlyOrdered(voxelCoords))
 	{
 		throw Invalid_option("Coordinate matrix must be in correct order to use adjacency-based priors.");
 	}
 
-	// Create a column vector with one entry per voxel.
+// Create a column vector with one entry per voxel.
 	ColumnVector offsets(nVoxels);
 
-	// Populate offsets with the offset into the
-	// matrix of each voxel. We assume that co-ordinates
-	// could be zero but not negative
+// Populate offsets with the offset into the
+// matrix of each voxel. We assume that co-ordinates
+// could be zero but not negative
 	int xsize = m_coords->Row(1).Maximum() + 1;
 	int ysize = m_coords->Row(2).Maximum() + 1;
 	for (int v = 1; v <= nVoxels; v++)
@@ -1708,12 +1705,12 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 		offsets(v) = offset;
 	}
 
-	// Delta is a list of offsets to find nearest
-	// neighbours in x y and z direction (not diagonally)
-	// Of course applying these offsets naively would not
-	// always work, e.g. offset of -1 in the x direction
-	// will not be a nearest neighbour for the first voxel
-	// so need to check for this in subsequent code
+// Delta is a list of offsets to find nearest
+// neighbours in x y and z direction (not diagonally)
+// Of course applying these offsets naively would not
+// always work, e.g. offset of -1 in the x direction
+// will not be a nearest neighbour for the first voxel
+// so need to check for this in subsequent code
 	vector<int> delta;
 	delta.push_back(1); // next row
 	delta.push_back(-1); // prev row
@@ -1722,19 +1719,19 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 	delta.push_back(xsize * ysize); // next slice
 	delta.push_back(-xsize * ysize); // prev slice
 
-	// Don't look for neighbours in all dimensions.
-	// For example if spatialDims=2, max_delta=3 so we
-	// only look for neighbours in rows and columns
-	//
-	// However note we still need the full list of 3D deltas for later
+// Don't look for neighbours in all dimensions.
+// For example if spatialDims=2, max_delta=3 so we
+// only look for neighbours in rows and columns
+//
+// However note we still need the full list of 3D deltas for later
 	int max_delta = m_spatial_dims * 2 - 1;
 
-	// Neighbours is a vector of vectors, so each voxel
-	// will have an entry which is a vector of its neighbours
+// Neighbours is a vector of vectors, so each voxel
+// will have an entry which is a vector of its neighbours
 	m_neighbours.resize(nVoxels);
 
-	// Go through each voxel. Note that offsets is indexed from 1 not 0
-	// however the offsets themselves (potentially) start at 0.
+// Go through each voxel. Note that offsets is indexed from 1 not 0
+// however the offsets themselves (potentially) start at 0.
 	for (int vid = 1; vid <= nVoxels; vid++)
 	{
 		// Get the voxel offset into the matrix
@@ -1783,9 +1780,9 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 		}
 	}
 
-	// Similar algorithm but looking for Neighbours-of-neighbours, excluding self,
-	// but apparently including duplicates if there are two routes to get there
-	// (diagonally connected) FIXME is this behaviour intentional?
+// Similar algorithm but looking for Neighbours-of-neighbours, excluding self,
+// but apparently including duplicates if there are two routes to get there
+// (diagonally connected) FIXME is this behaviour intentional?
 	m_neighbours2.resize(nVoxels);
 
 	for (int vid = 1; vid <= nVoxels; vid++)
@@ -1829,13 +1826,13 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
 {
 	Tracer_Plus("ConvertMaskToVoxelCoordinates");
 
-	// Mask has previously been binarized to 0 or 1 to identify
-	// voxels of interest, so sum is count of these voxels
+// Mask has previously been binarized to 0 or 1 to identify
+// voxels of interest, so sum is count of these voxels
 	ColumnVector preThresh((int) mask.sum());
 	const int nVoxels = preThresh.Nrows();
 
-	// Populate preThresh with offset of voxel into matrix
-	// starting at 0 FIXME repeated from calculateNeigbours
+// Populate preThresh with offset of voxel into matrix
+// starting at 0 FIXME repeated from calculateNeigbours
 	int offset(0);
 	int count(1);
 	for (int z = 0; z < mask.zsize(); z++)
@@ -1853,12 +1850,12 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
 		}
 	}
 
-	// Dimensions of mask matrix
+// Dimensions of mask matrix
 	const int dims[3] =
 	{	mask.xsize(), mask.ysize(), mask.zsize()};
 
-	// Basic sanity checks. Note that xdim/ydim/zdim are the physical
-	// dimensions of the voxels
+// Basic sanity checks. Note that xdim/ydim/zdim are the physical
+// dimensions of the voxels
 	assert(mask.xsize()*mask.ysize()*mask.zsize() > 0);
 	assert(mask.xdim()*mask.ydim()*mask.zdim() > 0);
 
@@ -1899,8 +1896,8 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
 		assert(preThresh(vox)-1 == positions[0](vox) + positions[1](vox)*dims[0] + positions[2](vox)*dims[0]*dims[1] );
 	}
 
-	// Turn 3 column vectors into a matrix where each column is a voxel. note that
-	// need to transpose to do this
+// Turn 3 column vectors into a matrix where each column is a voxel. note that
+// need to transpose to do this
 	voxelCoords = (positions[0] | positions[1] | positions[2]).t();
 }
 #endif
@@ -1917,7 +1914,7 @@ void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoord
  */
 void CovarianceCache::CalcDistances(const NEWMAT::Matrix& voxelCoords, const string& distanceMeasure)
 {
-	// Create 3 column vectors, one to hold X co-ordinates, one Y and one Z
+// Create 3 column vectors, one to hold X co-ordinates, one Y and one Z
 	ColumnVector positions[3];
 	positions[0] = voxelCoords.Row(1).t();
 	positions[1] = voxelCoords.Row(2).t();
@@ -1925,9 +1922,9 @@ void CovarianceCache::CalcDistances(const NEWMAT::Matrix& voxelCoords, const str
 
 	const int nVoxels = positions[0].Nrows();
 
-	// dimSize is already included in voxelCoords
-	// FIXME not obvious that it is, if not this should
-	// be the dimensions of a voxel in mm
+// dimSize is already included in voxelCoords
+// FIXME not obvious that it is, if not this should
+// be the dimensions of a voxel in mm
 	const double dimSize[3] =
 	{ 1.0, 1.0, 1.0 };
 
@@ -1938,17 +1935,17 @@ void CovarianceCache::CalcDistances(const NEWMAT::Matrix& voxelCoords, const str
 				<< "the distance matrix.  Hope you're not trying to invert this sucker!\n" << endl;
 	}
 
-	// 3 NxN symmetric matrices where N is the number of voxels
-	// Each entry gives the absolute difference between
-	// X/Y/Z co-ordinates respectively (FIXME in millimetres
-	// supposedly but perhaps not given comments above)
+// 3 NxN symmetric matrices where N is the number of voxels
+// Each entry gives the absolute difference between
+// X/Y/Z co-ordinates respectively (FIXME in millimetres
+// supposedly but perhaps not given comments above)
 	SymmetricMatrix relativePos[3];
 
-	// Column vector with one entry per voxel, all set to 1 initially
+// Column vector with one entry per voxel, all set to 1 initially
 	ColumnVector allOnes(nVoxels);
 	allOnes = 1.0;
 
-	// FIXME do not understand why this works!
+// FIXME do not understand why this works!
 	for (int dim = 0; dim < 3; dim++)
 	{
 		Matrix rel = dimSize[dim] * (positions[dim] * allOnes.t() - allOnes * positions[dim].t());
@@ -1958,10 +1955,10 @@ void CovarianceCache::CalcDistances(const NEWMAT::Matrix& voxelCoords, const str
 		relativePos[dim] << rel;
 	}
 
-	// Distances is an NxN symmetric matrix where N is number of voxels
+// Distances is an NxN symmetric matrix where N is number of voxels
 	distances.ReSize(nVoxels);
 
-	// FIXME code repetition here, distance measure should invoke a function probably
+// FIXME code repetition here, distance measure should invoke a function probably
 	if (distanceMeasure == "dist1")
 	{
 		// absolute Euclidean distance
@@ -2022,7 +2019,7 @@ public:
 		return;
 	}
 
-	// don't need a PickFasterGuess
+// don't need a PickFasterGuess
 
 private:
 	const CovarianceCache& covar;
@@ -2067,15 +2064,15 @@ class DerivEdDelta: public GenericFunction1D
 public:
 	virtual double Calculate(double delta) const;
 	DerivEdDelta(const CovarianceCache& c, const vector<MVNDist*>& fpwp,
-	//	       const vector<SymmetricMatrix>& Si)
+//	       const vector<SymmetricMatrix>& Si)
 			const int kindex, const MVNDist* initFwdPrior, const bool r = false) :
 			covar(c), fwdPosteriorWithoutPrior(fpwp), k(kindex), initialFwdPrior(initFwdPrior), allowRhoToVary(r)
-	//Sinvs(Si)
+//Sinvs(Si)
 	{
 		return;
 	}
 
-	//  virtual bool PickFasterGuess(double* guess, double lower, double upper, bool allowEndpoints = false) const
+//  virtual bool PickFasterGuess(double* guess, double lower, double upper, bool allowEndpoints = false) const
 	virtual double OptimizeRho(double delta) const;
 
 private:
@@ -2085,13 +2082,13 @@ private:
 //  const ColumnVector& XYtr; // = X*Y'*precision -- replaces meanDiffRatio;
 	const vector<MVNDist*>& fwdPosteriorWithoutPrior;
 
-	// To allow multiple parameters, will need storage for k (which param to optimize)
-	// and the other prior precision matrices (may be from Penny, Nonspatial, etc.)
+// To allow multiple parameters, will need storage for k (which param to optimize)
+// and the other prior precision matrices (may be from Penny, Nonspatial, etc.)
 
 	const int k;
 	const MVNDist* initialFwdPrior;
 
-	//const vector<SymmetricMatrix>& Sinvs;
+//const vector<SymmetricMatrix>& Sinvs;
 
 	bool allowRhoToVary;
 };
@@ -2104,8 +2101,8 @@ double DerivEdDelta::OptimizeRho(double delta) const
 	if (!allowRhoToVary)
 		return 0.0;
 
-	// This is just copy-pasted from ::Calculate.  There are more efficient
-	// ways to do this!
+// This is just copy-pasted from ::Calculate.  There are more efficient
+// ways to do this!
 	const SymmetricMatrix& dist = covar.GetDistances();
 	const int Nvoxels = dist.Nrows();
 
@@ -2144,7 +2141,7 @@ double DerivEdDelta::Calculate(double delta) const
 {
 	Tracer_Plus tr("DerivEdDelta::Calculate");
 
-	//  assert(delta >= 0.05); // Will be slow below this scale
+//  assert(delta >= 0.05); // Will be slow below this scale
 
 	const SymmetricMatrix& dist = covar.GetDistances();
 	const int Nvoxels = dist.Nrows();
@@ -2179,8 +2176,8 @@ double DerivEdDelta::Calculate(double delta) const
 
 	out -= (Sigma * CiCodistCi).Trace();
 
-	// If the trace turns out to be slow, then
-	// use identity: trace(a*b) == sum(sum(a.*b'))
+// If the trace turns out to be slow, then
+// use identity: trace(a*b) == sum(sum(a.*b'))
 
 	const ColumnVector mu = Sigma * XYtr;
 
@@ -2311,7 +2308,7 @@ public:
 private:
 	const CovarianceCache& covar;
 	const DiagonalMatrix& covRatio;
-	//const SymmetricMatrix& covRatioSupplemented;
+//const SymmetricMatrix& covRatioSupplemented;
 	const ColumnVector& meanDiffRatio;
 	bool allowRhoToVary;
 };
@@ -2321,72 +2318,72 @@ double DerivFdDelta::Calculate(const double delta) const
 	Tracer_Plus tr("DerivFdDelta::Calculate");
 
 	const double rho = OptimizeRho(delta);
-	// Returns rho = 0 if !allowRhoToVary.
-	// Otherwise we return the value of delta optimized over all rhos!
+// Returns rho = 0 if !allowRhoToVary.
+// Otherwise we return the value of delta optimized over all rhos!
 
-	// Now that we've optimized over rho, get on with the calculation:
+// Now that we've optimized over rho, get on with the calculation:
 
-	//    LOG_ERR("        Calculating dF/ddelta at " << delta << endl);
+//    LOG_ERR("        Calculating dF/ddelta at " << delta << endl);
 
 	assert(delta >= 0.05);
-	//    const SymmetricMatrix& dist = covar.GetDistances();
+//    const SymmetricMatrix& dist = covar.GetDistances();
 	const SymmetricMatrix& dist = covar.GetDistances();
 	const int Nvoxels = dist.Nrows();
 	assert(covRatio.Nrows() == Nvoxels);
 	assert(meanDiffRatio.Nrows() == Nvoxels);
 
-	//SymmetricMatrix C = covar.GetC(delta);
-	//const SymmetricMatrix& Ci = covar.GetCinv(delta);
-	//const Matrix& CiCodist = covar.GetCiCodist(delta);
-	//double out = covar.GetCiCodist(delta).Trace();
+//SymmetricMatrix C = covar.GetC(delta);
+//const SymmetricMatrix& Ci = covar.GetCinv(delta);
+//const Matrix& CiCodist = covar.GetCiCodist(delta);
+//double out = covar.GetCiCodist(delta).Trace();
 
 	double out;
 	const SymmetricMatrix& CiCodistCi = covar.GetCiCodistCi(delta, &out);
-	// Above does: out = trace(CiCodist)
+// Above does: out = trace(CiCodist)
 
-	//    LOG << "The uncacheable parts... " << flush;
-	//LOG_ERR("values: " << out);
+//    LOG << "The uncacheable parts... " << flush;
+//LOG_ERR("values: " << out);
 
-	// Correct???, but slower:
-	//    out -= exp(rho) * (
-	//		         (covRatio.i() - diag(old Ci) + Ci).i() * CiCodistCi
-	//		      ).Trace();
+// Correct???, but slower:
+//    out -= exp(rho) * (
+//		         (covRatio.i() - diag(old Ci) + Ci).i() * CiCodistCi
+//		      ).Trace();
 
-	// Hopefully also correct (after iterations) but faster:
-	// METHOD USED BEFORE 2008-03-13
+// Hopefully also correct (after iterations) but faster:
+// METHOD USED BEFORE 2008-03-13
 	out -= exp(rho) * (covRatio * CiCodistCi).Trace();
 
-	// If the trace turns out to be slow, then
-	// use identity: trace(a*b) == sum(sum(a.*b'))
+// If the trace turns out to be slow, then
+// use identity: trace(a*b) == sum(sum(a.*b'))
 
 	out -= exp(rho) * (meanDiffRatio.t() * CiCodistCi * meanDiffRatio).AsScalar(); // REQUIRES MEANDIFFRATIO
 	out /= -4 * delta * delta;
-	//    LOG << "done." << endl;
+//    LOG << "done." << endl;
 
-	// Slower (equivalent) method
-	//C = exp(-0.5*dist/delta_s);
-	//Ci = inv(C);
-	//Codist = C.*dist;
-	//out2 = -0.25/delta_s^2 * ( ...
-	//    trace(Ci * Codist) ...
-	//    + trace(inv(diag(precRatio)) * Ci * Codist * Ci) ...
-	//    + meanDiffRatio' * Ci * Codist * Ci * meanDiffRatio );
-	//[out out2];
-	//assert(diff(ans)/mean(ans) < 1e-10)
+// Slower (equivalent) method
+//C = exp(-0.5*dist/delta_s);
+//Ci = inv(C);
+//Codist = C.*dist;
+//out2 = -0.25/delta_s^2 * ( ...
+//    trace(Ci * Codist) ...
+//    + trace(inv(diag(precRatio)) * Ci * Codist * Ci) ...
+//    + meanDiffRatio' * Ci * Codist * Ci * meanDiffRatio );
+//[out out2];
+//assert(diff(ans)/mean(ans) < 1e-10)
 
-	//    LOG_ERR("        dF/ddelta at\t" << delta << " =\t" << out << endl);
+//    LOG_ERR("        dF/ddelta at\t" << delta << " =\t" << out << endl);
 
-	//    LOG_ERR(" - " << SP(covRatio, CiCodistCi).Trace()
-	//    << " - " << (meanDiffRatio.t() * CiCodistCi * meanDiffRatio).AsScalar()
-	//    << " all / " <<  -4*delta*delta
-	//    << " - " << log(delta)
-	//    <<" == " << out << endl);
+//    LOG_ERR(" - " << SP(covRatio, CiCodistCi).Trace()
+//    << " - " << (meanDiffRatio.t() * CiCodistCi * meanDiffRatio).AsScalar()
+//    << " all / " <<  -4*delta*delta
+//    << " - " << log(delta)
+//    <<" == " << out << endl);
 
-	// Use a scale-free prior: F -= 1/delta
-	//   so F' -= -1/delta^2
+// Use a scale-free prior: F -= 1/delta
+//   so F' -= -1/delta^2
 
-	//    out -= -1/delta/delta;
-	//    LOG_ERR("Using NO PRIOR on delta\n");
+//    out -= -1/delta/delta;
+//    LOG_ERR("Using NO PRIOR on delta\n");
 
 	if (0)
 	{
@@ -2408,7 +2405,7 @@ double DerivFdDelta::Calculate(const double delta) const
 		Warning::IssueOnce("Not using any prior at all on delta");
 	}
 
-	//    LOG_ERR("Using CORRECT scale-free prior on DerivFdDelta\n");
+//    LOG_ERR("Using CORRECT scale-free prior on DerivFdDelta\n");
 
 	return out;
 }
@@ -2423,7 +2420,7 @@ double SpatialVariationalBayes::OptimizeEvidence(
 
 	assert(fwdPosteriorWithoutPrior.at(0) != NULL);
 	const int Nparams = fwdPosteriorWithoutPrior[0]->GetSize();
-	//const int Nvoxels = fwdPosteriorWithoutPrior.size();
+//const int Nvoxels = fwdPosteriorWithoutPrior.size();
 	LOG << Nparams << ", " << k << endl;
 	assert(Nparams >= 1);
 	assert(k <= Nparams);
@@ -2431,20 +2428,20 @@ double SpatialVariationalBayes::OptimizeEvidence(
 	DerivEdDelta fcn(covar, fwdPosteriorWithoutPrior, k, initialFwdPrior, allowRhoToVary);
 
 	LogBisectionGuesstimator guesser;
-	//LogRiddlersGuesstimator guesser;
+//LogRiddlersGuesstimator guesser;
 
 	double hardMin = 0.05; // Much below 0.2 inversion becomes painfully slow
 	double hardMax = 1e3; // Above 1e15, exp(-0.5*1/delta) == 1 (singular)
 
 	double delta = DescendingZeroFinder(fcn).InitialGuess(guess)
-	//          .InitialScale(guess/16) // In two guesses, scale = guess (anywhere down to zero).
-	//          .ScaleGrowth(4)  // However, increasing from 0.05 to 1000 in one iterataion would take 10 new guesses.
+//          .InitialScale(guess/16) // In two guesses, scale = guess (anywhere down to zero).
+//          .ScaleGrowth(4)  // However, increasing from 0.05 to 1000 in one iterataion would take 10 new guesses.
 	.InitialScale(guess * 0.009) // So hopefully it'll only take two guesses once settled
 	.ScaleGrowth(16) // But it can escape pretty quickly!  7 guesses to get from 0.05 to 1000.
 	.SearchMin(hardMin).SearchMax(hardMax).RatioTolX(1.01).MaxEvaluations(2 + newDeltaEvaluations).SetGuesstimator(
 			&guesser);
 
-	//Warning::IssueAlways("Increased delta search precision to 1.0001 from 1.01");
+//Warning::IssueAlways("Increased delta search precision to 1.0001 from 1.01");
 	Warning::IssueOnce("Hard limits on delta: [" + stringify(hardMin) + ", " + stringify(hardMax) + "]");
 
 	if (rhoOut != NULL)
@@ -2509,19 +2506,21 @@ const ReturnMatrix CovarianceCache::GetC(double delta) const
 	const int Nvoxels = distances.Nrows();
 
 	SymmetricMatrix C(Nvoxels);
-	if (delta == 0) {
+	if (delta == 0)
+	{
 		C = IdentityMatrix(Nvoxels);
 	}
-	else {
+	else
+	{
 		for (int a = 1; a <= Nvoxels; a++)
 			for (int b = 1; b <= a; b++)
 				C(a, b) = exp(-0.5 * distances(a, b) / delta);
 	}
 
-	// NOTE: when distances = squared distance, prior is equivalent to white
-	// noise smoothed with a Gaussian with sigma^2 = 2*delta (haven't actually
-	// double-checked this yet).
-	// BEWARE: delta is measured in millimeters!! (based on NIFTI file info).
+// NOTE: when distances = squared distance, prior is equivalent to white
+// noise smoothed with a Gaussian with sigma^2 = 2*delta (haven't actually
+// double-checked this yet).
+// BEWARE: delta is measured in millimeters!! (based on NIFTI file info).
 
 	C.Release();
 	return C;
@@ -2551,12 +2550,12 @@ bool CovarianceCache::GetCachedInRange(double* guess, double lower, double upper
 	if (it->first == upper && !allowEndpoints)
 		return false;
 
-	// Success -- we have at least one fast guess!
+// Success -- we have at least one fast guess!
 	*guess = it->first;
 
-	//  LOG << "Found a guess! " << lower << " < " << *guess << " < " << upper << endl;
+//  LOG << "Found a guess! " << lower << " < " << *guess << " < " << upper << endl;
 
-	// Can we find a better one?
+// Can we find a better one?
 	while (++it != Cinv_cache.end() && it->first <= upper)
 	{
 		if (it->first == upper && !allowEndpoints)
@@ -2578,18 +2577,18 @@ const SymmetricMatrix& CovarianceCache::GetCinv(double delta) const
 {
 	Tracer_Plus tr("CovarianceCache::GetCinv");
 #ifdef NOCACHE
-		Warning::IssueOnce("Cache is disabled to avoid memory problems!");
-		cinv = GetC(delta);
-		if (cinv.Nrows() > 0) {
-			// Appears to be memory problem with inverting a 0x0 matrix
-			cinv = cinv.i();
-		}
+	Warning::IssueOnce("Cache is disabled to avoid memory problems!");
+	cinv = GetC(delta);
+	if (cinv.Nrows() > 0)
+	{
+		// Appears to be memory problem with inverting a 0x0 matrix
+		cinv = cinv.i();
+	}
 
-		return cinv;
+	return cinv;
 #else
 	if (Cinv_cache[delta].Nrows() == 0)
 	{
-
 
 		//      LOG << "[" << flush;
 		//      LOG << "GetCinv cache miss... " << flush;

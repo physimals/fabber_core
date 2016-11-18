@@ -55,6 +55,26 @@ public:
 	//    virtual ~SpatialVariationalBayes();
 
 protected:
+	/**
+	 * Setup per-voxel data for Spatial VB
+	 *
+	 * Spatial VB needs each voxel's prior/posterior and other
+	 * data stored as it affects neighbouring voxels. This sets
+	 * up the vectors which store these things which are just
+	 * created on the fly for normal VB and throw away after each
+	 * voxel is done.
+	 */
+	void SetupPerVoxelDists(FabberRunData& allData);
+
+	// Per-voxel prior and posterior distributions. For Spatial VB we need to
+	// keep these around during iteration as the influence the calculations on
+	// neighbouring voxels
+	vector<NoiseParams*> noiseVox; // these change. polymorphic type, so need to use pointers
+	vector<NoiseParams*> noiseVoxPrior; // these may change in future
+	vector<MVNDist> fwdPriorVox;
+	vector<MVNDist> fwdPosteriorVox;
+	vector<LinearizedFwdModel> linearVox;
+	vector<MVNDist*> fwdPosteriorWithoutPrior;
 
 	/**
 	 * Number of spatial dimensions
@@ -142,6 +162,10 @@ protected:
 	 * Use simultaneous evidence optimization
 	 */
 	bool m_use_sim_evidence;
+
+	bool m_alsoSaveWithoutPrior;
+	bool m_alsoSaveSpatialPriors;
+	bool m_lockedLinearEnabled;
 
 	int firstParameterForFullEO;
 	bool useCovarianceMarginalsRatherThanPrecisions;

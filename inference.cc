@@ -65,6 +65,11 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 	saveModelFit = args.GetBool("save-model-fit");
 	saveResiduals = args.GetBool("save-residuals");
 
+	// Allow calculation to continue even with bad voxels
+	// Note that this is a bad idea when spatialDims>0, because the bad voxel
+	// will drag its neighbours around... but can never recover!  Maybe a more
+	// sensible approach is to reset bad voxels to the prior on each iteration.
+	// Spatial VB ignores this parameter, presumably for the above reason
 	haltOnBadVoxel = !args.GetBool("allow-bad-voxels");
 	if (haltOnBadVoxel)
 	{

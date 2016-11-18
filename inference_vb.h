@@ -57,6 +57,8 @@ protected:
 	void PassModelData(int voxel);
 
 	ConvergenceDetector* m_conv;
+
+	// Initial priors and posteriors - not per voxel. Set up in Initialize
 	std::auto_ptr<MVNDist> initialFwdPrior;
 	MVNDist* initialFwdPosterior;
 	NoiseParams* initialNoisePrior;
@@ -65,6 +67,7 @@ protected:
 	const NEWMAT::Matrix *m_origdata;
 	const NEWMAT::Matrix *m_coords;
 	const NEWMAT::Matrix *m_suppdata;
+	int m_nvoxels;
 
 	std::vector<PriorType> m_prior_types;
 
