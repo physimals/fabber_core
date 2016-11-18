@@ -292,43 +292,111 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData& allData)
 	}
 }
 
+void SpatialVariationalBayes::SetupStSMatrix()
+{
+	Tracer_Plus tr("Creating StS matrix");
+	assert((int)m_neighbours.size() == m_nvoxels);
+
+	const double tiny = 1e-6;
+	Warning::IssueOnce("Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
+	// NEW METHOD
+	{
+		Tracer_Plus tr("New method for generating StS matrix");
+		LOG << "Attempting to allocate, m_nvoxels = " << m_nvoxels << endl;
+		StS.ReSize(m_nvoxels);
+		StS = 0;
+		for (int v = 1; v <= m_nvoxels; v++)
+		{
+			// Number of neighbours v has
+			int Nv = m_neighbours[v - 1].size();
+
+			// Diagonal value = N + (N+tiny)^2
+			StS(v, v) = Nv + (Nv + tiny) * (Nv + tiny);
+
+			// Off-diagonal value = num 2nd-order neighbours (with duplicates) - Aij(Ni+Nj+2*tiny)
+			for (vector<int>::iterator nidIt = m_neighbours[v - 1].begin(); nidIt != m_neighbours[v - 1].end(); nidIt++)
+			{
+				if (v < *nidIt)
+					StS(v, *nidIt) -= Nv + m_neighbours[*nidIt - 1].size() + 2 * tiny;
+			}
+			for (vector<int>::iterator nidIt = m_neighbours2[v - 1].begin(); nidIt != m_neighbours2[v - 1].end();
+					nidIt++)
+			{
+				if (v < *nidIt)
+					StS(v, *nidIt) += 1;
+			}
+		}
+		LOG << "Done generating StS matrix (New method)" << endl;
+	} // end NEW METHOD tracer block
+
+	/* OLD METHOD
+	 // Slow because connect*connect is O(N^3)
+	 SymmetricMatrix connect =
+	 IdentityMatrix(m_nvoxels) * 1e-6;
+	 Warning::IssueOnce("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
+		 for (int v = 1; v <= m_nvoxels; v++)
+	 {
+	 for (vector<int>::iterator nidIt = neighbours[v-1].begin();
+	 nidIt != neighbours[v-1].end(); nidIt++)
+	 {
+	 int nid = *nidIt;
+	 connect(v, nid) = -1;
+	 connect(v,v) += 1;
+	 }
+	 }
+
+	 Tracer_Plus tr2("connect*connect");
+	 Matrix sTmp = connect*connect;
+	 assert(sTmp == sTmp.t());
+	 // Skip this, since we're just doing a validation check: StS << sTmp;
+
+	 // VALIDATE THAT OLD == NEW
+	 for (int i = 1; i <= m_nvoxels; i++)
+	 for (int j = 1; j <= m_nvoxels; j++)
+	 if (sTmp(i,j) != StS(i,j))
+	 LOG << "Mismatch at " << i << "," << j << ": " << sTmp(i,j) << "," << StS(i,j) << endl;
+
+	 assert(sTmp == StS);
+	 // END OLD METHOD */
+}
+
 void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 {
 	Tracer_Plus tr("SpatialVariationalBayes::DoCalculations");
 
-// extract data (and the coords) from allData for the (first) VB run
-// Rows are volumes
-// Columns are (time) series
-// num Rows is size of (time) series
-// num Cols is size of volumes
+	// extract data (and the coords) from allData for the (first) VB run
+	// Rows are volumes
+	// Columns are (time) series
+	// num Rows is size of (time) series
+	// num Cols is size of volumes
 	m_origdata = &allData.GetMainVoxelData();
 	m_coords = &allData.GetVoxelCoords();
 	m_suppdata = &allData.GetVoxelSuppData();
 	m_nvoxels = m_origdata->Ncols();
 
-// pass in some (dummy) data/coords here just in case the model relies upon it
-// use the first voxel values as our dummies FIXME this shouldn't really be
-// necessary, need to find way for model to know about the data beforehand.
+	// pass in some (dummy) data/coords here just in case the model relies upon it
+	// use the first voxel values as our dummies FIXME this shouldn't really be
+	// necessary, need to find way for model to know about the data beforehand.
 	PassModelData(1);
 
-// Added to diagonal to make sure the spatial precision matrix
-// doesn't become singular -- and isolated voxels behave sensibly.
+	// Added to diagonal to make sure the spatial precision matrix
+	// doesn't become singular -- and isolated voxels behave sensibly.
 	const double tiny = 0; // turns out to be no longer necessary.
 
-// Only call DoCalculations once
+	// Only call DoCalculations once
 	assert(resultMVNs.empty());
 	assert(resultFs.empty());
 	assert(resultMVNsWithoutPrior.empty());
 
-// Initialization:
+	// Initialization:
 
-// Make the neighbours[] lists if required
+	// Make the neighbours[] lists if required
 	if (m_prior_types_str.find_first_of("mMpPSZ") != string::npos)
 	{
 		CalcNeighbours(allData.GetVoxelCoords());
 	}
 
-// Make distance matrix if required
+	// Make distance matrix if required
 	if (m_prior_types_str.find_first_of("RDF") != string::npos)
 	{
 		// Note: really ought to know the voxel dimensions and multiply by those, because CalcDistances expects an input in mm, not index.
@@ -337,112 +405,34 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 
 	SetupPerVoxelDists(allData);
 
-// Make the spatial normalization parameters
-//akmean = 0*distsMaster.theta.means + 1e-8;
+	// Make the spatial normalization parameters
+	//akmean = 0*distsMaster.theta.means + 1e-8;
 	DiagonalMatrix akmean(m_num_params);
 	akmean = 1e-8;
-
 	DiagonalMatrix delta(m_num_params);
-	DiagonalMatrix rho(m_num_params);
-
 	delta = fixedDelta; // Hard-coded initial value (in mm!)
-	rho = 0;
 	LOG_ERR("Using initial value for all deltas: " << delta(1) << endl);
+	DiagonalMatrix rho(m_num_params);
+	rho = 0;
 
 	vector < SymmetricMatrix > Sinvs(m_num_params);
-	SymmetricMatrix StS; // Cache for StS matrix in 'S' mode
 
 	const double globalF = 1234.5678; // no sensible updates yet
-// FIXME can't calculate free energy with spatial VB yet
+	// FIXME can't calculate free energy with spatial VB yet
 
-	if (StS.Nrows() == 0 && m_neighbours.size() > 0 && (m_shrinkage_type == 'S' || m_shrinkage_type == 'Z'))
-	{
-		Tracer_Plus tr("Creating StS matrix");
-		assert((int )m_neighbours.size() == m_nvoxels);
-
-		const double tiny = 1e-6;
-		Warning::IssueOnce(
-				"Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
-
-// NEW METHOD
-		{
-			Tracer_Plus tr("New method for generating StS matrix");
-			LOG << "Attempting to allocate, m_nvoxels = " << m_nvoxels << endl;
-			StS.ReSize(m_nvoxels);
-			LOG << "Allocated" << endl;
-			StS = 0;
-			for (int v = 1; v <= m_nvoxels; v++)
-			{
-				int Nv = m_neighbours[v - 1].size(); // Number of neighbours v has
-
-				// Diagonal value = N + (N+tiny)^2
-				StS(v, v) = Nv + (Nv + tiny) * (Nv + tiny);
-
-				// Off-diagonal value = num 2nd-order neighbours (with duplicates) - Aij(Ni+Nj+2*tiny)
-				for (vector<int>::iterator nidIt = m_neighbours[v - 1].begin(); nidIt != m_neighbours[v - 1].end();
-						nidIt++)
-				{
-					if (v < *nidIt)
-						StS(v, *nidIt) -= Nv + m_neighbours[*nidIt - 1].size() + 2 * tiny;
-				}
-				for (vector<int>::iterator nidIt = m_neighbours2[v - 1].begin(); nidIt != m_neighbours2[v - 1].end();
-						nidIt++)
-				{
-					if (v < *nidIt)
-						StS(v, *nidIt) += 1;
-				}
-			}
-			LOG << "Done generating StS matrix (New method)" << endl;
-		} // end NEW METHOD tracer block
-
-		/* OLD METHOD
-		 // Slow because connect*connect is O(N^3)
-		 SymmetricMatrix connect =
-		 IdentityMatrix(m_nvoxels) * 1e-6;
-		 Warning::IssueOnce("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
-
-		 for (int v = 1; v <= m_nvoxels; v++)
-		 {
-		 for (vector<int>::iterator nidIt = neighbours[v-1].begin();
-		 nidIt != neighbours[v-1].end(); nidIt++)
-		 {
-		 int nid = *nidIt;
-		 connect(v, nid) = -1;
-		 connect(v,v) += 1;
-		 }
-		 }
-
-		 Tracer_Plus tr2("connect*connect");
-
-		 Matrix sTmp = connect*connect;
-		 assert(sTmp == sTmp.t());
-		 // Skip this, since we're just doing a validation check: StS << sTmp;
-
-		 // VALIDATE THAT OLD == NEW
-		 for (int i = 1; i <= m_nvoxels; i++)
-		 for (int j = 1; j <= m_nvoxels; j++)
-		 if (sTmp(i,j) != StS(i,j))
-		 LOG << "Mismatch at " << i << "," << j << ": " << sTmp(i,j) << "," << StS(i,j) << endl;
-
-		 assert(sTmp == StS);
-
-		 // END OLD METHOD */
-	}
+	// Cache for StS matrix in 'S' or 'Z' mode
+	if ((m_shrinkage_type == 'S') || (m_shrinkage_type == 'Z')) SetupStSMatrix();
 
 	m_conv->Reset();
 	bool isFirstIteration = true; // slightly different behaviour in first iteratio
 
-//  if (!useShrinkageMethod) LOG_ERR("HACK: using --fixed-delta value on first iteration instead of automatically determining delta from priors\n");
-
-// MAIN ITERATION LOOP
+	// MAIN ITERATION LOOP
 	do
 	{
 		Tracer_Plus tr("Main iteration loop");
 		m_conv->DumpTo(LOG);
 
 		// UPDATE SPATIAL SHRINKAGE PRIOR PARAMETERS
-
-		//    if (useShrinkageMethod)
 		if (m_shrinkage_type != '-' && (!isFirstIteration || m_update_first_iter))
 		{
 			Tracer_Plus tr("SpatialVariationalBayes::DoCalculations - old spatial norm update");

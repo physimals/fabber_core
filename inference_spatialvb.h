@@ -66,15 +66,23 @@ protected:
 	 */
 	void SetupPerVoxelDists(FabberRunData& allData);
 
+	/**
+	 * Set up the StS matrix used for S and Z spatial priors
+	 */
+	void SetupStSMatrix();
+
 	// Per-voxel prior and posterior distributions. For Spatial VB we need to
 	// keep these around during iteration as the influence the calculations on
 	// neighbouring voxels
-	vector<NoiseParams*> noiseVox; // these change. polymorphic type, so need to use pointers
-	vector<NoiseParams*> noiseVoxPrior; // these may change in future
-	vector<MVNDist> fwdPriorVox;
-	vector<MVNDist> fwdPosteriorVox;
-	vector<LinearizedFwdModel> linearVox;
-	vector<MVNDist*> fwdPosteriorWithoutPrior;
+	std::vector<NoiseParams*> noiseVox; // these change. polymorphic type, so need to use pointers
+	std::vector<NoiseParams*> noiseVoxPrior; // these may change in future
+	std::vector<MVNDist> fwdPriorVox;
+	std::vector<MVNDist> fwdPosteriorVox;
+	std::vector<LinearizedFwdModel> linearVox;
+	std::vector<MVNDist*> fwdPosteriorWithoutPrior;
+
+	// StS matrix used for S and Z spatial priors
+	NEWMAT::SymmetricMatrix StS;
 
 	/**
 	 * Number of spatial dimensions
