@@ -139,7 +139,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 			for (int vox = 1; vox <= nVoxels; vox++)
 			{
 				paramMean(1, vox) = resultMVNs[vox - 1]->means(i);
-				float std = sqrt(resultMVNs[vox - 1]->GetCovariance()(i, i));
+				double std = sqrt(resultMVNs[vox - 1]->GetCovariance()(i, i));
 				paramZstat(1, vox) = paramMean(1, vox) / std;
 				paramStd(1, vox) = std;
 			}
