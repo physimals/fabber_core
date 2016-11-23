@@ -136,6 +136,9 @@ void TrialModeConvergenceDetector::Initialize(FabberRunData &params)
 {
 	FchangeConvergenceDetector::Initialize(params);
 
+	// FIXME for consistency with previous versions but not really correct!
+	m_max_its += 1;
+
 	m_max_trials = convertTo<int> (params.GetStringDefault("max-trials", "10"));
 	LOG << "TrialModeConvergenceDetector::Max trials=" << m_max_trials << endl;
 	if (m_min_fchange <= 0)
