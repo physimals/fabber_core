@@ -325,6 +325,10 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 {
 	// Prepare an output vector of the correct size
 	const int nVoxels = voxel_data.Ncols();
+	if (nVoxels == 0) {
+		throw runtime_error("MVNDist::Load - Voxel data is empty")
+	}
+
 	for (unsigned i = 0; i < mvns.size(); i++)
 		assert(mvns[i] == NULL); // should've deleted everything first.
 	mvns.resize(nVoxels, NULL);
@@ -334,11 +338,12 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 	// for N as a function of P given in Load, using the quadratic
 	// formula.
 	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
-	assert(voxel_data.Nrows() == nParams * (nParams + 1) / 2 + nParams + 1);
+	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
+		throw runtime_error("MVNDist::Load  - Incorrect number of rows for an MVN input")
+	}
 
 	SymmetricMatrix tmp(nParams);
 
-	assert(nVoxels > 0);
 
 	// Create a new MVN dist for each voxel,
 	// and set the covariances and the means from
@@ -357,6 +362,9 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 		mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
 				nParams * (nParams + 1) / 2 + nParams);
 
+		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
+			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1")
+		}
 		assert(voxel_data(voxel_data.Nrows(), vox) == 1);
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);
