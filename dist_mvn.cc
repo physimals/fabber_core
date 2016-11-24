@@ -326,7 +326,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 	// Prepare an output vector of the correct size
 	const int nVoxels = voxel_data.Ncols();
 	if (nVoxels == 0) {
-		throw runtime_error("MVNDist::Load - Voxel data is empty")
+		throw runtime_error("MVNDist::Load - Voxel data is empty");
 	}
 
 	for (unsigned i = 0; i < mvns.size(); i++)
@@ -339,7 +339,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 	// formula.
 	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
 	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
-		throw runtime_error("MVNDist::Load  - Incorrect number of rows for an MVN input")
+		throw runtime_error("MVNDist::Load  - Incorrect number of rows for an MVN input");
 	}
 
 	SymmetricMatrix tmp(nParams);
@@ -363,7 +363,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 				nParams * (nParams + 1) / 2 + nParams);
 
 		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
-			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1")
+			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
 		}
 		assert(voxel_data(voxel_data.Nrows(), vox) == 1);
 		assert(mvn->means.Nrows() == mvn->m_size);
