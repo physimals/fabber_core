@@ -59,8 +59,6 @@ int execute(int argc, char** argv)
 		// Create a new Fabber run
 		FabberIoNewimage io;
 		FabberRunData params(&io);
-		PercentProgressCheck percent;
-		params.SetProgressCheck(&percent);
 		params.Parse(argc, argv);
 
 		string load_models = params.GetStringDefault("loadmodels", "");
@@ -156,7 +154,8 @@ int execute(int argc, char** argv)
 
 		// Start a new tracer for timing purposes
 		{
-			params.Run();
+			PercentProgressCheck percent;
+			params.Run(&percent);
 		}
 
 		if (recordTimings)

@@ -64,7 +64,7 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
 			<< value.description << endl;
 }
 
-void PercentProgressCheck::operator()(int voxel, int nVoxels)
+void PercentProgressCheck::Progress(int voxel, int nVoxels)
 {
 	int percent = (100 * voxel) / nVoxels;
 	if (percent / 10 > m_last)
@@ -166,6 +166,12 @@ string FabberRunData::GetDate()
 FabberRunData::FabberRunData(FabberIo *io) :
 		m_progress(0), m_io(io)
 {
+	// If no IO module is given, use the built in default
+	// although this will render the object fairly useless
+	if (!m_io) {
+		m_io = &m_default_io;
+	}
+
 	init();
 }
 
@@ -196,10 +202,12 @@ void FabberRunData::LogParams()
 	}
 }
 
-void FabberRunData::Run()
+void FabberRunData::Run(ProgressCheck *progress)
 {
 	Tracer_Plus tr2("FabberRunData::Run");
+	if (!m_io) throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
+	m_progress = progress;
 	LOG << "FabberRunData::FABBER release v" << GetVersion() << endl;
 	LOG << "FabberRunData::Revision " << GetRevision() << endl;
 	LOG << "FabberRunData::Last commit: " << GetDate() << endl;
@@ -211,7 +219,7 @@ void FabberRunData::Run()
 	LogParams();
 
 	// Initialize data loader, if we have one
-	if (m_io) m_io->Initialize(*this);
+	m_io->Initialize(*this);
 
 	//Set the forward model
 	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
@@ -233,7 +241,6 @@ void FabberRunData::Run()
 	infer->DoCalculations(*this);
 	Progress(nvoxels, nvoxels);
 	infer->SaveResults(*this);
-
 
 	LOG << "FabberRunData::All done." << endl;
 
@@ -399,20 +406,17 @@ void FabberRunData::Unset(const std::string key)
 
 string FabberRunData::GetString(const string key)
 {
-	return GetString(key, "Missing mandatory option: --" + key + "\n");
+	return Read(key, "Missing mandatory option: --" + key + "\n");
 }
 
-string FabberRunData::GetString(const string key, const string msg)
+string FabberRunData::GetStringDefault(const string key, const string def)
 {
 	if (m_params.count(key) == 0)
-		throw Invalid_option(msg);
-
+		return def;
 	if (m_params[key] == "")
-		throw Invalid_option("No value given for mandatory option: --" + key + "=???");
-
-	// okay, option is valid.  Now remove it.
+		throw Invalid_option("Option requires a value: --" + key + " (or omit, equivalent to --" + key + "=" + def);
 	string ret = m_params[key];
-	//    m_params.erase(key);
+	//   m_params.erase(key);
 	return ret;
 }
 
@@ -432,7 +436,7 @@ bool FabberRunData::GetBool(const string key)
 
 int FabberRunData::GetInt(const string key)
 {
-	string val = GetString(key, "Mandatory option not specified: " + key);
+	string val = GetString(key);
 	try
 	{
 		return convertTo<int>(val);
@@ -444,7 +448,7 @@ int FabberRunData::GetInt(const string key)
 
 double FabberRunData::GetDouble(const string key)
 {
-	string val = GetString(key, "Mandatory option not specified: " + key);
+	string val = GetString(key);
 	try
 	{
 		return convertTo<double>(val);
@@ -470,15 +474,33 @@ double FabberRunData::GetDoubleDefault(const string key, double def)
 		return GetDouble(key);
 }
 
-string FabberRunData::GetStringDefault(const string key, const string def)
+string FabberRunData::Read(const string key, const string msg)
 {
 	if (m_params.count(key) == 0)
-		return def;
+		throw Invalid_option(msg);
+
 	if (m_params[key] == "")
-		throw Invalid_option("Option requires a value: --" + key + " (or omit, equivalent to --" + key + "=" + def);
+		throw Invalid_option("No value given for mandatory option: --" + key + "=???");
+
+	// okay, option is valid.  Now remove it.
 	string ret = m_params[key];
-	//   m_params.erase(key);
+	//    m_params.erase(key);
 	return ret;
+}
+
+std::string FabberRunData::Read(std::string key)
+{
+	return GetString(key);
+}
+
+std::string FabberRunData::ReadWithDefault(std::string key, std::string def)
+{
+	return GetStringDefault(key, def);
+}
+
+bool FabberRunData::ReadBool(std::string key)
+{
+		return GetBool(key);
 }
 
 ostream& operator<<(ostream& out, const FabberRunData& opts)

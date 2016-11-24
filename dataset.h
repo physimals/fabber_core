@@ -67,7 +67,7 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec &value);
 class ProgressCheck
 {
 public:
-	virtual void operator()(int voxel, int nVoxels)
+	virtual void Progress(int voxel, int nVoxels)
 	{
 	}
 };
@@ -84,7 +84,7 @@ public:
 			m_last(-1)
 	{
 	}
-	virtual void operator()(int voxel, int nVoxels);
+	virtual void Progress(int voxel, int nVoxels);
 
 private:
 	int m_last;
@@ -137,13 +137,20 @@ public:
 	 */
 	static void GetOptions(std::vector<OptionSpec> &opts);
 
+	/**
+	 * Constructor
+	 *
+	 * @param io Instance responsible for loading/saving voxel data.
+	 *           This will not be copied or freed. The caller is responsible
+	 *           for freeing it after use.
+	 */
 	FabberRunData(FabberIo *io);
 	~FabberRunData();
 
 	/**
 	 * Run fabber
 	 */
-	void Run();
+	void Run(ProgressCheck *check=0);
 
 	/**
 	 * Parse command line arguments into run data
@@ -222,15 +229,6 @@ public:
 	 * @throw if option is missing or is a boolean
 	 */
 	std::string GetString(const std::string key);
-
-	/**
-	 * Get string option.
-	 *
-	 * @param key Name of the string option
-	 * @param msg Custom error message if not found
-	 * @throw if option is missing or is a boolean
-	 */
-	std::string GetString(const std::string key, const std::string msg);
 
 	/**
 	 * Get string option with default if not found.
@@ -368,18 +366,6 @@ public:
 	const NEWMAT::Matrix& GetVoxelSuppData();
 
 	/**
-	 * Pass a functor which will be called periodically to allow progress to
-	 * be reported
-	 *
-	 * The only guarantees are that the functor will be called once at the
-	 * start and once at the end.
-	 */
-	void SetProgressCheck(ProgressCheck *check)
-	{
-		m_progress = check;
-	}
-
-	/**
 	 * Report progress
 	 *
 	 * InferenceMethods call this to report how many voxels
@@ -391,8 +377,7 @@ public:
 	 */
 	void Progress(int voxel, int nVoxels)
 	{
-		if (m_progress)
-			(*m_progress)(voxel, nVoxels);
+		if (m_progress) m_progress->Progress(voxel, nVoxels);
 	}
 
 	/**
@@ -404,25 +389,17 @@ public:
 	// Following methods present for compatibility only
 #ifdef DEPRECATED
 	/** @deprecated Use GetString instead */
-	std::string Read(std::string key)
-	{
-		return GetString(key);
-	}
+	std::string Read(std::string key);
+
 	/** @deprecated Use GetString instead */
-	std::string Read(std::string key, std::string msg)
-	{
-		return GetString(key);
-	}
+	std::string Read(std::string key, std::string msg);
+
 	/** @deprecated Use GetStringDefault instead */
-	std::string ReadWithDefault(std::string key, std::string def)
-	{
-		return GetStringDefault(key, def);
-	}
+	std::string ReadWithDefault(std::string key, std::string def);
+
 	/** @deprecated Use GetBool instead */
-	bool ReadBool(std::string key)
-	{
-		return GetBool(key);
-	}
+	bool ReadBool(std::string key);
+
 	void ParseOldStyleParamFile(const string filename);
 #endif
 
@@ -435,12 +412,34 @@ private:
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
 	const NEWMAT::Matrix &GetMainVoxelDataMultiple();
 
+	/** IO instance - not owned and will not be freed */
 	FabberIo *m_io;
+
+	/** Optional progress checker, could be NULL - not owned and will not be freed */
 	ProgressCheck *m_progress;
 
+	/**
+	 * Empty matrix
+	 *
+	 * Used for returning SUPPDATA which is optional and methods expect to receive
+	 * and empty matrix when it is not supplied
+	 */
 	NEWMAT::Matrix m_empty;
+
+	/**
+	 * Stores main voxel data when supplied in concatenated/interleaved form
+	 */
 	NEWMAT::Matrix m_mainDataMultiple;
+
+	/**
+	 * Options as key/value pairs
+	 */
 	std::map<std::string, std::string> m_params;
+
+	/**
+	 * Used as default if none is supplied by the user
+	 */
+	FabberIoMemory m_default_io;
 };
 
 #ifdef DEPRECATED
