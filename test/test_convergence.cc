@@ -212,15 +212,21 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorMaxIters)
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("trialmode");
 	c->Initialize(rundata);
 
+
+	// NOTE THAT THE TRIAL MODE CONVERGENCE DETECTOR GIVES YOU
+	// 1 MORE ITERATION THAT REQUESTED, WE ARE KEEPING THIS
+	// BEHAVIOUR FOR NOW FOR BACKWARDS COMPATIBILITY
+	//
+	// SHOULD REALLY BE MAXITERS-1 IN THE LOOPS BELOW
 	ASSERT_EQ(true, c->UseF());
-	for (int i=0; i<MAXITERS-1; i++)
+	for (int i=0; i<MAXITERS; i++)
 	{
 		ASSERT_EQ(false, c->Test(F+2*i*FCHANGE));
 	}
 	ASSERT_EQ(true, c->Test(F+2*MAXITERS*FCHANGE));
 
 	c->Reset();
-	for (int i=0; i<MAXITERS-1; i++)
+	for (int i=0; i<MAXITERS; i++)
 	{
 		ASSERT_EQ(false, c->Test(F+2*i*FCHANGE));
 	}
