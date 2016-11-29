@@ -32,8 +32,8 @@ else (FSL_BUILD)
   find_path(NEWMAT_INCLUDE_DIR newmat.h
             HINTS $ENV{FSLDIR}/extras/include/newmat REQUIRED)
   
-  find_path(MCFLIRT_INCLUDE_DIR /mcflirt/rigidreglib.h
-            HINTS $ENV{FSLDIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/.. OPTIONAL)
+  #find_path(MCFLIRT_INCLUDE_DIR /mcflirt/rigidreglib.h
+  #          HINTS $ENV{FSLDIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/.. OPTIONAL)
   if(NOT MCFLIRT_INCLUDE_DIR)
      Message("-- MCFLIRT not found - will not enable motion corrrection")
   else(NOT MCFLIRT_INCLUDE_DIR)
