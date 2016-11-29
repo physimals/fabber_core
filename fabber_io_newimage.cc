@@ -52,6 +52,10 @@ void FabberIoNewimage::Initialize(FabberRunData &rundata)
 		m_have_mask = true;
 		SetVoxelCoordsFromExtent(m_mask.xsize(), m_mask.ysize(), m_mask.zsize());
 	}
+	else {
+		// Make sure the coords are loaded from the main data
+		rundata.GetMainVoxelData();
+	}
 }
 
 const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
