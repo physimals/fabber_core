@@ -1,9 +1,14 @@
 // fwdmodel_sine.h - A simple sine curve fitting model
 
-#include "fwdmodel.h"
-#include "dataset.h"
-#include <string>
+#ifndef FWDMODEL_SINE_H
+#define FWDMODEL_SINE_H
+
+#include "fabber_core/fwdmodel.h"
+#include "fabber_core/dataset.h"
+
 #include "newmat.h"
+
+#include <string>
 
 class SineFwdModel: public FwdModel
 {
@@ -21,4 +26,6 @@ private:
 	bool m_include_offset;
 	static FactoryRegistration<FwdModelFactory, SineFwdModel> registration;
 };
+
+#endif
 
