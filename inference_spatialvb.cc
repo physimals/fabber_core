@@ -73,11 +73,11 @@ static int GetSpatialDims(FabberRunData& args)
 	}
 	else if (dims == 1)
 	{
-		Warning::IssueOnce("spatial-dims=1 is very weird... I hope you're just testing something!");
+//WARN_ONCE("spatial-dims=1 is very weird... I hope you're just testing something!");
 	}
 	else if (dims == 2)
 	{
-		Warning::IssueOnce("spatial-dims=2 doesn't decompose into slices and won't help if you're using the D prior");
+//WARN_ONCE("spatial-dims=2 doesn't decompose into slices and won't help if you're using the D prior");
 	}
 
 	return dims;
@@ -110,7 +110,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	m_prior_types_str = GetPriorTypesStr(m_prior_types);
 	if ((int) m_prior_types_str.length() > m_num_params)	// && !useShrinkageMethod)
 	{
-		Warning::IssueOnce(
+		WARN_ONCE(
 				"--param-spatial-priors=" + m_prior_types_str + ", but there are only " + stringify(m_num_params)
 						+ " parameters!\n");
 	}
@@ -177,7 +177,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 
 	m_alsoSaveWithoutPrior = m_use_evidence; // or other reasons?
 	m_alsoSaveSpatialPriors = false;
-	Warning::IssueOnce("Not saving finalSpatialPriors.nii.gz -- too huge!!");
+	WARN_ONCE("Not saving finalSpatialPriors.nii.gz -- too huge!!");
 
 	// Locked linearizations, if requested
 	m_lockedLinearEnabled = (lockedLinearFile != "");
@@ -190,7 +190,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 		// keepInterparameterCovariances = true; // hacky
 		m_use_sim_evidence = args.GetBool("slow-eo");
 		if (!m_use_sim_evidence)
-			Warning::IssueOnce("Defaulting to Full (non-simultaneous) Evidence Optimization");
+			WARN_ONCE("Defaulting to Full (non-simultaneous) Evidence Optimization");
 	}
 
 	if (m_prior_types_str.find("F") != string::npos) // F found
@@ -298,7 +298,7 @@ void SpatialVariationalBayes::SetupStSMatrix()
 	assert((int)m_neighbours.size() == m_nvoxels);
 
 	const double tiny = 1e-6;
-	Warning::IssueOnce("Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
+	WARN_ONCE("Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
 	// NEW METHOD
 	{
 		Tracer_Plus tr("New method for generating StS matrix");
@@ -333,7 +333,7 @@ void SpatialVariationalBayes::SetupStSMatrix()
 	 // Slow because connect*connect is O(N^3)
 	 SymmetricMatrix connect =
 	 IdentityMatrix(m_nvoxels) * 1e-6;
-	 Warning::IssueOnce("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
+	 WARN_ONCE("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
 		 for (int v = 1; v <= m_nvoxels; v++)
 	 {
 	 for (vector<int>::iterator nidIt = neighbours[v-1].begin();
@@ -474,7 +474,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					// Noninformative prior:
 					double q1 = 1e12, q2 = 1e-12;
 
-					Warning::IssueOnce(
+					WARN_ONCE(
 							"Hyperpriors on S prior: using q1 == " + stringify(q1) + ", q2 == " + stringify(q2));
 
 					gk(k) = 1 / (0.5 * (sigmak * StS).Trace() + (wk.t() * StS * wk).AsScalar() + 1 / q1);
@@ -561,7 +561,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				if (akmean(k, k) < 1e-50)
 				{
 					LOG_ERR("akmean(" << k << ") was " << akmean(k,k) << endl);
-					Warning::IssueOnce("akmean value was tiny!");
+					WARN_ONCE("akmean value was tiny!");
 					akmean(k, k) = 1e-50; // prevent crashes
 				}
 			}
@@ -706,14 +706,14 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 						delta(k) = alwaysInitialDeltaGuess;
 					if (m_use_evidence)
 					{
-						Warning::IssueAlways("Using R... mistake??");
+						WARN_ALWAYS("Using R... mistake??");
 						delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k, initialFwdPrior.get(), delta(k), true,
 								&rho(k));
 						LOG_ERR("\nSpatialPrior " << k << " type R eo : " << delta(k) << " " << rho(k) << " 0\n");
 					}
 					else
 					{
-						Warning::IssueAlways("Using R without EO... mistake??");
+						WARN_ALWAYS("Using R without EO... mistake??");
 						// Spatial priors with rho & delta
 						delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio, delta(k), &rho(k), true);
 						LOG_ERR("\nSpatialPrior " << k << " type R vb : " << delta(k) << " " << rho(k) << " 0\n");
@@ -733,7 +733,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					}
 					else
 					{
-						Warning::IssueAlways("Using D without EO... mistake??");
+						WARN_ALWAYS("Using D without EO... mistake??");
 						delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio, delta(k), &rho(k), false);
 						LOG_ERR("\nSpatialPrior " << k << " type D vb : " << delta(k) << " 0 0\n");
 
@@ -871,7 +871,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			if (m_shrinkage_type == 'S')
 			{
 				Tracer_Plus tr("shrinkage spatial priors S");
-				Warning::IssueOnce("Using new S VB spatial thingy");
+				WARN_ONCE("Using new S VB spatial thingy");
 
 				assert(StS.Nrows() == m_nvoxels);
 
@@ -953,7 +953,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				else if (m_shrinkage_type == 'S')
 				{
 					spatialPrecisions = akmean * ((nn + 1e-6) * (nn + 1e-6) + nn);
-					Warning::IssueOnce("Using a hacked-together VB version of the 'S' prior");
+					WARN_ONCE("Using a hacked-together VB version of the 'S' prior");
 				}
 
 				//	    if (useDirichletBC || useMRF)
@@ -1159,7 +1159,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 		{
 			Tracer_Plus tr("useSimultaneousEvidenceOptimization calculations");
 
-			Warning::IssueOnce("Using simultaneous evidence optimization");
+			WARN_ONCE("Using simultaneous evidence optimization");
 
 			// Re-estimate fwdPriorVox for all voxels simultaneously,
 			// based on the full covariance matrix
@@ -1170,7 +1170,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			//	assert(initialFwdPrior->means == -initialFwdPrior->means);  // but this still applies
 
 			if (!(initialFwdPrior->means == -initialFwdPrior->means))
-				Warning::IssueAlways("Quick hack to avoid assertion with initialFwdPrior->means != 0");
+				WARN_ALWAYS("Quick hack to avoid assertion with initialFwdPrior->means != 0");
 
 			SymmetricMatrix SigmaInv(m_num_params * m_nvoxels);
 			//	SymmetricMatrix Sigma(m_num_params*m_nvoxels);
@@ -1247,7 +1247,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					SymmetricMatrix cov = fwdPosteriorVox[v - 1].GetCovariance();
 					SymmetricMatrix covOld = cov;
 
-					Warning::IssueOnce("Full simultaneous diagonal thingy -- now in covariances!");
+					WARN_ONCE("Full simultaneous diagonal thingy -- now in covariances!");
 
 					for (int k1 = 1; k1 <= m_num_params; k1++)
 					{
@@ -1269,7 +1269,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					SymmetricMatrix precOld = prec;
 					//LOG << "precBefore:\n" << prec;
 
-					Warning::IssueOnce("Full simultaneous diagonal thingy");
+					WARN_ONCE("Full simultaneous diagonal thingy");
 					//LOG << "prec = \n" << prec << endl;
 					for (int k1 = 1; k1 <= m_num_params; k1++)
 					{
@@ -1297,7 +1297,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 			// Covariance marginals are broken below, and I think they're
 			// rubbish anyway
 
-			Warning::IssueOnce(
+			WARN_ONCE(
 					"Using full evidence optimization; using "
 							+ string(useCovarianceMarginalsRatherThanPrecisions ? "covariances." : "precisions."));
 
@@ -1340,7 +1340,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					ColumnVector tmp3 = tmp * MuOthers;
 					XXtrMuOthers(v) = tmp3(k);
 
-					Warning::IssueOnce(
+					WARN_ONCE(
 							"Corrected mistake in useFullEvidenceOptimization: initialFwdPrior->means (not k)");
 					// Also notice the subtle difference above: MuOthers uses the actual posterior means, while XYtr uses
 					// the priorless posterior means.
@@ -1386,7 +1386,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				if (useCovarianceMarginalsRatherThanPrecisions)
 				{
 					SymmetricMatrix cov = SP(fwdPosteriorVox[v - 1].GetCovariance(), IdentityMatrix(m_num_params));
-					Warning::IssueOnce("Covariance diagonal thingy");
+					WARN_ONCE("Covariance diagonal thingy");
 					//LOG << "cov = \n" << cov << endl;
 
 					for (int k = firstParameterForFullEO; k <= m_num_params; k++)
@@ -1396,7 +1396,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				}
 				else if (keepInterparameterCovariances)
 				{
-					Warning::IssueOnce("Keeping inter-parameter covariances from VB!");
+					WARN_ONCE("Keeping inter-parameter covariances from VB!");
 				}
 				else
 				{
@@ -1405,7 +1405,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					SymmetricMatrix precOld = prec;
 					//LOG << "precBefore:\n" << prec;
 
-					Warning::IssueOnce("Precision diagonal thingy");
+					WARN_ONCE("Precision diagonal thingy");
 					//LOG << "prec = \n" << prec << endl;
 					for (int k = firstParameterForFullEO; k <= m_num_params; k++)
 						prec(k, k) = SigmaInv[k - 1](v, v);
@@ -2148,7 +2148,7 @@ double DerivEdDelta::Calculate(double delta) const
 					* initialFwdPrior->GetCovariance()(k, k);
 			XYtr(v) = XXtr(v, v) * (fwdPosteriorWithoutPrior[v - 1]->means(k) - initialFwdPrior->means(k))
 					* sqrt(initialFwdPrior->GetPrecisions()(k, k));
-			Warning::IssueOnce("Using the new XYtr correction (*sqrt(precision))");
+			WARN_ONCE("Using the new XYtr correction (*sqrt(precision))");
 		}
 		assert(XXtr.Nrows() == Nvoxels);
 		assert(XYtr.Nrows() == Nvoxels);
@@ -2197,7 +2197,7 @@ double DerivEdDelta::Calculate(double delta) const
 		//	const double b = (s*s)/m;
 		//	const double c = (m*m)/(s*s);
 
-		Warning::IssueOnce("Using a Ga(" + stringify(b) + ", " + stringify(c) + " prior on delta!");
+		WARN_ONCE("Using a Ga(" + stringify(b) + ", " + stringify(c) + " prior on delta!");
 		// DERIVATIVE OF -gammaln(c) + (c-1)*log(delta) - c*log(b) - delta/b;
 		out += (c - 1) / delta - 1 / b;
 
@@ -2205,7 +2205,7 @@ double DerivEdDelta::Calculate(double delta) const
 	else
 	{
 		//	LOG_ERR("Not using any prior at all on delta\n");
-		Warning::IssueOnce("Not using any prior at all on delta");
+		WARN_ONCE("Not using any prior at all on delta");
 	}
 
 	return out;
@@ -2384,7 +2384,7 @@ double DerivFdDelta::Calculate(const double delta) const
 		//	// DERIVATIVE OF -gammaln(c) + (c-1)*log(delta) - c*log(b) - delta/b;
 		//	out += (c-1)/delta - 1/b;
 
-		Warning::IssueOnce("Using a Ga(.1,50) prior on delta!");
+		WARN_ONCE("Using a Ga(.1,50) prior on delta!");
 		const double c = 50, b = .1;
 		// DERIVATIVE OF -gammaln(c) + (c-1)*log(delta) - c*log(b) - delta/b;
 		out += (c - 1) / delta - 1 / b;
@@ -2392,7 +2392,7 @@ double DerivFdDelta::Calculate(const double delta) const
 	}
 	else
 	{
-		Warning::IssueOnce("Not using any prior at all on delta");
+		WARN_ONCE("Not using any prior at all on delta");
 	}
 
 //    LOG_ERR("Using CORRECT scale-free prior on DerivFdDelta\n");
@@ -2431,8 +2431,8 @@ double SpatialVariationalBayes::OptimizeEvidence(
 	.SearchMin(hardMin).SearchMax(hardMax).RatioTolX(1.01).MaxEvaluations(2 + newDeltaEvaluations).SetGuesstimator(
 			&guesser);
 
-//Warning::IssueAlways("Increased delta search precision to 1.0001 from 1.01");
-	Warning::IssueOnce("Hard limits on delta: [" + stringify(hardMin) + ", " + stringify(hardMax) + "]");
+//WARN_ALWAYS("Increased delta search precision to 1.0001 from 1.01");
+	WARN_ONCE("Hard limits on delta: [" + stringify(hardMin) + ", " + stringify(hardMax) + "]");
 
 	if (rhoOut != NULL)
 		*rhoOut = fcn.OptimizeRho(delta); // 0 if allowRhoToVary == false
@@ -2567,7 +2567,7 @@ const SymmetricMatrix& CovarianceCache::GetCinv(double delta) const
 {
 	Tracer_Plus tr("CovarianceCache::GetCinv");
 #ifdef NOCACHE
-	Warning::IssueOnce("Cache is disabled to avoid memory problems!");
+	WARN_ONCE("Cache is disabled to avoid memory problems!");
 	cinv = GetC(delta);
 	if (cinv.Nrows() > 0)
 	{

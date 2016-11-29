@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		EasyLog::StartLog(cout);
+		EasyLog::CurrentLog().StartLog(cout);
 		io.Initialize(args);
 
 		/* parse command line arguments*/

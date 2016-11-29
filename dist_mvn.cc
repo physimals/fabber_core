@@ -219,7 +219,7 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 		} catch (Exception)
 		{
 			// Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
-			Warning::IssueOnce(
+			WARN_ONCE(
 					"MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
 			LOG << means.t() << endl;
 			LOG << precisions << endl;

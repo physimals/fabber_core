@@ -28,13 +28,13 @@ class VbTest: public ::testing::TestWithParam<string>
 protected:
 	VbTest() : rundata(&io)
 	{
-		EasyLog::StartLog(".", true);
+		EasyLog::CurrentLog().StartLog(".", true);
 	}
 
 	virtual ~VbTest()
 	{
 		FabberSetup::Destroy();
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()

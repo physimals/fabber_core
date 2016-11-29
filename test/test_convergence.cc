@@ -13,12 +13,12 @@ class ConvergenceTest: public ::testing::Test
 protected:
 	ConvergenceTest()
 	{
-		EasyLog::StartLog(".", true);
+		EasyLog::CurrentLog().StartLog(".", true);
 	}
 
 	virtual ~ConvergenceTest()
 	{
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()

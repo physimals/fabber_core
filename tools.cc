@@ -175,20 +175,20 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
 		assert(x1 < x3 && x3 < x2);
 		assert(fx2 < fx1);
 
-		Warning::IssueOnce("Riddler's Method; No special cases!");
+		WARN_ONCE("Riddler's Method; No special cases!");
 
 		if (false) //x3 != (x1 + x2)/2)
 		{
 			LOG_ERR("x3 == " << x3 << ", x1 == " << x1 << ", x2 = " << x2 << endl);
 			LOG_ERR("x3 - (x1+x2)/2 == " << x3 - (x1+x2)/2 << endl);
-			Warning::IssueAlways("Riddler's Method: x3 != (x1+x2)/2");
+			WARN_ALWAYS("Riddler's Method: x3 != (x1+x2)/2");
 		}
 		else if (true) //(fx2 < fx3 && fx3 < fx1)
 		{
 			double s = (fx1 - fx2 > 0) ? +1.0 : -1.0; // s = sign(fx1-fx2)
 			double x4 = x3 + (x3 - x1) * s * fx3 / sqrt(fx3 * fx3 - fx1 * fx2);
 
-			Warning::IssueAlways("Riddler's Method: phase two");
+			WARN_ALWAYS("Riddler's Method: phase two");
 
 			assert(lower < x4 && x4 < upper);
 
@@ -196,7 +196,7 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
 		}
 		else
 		{
-			Warning::IssueAlways("Riddler's Method cheat: dropping back to the bisection method!");
+			WARN_ALWAYS("Riddler's Method cheat: dropping back to the bisection method!");
 		}
 	}
 
@@ -207,7 +207,7 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
 	x2 = upper;
 	fx2 = atUpper;
 
-	Warning::IssueAlways("Riddler's Method: phase one");
+	WARN_ALWAYS("Riddler's Method: phase one");
 
 	double x3 = (x1 + x2) / 2;
 	return x3;

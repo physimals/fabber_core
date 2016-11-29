@@ -132,7 +132,7 @@ void FabberIoNewimage::SaveVoxelData(NEWMAT::Matrix &data, string filename, Voxe
 
 	// FIXME need to use logger to get outdir as this does the ++ appending, however
 	// this assumes use of CL tool and log to file
-	string outDir = EasyLog::GetOutputDirectory();
+	string outDir = EasyLog::CurrentLog().GetOutputDirectory();
 	if (outDir != "")
 		filename = outDir + "/" + filename;
 	save_volume4D(output, filename);

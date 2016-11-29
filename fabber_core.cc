@@ -115,13 +115,13 @@ int execute(int argc, char** argv)
 		cout << "Welcome to FABBER v" << FabberRunData::GetVersion() << endl;
 		cout << "----------------------" << endl;
 
-		EasyLog::StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
+		EasyLog::CurrentLog().StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
 				params.GetBool("link-to-latest"));
-		cout << "Logfile started: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
+		cout << "Logfile started: " << EasyLog::CurrentLog().GetOutputDirectory() << "/logfile" << endl;
 
 		// FIXME this is a hack but seems to be expected that the command line
 		// tool will output parameter names to a file. Really should be an option!
-		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
+		ofstream paramFile((EasyLog::CurrentLog().GetOutputDirectory() + "/paramnames.txt").c_str());
 		vector<string> paramNames;
 		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(params.GetString("model")));
 		fwd_model->Initialize(params);
@@ -160,12 +160,12 @@ int execute(int argc, char** argv)
 
 		if (recordTimings)
 		{
-			tr.dump_times(EasyLog::GetOutputDirectory());
-			LOG << "Timing profile information recorded to " << EasyLog::GetOutputDirectory() << "/timings.html"
+			tr.dump_times(EasyLog::CurrentLog().GetOutputDirectory());
+			LOG << "Timing profile information recorded to " << EasyLog::CurrentLog().GetOutputDirectory() << "/timings.html"
 					<< endl;
 		}
 
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 
 		// Only Gzip the logfile if we exit normally
 		gzLog = params.GetBool("gzip-log");
@@ -173,42 +173,42 @@ int execute(int argc, char** argv)
 
 	} catch (const DataNotFound& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Data not found:\n  " << e.what() << endl);
 		cerr << "Data not found:\n  " << e.what() << endl;
 	} catch (const Invalid_option& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Invalid_option exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 	} catch (const exception& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("STL exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "STL exception caught in fabber:\n  " << e.what() << endl;
 	} catch (NEWMAT::Exception& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("NEWMAT exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
 	} catch (...)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Some other exception caught in fabber!" << endl);
 		cerr << "Some other exception caught in fabber!" << endl;
 	}
 
-	if (EasyLog::LogStarted())
+	if (EasyLog::CurrentLog().LogStarted())
 	{
-		cout << endl << "Final logfile: " << EasyLog::GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile")
+		cout << endl << "Final logfile: " << EasyLog::CurrentLog().GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile")
 				<< endl;
-		EasyLog::StopLog(gzLog);
+		EasyLog::CurrentLog().StopLog(gzLog);
 	}
 	else
 	{
 		// Flush any errors to stdout as we didn't get as far as starting the logfile
-		EasyLog::StartLog(cout);
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StartLog(cout);
+		EasyLog::CurrentLog().StopLog();
 	}
 	return ret;
 }
