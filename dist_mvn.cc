@@ -365,7 +365,6 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
 			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
 		}
-		assert(voxel_data(voxel_data.Nrows(), vox) == 1);
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);
 		mvns[vox - 1] = mvn;
