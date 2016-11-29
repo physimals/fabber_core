@@ -6,6 +6,11 @@ set(MODEL_SRC fwdmodel_${MODEL_NAME}.cc fwdmodel_${MODEL_NAME}_lib.cc)
 set(LIB_NAME fabber_model_${MODEL_NAME})
 add_library(${LIB_NAME} SHARED ${MODEL_SRC})
 
+if(APPLE)
+  # Force use of libstdc++ on Mac as FSL uses this and we cannot link otherwise
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++")
+endif(APPLE)
+
 find_path(FABBER_INCLUDE_DIR fabber_core/fwdmodel.h
             HINTS ../..  .. $ENV{FSLDIR}/include REQUIRED)
 find_path(NEWMAT_INCLUDE_DIR newmat.h
@@ -22,13 +27,8 @@ find_library(PROB_LIBRARY NAMES prob libprob
 Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_EXT_INCLUDE_DIR} ${BOOST_INCLUDE_DIR}")
 Message("-- Fabber headers in ${FABBER_INCLUDE_DIR}/fabber_core")
 
-target_link_libraries(${LIB_NAME})
-
-# Windows does not allow DLLs to be built without resolving all symbols
-# so we must link with all of Fabber's dependencies
-if (WIN32)
 find_library(FABBER_LIBRARY NAMES fabbercore libfabbercore
-             HINTS $ENV{FSLDIR}/lib REQUIRED )
+             HINTS ../Release ../Debug $ENV{FSLDIR}/lib REQUIRED )
 find_library(NEWMAT_LIBRARY NAMES newmat libnewmat
              HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
 find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths
@@ -51,8 +51,7 @@ Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
 Message("-- Using zlib: ${ZLIB_LIBRARY}")
 
-target_link_libraries(${LIB_NAME} ${NEWMAT_LIBRARY} ${FABBER_LIBRARY} ${MISCMATHS_LIBRARY} ${UTILS_LIBRARY} ${NIFTIIO_LIBRARY} ${ZNZ_LIBRARY} ${Z_LIBRARY})
-endif(WIN32)
+target_link_libraries(${LIB_NAME} ${FABBER_LIBRARY} ${MISCMATHS_LIBRARY} ${UTILS_LIBRARY} ${NIFTIIO_LIBRARY} ${ZNZ_LIBRARY}  ${NEWMAT_LIBRARY} ${Z_LIBRARY})
 
 include_directories(SYSTEM ${FABBER_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXT_INCLUDE_DIR} ${BOOST_INCLUDE_DIR})
 

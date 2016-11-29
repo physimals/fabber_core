@@ -6,6 +6,11 @@ set(FABBER_EXEC_NAME fabber_${MODEL_NAME})
 
 add_executable(${FABBER_EXEC_NAME} ${MODEL_SRC})
 
+if(APPLE)
+  # Force use of libstdc++ on Mac as FSL uses this and we cannot link otherwise
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++")
+endif(APPLE)
+
 find_path(FABBER_INCLUDE_DIR fabber_core/fwdmodel.h
             HINTS ../..  .. $ENV{FSLDIR}/include REQUIRED)
 find_path(NEWMAT_INCLUDE_DIR newmat.h
