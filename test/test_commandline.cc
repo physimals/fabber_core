@@ -158,6 +158,20 @@ TEST_F(ClTestTest, PolyModel)
 	compareNifti("out.tmp/std_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c2.nii.gz");
 }
 
+// Test fabber will run without a mask
+TEST_F(ClTestTest, PolyModelNoMask)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+}
+
 TEST_F(ClTestTest, ListModels)
 {
 	string args = "--listmodels";
