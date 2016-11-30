@@ -104,6 +104,7 @@ static OptionSpec OPTIONS[] =
 						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
 						OPT_NONREQ, "interleave" },
 				{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+				{ "dump-param-names", OPT_BOOL, "Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
 				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
 				{ "save-residuals", OPT_BOOL,
 						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
@@ -226,6 +227,18 @@ void FabberRunData::Run(ProgressCheck *progress)
 	fwd_model->Initialize(*this);
 	assert(fwd_model->NumParams() > 0);
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
+
+	// Write the paramnames.txt file if required
+	if (GetBool("dump-param-names")) {
+		ofstream paramFile((EasyLog::CurrentLog().GetOutputDirectory() + "/paramnames.txt").c_str());
+		vector<string> paramNames;
+		fwd_model->NameParams(paramNames);
+		for (unsigned i = 0; i < paramNames.size(); i++)
+		{
+			paramFile << paramNames[i] << endl;
+		}
+		paramFile.close();
+	}
 
 	//Set the inference technique (and pass in the model)
 	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
