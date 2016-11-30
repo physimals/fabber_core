@@ -79,7 +79,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 			read_volume4D(vol, filename);
 		} catch (...)
 		{
-			throw DataNotFound(filename);
+			throw DataLoadError(filename);
 		}
 		DumpVolumeInfo(vol);
 
@@ -90,7 +90,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 		{
 			if (m_have_mask)
 			{
-				LOG << "     Applying mask to data..." << endl;
+				LOG << "FabberIoNewimage::Applying mask to data..." << endl;
 				m_voxel_data[filename] = vol.matrix(m_mask);
 			}
 			else
@@ -99,7 +99,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 			}
 		} catch (exception &e)
 		{
-			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
+			LOG << "*** NEWMAT error while applying mask... Most likely a dimension mismatch. ***\n";
 			throw e;
 		}
 

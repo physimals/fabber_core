@@ -537,7 +537,12 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 		return GetVoxelData("data");
 	} catch (DataNotFound &e)
 	{
-		return GetMainVoxelDataMultiple();
+		if (GetStringDefault("data1", "") != "") {
+			return GetMainVoxelDataMultiple();
+		}
+		else {
+			throw(e);
+		}
 	}
 }
 
@@ -603,8 +608,7 @@ const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 	int nSets = dataSets.size();
 	if (nSets < 1)
 	{
-		throw Invalid_option(
-				"At least one data file is required: --data=<file1> or [--data1=<file1> --data2=<file2> [...]]\n");
+		throw DataNotFound("data");
 	}
 	if ((order == "singlefile") && nSets > 1)
 	{

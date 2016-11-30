@@ -38,6 +38,10 @@ class FabberRunData;
 
 /**
  * Thrown when data cannot be loaded from the specified location
+ *
+ * Note that this implies that the specified location does exist
+ * but there was a problem getting the data from it. If no such location
+ * (e.g. file) exists DataNotFound should be thrown.
  */
 class DataLoadError: public runtime_error
 {
@@ -49,7 +53,10 @@ public:
 };
 
 /**
- * Thrown when data cannot be loaded from the specified location
+ * Thrown when data cannot be saved to the specified location
+ *
+ * Note that this implies that the voxel data does exist but
+ * could not be saved to the location (e.g. file) for some reason.
  */
 class DataSaveError: public runtime_error
 {
