@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.7)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(APPLE)
   # Force use of libstdc++ on Mac as FSL uses this and we cannot link otherwise
