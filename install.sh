@@ -14,7 +14,7 @@ then
   PREFIX=$HOME
 fi
 
-cd Release
+cd $TYPE
 cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX
 make install
 

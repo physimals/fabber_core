@@ -11,6 +11,8 @@
 #include "setup.h"
 #include "easylog.h"
 
+#include <fstream>
+
 namespace
 {
 
@@ -21,13 +23,13 @@ protected:
 	InferenceMethodTest()
 	{
 		FabberSetup::SetupDefaults();
-		EasyLog::StartLog(".", true);
+		EasyLog::CurrentLog().StartLog(".", true);
 	}
 
 	virtual ~InferenceMethodTest()
 	{
 		FabberSetup::Destroy();
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()
@@ -69,9 +71,10 @@ TEST_F(InferenceMethodTest, OneParamOneVoxelOneTimeslice)
 	data(1, 1) = VAL;
 	voxelCoords << 1 << 1 << 1;
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.SetBool("print-free-energy", true);
@@ -96,14 +99,15 @@ TEST_P(InferenceMethodTest, OneParamOneVoxelMultiTimeslice)
 	data.ReSize(NTIMES, 1);
 	voxelCoords.ReSize(3, 1);
 	voxelCoords << 1 << 1 << 1;
-	for (int i=0; i<NTIMES; i++)
+	for (int i = 0; i < NTIMES; i++)
 	{
-		data(i+1, 1) = VAL;
+		data(i + 1, 1) = VAL;
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.SetBool("print-free-energy", true);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
@@ -126,9 +130,9 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -147,9 +151,10 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
 		}
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
@@ -157,10 +162,10 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL);
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL);
 	}
 }
 
@@ -174,9 +179,9 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -188,17 +193,20 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					if (n % 2 == 0) data(n + 1, v) = VAL;
-					else data(n + 1, v) = VAL*3;
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
 		}
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "trivial");
 	rundata.Set("method", GetParam());
@@ -206,10 +214,10 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL*2);
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
 	}
 }
 
@@ -223,9 +231,9 @@ TEST_P(InferenceMethodTest, ConfigFile)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -237,8 +245,10 @@ TEST_P(InferenceMethodTest, ConfigFile)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					if (n % 2 == 0) data(n + 1, v) = VAL;
-					else data(n + 1, v) = VAL*3;
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
@@ -247,23 +257,22 @@ TEST_P(InferenceMethodTest, ConfigFile)
 
 	ofstream os;
 	os.open(FILENAME.c_str(), ios::out);
-	os << "--noise=white" << endl
-	<< "--model=trivial" << endl
-	<< "--method=" << GetParam() << endl;
+	os << "--noise=white" << endl << "--model=trivial" << endl << "--method=" << GetParam() << endl;
 	os.close();
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.ParseOldStyleParamFile(FILENAME);
 	rundata.Run();
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL*2);
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
 	}
 	remove(FILENAME.c_str());
 }
@@ -278,9 +287,9 @@ TEST_P(InferenceMethodTest, CLArgs)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data;
-	data.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -292,32 +301,34 @@ TEST_P(InferenceMethodTest, CLArgs)
 				voxelCoords(3, v) = z;
 				for (int n = 0; n < NTIMES; n++)
 				{
-					if (n % 2 == 0) data(n + 1, v) = VAL;
-					else data(n + 1, v) = VAL*3;
+					if (n % 2 == 0)
+						data(n + 1, v) = VAL;
+					else
+						data(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
 		}
 	}
 
-	string method = (string)"--method=" + GetParam();
+	string method = (string) "--method=" + GetParam();
 	const char *argv[] =
-	{	"fabber", "--noise=white", "--model=trivial", method.c_str()};
+	{ "fabber", "--noise=white", "--model=trivial", method.c_str() };
 	int argc = 4;
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
-	rundata.Parse(argc, (char **)argv);
-	rundata.SetSaveFiles(false);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
+	rundata.Parse(argc, (char **) argv);
 	ASSERT_NO_THROW(rundata.Run());
 
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
 	ASSERT_EQ(mean.Nrows(), 1);
-	ASSERT_EQ(mean.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		ASSERT_FLOAT_EQ(mean(1, i+1), VAL*2);
+		ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
 	}
 	remove(FILENAME.c_str());
 }
@@ -329,14 +340,14 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 	int VSIZE = 5;
 	float VAL = 2;
 	int DEGREE = 3;
-	int n_voxels = VSIZE*VSIZE*VSIZE;
+	int n_voxels = VSIZE * VSIZE * VSIZE;
 
 	// Create coordinates and data matrices
 	// Data fitted to a cubic function
 	NEWMAT::Matrix voxelCoords, data;
 	data.ReSize(NTIMES, n_voxels);
 	voxelCoords.ReSize(3, n_voxels);
-	int v=1;
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -349,7 +360,7 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 				for (int n = 0; n < NTIMES; n++)
 				{
 					// function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
-					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1)-2*VAL*(n+1)*(n+1)*(n+1);
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
 				}
 				v++;
 			}
@@ -358,9 +369,10 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 
 	// Do just 1 iteration
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("max-iterations", "50");
@@ -371,34 +383,34 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), n_voxels);
-	for (int i=0; i<n_voxels; i++)
+	for (int i = 0; i < n_voxels; i++)
 	{
-		ASSERT_TRUE(FloatEq(VAL, mean(1, i+1)));
+		ASSERT_TRUE(FloatEq(VAL, mean(1, i + 1)));
 	}
 
 	mean = rundata.GetVoxelData("mean_c1");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), n_voxels);
-	for (int i=0; i<n_voxels; i++)
+	for (int i = 0; i < n_voxels; i++)
 	{
 		// GTEST has difficulty with comparing floats to 0
-		ASSERT_TRUE(FloatEq(1, mean(1, i+1)+1));
+		ASSERT_TRUE(FloatEq(1, mean(1, i + 1) + 1));
 	}
 
 	mean = rundata.GetVoxelData("mean_c2");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), n_voxels);
-	for (int i=0; i<n_voxels; i++)
+	for (int i = 0; i < n_voxels; i++)
 	{
-		ASSERT_TRUE(FloatEq(VAL*1.5, mean(1, i+1)));
+		ASSERT_TRUE(FloatEq(VAL * 1.5, mean(1, i + 1)));
 	}
 
 	mean = rundata.GetVoxelData("mean_c3");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), n_voxels);
-	for (int i=0; i<n_voxels; i++)
+	for (int i = 0; i < n_voxels; i++)
 	{
-		ASSERT_TRUE(FloatEq(-VAL*2, mean(1, i+1)));
+		ASSERT_TRUE(FloatEq(-VAL * 2, mean(1, i + 1)));
 	}
 }
 
@@ -409,14 +421,14 @@ TEST_P(InferenceMethodTest, SaveModelFit)
 	int VSIZE = 5;
 	float VAL = 2;
 	int DEGREE = 3;
-	int n_voxels = VSIZE*VSIZE*VSIZE;
+	int n_voxels = VSIZE * VSIZE * VSIZE;
 
 	// Create coordinates and data matrices
 	// Data fitted to a cubic function
 	NEWMAT::Matrix voxelCoords, data;
 	data.ReSize(NTIMES, n_voxels);
 	voxelCoords.ReSize(3, n_voxels);
-	int v=1;
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -429,7 +441,7 @@ TEST_P(InferenceMethodTest, SaveModelFit)
 				for (int n = 0; n < NTIMES; n++)
 				{
 					// function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
-					data(n + 1, v) = VAL+(1.5*VAL)*(n+1)*(n+1)-2*VAL*(n+1)*(n+1)*(n+1);
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
 				}
 				v++;
 			}
@@ -438,9 +450,10 @@ TEST_P(InferenceMethodTest, SaveModelFit)
 
 	// Do just 1 iteration
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetMainVoxelData(data);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
 	rundata.Set("model", "poly");
 	rundata.Set("degree", stringify(DEGREE));
@@ -454,10 +467,7 @@ TEST_P(InferenceMethodTest, SaveModelFit)
 	ASSERT_EQ(mean.Ncols(), n_voxels);
 }
 
-INSTANTIATE_TEST_CASE_P(MethodTests,
-		InferenceMethodTest,
-		::testing::Values("vb", "nlls", "spatialvb"));
+INSTANTIATE_TEST_CASE_P(MethodTests, InferenceMethodTest, ::testing::Values("vb", "nlls", "spatialvb"));
 
 } // namespace
-
 

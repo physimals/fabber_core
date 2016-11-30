@@ -32,6 +32,7 @@ private:
 	NEWMAT::SymmetricMatrix distances;
 	typedef map<double, NEWMAT::SymmetricMatrix> Cinv_cache_type;
 	mutable Cinv_cache_type Cinv_cache;
+	mutable NEWMAT::SymmetricMatrix cinv;
 
 	typedef map<double, pair<NEWMAT::SymmetricMatrix, double> > CiCodistCi_cache_type;
 	//  mutable CiCodist_cache_type CiCodist_cache; // only really use the Trace
@@ -46,7 +47,7 @@ public:
 	virtual void GetOptions(vector<OptionSpec> &opts) const;
 
 	SpatialVariationalBayes() :
-			VariationalBayesInferenceTechnique(), spatialDims(-1)
+			VariationalBayesInferenceTechnique(), m_spatial_dims(-1)
 	{
 	}
 	virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
@@ -54,9 +55,44 @@ public:
 	//    virtual ~SpatialVariationalBayes();
 
 protected:
+	/**
+	 * Setup per-voxel data for Spatial VB
+	 *
+	 * Spatial VB needs each voxel's prior/posterior and other
+	 * data stored as it affects neighbouring voxels. This sets
+	 * up the vectors which store these things which are just
+	 * created on the fly for normal VB and throw away after each
+	 * voxel is done.
+	 */
+	void SetupPerVoxelDists(FabberRunData& allData);
 
-	int spatialDims; // 0 = no spatial norm; 2 = slice only; 3 = volume
-	bool continuingFromFile;
+	/**
+	 * Set up the StS matrix used for S and Z spatial priors
+	 */
+	void SetupStSMatrix();
+
+	// Per-voxel prior and posterior distributions. For Spatial VB we need to
+	// keep these around during iteration as the influence the calculations on
+	// neighbouring voxels
+	std::vector<NoiseParams*> noiseVox; // these change. polymorphic type, so need to use pointers
+	std::vector<NoiseParams*> noiseVoxPrior; // these may change in future
+	std::vector<MVNDist> fwdPriorVox;
+	std::vector<MVNDist> fwdPosteriorVox;
+	std::vector<LinearizedFwdModel> linearVox;
+	std::vector<MVNDist*> fwdPosteriorWithoutPrior;
+
+	// StS matrix used for S and Z spatial priors
+	NEWMAT::SymmetricMatrix StS;
+
+	/**
+	 * Number of spatial dimensions
+	 *
+	 * 0 = no spatial smoothing
+	 * 1 = Probably not sensible!
+	 * 2 = Smoothing in slices only
+	 * 3 = Smoothing by volume
+	 */
+	int m_spatial_dims; // 0 = no spatial norm; 2 = slice only; 3 = volume
 
 	//    bool useDataDrivenSmoothness;
 	//    bool useShrinkageMethod;
@@ -64,34 +100,86 @@ protected:
 	//    bool useMRF;
 	//    bool useMRF2; // without the dirichlet bcs
 
-	double maxPrecisionIncreasePerIteration; // Should be >1, or -1 = unlimited
+	/**
+	 * Maximum precision increase per iteration
+	 */
+	double m_spatial_speed; // Should be >1, or -1 = unlimited
 
-	vector<vector<int> > neighbours; // Sparse matrix would be easier
-	vector<vector<int> > neighbours2; // Sparse matrix would be easier
+	/**
+	 * Type of spatial prior to use for each parameter. Should be one
+	 * character per parameter, however if string ends with + then
+	 * the last character is repeated for remaining parameters
+	 */
+	std::string m_prior_types_str;
+
+	char m_shrinkage_type;
+
+	/**
+	 * Nearest-neighbours of each voxel. Vector size is number of voxels,
+	 * each entry is vector of indices of nearest neighbours, starting at 1.
+	 *
+	 * FIXME Sparse matrix would be better?
+	 */
+	vector<vector<int> > m_neighbours;
+
+	/**
+	 * Next-nearest-neighbours of each voxel. Vector size is number of voxels,
+	 * each entry is vector of indices of second nearest neighbours, starting at 1.
+	 *
+	 * FIXME Sparse matrix would be better?
+	 */
+	vector<vector<int> > m_neighbours2;
+
+	/**
+	 * Calculate first and second nearest neighbours of each voxel
+	 */
 	void CalcNeighbours(const NEWMAT::Matrix& voxelCoords);
-
-	//vector<string> imagepriorstr; now inherited from spatialvb
 
 	// For the new (Sahani-based) smoothing method:
 	CovarianceCache covar;
-	string distanceMeasure;
+
+	/**
+	 * How to measure distances between voxels.
+	 *
+	 * dist1 = Euclidian distance
+	 * dist2 = squared Euclidian distance
+	 * mdist = Manhattan distance (|dx| + |dy|)
+	 */
+	std::string m_dist_measure;
 
 	double fixedDelta;
 	double fixedRho;
-	bool updateSpatialPriorOnFirstIteration;
-	bool useEvidenceOptimization;
+
+	/**
+	 * Update spatial priors on first iteration?
+	 */
+	bool m_update_first_iter;
+
+	/**
+	 * Use evidence optimization
+	 */
+	bool m_use_evidence;
 	double alwaysInitialDeltaGuess;
 
-	bool useFullEvidenceOptimization;
-	bool useSimultaneousEvidenceOptimization;
+	/**
+	 * Use full evidence optimization
+	 */
+	bool m_use_full_evidence;
+
+	/**
+	 * Use simultaneous evidence optimization
+	 */
+	bool m_use_sim_evidence;
+
+	bool m_alsoSaveWithoutPrior;
+	bool m_alsoSaveSpatialPriors;
+	bool m_lockedLinearEnabled;
+
 	int firstParameterForFullEO;
 	bool useCovarianceMarginalsRatherThanPrecisions;
 	bool keepInterparameterCovariances;
 
 	int newDeltaEvaluations;
-
-	string spatialPriorsTypes; // one character per parameter
-	//    bool spatialPriorOutputCorrection;
 
 	bool bruteForceDeltaSearch;
 

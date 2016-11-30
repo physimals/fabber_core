@@ -29,6 +29,8 @@ class FwdModel
 {
 public:
 
+	static void LoadFromDynamicLibrary(std::string filename);
+
 	/**
 	 * Static member function to return the names of all known
 	 * models
@@ -252,6 +254,13 @@ protected:
  * \ref SingletonFactory that returns pointers to \ref FwdModel.
  */
 typedef SingletonFactory<FwdModel> FwdModelFactory;
+
+/**
+ * Function pointer for a function which creates new instances of FwdModel.
+ *
+ * Used for the dynamic loading of models
+ */
+typedef FwdModel* (*NewInstanceFptr)(void);
 
 #endif /* __FABBER_FWDMODEL_H */
 

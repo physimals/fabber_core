@@ -6,12 +6,47 @@ import PySide.QtGui
 
 from pyfab.ui import MainWindow
 
-if __name__ == '__main__':
-	app = PySide.QtGui.QApplication(sys.argv)
+def read_vest(fname):
+    f = None
+    try:
+        f = open(fname)
+        lines = f.readlines()
+        print(lines)
+        nx, ny = 0, 0
+        in_matrix = False
+        mat = []
+        for line in lines:
+            if in_matrix:
+                nums = [float(num) for num in line.split()]
+                if len(nums) != nx: raise Exception ("Incorrect number of x values")
+                mat.append(nums)
+            elif line.startswith("/Matrix"):
+              if nx == 0 or ny == 0: raise Exception("Missing /NumWaves or /NumPoints")
+              in_matrix = True
+            elif line.startswith("/NumWaves"):
+              parts = line.split()
+              print parts
+              if len(parts) == 1: raise Exception("No number following /NumWaves")
+              nx = int(parts[1])
+            elif line.startswith("/NumPoints") or line.startswith("/NumContrasts"):
+              parts = line.split()
+              if len(parts) == 1: raise Exception("No number following /NumPoints")
+              ny = int(parts[1])
+        if len(mat) != ny:
+            raise Exception("Incorrect number of y values")      
+    finally:
+        if f is not None: f.close()
+    return mat
 
-	win = MainWindow()
-	win.show()
-	if len(sys.argv) > 1:
-		win.refresh(RunFile(sys.argv[1]))
+if __name__ == '__main__':
+ 
+    #print(read_vest("/home/martinc/dev/fabber_gui/design.mat"))
+    
+    app = PySide.QtGui.QApplication(sys.argv)
+
+    win = MainWindow()
+    win.show()
+    if len(sys.argv) > 1:
+        win.refresh(RunFile(sys.argv[1]))
 		
-	sys.exit(app.exec_())
+    sys.exit(app.exec_())

@@ -13,6 +13,10 @@
 #include "miscmaths/bfmatrix.h"
 
 #include <boost/shared_ptr.hpp>
+
+using MISCMATHS::BFMatrix;
+using MISCMATHS::NonlinCF;
+
 /**
  * Inference technique using non-linear least squares
  */

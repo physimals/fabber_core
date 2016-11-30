@@ -14,6 +14,7 @@
 #include "utils/tracer_plus.h"
 
 using Utilities::Tracer_Plus;
+using namespace MISCMATHS;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] =
@@ -65,7 +66,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 	if (filePosterior != "modeldefault")
 	{
 		LOG << "NLLSInferenceTechnique::File posterior" << endl;
-		loadPosterior->Load(filePosterior);
+		loadPosterior->LoadVest(filePosterior);
 	}
 
 	initialFwdPosterior = loadPosterior;

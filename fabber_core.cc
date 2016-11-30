@@ -6,9 +6,11 @@
 
 /*  CCOPYRIGHT */
 
+#include "fabber_core.h"
 #include "fabber_version.h"
-#include "fwdmodel.h"
 #include "inference.h"
+#include "fwdmodel.h"
+#include "fabber_io_newimage.h"
 
 #include "utils/tracer_plus.h"
 
@@ -25,59 +27,23 @@
 using Utilities::Tracer_Plus;
 using namespace std;
 
-static OptionSpec OPTIONS[] =
-		{
-				{ "help", OPT_BOOL,
-						"Print this usage method. If given with --method or --model, display relevant method/model usage information",
-						OPT_NONREQ, "" },
-				{ "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
-				{ "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
-				{ "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
-				{ "overwrite", OPT_BOOL,
-						"If set will overwrite existing output. If not set, new output directories will be created by appending '+' to the directory name ",
-						OPT_NONREQ, "" },
-				{ "link-to-latest", OPT_BOOL,
-						"If set will try to create a link to the most recent output directory with the prefix _latest",
-						OPT_NONREQ, "" },
-				{ "method", OPT_STR, "Use this inference method", OPT_NONREQ, "" },
-				{ "model", OPT_STR, "Use this forward model", OPT_NONREQ, "" },
-				{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
-				{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
-				{ "data-order", OPT_STR,
-						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
-						OPT_NONREQ, "interleave" },
-				{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
-				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
-				{ "save-residuals", OPT_BOOL,
-						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
-				{ "" }, };
-
 /**
  * Print usage information.
  */
-void Usage()
+static void Usage()
 {
 	cout << "\n\nUsage: fabber [--<option>|--<option>=<value> ...]" << endl << endl
 			<< "Use -@ <file> to read additional arguments in command line form from a text file (DEPRECATED)." << endl
 			<< "Use -f <file> to read options in option=value form" << endl << endl << "General options " << endl
 			<< endl;
 
-	for (int i = 0; OPTIONS[i].name != ""; i++)
+	vector<OptionSpec> options;
+	FabberRunData::GetOptions(options);
+
+	for (int i = 0; i < options.size(); i++)
 	{
-		cout << OPTIONS[i] << endl;
+		cout << options[i] << endl;
 	}
-#if 0
-	<< " Spatial VB options: " << endl << endl << "  --param-spatial-priors=<choice_of_prior_forms> " << endl
-	<< "                             Specify a type of prior to use for each forward " << endl
-	<< "                             model parameter.  One letter per parameter.  " << endl
-	<< "                             S=spatial, N=nonspatial, D=Gaussian-process-based" << endl
-	<< "                             combined prior" << endl << "  --fwd-initial-prior=<prior_vest_file> "
-	<< endl << "                             Specify the nonspatial prior distributions on the" << endl
-	<< "                             forward model parameters.  The vest file is the " << endl
-	<< "                             covariance matrix supplemented by the prior means" << endl
-	<< "                             See the documentation for details.  Very important" << endl
-	<< "                             if 'D' prior is used." << endl << endl;
-#endif
 }
 
 /**
@@ -91,10 +57,15 @@ int execute(int argc, char** argv)
 	try
 	{
 		// Create a new Fabber run
-		FabberRunData params;
-		PercentProgressCheck percent;
-		params.SetProgressCheck(&percent);
+		FabberIoNewimage io;
+		FabberRunData params(&io);
 		params.Parse(argc, argv);
+
+		string load_models = params.GetStringDefault("loadmodels", "");
+		if (load_models != "")
+		{
+			FwdModel::LoadFromDynamicLibrary(load_models);
+		}
 
 		// Print usage information if no arguments given, or
 		// if --help specified
@@ -140,13 +111,16 @@ int execute(int argc, char** argv)
 			return 0;
 		}
 
+		// Make sure command line tool creates a parameter names file
+		params.SetBool("dump-param-names");
+
 		cout << "----------------------" << endl;
 		cout << "Welcome to FABBER v" << FabberRunData::GetVersion() << endl;
 		cout << "----------------------" << endl;
 
-		EasyLog::StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
+		EasyLog::CurrentLog().StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
 				params.GetBool("link-to-latest"));
-		cout << "Logfile started: " << EasyLog::GetOutputDirectory() << "/logfile" << endl;
+		cout << "Logfile started: " << EasyLog::CurrentLog().GetOutputDirectory() << "/logfile" << endl;
 
 		// Start timing/tracing if requested
 		bool recordTimings = false;
@@ -170,17 +144,18 @@ int execute(int argc, char** argv)
 
 		// Start a new tracer for timing purposes
 		{
-			params.Run();
+			PercentProgressCheck percent;
+			params.Run(&percent);
 		}
 
 		if (recordTimings)
 		{
-			tr.dump_times(EasyLog::GetOutputDirectory());
-			LOG << "Timing profile information recorded to " << EasyLog::GetOutputDirectory() << "/timings.html"
+			tr.dump_times(EasyLog::CurrentLog().GetOutputDirectory());
+			LOG << "Timing profile information recorded to " << EasyLog::CurrentLog().GetOutputDirectory() << "/timings.html"
 					<< endl;
 		}
 
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 
 		// Only Gzip the logfile if we exit normally
 		gzLog = params.GetBool("gzip-log");
@@ -188,42 +163,42 @@ int execute(int argc, char** argv)
 
 	} catch (const DataNotFound& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Data not found:\n  " << e.what() << endl);
 		cerr << "Data not found:\n  " << e.what() << endl;
 	} catch (const Invalid_option& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Invalid_option exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 	} catch (const exception& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("STL exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "STL exception caught in fabber:\n  " << e.what() << endl;
 	} catch (NEWMAT::Exception& e)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("NEWMAT exception caught in fabber:\n  " << e.what() << endl);
 		cerr << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
 	} catch (...)
 	{
-		Warning::ReissueAll();
+		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Some other exception caught in fabber!" << endl);
 		cerr << "Some other exception caught in fabber!" << endl;
 	}
 
-	if (EasyLog::LogStarted())
+	if (EasyLog::CurrentLog().LogStarted())
 	{
-		cout << endl << "Final logfile: " << EasyLog::GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile")
+		cout << endl << "Final logfile: " << EasyLog::CurrentLog().GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile")
 				<< endl;
-		EasyLog::StopLog(gzLog);
+		EasyLog::CurrentLog().StopLog(gzLog);
 	}
 	else
 	{
 		// Flush any errors to stdout as we didn't get as far as starting the logfile
-		EasyLog::StartLog(cout);
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StartLog(cout);
+		EasyLog::CurrentLog().StopLog();
 	}
 	return ret;
 }

@@ -13,12 +13,12 @@ class ConvergenceTest: public ::testing::Test
 protected:
 	ConvergenceTest()
 	{
-		EasyLog::StartLog(".", true);
+		EasyLog::CurrentLog().StartLog(".", true);
 	}
 
 	virtual ~ConvergenceTest()
 	{
-		EasyLog::StopLog();
+		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()
@@ -35,7 +35,7 @@ TEST_F(ConvergenceTest, TestCounting)
 	int MAXITERS = 37;
 	double F = 12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	ConvergenceDetector *c = ConvergenceDetector::NewFromName("maxits");
 	c->Initialize(rundata);
@@ -61,7 +61,7 @@ TEST_F(ConvergenceTest, TestFchangeConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("pointzeroone");
@@ -88,7 +88,7 @@ TEST_F(ConvergenceTest, TestFchangeConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("pointzeroone");
@@ -120,7 +120,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -147,7 +147,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -178,7 +178,7 @@ TEST_F(ConvergenceTest, TestFreduceConvergenceDetectorReduce)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("freduce");
@@ -205,22 +205,28 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorMaxIters)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);
 	ConvergenceDetector *c=ConvergenceDetector::NewFromName("trialmode");
 	c->Initialize(rundata);
 
+
+	// NOTE THAT THE TRIAL MODE CONVERGENCE DETECTOR GIVES YOU
+	// 1 MORE ITERATION THAT REQUESTED, WE ARE KEEPING THIS
+	// BEHAVIOUR FOR NOW FOR BACKWARDS COMPATIBILITY
+	//
+	// SHOULD REALLY BE MAXITERS-1 IN THE LOOPS BELOW
 	ASSERT_EQ(true, c->UseF());
-	for (int i=0; i<MAXITERS-1; i++)
+	for (int i=0; i<MAXITERS; i++)
 	{
 		ASSERT_EQ(false, c->Test(F+2*i*FCHANGE));
 	}
 	ASSERT_EQ(true, c->Test(F+2*MAXITERS*FCHANGE));
 
 	c->Reset();
-	for (int i=0; i<MAXITERS-1; i++)
+	for (int i=0; i<MAXITERS; i++)
 	{
 		ASSERT_EQ(false, c->Test(F+2*i*FCHANGE));
 	}
@@ -234,7 +240,7 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorChange)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);
@@ -268,7 +274,7 @@ TEST_F(ConvergenceTest, TestTrialModeConvergenceDetectorReduce)
 	double FCHANGE = 0.0001;
 	double F=12.1;
 
-	FabberRunData rundata;
+	FabberRunData rundata(0);
 	rundata.Set("max-iterations", MAXITERS);
 	rundata.Set("min-fchange", FCHANGE);
 	rundata.Set("max-trials", MAXTRIALS);

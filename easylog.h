@@ -28,9 +28,13 @@
  * If you want to dump variables directly to this stream, just implement
  * std::ostream& operator<<(std::ostream& stream, const your_type& data);
  */
-#define LOG (*EasyLog::CurrentLog())
+#define LOG (EasyLog::CurrentLog().LogStream())
 
 #define LOG_ERR(x) ((void)((LOG<<x)))
+
+#define WARN_ONCE(x) ((void)(EasyLog::CurrentLog().WarnOnce(x)))
+
+#define WARN_ALWAYS(x) ((void)(EasyLog::CurrentLog().WarnAlways(x)))
 
 /**
  * Sends logging information to an output stream
@@ -41,33 +45,19 @@
 class EasyLog
 {
 public:
-	/**
-	 * Returns a pointer to the current logging stream
-	 *
-	 * The result can be used with the << operator, e.g.
-	 *   *CurrentLog() << "Hello World" << endl;
-	 */
-	static std::ostream* CurrentLog()
-	{
-		if (filestream == NULL)
-		{
-			return &templog;
-		}
-		else
-		{
-			return filestream;
-		}
-	}
 
 	/**
-	 * Get the output directory for the log file, or
-	 * an empty string if not logging to a file.
+	 * Return pointer to current log.
 	 */
-	static const std::string& GetOutputDirectory()
-	{
-		assert(filestream != NULL);
-		return outDir;
-	}
+	static EasyLog& CurrentLog();
+
+	/**
+	 * Log output to an existing stream
+	 *
+	 * This might be std::cout/cerr or something else, e.g. a
+	 * stringstream.
+	 */
+	EasyLog();
 
 	/**
 	 * Log output to a file
@@ -81,7 +71,7 @@ public:
 	 *                  be created with a '+' added to basename, e.g.
 	 *                  'out', 'out+', 'out++', etc...
 	 */
-	static void StartLog(const std::string& basename, bool overwrite, bool link_to_latest=false);
+	void StartLog(const std::string& basename, bool overwrite, bool link_to_latest=false);
 
 	/**
 	 * Log output to an existing stream
@@ -89,27 +79,69 @@ public:
 	 * This might be std::cout/cerr or something else, e.g. a
 	 * stringstream.
 	 */
-	static void StartLog(std::ostream& s);
+	void StartLog(std::ostream& s);
+
+	/**
+	 * Get the output directory for the log file, or
+	 * an empty string if not logging to a file.
+	 */
+	const std::string& GetOutputDirectory();
 
 	/**
 	 * Stop logging.
 	 *
 	 * @param gzip If true and we are logging to a file, gzip the logfile
 	 */
-	static void StopLog(bool gzip = false);
+	void StopLog(bool gzip = false);
 
 	/**
 	 * @return true if StartLog has been called
 	 */
-	static bool LogStarted()
-	{
-		return filestream != NULL;
-	}
+	bool LogStarted();
+
+	/**
+	 * Get the logging stream. Easier to use the LOG macro defined above
+	 */
+	std::ostream& LogStream();
+
+	/**
+	 * Issue a warning
+	 *
+	 * The warning will appear once in the log.
+	 * If the same warning occurs again, it will not
+	 * be repeated, apart from if ReissueWarnings is
+	 * called
+	 */
+	void WarnOnce(const std::string& text);
+
+	/**
+	 * Issue a warning
+	 *
+	 * The warning will appear in the log each time it is issued.
+	 */
+	void WarnAlways(const std::string& text);
+
+	/**
+	 * Resend all warnings recorded so far to the log
+	 */
+	void ReissueWarnings();
 
 private:
-	static std::stringstream templog;
-	static std::ostream* filestream;
-	static std::string outDir;
+	std::ostream* filestream;
+	std::stringstream templog;
+	std::string outDir;
+	std::map<std::string, int> warnCount;
+
+	// Thread-local loggers
+#ifdef _WIN32
+	static map<DWORD, EasyLog> s_logs;
+#else
+  #ifdef USE_PTHREADS
+	static map<pthread_t , EasyLog> s_logs;
+  #else
+	static EasyLog s_log;
+  #endif
+#endif
 };
 
 // Other useful functions:
@@ -135,35 +167,3 @@ inline std::ostream& operator<<(std::ostream& out, std::vector<int> x)
 	out << "]";
 	return out;
 }
-
-/**
- * Allows code to issue warnings which can be recorded
- * and repeated at the end so they do not get missed
- */
-class Warning
-{
-public:
-	/**
-	 * Issue a warning
-	 *
-	 * The warning will appear once in the current log.
-	 * If the same warning occurs again, it will not
-	 * be repeated.
-	 */
-	static void IssueOnce(const std::string& text);
-
-	/**
-	 * Issue a warning
-	 *
-	 * The warning will appear in the current log
-	 * each time it is issued.
-	 */
-	static void IssueAlways(const std::string& text);
-
-	/**
-	 * Resend all warnings recorded so far to the current log
-	 */
-	static void ReissueAll();
-private:
-	static std::map<std::string, int> issueCount;
-};

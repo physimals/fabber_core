@@ -109,8 +109,8 @@ def get_label(text, size=None, bold=False, italic=False):
     return label
 
 class OptionView(ModelView):
-    def __init__(self, opt, rescan=False):
-        ModelView.__init__(self)
+    def __init__(self, opt, rescan=False, **kwargs):
+        ModelView.__init__(self, **kwargs)
         self.key, self.dtype, self.req, self.default, self.desc = opt
         self.req = (self.req == "REQUIRED")
         self.rescan = rescan
@@ -159,8 +159,10 @@ def get_option_view(opt, **kwargs):
         return IntegerOptionView(opt, **kwargs)
     elif opt[1] == "BOOL":
         return OptionView(opt, **kwargs)
-    elif opt[1] == "FILENAME" or opt[1] == "MATRIXFILE":
+    elif opt[1] == "FILENAME" :
         return FileOptionView(opt, **kwargs)
+    elif opt[1] == "MATRIXFILE":
+        return MatrixFileOptionView(opt, **kwargs)
     else:
         return StringOptionView(opt, **kwargs)
         
@@ -228,6 +230,52 @@ class FileOptionView(StringOptionView):
         OptionView.add(self, grid, row)
         grid.addLayout(self.hbox, row, 1)
 
+class MatrixFileOptionView(FileOptionView):
+    def __init__(self, opt, **kwargs):
+        FileOptionView.__init__(self, opt, **kwargs)
+        self.editBtn = QPushButton("Edit")
+        self.hbox.addWidget(self.editBtn)
+        self.widgets.append(self.editBtn)
+        self.editBtn.clicked.connect(self.edit_file)
+    
+    def read_vest(self, fname):
+        f = None
+        try:
+            f = open(fname)
+            lines = f.readlines()
+            nx, ny = 0, 0
+            in_matrix = False
+            mat = []
+            for line in lines:
+                if in_matrix:
+                    nums = [float(num) for num in line.split()]
+                    if len(nums) != nx: raise Exception ("Incorrect number of x values")
+                    mat.append(nums)
+                elif line.startswith("/Matrix"):
+                  if nx == 0 or ny == 0: raise Exception("Missing /NumWaves or /NumPoints")
+                  in_matrix = True
+                elif line.startswith("/NumWaves"):
+                  parts = line.split()
+                  if len(parts) == 1: raise Exception("No number following /NumWaves")
+                  nx = int(parts[1])
+                elif line.startswith("/NumPoints") or line.startswith("/NumContrasts"):
+                  parts = line.split()
+                  if len(parts) == 1: raise Exception("No number following /NumPoints")
+                  ny = int(parts[1])
+            if len(mat) != ny:
+                raise Exception("Incorrect number of y values")      
+        finally:
+            if f is not None: f.close()
+        return mat
+
+    def edit_file(self):
+        try:
+            mat = self.read_vest(self.edit.text())
+            self.mat_dialog.set_matrix(mat)
+            self.mat_dialog.exec_()
+        except:
+            traceback.print_exc()
+            
 class OptionsView(ModelView):
     def __init__(self, **kwargs):
         ModelView.__init__(self, **kwargs)
@@ -279,13 +327,13 @@ class OptionsView(ModelView):
                 next, actual = self.get_concrete_opts(opt_base, opt_suffix)
                 for key in actual:
                     newopt = [key,] + opt[1:]
-                    view = get_option_view(newopt, rescan=True)
+                    view = get_option_view(newopt, rescan=True, mat_dialog=self.mat_dialog)
                     view.add(self.dialog.grid, row+startrow)
                     self.views[key] = view
                     row += 1
                 
             else:
-                view = get_option_view(opt)
+                view = get_option_view(opt, mat_dialog=self.mat_dialog)
                 view.add(self.dialog.grid, row+startrow)
                 self.views[opt[0]] = view
                 row += 1

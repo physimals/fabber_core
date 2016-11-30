@@ -55,7 +55,7 @@ void Ar1cNoiseModel::Initialize(FabberRunData& args)
 	if (nPhisString == "(default)")
 	{
 		nPhis = 1;
-		Warning::IssueOnce("Defaulting to --num-echoes=1");
+		WARN_ONCE("Defaulting to --num-echoes=1");
 	}
 	else
 	{
@@ -350,7 +350,7 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 
 		if (wasSingular)
 		{
-			Warning::IssueOnce("Ltmp was singular, so changed zeros on diagonal to 1e-20.");
+			WARN_ONCE("Ltmp was singular, so changed zeros on diagonal to 1e-20.");
 			// LOG << "Ltmp == \n" << Ltmp << "mTmp == \n" << mTmp;
 		}
 

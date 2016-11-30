@@ -11,8 +11,12 @@
 #include "easylog.h"
 #include "utils/tracer_plus.h"
 #include "newmatio.h"
+#include "miscmaths/miscmaths.h"
+
+#include "math.h"
 
 using Utilities::Tracer_Plus;
+using MISCMATHS::read_vest;
 
 // Constructors
 
@@ -21,6 +25,24 @@ MVNDist::MVNDist()
 	Tracer_Plus tr("MVNDist::MVNDist()");
 	m_size = -1;
 	precisionsValid = covarianceValid = false;
+}
+
+MVNDist::MVNDist(int dim)
+{
+	m_size = -1;
+	SetSize(dim);
+}
+
+MVNDist::MVNDist(const MVNDist& from)
+{
+	m_size = -1;
+	*this = from;
+}
+
+MVNDist::MVNDist(const string filename)
+{
+	m_size = -1;
+	LoadVest(filename);
 }
 
 MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
@@ -83,6 +105,13 @@ const MVNDist& MVNDist::operator=(const MVNDist& from)
 	return *this;
 }
 
+MVNDist MVNDist::GetSubmatrix(int first, int last, bool checkIndependence)
+{
+	MVNDist ret;
+	ret.CopyFromSubmatrix(*this, first, last, checkIndependence);
+	return ret;
+}
+
 void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence)
 {
 	Tracer_Plus tr("MVNDist::CopyFromSubmatrix");
@@ -112,6 +141,12 @@ void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool c
 	return;
 }
 
+int MVNDist::GetSize() const
+{
+	assert(m_size == means.Nrows() || m_size < 0);
+	return m_size;
+}
+
 void MVNDist::SetSize(int dim)
 {
 	// Not useful and dominates --debug-running-stack:
@@ -119,7 +154,7 @@ void MVNDist::SetSize(int dim)
 	if (dim <= 0)
 		throw RBD_COMMON::Logic_error("Can't have dim<=0\n");
 
-	assert(means.Nrows() == m_size || m_size<0);
+	assert(means.Nrows() == m_size || m_size < 0);
 
 	if (m_size != dim)
 	{
@@ -184,8 +219,8 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 		} catch (Exception)
 		{
 			// Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
-			Warning::IssueOnce("MVN precision (m_size==" + stringify(m_size)
-					+ ") was singular, adding 1e-10 to diagonal");
+			WARN_ONCE(
+					"MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
 			LOG << means.t() << endl;
 			LOG << precisions << endl;
 			covariance = (precisions + IdentityMatrix(m_size) * 1e-10).i();
@@ -220,6 +255,11 @@ void MVNDist::SetCovariance(const SymmetricMatrix& from)
 	assert(means.Nrows() == m_size);
 }
 
+void MVNDist::Dump(const string indent) const
+{
+	DumpTo(LOG, indent);
+}
+
 void MVNDist::DumpTo(ostream& out, const string indent) const
 {
 	Tracer_Plus tr("MVNDist::Dump");
@@ -238,7 +278,7 @@ void MVNDist::DumpTo(ostream& out, const string indent) const
 	assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Load(const string& filename)
+void MVNDist::LoadVest(const string& filename)
 {
 	LOG << "Reading MVN from file '" << filename << "'...\n";
 	Matrix mat = read_vest(filename);
@@ -268,7 +308,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 {
 	Tracer_Plus tr("MVNDist::Load (static)");
 
-	Matrix vols;
+	Matrix voxel_data;
 	LOG << "MVNDist::Reading MVNs from " << filename << endl;
 
 	// Input matrix contains 3d voxels with the
@@ -277,10 +317,18 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 	// Load. First this is converted into
 	// a matrix whose columns are the voxels
 	// and rows are the data
-	vols = data.GetVoxelData(filename);
+	voxel_data = data.GetVoxelData(filename);
+	MVNDist::Load(mvns, voxel_data);
+}
 
+void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
+{
 	// Prepare an output vector of the correct size
-	const int nVoxels = vols.Ncols();
+	const int nVoxels = voxel_data.Ncols();
+	if (nVoxels == 0) {
+		throw runtime_error("MVNDist::Load - Voxel data is empty");
+	}
+
 	for (unsigned i = 0; i < mvns.size(); i++)
 		assert(mvns[i] == NULL); // should've deleted everything first.
 	mvns.resize(nVoxels, NULL);
@@ -289,12 +337,13 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 	// the number of rows, N, is found by inverting the formula
 	// for N as a function of P given in Load, using the quadratic
 	// formula.
-	const int nParams = ((int) sqrt(8 * vols.Nrows() + 1) - 3) / 2;
-	assert( vols.Nrows() == nParams*(nParams+1)/2 + nParams+1 );
+	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
+	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
+		throw runtime_error("MVNDist::Load  - Incorrect number of rows for an MVN input");
+	}
 
 	SymmetricMatrix tmp(nParams);
 
-	assert(nVoxels > 0);
 
 	// Create a new MVN dist for each voxel,
 	// and set the covariances and the means from
@@ -306,13 +355,16 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 		int index = 0;
 		for (int r = 1; r <= nParams; r++)
 			for (int c = 1; c <= r; c++)
-				tmp(r, c) = vols(++index, vox);
+				tmp(r, c) = voxel_data(++index, vox);
 
-		assert(index == nParams*(nParams+1)/2);
+		assert(index == nParams * (nParams + 1) / 2);
 		mvn->SetCovariance(tmp);
-		mvn->means = vols.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
+		mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
+				nParams * (nParams + 1) / 2 + nParams);
 
-		assert(vols(vols.Nrows(), vox) == 1);
+		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
+			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
+		}
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);
 		mvns[vox - 1] = mvn;
@@ -364,6 +416,6 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 	}
 	// Write the file
 
-	data.SaveVoxelData(filename, vols, NIFTI_INTENT_SYMMATRIX);
+	data.SaveVoxelData(filename, vols, VDT_MVN);
 }
 

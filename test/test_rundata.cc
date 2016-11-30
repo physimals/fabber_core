@@ -7,6 +7,8 @@
 #include "setup.h"
 #include "easylog.h"
 
+#include <fstream>
+
 namespace
 {
 
@@ -48,11 +50,11 @@ TEST_F(RunDataTest, ConcatenatedData)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data2.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -65,31 +67,35 @@ TEST_F(RunDataTest, ConcatenatedData)
 				for (int n = 0; n < NTIMES; n++)
 				{
 					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
+					data2(n + 1, v) = VAL * 2;
+					data3(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
 		}
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data1", data1);
+	io.SetVoxelData("data2", data2);
+	io.SetVoxelData("data3", data3);
 	rundata.Set("data-order", "concatenate");
 	NEWMAT::Matrix data = rundata.GetMainVoxelData();
 
-	ASSERT_EQ(data.Nrows(), NTIMES*3);
-	ASSERT_EQ(data.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(data.Nrows(), NTIMES * 3);
+	ASSERT_EQ(data.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		for (int t=0; t<NTIMES*3; t++)
+		for (int t = 0; t < NTIMES * 3; t++)
 		{
-			if (t < NTIMES) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL);
-			else if (t < NTIMES*2) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
-			else ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*3);
+			if (t < NTIMES)
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL);
+			else if (t < NTIMES * 2)
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL * 2);
+			else
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL * 3);
 		}
 	}
 }
@@ -103,11 +109,11 @@ TEST_F(RunDataTest, InterleavedData)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data2.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -120,31 +126,35 @@ TEST_F(RunDataTest, InterleavedData)
 				for (int n = 0; n < NTIMES; n++)
 				{
 					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
+					data2(n + 1, v) = VAL * 2;
+					data3(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
 		}
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data1", data1);
+	io.SetVoxelData("data2", data2);
+	io.SetVoxelData("data3", data3);
 	rundata.Set("data-order", "interleave");
 	NEWMAT::Matrix data = rundata.GetMainVoxelData();
 
-	ASSERT_EQ(data.Nrows(), NTIMES*3);
-	ASSERT_EQ(data.Ncols(), VSIZE*VSIZE*VSIZE);
-	for (int i=0; i<VSIZE*VSIZE*VSIZE; i++)
+	ASSERT_EQ(data.Nrows(), NTIMES * 3);
+	ASSERT_EQ(data.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
 	{
-		for (int t=0; t<NTIMES*3; t++)
+		for (int t = 0; t < NTIMES * 3; t++)
 		{
-			if (t % 3 == 0) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL);
-			else if (t % 3 == 1) ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*2);
-			else ASSERT_FLOAT_EQ(data(t+1, i+1), VAL*3);
+			if (t % 3 == 0)
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL);
+			else if (t % 3 == 1)
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL * 2);
+			else
+				ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL * 3);
 		}
 	}
 }
@@ -157,11 +167,11 @@ TEST_F(RunDataTest, MultiDataInconsistent)
 
 	// Create coordinates and data matrices
 	NEWMAT::Matrix voxelCoords, data1, data2, data3;
-	data1.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data2.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	data3.ReSize(NTIMES, VSIZE*VSIZE*VSIZE);
-	voxelCoords.ReSize(3, VSIZE*VSIZE*VSIZE);
-	int v=1;
+	data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data2.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
 	for (int z = 0; z < VSIZE; z++)
 	{
 		for (int y = 0; y < VSIZE; y++)
@@ -174,19 +184,20 @@ TEST_F(RunDataTest, MultiDataInconsistent)
 				for (int n = 0; n < NTIMES; n++)
 				{
 					data1(n + 1, v) = VAL;
-					data2(n + 1, v) = VAL*2;
-					data3(n + 1, v) = VAL*3;
+					data2(n + 1, v) = VAL * 2;
+					data3(n + 1, v) = VAL * 3;
 				}
 				v++;
 			}
 		}
 	}
 
-	FabberRunData rundata;
-	rundata.SetVoxelCoords(voxelCoords);
-	rundata.SetVoxelData("data1", data1);
-	rundata.SetVoxelData("data2", data2);
-	rundata.SetVoxelData("data3", data3);
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data1", data1);
+	io.SetVoxelData("data2", data2);
+	io.SetVoxelData("data3", data3);
 	rundata.Set("data-order", "singlefile");
 	ASSERT_THROW(NEWMAT::Matrix data = rundata.GetMainVoxelData(), Invalid_option);
 }
@@ -198,14 +209,12 @@ TEST_F(RunDataTest, OptionsFile)
 
 	ofstream os;
 	os.open(FILENAME.c_str(), ios::out);
-	os << "noise=white" << endl
-	<< "model=trivial" << endl
-	<< "method=vb" << endl
-	<< "bool-option" << endl
-	<< "#comment, ignored" << endl;
+	os << "noise=white" << endl << "model=trivial" << endl << "method=vb" << endl << "bool-option" << endl
+			<< "#comment, ignored" << endl;
 	os.close();
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
 	rundata.ParseParamFile(FILENAME);
 	ASSERT_EQ("white", rundata.GetString("noise"));
 	ASSERT_EQ("trivial", rundata.GetString("model"));
@@ -223,9 +232,80 @@ TEST_F(RunDataTest, OptionsFileEmbeddedComment)
 	os << "model=trivial #just keep things simple" << endl;
 	os.close();
 
-	FabberRunData rundata;
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
 	rundata.ParseParamFile(FILENAME);
 	ASSERT_EQ("trivial", rundata.GetString("model"));
+}
+
+// Tests unsetting an option
+TEST_F(RunDataTest, Unset)
+{
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	rundata.Set("wibble", "wobble");
+	rundata.SetBool("bobble");
+
+	ASSERT_EQ("wobble", rundata.GetStringDefault("wibble", "squabble"));
+	rundata.Unset("wibble");
+	ASSERT_EQ("squabble", rundata.GetStringDefault("wibble", "squabble"));
+	ASSERT_EQ(true, rundata.GetBool("bobble"));
+	rundata.Unset("bobble");
+	ASSERT_EQ(false, rundata.GetBool("bobble"));
+}
+
+// Tests clearing voxel data
+TEST_F(RunDataTest, ClearVoxelData)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data1, data2, data3;
+	data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data2.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					data1(n + 1, v) = VAL;
+					data2(n + 1, v) = VAL * 2;
+					data3(n + 1, v) = VAL * 3;
+				}
+				v++;
+			}
+		}
+	}
+
+	FabberIoMemory io;
+	FabberRunData rundata(&io);
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data1", data1);
+	io.SetVoxelData("data2", data2);
+	io.SetVoxelData("data3", data3);
+
+	io.ClearVoxelData("data1");
+	ASSERT_NO_THROW(rundata.GetVoxelCoords());
+	ASSERT_THROW(rundata.GetVoxelData("data1"), DataNotFound);
+	ASSERT_NO_THROW(rundata.GetVoxelData("data2"));
+	ASSERT_NO_THROW(rundata.GetVoxelData("data3"));
+
+	io.ClearVoxelData();
+	ASSERT_NO_THROW(rundata.GetVoxelCoords());
+	ASSERT_THROW(rundata.GetVoxelData("data1"), DataNotFound);
+	ASSERT_THROW(rundata.GetVoxelData("data2"), DataNotFound);
+	ASSERT_THROW(rundata.GetVoxelData("data3"), DataNotFound);
 }
 
 }

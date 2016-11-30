@@ -10,13 +10,14 @@
 
 #include "easylog.h"
 #include "utils/tracer_plus.h"
-
+#include "miscmaths/miscmaths.h"
 #include "newmatio.h"
 
 #include <iostream>
 #include <stdexcept>
 
 using Utilities::Tracer_Plus;
+using MISCMATHS::read_vest;
 using namespace std;
 
 std::string LinearFwdModel::GetDescription() const

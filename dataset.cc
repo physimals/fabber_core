@@ -13,6 +13,7 @@
 #include "setup.h"
 #include "fwdmodel.h"
 #include "inference.h"
+#include "fabber_io.h"
 
 #include "utils/tracer_plus.h"
 #include "newmat.h"
@@ -40,6 +41,9 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 	case OPT_INT:
 		s = "INTEGER";
 		break;
+	case OPT_FLOAT:
+		s = "FLOAT";
+		break;
 	case OPT_FILE:
 		s = "FILENAME";
 		break;
@@ -60,7 +64,7 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
 			<< value.description << endl;
 }
 
-void PercentProgressCheck::operator()(int voxel, int nVoxels)
+void PercentProgressCheck::Progress(int voxel, int nVoxels)
 {
 	int percent = (100 * voxel) / nVoxels;
 	if (percent / 10 > m_last)
@@ -72,6 +76,66 @@ void PercentProgressCheck::operator()(int voxel, int nVoxels)
 		cout << m_last * 10 << "%" << flush;
 		if (m_last == 10)
 			cout << endl;
+	}
+}
+
+static OptionSpec OPTIONS[] =
+		{
+				{ "help", OPT_BOOL,
+						"Print this usage method. If given with --method or --model, display relevant method/model usage information",
+						OPT_NONREQ, "" },
+				{ "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
+				{ "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
+				{ "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
+				{ "overwrite", OPT_BOOL,
+						"If set will overwrite existing output. If not set, new output directories will be created by appending '+' to the directory name ",
+						OPT_NONREQ, "" },
+				{ "link-to-latest", OPT_BOOL,
+						"If set will try to create a link to the most recent output directory with the prefix _latest",
+						OPT_NONREQ, "" },
+				{ "method", OPT_STR, "Use this inference method", OPT_REQ, "" },
+				{ "model", OPT_STR, "Use this forward model", OPT_REQ, "" },
+				{ "loadmodels", OPT_FILE,
+						"Load models dynamically from the specified filename, which should be a DLL/shared library",
+						OPT_NONREQ, "" },
+				{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
+				{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
+				{ "data-order", OPT_STR,
+						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
+						OPT_NONREQ, "interleave" },
+				{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+				{ "dump-param-names", OPT_BOOL, "Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
+				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
+				{ "save-residuals", OPT_BOOL,
+						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
+				{ "save-mvn", OPT_BOOL,
+						"Save the final MVN distributions. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-mean", OPT_BOOL,
+						"Save the parameter means. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-std", OPT_BOOL,
+						"Save the parameter standard deviations. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-zstat", OPT_BOOL,
+						"Save the parameter Zstats. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-noise-mean", OPT_BOOL,
+						"Save the noise means. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-noise-std", OPT_BOOL,
+						"Save the noise standard deviations. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "save-free-energy", OPT_BOOL,
+						"Save the free energy, if calculated. Note this is on by default in the command line tool for backwards compatibility",
+						OPT_NONREQ, "" },
+				{ "" }, };
+
+void FabberRunData::GetOptions(std::vector<OptionSpec> &opts)
+{
+	for (int i = 0; OPTIONS[i].name != ""; i++)
+	{
+		opts.push_back(OPTIONS[i]);
 	}
 }
 
@@ -100,15 +164,34 @@ string FabberRunData::GetDate()
 #endif
 }
 
-FabberRunData::FabberRunData() :
-		m_save_files(false), m_have_coords(false), m_nvoxels(-1), m_progress(0)
+FabberRunData::FabberRunData(FabberIo *io) :
+		m_progress(0), m_io(io)
+{
+	// If no IO module is given, use the built in default
+	// although this will render the object fairly useless
+	if (!m_io) {
+		m_io = &m_default_io;
+	}
+
+	init();
+}
+
+void FabberRunData::init()
 {
 	FabberSetup::SetupDefaults();
+
+	// For backwards compatibility with previous version of Fabber, save these data items by default
+	SetBool("save-mean");
+	SetBool("save-std");
+	SetBool("save-zstat");
+	SetBool("save-noise-mean");
+	SetBool("save-noise-std");
+	SetBool("save-free-energy");
+	SetBool("save-mvn");
 }
 
 FabberRunData::~FabberRunData()
 {
-	FabberSetup::Destroy();
 }
 
 void FabberRunData::LogParams()
@@ -119,10 +202,13 @@ void FabberRunData::LogParams()
 		LOG << "FabberRunData::Parameter " << iter->first << "=" << iter->second << endl;
 	}
 }
-void FabberRunData::Run()
+
+void FabberRunData::Run(ProgressCheck *progress)
 {
 	Tracer_Plus tr2("FabberRunData::Run");
+	if (!m_io) throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
+	m_progress = progress;
 	LOG << "FabberRunData::FABBER release v" << GetVersion() << endl;
 	LOG << "FabberRunData::Revision " << GetRevision() << endl;
 	LOG << "FabberRunData::Last commit: " << GetDate() << endl;
@@ -133,31 +219,18 @@ void FabberRunData::Run()
 
 	LogParams();
 
+	// Initialize data loader, if we have one
+	m_io->Initialize(*this);
+
 	//Set the forward model
 	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
 	fwd_model->Initialize(*this);
 	assert(fwd_model->NumParams() > 0);
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
-	//Set the inference technique (and pass in the model)
-	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
-	infer->Initialize(fwd_model.get(), *this);
-
-	// Arguments should all have been used by now, so complain if there's anything left.
-	// FIXME ineffective at present
-	CheckEmpty();
-
-	// Calculations
-	Progress(0, m_nvoxels);
-	infer->DoCalculations(*this);
-	Progress(m_nvoxels, m_nvoxels);
-	infer->SaveResults(*this);
-
-	// FIXME this is a hack but seems to be expected that the command line
-	// tool will output parameter names to a file. Really should be an option!
-	if (m_save_files)
-	{
-		ofstream paramFile((EasyLog::GetOutputDirectory() + "/paramnames.txt").c_str());
+	// Write the paramnames.txt file if required
+	if (GetBool("dump-param-names")) {
+		ofstream paramFile((EasyLog::CurrentLog().GetOutputDirectory() + "/paramnames.txt").c_str());
 		vector<string> paramNames;
 		fwd_model->NameParams(paramNames);
 		for (unsigned i = 0; i < paramNames.size(); i++)
@@ -166,6 +239,21 @@ void FabberRunData::Run()
 		}
 		paramFile.close();
 	}
+
+	//Set the inference technique (and pass in the model)
+	std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
+	infer->Initialize(fwd_model.get(), *this);
+
+	// Arguments should all have been used by now, so complain if there's anything left.
+	// FIXME ineffective at present
+	//CheckEmpty();
+
+	// Calculations
+	int nvoxels = m_io->GetVoxelCoords().Ncols();
+	Progress(0, nvoxels);
+	infer->DoCalculations(*this);
+	Progress(nvoxels, nvoxels);
+	infer->SaveResults(*this);
 
 	LOG << "FabberRunData::All done." << endl;
 
@@ -259,7 +347,6 @@ void FabberRunData::ParseOldStyleParamFile(const string filename)
 void FabberRunData::Parse(int argc, char** argv)
 {
 	Tracer_Plus tr("FabberRunData::Parse");
-	m_save_files = true; // FIXME hack for CL tool
 
 	m_params[""] = argv[0];
 	for (int a = 1; a < argc; a++)
@@ -325,22 +412,24 @@ void FabberRunData::SetBool(const string key, bool value)
 		m_params.erase(key);
 }
 
-string FabberRunData::GetString(const string key)
+void FabberRunData::Unset(const std::string key)
 {
-	return GetString(key, "Missing mandatory option: --" + key + "\n");
+	m_params.erase(key);
 }
 
-string FabberRunData::GetString(const string key, const string msg)
+string FabberRunData::GetString(const string key)
+{
+	return Read(key, "Missing mandatory option: --" + key + "\n");
+}
+
+string FabberRunData::GetStringDefault(const string key, const string def)
 {
 	if (m_params.count(key) == 0)
-		throw Invalid_option(msg);
-
+		return def;
 	if (m_params[key] == "")
-		throw Invalid_option("No value given for mandatory option: --" + key + "=???");
-
-	// okay, option is valid.  Now remove it.
+		throw Invalid_option("Option requires a value: --" + key + " (or omit, equivalent to --" + key + "=" + def);
 	string ret = m_params[key];
-	//    m_params.erase(key);
+	//   m_params.erase(key);
 	return ret;
 }
 
@@ -358,26 +447,73 @@ bool FabberRunData::GetBool(const string key)
 	throw Invalid_option("Value should not be given for boolean option --" + key);
 }
 
-string FabberRunData::GetStringDefault(const string key, const string def)
+int FabberRunData::GetInt(const string key)
+{
+	string val = GetString(key);
+	try
+	{
+		return convertTo<int>(val);
+	} catch (invalid_argument&)
+	{
+		throw Invalid_option(key + " must be an integer");
+	}
+}
+
+double FabberRunData::GetDouble(const string key)
+{
+	string val = GetString(key);
+	try
+	{
+		return convertTo<double>(val);
+	} catch (invalid_argument&)
+	{
+		throw Invalid_option(key + " must be a number (was: " + val + ")");
+	}
+}
+
+int FabberRunData::GetIntDefault(const string key, int def)
 {
 	if (m_params.count(key) == 0)
 		return def;
+	else
+		return GetInt(key);
+}
+
+double FabberRunData::GetDoubleDefault(const string key, double def)
+{
+	if (m_params.count(key) == 0)
+		return def;
+	else
+		return GetDouble(key);
+}
+
+string FabberRunData::Read(const string key, const string msg)
+{
+	if (m_params.count(key) == 0)
+		throw Invalid_option(msg);
+
 	if (m_params[key] == "")
-		throw Invalid_option("Option requires a value: --" + key + " (or omit, equivalent to --" + key + "=" + def);
+		throw Invalid_option("No value given for mandatory option: --" + key + "=???");
+
+	// okay, option is valid.  Now remove it.
 	string ret = m_params[key];
-	//   m_params.erase(key);
+	//    m_params.erase(key);
 	return ret;
 }
 
-void FabberRunData::CheckEmpty()
+std::string FabberRunData::Read(std::string key)
 {
-	m_params.erase(""); // not worth complaining about this
+	return GetString(key);
+}
 
-	if (m_params.empty())
-		return;
+std::string FabberRunData::ReadWithDefault(std::string key, std::string def)
+{
+	return GetStringDefault(key, def);
+}
 
-	//    string msg = "\nUnused arguments:\n" + stringify(*this);
-	//    throw Invalid_option(msg);
+bool FabberRunData::ReadBool(std::string key)
+{
+		return GetBool(key);
 }
 
 ostream& operator<<(ostream& out, const FabberRunData& opts)
@@ -401,14 +537,13 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 		return GetVoxelData("data");
 	} catch (DataNotFound &e)
 	{
-		GetMainVoxelDataMultiple();
-		return GetVoxelData("data");
+		if (GetStringDefault("data1", "") != "") {
+			return GetMainVoxelDataMultiple();
+		}
+		else {
+			throw(e);
+		}
 	}
-}
-
-void FabberRunData::SetMainVoxelData(NEWMAT::Matrix &data)
-{
-	FabberRunData::SetVoxelData("data", data);
 }
 
 const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
@@ -423,83 +558,18 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
 	}
 }
 
-void FabberRunData::SetVoxelSuppData(NEWMAT::Matrix &data)
-{
-	FabberRunData::SetVoxelData("suppdata", data);
-}
-
-/**
- * Check matrix is per-voxel, i.e. the number of columns
- * equals the number of voxels
- */
-void FabberRunData::CheckSize(std::string key, NEWMAT::Matrix &mat)
-{
-	// If this is the first data set provided, it gets to
-	// decide the number of voxels
-	if (m_nvoxels == -1)
-	{
-		m_nvoxels = mat.Ncols();
-	}
-	else
-	{
-		if (mat.Ncols() != m_nvoxels)
-		{
-			throw Invalid_option(
-					"Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols()) + " should be "
-							+ stringify(m_nvoxels) + ")");
-		}
-	}
-}
-
-void FabberRunData::SetVoxelCoords(NEWMAT::Matrix &coords)
-{
-	// This will also set m_nvoxels if it's the first data set
-	CheckSize("coords", coords);
-	m_voxelCoords = coords;
-
-	// FIXME we assume 3D coordinates
-	if (coords.Nrows() != 3)
-	{
-		throw Invalid_option("Co-ordinates must be 3 dimensional");
-	}
-
-	// FIXME we assume coords will start at 0 in any
-	// volume that is output but will not be negative
-	m_size.resize(3);
-	m_size[0] = coords.Row(1).Maximum() + 1;
-	m_size[1] = coords.Row(2).Maximum() + 1;
-	m_size[2] = coords.Row(3).Maximum() + 1;
-
-	m_dims.resize(3);
-	m_dims[0] = 1.0;
-	m_dims[1] = 1.0;
-	m_dims[2] = 1.0;
-
-	m_have_coords = true;
-}
-
 int FabberRunData::GetVoxelDataSize(std::string key)
 {
 	NEWMAT::Matrix mat = GetVoxelData(key);
 	return mat.Nrows();
 }
 
-void FabberRunData::SetVoxelData(std::string key, NEWMAT::Matrix &data)
+const NEWMAT::Matrix& FabberRunData::GetVoxelCoords() const
 {
-	CheckSize(key, data);
-	m_voxel_data[key] = data;
+	return m_io->GetVoxelCoords();
 }
 
-void FabberRunData::ClearVoxelData(std::string key)
-{
-	if (m_voxel_data.count(key) != 0)
-	{
-		LOG << "FabberRunData::Erasing data " << key << endl;
-		m_voxel_data.erase(key);
-	}
-}
-
-const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
+const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFile)
 {
 	// Attempt to load data if not already present. Will
 	// throw an exception if parameter not specified
@@ -507,171 +577,15 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key)
 	//
 	// FIXME different exceptions? What about use case where
 	// data is optional?
-	if (m_voxel_data.count(key) == 0)
-	{
-#ifdef NO_NEWIMAGE
-		throw DataNotFound(key);
-#else
-		string filename = GetStringDefault(key, "");
-		LoadVoxelData(filename, key);
-#endif
+	string data_key = "";
+	while (key != "") {
+		data_key = key;
+		key = GetStringDefault(key, "");
 	}
-
-	return m_voxel_data.find(key)->second;
+	return m_io->GetVoxelData(data_key);
 }
 
-#ifndef NO_NEWIMAGE
-#include "newimage/newimageall.h"
-using namespace NEWIMAGE;
-
-void DumpVolumeInfo(const volume4D<float>& info, ostream& out = LOG)
-{
-	Tracer_Plus tr("DumpVolumeInfo");
-	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-	<< ", vols=" << info.tsize() << endl;
-	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-	<< "mm, TR=" << info.tdim() << " sec\n";
-	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
-void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
-{
-	Tracer_Plus tr("DumpVolumeInfo");
-	LOG << "FabberRunData::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-	<< ", vols=1" << endl;
-	LOG << "FabberRunData::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-	<< "mm, TR=1" << " sec\n";
-	LOG << "FabberRunData::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-	<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
-void FabberRunData::SetVoxelCoordsFromVolume(volume4D<float> first_data)
-{
-	// First try to get the coords from a mask. This
-	// can't be set as voxel data, as it defines what the
-	// voxel data is. If present it must be loaded from a file
-
-	// FIXME code duplication
-	string mask = GetStringDefault("mask", "");
-	if (mask != "")
-	{
-		LoadVoxelCoordsFromMask(GetString("mask"));
-	}
-	else
-	{
-		LOG << "FabberRunData::Setting voxel coordinates from first volume to be loaded" << endl;
-		// Create coordinates matrix from the first volume to
-		// be loaded
-		int nx = first_data.xsize();
-		int ny = first_data.ysize();
-		int nz = first_data.zsize();
-		volume4D<float> coordvol(nx, ny, nz, 3);
-		for (int i = 0; i < nx; i++)
-		{
-			for (int j = 0; j < ny; j++)
-			{
-				for (int k = 0; k < nz; k++)
-				{
-					ColumnVector vcoord(3);
-					vcoord << i << j << k;
-					coordvol.setvoxelts(vcoord, i, j, k);
-				}
-			}
-		}
-
-		Matrix coords = coordvol.matrix();
-		SetVoxelCoords(coords);
-	}
-	m_have_coords = true;
-}
-
-void FabberRunData::LoadVoxelCoordsFromMask(std::string mask_filename)
-{
-	Tracer_Plus tr("LoadMask");
-
-	LOG_ERR("FabberRunData::Loading mask data from '" + mask_filename << "'" << endl);
-	read_volume(m_mask, mask_filename);
-	m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
-	DumpVolumeInfo(m_mask);
-
-	// Create coordinates matrix using mask
-	LOG << "FabberRunData::Setting voxel coordinates from mask" << endl;
-
-	int nx = m_mask.xsize();
-	int ny = m_mask.ysize();
-	int nz = m_mask.zsize();
-	volume4D<float> coordvol(nx, ny, nz, 3);
-	for (int i = 0; i < nx; i++)
-	{
-		for (int j = 0; j < ny; j++)
-		{
-			for (int k = 0; k < nz; k++)
-			{
-				ColumnVector vcoord(3);
-				vcoord << i << j << k;
-				coordvol.setvoxelts(vcoord, i, j, k);
-			}
-		}
-	}
-
-	Matrix coords = coordvol.matrix(m_mask);
-	SetVoxelCoords(coords);
-}
-
-void FabberRunData::LoadVoxelData(std::string filename, std::string key)
-{
-	Tracer_Plus tr("LoadVoxelData");
-
-	if (filename != "")
-	{
-		// Load the files.  Note: these functions don't throw errors if file doesn't exist --
-		// they just crash.  Hence the detailed logging before we try anything.
-		LOG << "FabberRunData::Loading data from '" + filename << "'" << endl;
-		volume4D<float> data;
-		try
-		{
-			read_volume4D(data, filename);
-		}
-		catch (Exception &e)
-		{
-			throw DataNotFound(key, filename);
-		}
-		DumpVolumeInfo(data);
-
-		if (!m_have_coords)
-		{
-			// First data set! Set our co-ords from this
-			SetVoxelCoordsFromVolume(data);
-		}
-
-		try
-		{
-			// FIXME m_have_mask would be better
-			if (m_mask.xsize() > 0)
-			{
-				LOG << "     Applying mask to data..." << endl;
-				m_voxel_data[key] = data.matrix(m_mask);
-			}
-			else
-			{
-				m_voxel_data[key] = data.matrix();
-			}
-		}
-		catch (exception &e)
-		{
-			LOG << "*** NEWMAT error while thresholding time-series... Most likely a dimension mismatch. ***\n";
-			throw e;
-		}
-	}
-	else
-	{
-		throw DataNotFound(key);
-	}
-}
-#endif
-
-void FabberRunData::GetMainVoxelDataMultiple()
+const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 {
 	Tracer_Plus tr("GetMainVoxelDataMultiple");
 
@@ -694,15 +608,13 @@ void FabberRunData::GetMainVoxelDataMultiple()
 	int nSets = dataSets.size();
 	if (nSets < 1)
 	{
-		throw Invalid_option(
-				"At least one data file is required: --data=<file1> or [--data1=<file1> --data2=<file2> [...]]\n");
+		throw DataNotFound("data");
 	}
 	if ((order == "singlefile") && nSets > 1)
 	{
 		throw Invalid_option("data-order=singlefile but more than one file specified");
 	}
 
-	Matrix voxelDataMain;
 	if (order == "interleave")
 	{
 		LOG << "FabberRunData::Combining data into one big matrix by interleaving..." << endl;
@@ -710,7 +622,7 @@ void FabberRunData::GetMainVoxelDataMultiple()
 		// has 3 time points 1, 2, 3 the final time series will be
 		// A1B1C1A2B2C2A3B3C3
 		int nTimes = dataSets[0].Nrows();
-		voxelDataMain.ReSize(nTimes * nSets, dataSets[0].Ncols());
+		m_mainDataMultiple.ReSize(nTimes * nSets, dataSets[0].Ncols());
 		for (int i = 0; i < nTimes; i++)
 		{
 			for (int j = 0; j < nSets; j++)
@@ -720,7 +632,7 @@ void FabberRunData::GetMainVoxelDataMultiple()
 					// Data sets need same number of time points if they are to be interleaved
 					throw Invalid_option("Data sets must all have the same number of time points");
 				}
-				voxelDataMain.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
+				m_mainDataMultiple.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
 			}
 		}
 	}
@@ -730,60 +642,28 @@ void FabberRunData::GetMainVoxelDataMultiple()
 		// Concatentate - For example if the data sets are A, B, C and each
 		// has 3 time points 1, 2, 3 the final time series will be
 		// A1A2A3B1B2B3C1C2C3
-		voxelDataMain = dataSets.at(0);
+		m_mainDataMultiple = dataSets.at(0);
 		for (unsigned j = 1; j < dataSets.size(); j++)
 		{
-			voxelDataMain &= dataSets.at(j);
+			m_mainDataMultiple &= dataSets.at(j);
 		}
 	}
 	else if (order == "singlefile")
 	{
-		voxelDataMain = dataSets[0];
+		m_mainDataMultiple = dataSets[0];
 	}
 	else
 	{
 		throw Invalid_option("data-order not recognized: " + order);
 	}
 
-	m_voxel_data["data"] = voxelDataMain;
-	LOG << "FabberRunData::Done loading data, size = " << voxelDataMain.Nrows() << " timepoints by "
-			<< voxelDataMain.Ncols() << " voxels" << endl;
+	LOG << "FabberRunData::Done loading data, size = " << m_mainDataMultiple.Nrows() << " timepoints by "
+			<< m_mainDataMultiple.Ncols() << " voxels" << endl;
+	return m_mainDataMultiple;
 }
 
-void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, int nifti_intent_code)
+void FabberRunData::SaveVoxelData(std::string filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
-	int data_size = data.Nrows();
-
-	if (!m_save_files)
-	{
-		LOG << "FabberRunData::Saving to memory: " << filename << endl;
-		// FIXME what should we do with NIFTI_INTENT_CODE?
-		SetVoxelData(filename, data);
-	}
-	else
-	{
-#ifndef NO_NEWIMAGE
-		LOG << "FabberRunData::Saving to nifti: " << filename << endl;
-		volume4D<float> output(m_size[0], m_size[1], m_size[2], data_size);
-		if (m_mask.xsize() > 0)
-		{
-			output.setmatrix(data, m_mask);
-		}
-		else
-		{
-			output.setmatrix(data);
-		}
-		output.set_intent(nifti_intent_code, 0, 0, 0);
-		output.setDisplayMaximumMinimum(output.max(), output.min());
-		//string output_dir = GetStringDefault("output", ".");
-		// FIXME need to use logger to get outdir as this does the ++ appending, however
-		// this assumes use of CL tool and log to file
-		string outDir = EasyLog::GetOutputDirectory();
-		if (outDir != "") filename = outDir + "/" + filename;
-		save_volume4D(output, filename);
-#else
-		throw Invalid_option("Asked to save data to file, but file I/O via NEWIMAGE not supported in this version");
-#endif
-	}
+	m_io->SaveVoxelData(data, filename, data_type);
 }
 

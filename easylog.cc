@@ -17,24 +17,22 @@
 #include <stdlib.h>
 
 #ifdef _WIN32
-#include "Shlwapi.h"
+#include "direct.h"
 #else
 #include <sys/stat.h>
 #endif
 
 using namespace std;
 
-ostream* EasyLog::filestream = NULL;
-string EasyLog::outDir = "";
-stringstream EasyLog::templog;
-
 static bool is_dir(string path)
 {
 #ifdef _WIN32
-	return PathIsDirectory(path.c_str())
+	struct _stat s;
+	if (_stat(path.c_str(), &s) == 0)
 #else
 	struct stat s;
 	if (stat(path.c_str(), &s) == 0)
+#endif
 	{
 		return (s.st_mode & S_IFDIR);
 	}
@@ -43,7 +41,40 @@ static bool is_dir(string path)
 		// Does not exist, so not a directory...
 		return false;
 	}
+}
+#ifdef _WIN32
+	map<DWORD, EasyLog> EasyLog::s_logs;
+#else
+  #ifdef USE_PTHREADS
+	map<pthread_t, EasyLog> EasyLog::s_logs;
+  #else
+	EasyLog EasyLog::s_log;
+  #endif
 #endif
+
+EasyLog& EasyLog::CurrentLog()
+{
+	EasyLog *log = NULL;
+#ifdef _WIN32
+	if (s_logs.count(GetCurrentThreadId()) == 0) {
+		s_logs[GetCurrentThreadId()] = EasyLog();
+	}
+	return s_logs[GetCurrentThreadId()];
+#else
+  #ifdef USE_PTHREADS
+	if (s_logs.count(pthread_self()) == 0) {
+		s_logs[pthread_self()] = EasyLog();
+	}
+	return s_logs[pthread_self()];
+ #else
+	return s_log;
+  #endif
+#endif
+}
+
+EasyLog::EasyLog() :
+		filestream(0), outDir("")
+{
 }
 
 void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
@@ -67,7 +98,7 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 		int ret = 0;
 
 #ifdef _WIN32
-		ret = _mkdir(sPath.c_str());
+		ret = _mkdir(outDir.c_str());
 #else
 		ret = mkdir(outDir.c_str(), 0777);
 #endif
@@ -76,11 +107,11 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 			break;
 		else if (overwrite)
 		{
-			LOG << "want to overwrite" << endl;
+			LogStream() << "want to overwrite" << endl;
 			if ((errno == EEXIST) && is_dir(outDir))
 			{
 				// If directory already exists -- that's fine.
-				LOG << "already there, fine" << endl;
+				LogStream() << "already there, fine" << endl;
 				break;
 			}
 			else
@@ -130,6 +161,12 @@ void EasyLog::StartLog(ostream& s)
 	*filestream << templog.str() << flush;
 }
 
+const std::string& EasyLog::GetOutputDirectory()
+{
+	assert(filestream != NULL);
+	return outDir;
+}
+
 void EasyLog::StopLog(bool gzip)
 {
 	assert(filestream != NULL);
@@ -139,11 +176,11 @@ void EasyLog::StopLog(bool gzip)
 		if (gzip)
 		{
 #ifdef _WIN32
-			LOG << "EasyLog::GZIP logfile not supported under Windows" << std::endl;
+			LogStream() << "EasyLog::GZIP logfile not supported under Windows" << std::endl;
 #else
 			int retVal = system(("gzip " + outDir + "/logfile").c_str());
 			if (retVal != 0)
-				LOG << "Failed to gzip logfile.  Oh well." << std::endl;
+				LogStream() << "Failed to gzip logfile.  Oh well." << std::endl;
 #endif
 		}
 		// We created this ofstream and need to tidy it up
@@ -156,27 +193,41 @@ void EasyLog::StopLog(bool gzip)
 	outDir = "";
 }
 
-map<string, int> Warning::issueCount;
-
-void Warning::IssueOnce(const string& text)
+bool EasyLog::LogStarted()
 {
-	if (++issueCount[text] == 1)
-		LOG_ERR("WARNING ONCE: " << text << std::endl);
+	return filestream != NULL;
 }
 
-void Warning::IssueAlways(const string& text)
+std::ostream& EasyLog::LogStream()
 {
-	++issueCount[text];
-	LOG_ERR("WARNING ALWAYS: " << text << std::endl);
+	if (filestream == NULL)
+	{
+		return templog;
+	}
+	else
+	{
+		return *filestream;
+	}
 }
 
-void Warning::ReissueAll()
+void EasyLog::WarnOnce(const string& text)
 {
-	if (issueCount.size() == 0)
+	if (++warnCount[text] == 1)
+		LogStream() << "WARNING ONCE: " << text << std::endl;
+}
+
+void EasyLog::WarnAlways(const string& text)
+{
+	++warnCount[text];
+	LogStream() << "WARNING ALWAYS: " << text << std::endl;
+}
+
+void EasyLog::ReissueWarnings()
+{
+	if (warnCount.size() == 0)
 		return; // avoid issuing pointless message
 
-	LOG_ERR("\nSummary of warnings (" << issueCount.size() << " distinct warnings)\n");
-	for (map<string, int>::iterator it = issueCount.begin(); it != issueCount.end(); it++)
-		LOG_ERR(
-				"Issued " << ( (it->second==1)? "once: " : stringify(it->second)+" times: " ) << it->first << std::endl);
+	LogStream() << "\nSummary of warnings (" << warnCount.size() << " distinct warnings)\n";
+	for (map<string, int>::iterator it = warnCount.begin(); it != warnCount.end(); it++)
+		LogStream() << "Issued " << ( (it->second==1)? "once: " : stringify(it->second)+" times: " ) << it->first << std::endl;
 }

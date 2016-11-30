@@ -1,9 +1,13 @@
 //  fwdmodel_sine.cc - Implements a simple sine curve fitting model
 
 #include "fwdmodel_sine.h"
-#include "fwdmodel.h"
+
+#include "fabber_core/fwdmodel.h"
+
+#include <math.h>
 
 using namespace std;
+using namespace NEWMAT;
 
 FactoryRegistration<FwdModelFactory, SineFwdModel> SineFwdModel::registration("sine");
 
