@@ -535,14 +535,18 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 	try
 	{
 		return GetVoxelData("data");
-	} catch (DataNotFound &e)
+	}
+	catch (DataNotFound &e)
 	{
-		if (GetStringDefault("data1", "") != "") {
-			return GetMainVoxelDataMultiple();
+		// See if we seem to have multi-data
+		try {
+			GetVoxelData("data1");
 		}
-		else {
+		catch (DataNotFound &e2) {
+			// Throw original exception
 			throw(e);
 		}
+		return GetMainVoxelDataMultiple();
 	}
 }
 
