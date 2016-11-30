@@ -46,7 +46,7 @@ OPTFLAGS = -ggdb -Wall
 # Build
 #
 
-all:	${XFILES} libfabbercore.a
+all:	${XFILES} libfabbercore.a libfabberexec.a
 
 mvntool: ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o 
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o ${LIBS}
