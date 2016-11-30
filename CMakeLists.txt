@@ -140,7 +140,7 @@ add_library(fabberexec fabber_io_newimage.cc fabber_core.cc )
 add_executable(fabber fabber_main.cc)
 target_link_libraries(fabber fabberexec fabbercore ${LIBS})
 
-add_executable(mvntool mvntool/mvntool.cc )
+add_executable(mvntool mvn_tool/mvntool.cc )
 target_link_libraries(mvntool fabberexec fabbercore ${LIBS})
 
 add_executable(niftidiff test/niftidiff.cc )

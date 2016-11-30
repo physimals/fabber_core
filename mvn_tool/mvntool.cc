@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 		FabberRunData args(&io);
 		args.Parse(argc, argv);
 
-		if (args.ReadBool("help"))
+		if ((argc == 1) || args.ReadBool("help"))
 		{
 			Usage();
 			return 0;

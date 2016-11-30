@@ -1,36 +1,27 @@
-FSLCONFDIR=${FSLDIR}/config
-FSLMACHTYPE=linux_64-gcc4.4
 include ${FSLCONFDIR}/default.mk
 
 PROJNAME = fabbercore
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -DUSE_NEWIMAGE -DVERSION=\"4.0pre\"
-#-I${HOME}/include 
-#USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_MOTION
-#USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_LIBRARYONLY
-#USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -D__OXASL -D__FABBER_LIBRARYONLY -D__FABBER_LIBRARYONLY_TESTWITHNEWIMAGE
+USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST}
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz 
+LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -lz -ldl
 
 #
 # Executables
 #
 
-#XFILES = mvntool #remove fabber from here, since we do not ususally build a version of fabber without models
-#SCRIPTS = fabber_var
-
+XFILES = fabber mvntool
 
 # Sets of objects separated into logical divisions
 
 # Basic objects - things that have nothing directly to do with inference
-BASICOBJS = tools.o dataset.o dist_mvn.o easylog.o
+BASICOBJS = fabber_io.o tools.o dataset.o dist_mvn.o easylog.o 
 
 # Core objects - things that implement the framework for inference
-COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o fwdmodel_linear.o fwdmodel_trivial.o fwdmodel_poly.o convergence.o
+COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o fwdmodel_linear.o fwdmodel_trivial.o fwdmodel_poly.o convergence.o fabber_mc.o
 
 # Infernce methods
-#INFERENCEOBJS = inference_spatialvb.o inference_vb.o inference_nlls.o
 INFERENCEOBJS = inference_vb.o inference_nlls.o inference_spatialvb.o
 
 # Noise models
@@ -39,57 +30,43 @@ NOISEOBJS = noisemodel_white.o noisemodel_ar.o
 # Configuration
 CONFIGOBJS = setup.o
 
-# Client objects - contains the main interface
-CLIENTOBJS = fabber_core.o
+# Library for executables
+EXECOBJS = fabber_io_newimage.o fabber_core.o
 
-# Test objects
-TESTOBJS = test/fabbertest.o \
-        test/test_inference.o \
- 	test/test_vb.o \
-	test/test_commandline.o \
-	test/test_rundata.o \
-	test/test_convergence.o\
-	test/test_spatialvb.o
+# Executable main object
+CLIENTOBJS =  fabber_main.o
 
 # Everything together
 OBJS = ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 
 # For debugging:
-OPTFLAGS = -ggdb -Wall -DUSE_NEWIMAGE
-#OPTFLAGS =
+OPTFLAGS = -ggdb -Wall
 
 #
 # Build
 #
 
-all:	${XFILES} libfabbercore.a fabber doc
+all:	${XFILES} libfabbercore.a
 
-mvntool: ${BASICOBJS} mvntool.o
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${BASICOBJS} mvntool.o ${LIBS}
+mvntool: ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o 
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o ${LIBS}
 
 #
 # Build a fabber exectuable, this will have nothing but the linear model so it not practically useful for data analysis
 #
-fabber: ${OBJS} fabber_main.o fabber_core.o
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} fabber_main.o fabber_core.o ${LIBS} 
-
-#
-# Build testcases
-#
-testfabber: ${OBJS} ${TESTOBJS}
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ${TESTOBJS} ${LIBS} -lgtest -lpthread
+fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${LIBS} 
 
 #
 # Library build
 #
+libfabbercore.a : ${OBJS}
+	${AR} -r $@ ${OBJS}
 
-# fabber core is the basic implementation with no models (except linear), but includes default inference and noise models
-libfabbercore.a : ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
-	${AR} -r $@ ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS} ${CLIENTOBJS}
+#
+# Library build
+#
+libfabberexec.a : ${EXECOBJS} 
+	${AR} -r $@ ${EXECOBJS} 
 
-doc : libfabbercore.a
-	doxygen 
-
-check : testfabber
-	./testfabber
 # DO NOT DELETE
