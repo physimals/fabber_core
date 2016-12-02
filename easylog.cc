@@ -54,7 +54,6 @@ static bool is_dir(string path)
 
 EasyLog& EasyLog::CurrentLog()
 {
-	EasyLog *log = NULL;
 #ifdef _WIN32
 	if (s_logs.count(GetCurrentThreadId()) == 0) {
 		s_logs[GetCurrentThreadId()] = EasyLog();

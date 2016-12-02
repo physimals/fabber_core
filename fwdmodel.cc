@@ -91,7 +91,7 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename)
 		const char *model_name = get_model_name(i);
 		if (!model_name)
 		{
-			throw runtime_error("Dynamic library failed to return model name for index " + i);
+			throw runtime_error("Dynamic library failed to return model name for index " + stringify(i));
 		}
 		else
 		{
