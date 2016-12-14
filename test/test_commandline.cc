@@ -158,6 +158,37 @@ TEST_F(ClTestTest, PolyModel)
 	compareNifti("out.tmp/std_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c2.nii.gz");
 }
 
+// Test if output data retains properties from input
+TEST_F(ClTestTest, OutputCopiesPropsMask)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
+			+ "/test/test_data.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+
+	NEWIMAGE::volume<float> d1;
+	read_volume(d1, string(FABBER_SRC_DIR) + "/test/test_data.nii.gz");
+	NEWIMAGE::volume<float> d2;
+	read_volume(d2, "out.tmp/mean_c0.nii.gz");
+	ASSERT_EQ(d1.xdim(), d2.xdim());
+}
+
+// Test if output data retains properties from input
+TEST_F(ClTestTest, OutputCopiesPropsNoMask)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+
+	NEWIMAGE::volume<float> d1;
+	read_volume(d1, string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz");
+	NEWIMAGE::volume<float> d2;
+	read_volume(d2, "out.tmp/mean_c0.nii.gz");
+	ASSERT_EQ(d1.xdim(), d2.xdim());
+}
+
 // Test fabber will run without a mask
 TEST_F(ClTestTest, PolyModelNoMask)
 {

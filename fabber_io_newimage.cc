@@ -52,8 +52,10 @@ void FabberIoNewimage::Initialize(FabberRunData &rundata)
 		m_have_mask = true;
 		SetVoxelCoordsFromExtent(m_mask.xsize(), m_mask.ysize(), m_mask.zsize());
 	}
-	else {
-		// Make sure the coords are loaded from the main data
+	else
+	{
+		// Make sure the coords are loaded from the main data even if we don't
+		// have a mask, and that the reference volume is initialized
 		rundata.GetMainVoxelData();
 	}
 }
@@ -77,6 +79,14 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 		try
 		{
 			read_volume4D(vol, filename);
+			if (!m_have_mask)
+			{
+				// We need a mask volume so that when we save we can make sure
+				// the image properties are set consistently with the source data
+				m_mask = vol[0];
+				m_mask = 1;
+				m_have_mask = true;
+			}
 		} catch (...)
 		{
 			throw DataLoadError(filename);
