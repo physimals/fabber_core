@@ -106,11 +106,9 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 			break;
 		else if (overwrite)
 		{
-			LogStream() << "want to overwrite" << endl;
 			if ((errno == EEXIST) && is_dir(outDir))
 			{
 				// If directory already exists -- that's fine.
-				LogStream() << "already there, fine" << endl;
 				break;
 			}
 			else
