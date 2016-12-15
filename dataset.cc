@@ -47,6 +47,12 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 	case OPT_FILE:
 		s = "FILENAME";
 		break;
+	case OPT_IMAGE:
+		s = "IMAGE";
+		break;
+	case OPT_MVN:
+		s = "MVN";
+		break;
 	case OPT_MATRIX:
 		s = "MATRIXFILE";
 		break;
@@ -103,8 +109,9 @@ static OptionSpec OPTIONS[] =
 				{ "data-order", OPT_STR,
 						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
 						OPT_NONREQ, "interleave" },
-				{ "mask", OPT_FILE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
-				{ "dump-param-names", OPT_BOOL, "Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
+				{ "mask", OPT_IMAGE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+				{ "dump-param-names", OPT_BOOL,
+						"Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
 				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
 				{ "save-residuals", OPT_BOOL,
 						"Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
@@ -169,7 +176,8 @@ FabberRunData::FabberRunData(FabberIo *io) :
 {
 	// If no IO module is given, use the built in default
 	// although this will render the object fairly useless
-	if (!m_io) {
+	if (!m_io)
+	{
 		m_io = &m_default_io;
 	}
 
@@ -206,7 +214,8 @@ void FabberRunData::LogParams()
 void FabberRunData::Run(ProgressCheck *progress)
 {
 	Tracer_Plus tr2("FabberRunData::Run");
-	if (!m_io) throw runtime_error("FabberRunData::Run - No data I/O object provided");
+	if (!m_io)
+		throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
 	m_progress = progress;
 	LOG << "FabberRunData::FABBER release v" << GetVersion() << endl;
@@ -229,7 +238,8 @@ void FabberRunData::Run(ProgressCheck *progress)
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
 	// Write the paramnames.txt file if required
-	if (GetBool("dump-param-names")) {
+	if (GetBool("dump-param-names"))
+	{
 		ofstream paramFile((EasyLog::CurrentLog().GetOutputDirectory() + "/paramnames.txt").c_str());
 		vector<string> paramNames;
 		fwd_model->NameParams(paramNames);
@@ -513,7 +523,7 @@ std::string FabberRunData::ReadWithDefault(std::string key, std::string def)
 
 bool FabberRunData::ReadBool(std::string key)
 {
-		return GetBool(key);
+	return GetBool(key);
 }
 
 ostream& operator<<(ostream& out, const FabberRunData& opts)
@@ -535,14 +545,14 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
 	try
 	{
 		return GetVoxelData("data");
-	}
-	catch (DataNotFound &e)
+	} catch (DataNotFound &e)
 	{
 		// See if we seem to have multi-data
-		try {
+		try
+		{
 			GetVoxelData("data1");
-		}
-		catch (DataNotFound &e2) {
+		} catch (DataNotFound &e2)
+		{
 			// Throw original exception
 			throw(e);
 		}
@@ -582,7 +592,8 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFil
 	// FIXME different exceptions? What about use case where
 	// data is optional?
 	string data_key = "";
-	while (key != "") {
+	while (key != "")
+	{
 		data_key = key;
 		key = GetStringDefault(key, "");
 	}

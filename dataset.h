@@ -27,7 +27,7 @@
  */
 enum OptionType
 {
-	OPT_BOOL, OPT_STR, OPT_INT, OPT_FLOAT, OPT_FILE, OPT_MATRIX
+	OPT_BOOL, OPT_STR, OPT_INT, OPT_FLOAT, OPT_FILE, OPT_IMAGE, OPT_MVN, OPT_MATRIX
 };
 
 /**
@@ -381,6 +381,19 @@ public:
 	}
 
 	/**
+	 * Get the I/O instance being used
+	 */
+	FabberIo* GetIo()
+	{
+		return m_io;
+	}
+
+	/**
+	 * Send list of all parameters to the logfile
+	 */
+	void LogParams();
+
+	/**
 	 * Friend function to allow summary of Parameters to be streamed
 	 * using the << operator.
 	 */
@@ -403,10 +416,6 @@ public:
 	void ParseOldStyleParamFile(const string filename);
 #endif
 
-	/**
-	 * Send list of all parameters to the logfile
-	 */
-	void LogParams();
 private:
 	void init();
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
