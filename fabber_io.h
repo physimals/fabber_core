@@ -185,4 +185,18 @@ protected:
 	std::vector<float> m_dims;
 };
 
+/**
+ * Load and save data to/from C arrays
+ */
+class FabberIoCarray: public FabberIoMemory
+{
+public:
+	FabberIoCarray(int nx, int ny, int nz, const int *mask);
+
+	void GetVoxelData(string key, float *data);
+	void SetVoxelData(string key, int data_size, const float *data);
+protected:
+	vector<int> m_mask;
+};
+
 #endif /* __FABBER_IO_H */
