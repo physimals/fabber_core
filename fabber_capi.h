@@ -23,6 +23,16 @@ extern "C"
 void *fabber_new(int nx, int ny, int nz, const int *mask, char *err_buf);
 
 /**
+ * Destroy fabber context previously created in fabber_new
+ *
+ * Will not return any errors.
+ *
+ * @param fab Fabber context, returned by fabber_new. NULL will be ignored. Anything
+ *            else will probably cause a crash.
+ */
+void fabber_destroy(void *fab);
+
+/**
  * Set an option
  *
  * @param fab Fabber context, returned by fabber_new
@@ -87,11 +97,6 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
 int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf);
 
 /**
- * Destroy fabber context previously created in fabber_new
- */
-int fabber_destroy(void *fab, char *err_buf);
-
-/**
  * Get fabber options, optionally for a specific method or model
  *
  * @param fab Fabber context, returned by fabber_new
@@ -106,32 +111,46 @@ int fabber_destroy(void *fab, char *err_buf);
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_get_options(const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf);
+int fabber_get_options(void *fab, const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf);
 
 /**
  * Get list of known models
  *
  * @param fab Fabber context, returned by fabber_new
  * @param out_bufsize Size of the output buffer. If too small, no output is returned
- * @param out_buf Char buffer of size log_bufsize to receive output. Will contain
+ * @param out_buf Char buffer of size out_bufsize to receive output. Will contain
  *                known model names separated by newlines
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_get_models(int out_bufsize, char *out_buf, char *err_buf);
+int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf);
 
 /**
  * Get list of known inference methods
  *
  * @param fab Fabber context, returned by fabber_new
  * @param out_bufsize Size of the output buffer. If too small, no output is returned
- * @param out_buf Char buffer of size log_bufsize to receive output. Will contain
+ * @param out_buf Char buffer of size out_bufsize to receive output. Will contain
  *                known method names separated by newlines
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_get_methods(int out_bufsize, char *out_buf, char *err_buf);
+int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf);
+
+/**
+ * Get list model parameters that will be output. Note that this will depend
+ * on the options specified, so must be called after all options are set
+ *
+ * @param fab Fabber context, returned by fabber_new
+ * @param out_bufsize Size of the output buffer. If too small, no output is returned
+ * @param out_buf Char buffer of size out_bufsize to receive output. Will contain
+ *                model parameter names separated by newlines
+ * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ *
+ * @return 0 on success, <0 on failure
+ */
+int fabber_get_model_params(void *fab, const char *model, int out_bufsize, char *out_buf, char *err_buf);
 
 }

@@ -21,7 +21,8 @@ using namespace std;
 static int fabber_err(int code, const char *msg, char *err_buf)
 {
 	// Error buffer is optional
-	if (!err_buf) return code;
+	if (!err_buf)
+		return code;
 
 	strncpy(err_buf, msg, FABBER_ERR_MAXC - 1);
 	err_buf[FABBER_ERR_MAXC - 1] = '\0';
@@ -43,12 +44,13 @@ void *fabber_new(int nx, int ny, int nz, const int *mask, char *err_buf)
 
 	try
 	{
+		FabberSetup::SetupDefaults();
 		FabberIoCarray *io = new FabberIoCarray(nx, ny, nz, mask);
 		FabberRunData* rundata = new FabberRunData(io);
 		return rundata;
 	} catch (...)
 	{
-		// FIXME theoretical memory leak
+		// FIXME theoretical memory leak of io
 		fabber_err(FABBER_ERR_FATAL, "Failed to allocate memory for run data", err_buf);
 		return NULL;
 	}
@@ -62,9 +64,22 @@ int fabber_set_opt(void *fab, const char *key, const char *value, char *err_buf)
 	if (!key || !value)
 		return fabber_err(FABBER_ERR_FATAL, "Option key or value is NULL", err_buf);
 
-	FabberRunData* rundata = (FabberRunData*) fab;
-	rundata->Set(key, value);
-	return 0;
+	try
+	{
+		FabberRunData* rundata = (FabberRunData*) fab;
+		if (strcmp(key, "loadmodels") == 0)
+		{
+			FwdModel::LoadFromDynamicLibrary(value);
+		}
+		else
+		{
+			rundata->Set(key, value);
+		}
+		return 0;
+	} catch (exception &e)
+	{
+		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+	}
 }
 
 int fabber_set_data(void *fab, const char *name, int data_size, const float *data, char *err_buf)
@@ -192,21 +207,22 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	return 0;
 }
 
-int fabber_destroy(void *fab, char *err_buf)
+void fabber_destroy(void *fab)
+{
+	if (fab)
+	{
+		// Get rid of registered models etc
+		FabberSetup::Destroy();
+		FabberRunData* rundata = (FabberRunData*) fab;
+		delete rundata->GetIo();
+		delete rundata;
+	}
+}
+
+int fabber_get_options(void *fab, const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf)
 {
 	if (!fab)
 		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-
-	FabberRunData* rundata = (FabberRunData*) fab;
-	delete rundata->GetIo();
-	delete rundata;
-	return 0;
-}
-
-int fabber_get_options(const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf)
-{
-	FabberSetup::SetupDefaults();
-
 	if (out_bufsize < 0)
 		return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
 	if (!out_buf)
@@ -259,10 +275,10 @@ int fabber_get_options(const char *key, const char *value, int out_bufsize, char
 	}
 }
 
-int fabber_get_models(int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 {
-	FabberSetup::SetupDefaults();
-
+	if (!fab)
+		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
 	if (out_bufsize < 0)
 		return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
 	if (!out_buf)
@@ -293,10 +309,10 @@ int fabber_get_models(int out_bufsize, char *out_buf, char *err_buf)
 	}
 }
 
-int fabber_get_methods(int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 {
-	FabberSetup::SetupDefaults();
-
+	if (!fab)
+		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
 	if (out_bufsize < 0)
 		return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
 	if (!out_buf)
@@ -308,6 +324,46 @@ int fabber_get_methods(int out_bufsize, char *out_buf, char *err_buf)
 		stringstream out;
 		vector<string>::iterator iter;
 		for (iter = known.begin(); iter != known.end(); iter++)
+		{
+			out << *iter << endl;
+		}
+		string outstr = out.str();
+		if (outstr.size() >= out_bufsize)
+		{
+			return fabber_err(-1, "Buffer too small", err_buf);
+		}
+		strncpy(out_buf, outstr.c_str(), outstr.size());
+		return 0;
+	} catch (exception &e)
+	{
+		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+	} catch (...)
+	{
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+	}
+}
+
+int fabber_get_model_params(void *fab, const char *model_name, int out_bufsize, char *out_buf, char *err_buf)
+{
+	if (!fab)
+		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
+	if (!model_name || (strlen(model_name) == 0))
+		return fabber_err(FABBER_ERR_FATAL, "Model name is NULL or empty", err_buf);
+	if (out_bufsize < 0)
+		return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
+	if (!out_buf)
+		return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
+
+	try
+	{
+		FabberRunData* rundata = (FabberRunData*) fab;
+		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(model_name));
+		model->Initialize(*rundata);
+		vector<string> params;
+		model->NameParams(params);
+		stringstream out;
+		vector<string>::iterator iter;
+		for (iter = params.begin(); iter != params.end(); iter++)
 		{
 			out << *iter << endl;
 		}

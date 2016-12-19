@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.7)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(APPLE)
@@ -9,7 +10,7 @@ if(APPLE)
 endif(APPLE)
 
 # Basic objects - things that have nothing directly to do with inference
-set(BASIC_SRC fabber_io.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc)
+set(BASIC_SRC fabber_io.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc)
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc utils.cc fwdmodel_linear.cc
@@ -134,9 +135,8 @@ add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
                 -DFABBER_BUILD_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 
 # Main Targets
-add_library(fabbercore ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
-
-# Main Targets
+add_library(fabbercore STATIC ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
+add_library(fabbercore_shared SHARED ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 add_library(fabberexec fabber_io_newimage.cc fabber_core.cc )
 
 add_executable(fabber fabber_main.cc)
@@ -148,7 +148,7 @@ target_link_libraries(mvntool fabberexec fabbercore ${LIBS})
 add_executable(niftidiff test/niftidiff.cc )
 target_link_libraries(niftidiff ${LIBS})
 
-INSTALL(TARGETS fabber mvntool niftidiff fabbercore fabberexec
+INSTALL(TARGETS fabber mvntool niftidiff fabbercore fabbercore_shared fabberexec
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
@@ -199,7 +199,6 @@ find_program(PYSIDE_UIC pyside-uic)
 
 if (PYSIDE_UIC) 
   Message("-- Pyside found: ${PYSIDE_UIC}")
-  set(PY_SRC pyfab/pyfab/ui.py pyfab/pyfab/views.py pyfab/pyfab/model.py pyfab/pyfab/plotviews.py pyfab/pyfab/__init__.py)
   configure_file(pyfab/pyfabber.py.in pyfab/pyfabber.py)
   add_custom_target(pyfab_ui ALL
                    COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_mainwin.ui >ui_qtd.py
