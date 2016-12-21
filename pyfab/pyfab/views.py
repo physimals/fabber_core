@@ -1,68 +1,17 @@
-import sys
+import sys, os
 import traceback
 
 from PySide import QtCore, QtGui
 
 from PySide.QtGui import QMessageBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QFileDialog, QTableWidgetItem, QPlainTextEdit, QSpinBox, QCheckBox, QPushButton
 
-import pylab as plt
+from mvc import View
+from model import FabberRunData
+from fabber import FabberLib, FabberExec
 
-class ModelView:
-    def __init__(self, *widgets, **kwidgets):
-        self.widgets = list(widgets)
-        for name, w in kwidgets.items():
-            self.widgets.append(w)
-            setattr(self, name, w)
-            
-        self.fab = None
-        self.update(None)
-
-    def update(self, fab):
-        self.fab = fab
-        try:
-            self.set_enabled(self.fab is not None)            
-            for widget in self.widgets:
-                widget.blockSignals(True)
-            if self.fab: self.do_update()    
-        finally:
-            for widget in self.widgets:
-                widget.blockSignals(False)
-
-    def set_enabled(self, enabled=True, widgets=None):
-        if widgets is None: widgets = self.widgets
-        for widget in widgets:
-                widget.setEnabled(enabled)
-            
-    def do_update(self):
-        pass
-
-class ParamValuesView(ModelView):
-    """
-    Table of parameter values at the focus point
-    """
-    
+class ModelMethodView(View):
     def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        
-    def populate(self, run):
-        self.table.setRowCount(len(run.params))
-        print run.params
-        for idx, param in enumerate(run.params):
-            mean = run.data[param + " Mean value"].get_value(self.fab.focus)
-            std = run.data[param + " Std. dev."].get_value(self.fab.focus)
-            self.table.setItem(idx, 0, QTableWidgetItem(param))
-            self.table.setItem(idx, 1, QTableWidgetItem(str(mean)))
-            self.table.setItem(idx, 2, QTableWidgetItem(str(std)))
-            
-    def do_update(self):
-        if self.fab.changed("focus", "data"):
-            self.table.setRowCount(0)
-            if self.fab.current_run:
-                self.populate(self.fab.current_run)
-            
-class ExtraOptionsView(ModelView):
-    def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
+        View.__init__(self, ["fabber", "model", "method", "loadmodels"], **kwargs)
         self.models = None
         self.methods = None
         self.modelCombo.currentIndexChanged.connect(self.model_changed)
@@ -75,14 +24,14 @@ class ExtraOptionsView(ModelView):
         self.fab.set_option("method", self.methodCombo.currentText())
         
     def do_update(self):
-        if self.fab.changed("exec"): 
+        if self.fab.changed("fabber", "loadmodels"):
             self.modelCombo.clear()
-            self.models = self.fab.get_models()
+            self.models = FabberLib(self.fab).get_models()
             for model in self.models:
                 self.modelCombo.addItem(model)
         
             self.methodCombo.clear()
-            self.methods = self.fab.get_methods()
+            self.methods = FabberLib(self.fab).get_methods()
             for method in self.methods:
                 self.methodCombo.addItem(method)
                 
@@ -108,67 +57,56 @@ def get_label(text, size=None, bold=False, italic=False):
     label.setFont(font)
     return label
 
-class OptionView(ModelView):
+class OptionView(View):
     def __init__(self, opt, rescan=False, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.key, self.dtype, self.req, self.default, self.desc = opt
-        self.req = (self.req == "REQUIRED")
+        View.__init__(self, [opt["name"],], **kwargs)
+        self.key = opt["name"]
+        self.dtype = opt["type"]
+        self.req = not opt["optional"]
+        self.default = opt["default"]
+        self.desc = opt["description"]
         self.rescan = rescan
 
         if self.req:
-            self.label = get_label(opt[0], size=10)
+            self.label = get_label(opt["name"], size=10)
         else:
-            self.label = QCheckBox(opt[0])
+            self.label = QCheckBox(opt["name"])
             self.label.stateChanged.connect(self.state_changed)
 
         self.widgets.append(self.label)
         
-        self.desclabel = get_label(opt[4], size=10)
+        self.desclabel = get_label(opt["description"], size=10)
         self.desclabel.resize(400, self.desclabel.height())
         #desclabel.setWordWrap(True)
         self.widgets.append(self.desclabel)
 
     def state_changed(self):
-        self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked, self.widgets[1:])
-        if self.rescan: self.fab._change("exec") # FIXME a hack
+        # Only called if label really is a checkbox!
+        self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked)
+        self.label.setEnabled(True)
+        
+        if self.rescan: self.fab._change() # FIXME a hack
         if self.label.checkState() == QtCore.Qt.CheckState.Checked:
             self.changed()
         else:
-            self.fab.clear_option(self.key)            
-    
+            self.fab.clear_option(self.key)
+        
     def changed(self):
         self.fab.set_option(self.key, "")
-
+        
     def do_update(self):
         if not self.req:
             if not self.fab.options.has_key(self.key):
                 self.label.setCheckState(QtCore.Qt.CheckState.Unchecked)
             else:
                 self.label.setCheckState(QtCore.Qt.CheckState.Checked)
-            self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked, self.widgets[1:])
 
+            self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked)
+            self.label.setEnabled(True)
+       
     def add(self, grid, row):
         grid.addWidget(self.label, row, 0)
         grid.addWidget(self.desclabel, row, 2)
-
-    def is_numbered(self, optname):
-        return "<n>" in optname
-
-def get_option_view(opt, **kwargs):
-    if opt[1] == "INTEGER":
-        return IntegerOptionView(opt, **kwargs)
-    elif opt[1] == "BOOL":
-        return OptionView(opt, **kwargs)
-    elif opt[1] == "FILENAME" :
-        return FileOptionView(opt, **kwargs)
-    elif opt[1] == "MATRIXFILE":
-        return MatrixFileOptionView(opt, **kwargs)
-    else:
-        return StringOptionView(opt, **kwargs)
-        
-class NumberedOptionView(OptionView):
-    def __init__(self, opt):
-        OptionView.__init__(self, opt, rescan=True)
 
 class IntegerOptionView(OptionView):
     def __init__(self, opt, **kwargs):
@@ -198,13 +136,16 @@ class StringOptionView(OptionView):
         self.widgets.append(self.edit)
         
     def changed(self):
-        text = self.edit.text()
-        self.fab.set_option(self.key, text)
+        # Note that this signal is triggered when the widget
+        # is enabled/disabled!
+        if self.edit.isEnabled():
+            self.fab.set_option(self.key, self.edit.text())
 
     def do_update(self):
         OptionView.do_update(self)
         if self.fab.options.has_key(self.key):
-            self.edit.setText(self.fab.options[self.key])
+            self.text = self.fab.options[self.key]
+            self.edit.setText(self.text)
         
     def add(self, grid, row):
         OptionView.add(self, grid, row)
@@ -221,8 +162,10 @@ class FileOptionView(StringOptionView):
         self.btn.clicked.connect(self.choose_file)
     
     def choose_file(self):
-        fname = QFileDialog.getOpenFileName()[0]
-        if fname: 
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+        if dialog.exec_():
+            fname = dialog.selectedFiles()[0]
             self.edit.setText(fname)
             self.changed()
 
@@ -241,7 +184,7 @@ class MatrixFileOptionView(FileOptionView):
     def read_vest(self, fname):
         f = None
         try:
-            f = open(fname)
+            f = open(fname, "r")
             lines = f.readlines()
             nx, ny = 0, 0
             in_matrix = False
@@ -268,24 +211,78 @@ class MatrixFileOptionView(FileOptionView):
             if f is not None: f.close()
         return mat
 
-    def edit_file(self):
+    def write_vest(self, fname, m):
+        f = None
         try:
-            mat = self.read_vest(self.edit.text())
+            f = open(fname, "w")
+            nx, ny = len(m), len(m[0])
+            f.write("/NumWaves %i\n" % nx)
+            f.write("/NumPoints %i\n" % ny)
+            f.write("/Matrix\n")
+            for row in m:
+                for item in row:
+                    f.write("%f " % item)
+                f.write("\n")
+        finally:
+            if f is not None: f.close()
+
+    def edit_file(self):
+        fname = self.edit.text()
+        if fname.strip() == "":
+            msgBox = QMessageBox()
+            msgBox.setText("Enter a filename")
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.exec_()
+            return
+        elif not os.path.exists(fname):
+            msgBox = QMessageBox()
+            msgBox.setText("File does not exist - create?")
+            msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            ret = msgBox.exec_()
+            if ret != QMessageBox.Ok:
+                return
+            open(fname, "a").close()
+
+        try:
+            mat = self.read_vest(fname)
             self.mat_dialog.set_matrix(mat)
-            self.mat_dialog.exec_()
+            if self.mat_dialog.exec_():
+                print(self.mat_dialog.get_matrix())
+                self.write_vest(fname, self.mat_dialog.get_matrix())
         except:
             traceback.print_exc()
-            
-class OptionsView(ModelView):
+
+OPT_VIEW = {
+    "INT" : IntegerOptionView,
+    "BOOL": OptionView,
+    "FILE": FileOptionView,
+    "IMAGE": FileOptionView,
+    "MVN": FileOptionView,
+    "MATRIX": MatrixFileOptionView,
+    "": StringOptionView,
+}
+
+def get_option_view(opt, **kwargs):
+    if OPT_VIEW.has_key(opt["type"]):
+        return OPT_VIEW[opt["type"]](opt, **kwargs)
+    else:
+        return OPT_VIEW[""](opt, **kwargs)
+
+class OptionsView(View):
     def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
+        View.__init__(self, [], **kwargs)
         self.views = {}
-        self.rescan = False
+        self.ignore_opts = set()
         self.btn.clicked.connect(self.show)
-        
+
     def show(self):
         self.dialog.show()
-        self.dialog._raise()
+        self.dialog.raise_()
+
+    def ignore(self, *opts):
+        for opt in opts:
+            self.ignore_opts.add(opt)
 
     def del_layout(self, layout):
         while True:
@@ -310,8 +307,8 @@ class OptionsView(ModelView):
                     vals.append(int(opt[:len(opt) - len(suffix)][len(base):]))
                     concrete.append(opt)
                 except:
-                    traceback.print_exc()
-                    print("WARNING: failed to parse %s" % opt)
+                    # Can happen with empty suffixes, e.g. PSP_byname<n> and PSP_byname<n>_image
+                    pass
         for n in range(max(vals)+1):
             if n+1 not in vals:
                 break
@@ -321,12 +318,14 @@ class OptionsView(ModelView):
     def add_opts(self, opts, startrow):
         row = 0
         for opt in opts:
-            if opt[0].find("<n>") >= 0:
-                opt_base=opt[0][:opt[0].find("<n>")]
-                opt_suffix = opt[0][opt[0].find("<n>") + 3:]
+            if opt["name"].find("<n>") >= 0:
+                # This is a numbered option
+                opt_base=opt["name"][:opt["name"].find("<n>")]
+                opt_suffix = opt["name"][opt["name"].find("<n>") + 3:]
                 next, actual = self.get_concrete_opts(opt_base, opt_suffix)
                 for key in actual:
-                    newopt = [key,] + opt[1:]
+                    newopt = dict(opt)
+                    newopt["name"] = key
                     view = get_option_view(newopt, rescan=True, mat_dialog=self.mat_dialog)
                     view.add(self.dialog.grid, row+startrow)
                     self.views[key] = view
@@ -335,14 +334,15 @@ class OptionsView(ModelView):
             else:
                 view = get_option_view(opt, mat_dialog=self.mat_dialog)
                 view.add(self.dialog.grid, row+startrow)
-                self.views[opt[0]] = view
+                self.views[opt["name"]] = view
                 row += 1
         return row
 
     def do_update(self):
-        if self.fab.changed("exec") or self.rescan:
+        if self.fab.changed("fabber"):
             self.clear()
-            self.opts, d = self.fab.get_options()
+            self.opts, d = FabberLib(self.fab).get_options()
+            self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
             if len(self.opts) == 0:
                 msgBox = QMessageBox()
                 msgBox.setText("Could not get options from Fabber - check the path to the executable")
@@ -350,30 +350,33 @@ class OptionsView(ModelView):
             self.title = "Fabber General Options"
             self.desc = "These options are not specific to a particular model or inference method"
             self.create_views()
-            self.rescan = False
 
         for view in self.views.values():
             view.update(self.fab)
 
     def create_views(self):
-        req = [opt for opt in self.opts if opt[2] == "REQUIRED"]
-        nonreq = [opt for opt in self.opts if opt[2] != "REQUIRED"]
+        req = [opt for opt in self.opts if not opt["optional"]]
+        nonreq = [opt for opt in self.opts if opt["optional"]]
         
         self.dialog.modelLabel.setText(self.title)
         self.dialog.descLabel.setText(self.desc)
         
         if req:
-            label = get_label("Required options", size=12, bold=True)
+            label = get_label("Mandatory options", size=12, bold=True)
             self.dialog.grid.addWidget(label, 0, 0)
             self.add_opts(req, 1)
         if nonreq:
-            label = get_label("Other options", size=12, bold=True)
+            label = get_label("Non-mandatory options", size=12, bold=True)
             self.dialog.grid.addWidget(label, len(req)+1, 0)
             self.add_opts(nonreq, len(req)+2)
 
+        self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
         self.dialog.adjustSize()
         
 class ComponentOptionsView(OptionsView):
+    """
+    Options dialog for model or method
+    """
     def __init__(self, otype, text, **kwargs):
         OptionsView.__init__(self, **kwargs)
         self.type = otype
@@ -382,190 +385,38 @@ class ComponentOptionsView(OptionsView):
         
     def do_update(self):
         value = self.fab.options.get(self.type,"")
-        if self.fab.changed("exec") or self.value != value or self.rescan:
+        if self.fab.changed("fabber") or self.value != value:
             self.value = value
             self.clear()
             if self.value != "":
                 args = {self.type : self.value}
-                self.opts, self.desc = self.fab.get_options(**args)
+                self.opts, self.desc = FabberLib(self.fab).get_options(**args)
+                self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
                 self.title = "%s: %s" % (self.text, self.value)
                 self.create_views()
-            self.rescan = False
 
         for view in self.views.values():
             view.update(self.fab)
-    
-class InputDataView(ModelView):
-    def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.table.setHorizontalHeaderItem(0, QTableWidgetItem("Input Data"))    
-        self.table.currentItemChanged.connect(self.data_select)
-        self.dataBtn.clicked.connect(self.data_clicked)
-        self.maskBtn.clicked.connect(self.mask_clicked)
-        
-    def data_clicked(self):
-        filename = QFileDialog.getOpenFileName()[0]
-        # FIXME data mode
-        if filename: self.fab.set_option("data", filename)
-        
-    def mask_clicked(self):
-        filename = QFileDialog.getOpenFileName()[0]
-        if filename: self.fab.set_option("mask", filename)
-        
-    def data_select(self, cur, prev):
-        self.fab.select(cur.text())
-
-    def do_update(self):
-        self.table.setRowCount(0)
-        n = 0
-        for key, data in self.fab.data.items():
-            self.table.setRowCount(n+1)
-            item = QTableWidgetItem(key)
-            if data.visible:
-                item.setIcon(self.table.style().standardIcon(QtGui.QStyle.SP_FileIcon))        
-            self.table.setItem(n, 0, item)
-            n += 1
-            
-class OutputDataView(ModelView):
-    def __init__(self, logDialog, runDialog, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.logDialog = logDialog
-        self.runDialog = runDialog
-        self.table.setHorizontalHeaderItem(0, QTableWidgetItem("Output Data"))    
-        self.chooseRunBtn.clicked.connect(self.choose_run)
-        self.logBtn.clicked.connect(self.view_log_pressed)
-        self.table.currentItemChanged.connect(self.data_select)
-        self.cur_timestamp = ""
-
-    def choose_run(self):
-        runs = self.fab.get_runs()
-        self.runDialog.table.setRowCount(len(runs))
-        for idx, run in enumerate(runs):
-            self.runDialog.table.setItem(idx, 0, QTableWidgetItem(run.dir))
-            self.runDialog.table.setItem(idx, 1, QTableWidgetItem(run.timestamp))
-        self.runDialog.show()
-        if self.runDialog.exec_():
-            run = runs[self.runDialog.table.currentRow()]
-            self.fab.select_run(run.dir)
- 
-    def view_log_pressed(self):
-        self.logDialog.show()
-        self.logDialog.raise_()
-    
-    def data_select(self, cur, prev):
-        self.fab.select(cur.text())
-        
-    def relist(self):
-        self.table.setRowCount(0)
-        if self.fab.current_run:
-            data = self.fab.current_run.data
-            n = 0
-            self.table.setRowCount(0)
-            for key, data in data.items():
-                self.table.setRowCount(n+1)
-                item = QTableWidgetItem(key)
-                if data.visible:
-                    item.setIcon(self.table.style().standardIcon(QtGui.QStyle.SP_FileIcon))        
-                self.table.setItem(n, 0, item)
-                n += 1
-            self.logDialog.textBrowser.setText(self.fab.current_run.get_log())
-            if self.fab.current_run.isquick:
-                msgBox = QMessageBox()
-                msgBox.setText("This was a quick 1-voxel run, not a full run")
-                msgBox.exec_()
-
-    def do_update(self):
-        if self.fab.current_run and self.cur_timestamp != self.fab.current_run.timestamp:
-            self.cur_timestamp = self.fab.current_run.timestamp
-            self.dateLabel.setText(self.fab.current_run.timestamp)
-            self.relist()
-            
-    
-class CurrentDataView(ModelView):
-    def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.cb.stateChanged.connect(self.visible_changed)
-        self.cmCombo.currentIndexChanged.connect(self.cm_changed)
-        self.slider.valueChanged.connect(self.alpha_changed)
-        self.maps = None
-            
-    def do_update(self):
-        if not self.maps:
-            self.maps=[m for m in plt.cm.datad if not m.endswith("_r")]
-            self.maps.sort()
-            for map in self.maps:
-                self.cmCombo.addItem(map)
-            
-        self.set_enabled(self.fab.current_data is not None)
-        
-        if self.fab.current_data:
-            self.currentEdit.setText(self.fab.current_data.filename)
-            self.slider.setValue(100*self.fab.current_data.alpha)
-            if self.fab.current_data.visible:
-                self.cb.setCheckState(QtCore.Qt.CheckState.Checked)
-            else:
-                self.cb.setCheckState(QtCore.Qt.CheckState.Unchecked)
-            self.cmCombo.setCurrentIndex(self.maps.index(self.fab.current_data.cm))
-            self.valueEdit.setText(str(self.fab.current_data.get_value(self.fab.focus)))
-        
-    def cm_changed(self, idx):
-        text = self.maps[idx]
-        self.fab.set_visibility(self.fab.current_data, cm=text)
-
-    def alpha_changed(self, value):
-        self.fab.set_visibility(self.fab.current_data, alpha=float(value)/100)
-
-    def visible_changed(self):
-        self.fab.set_visibility(self.fab.current_data, visible=self.cb.checkState() == QtCore.Qt.CheckState.Checked)
-
-class FocusView(ModelView):
-    def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.slider.valueChanged.connect(self.t_changed)
-        self.sbX.valueChanged.connect(self.x_changed)
-        self.sbY.valueChanged.connect(self.y_changed)
-        self.sbZ.valueChanged.connect(self.z_changed)
-        self.sbT.valueChanged.connect(self.t_changed)
-        
-    def x_changed(self, value):
-        self.fab.update_focus(xp=value)
-    def y_changed(self, value):
-        self.fab.update_focus(yp=value)
-    def z_changed(self, value):
-        self.fab.update_focus(zp=value)
-    def t_changed(self, value):
-        self.fab.update_focus(tp=value)
-        
-    def update_widget(self, w, idx):
-        w.setMinimum(0)
-        w.setMaximum(self.fab.shape[idx]-1)
-        w.setValue(self.fab.focus[idx])
+   
+class ChooseFileView(View):
+    def __init__(self, opt, **kwargs):
+        View.__init__(self, [opt,], **kwargs)
+        self.opt = opt
+        self.changeBtn.clicked.connect(self.choose_file)
         
     def do_update(self):
-        self.update_widget(self.slider, 3)
-        self.update_widget(self.sbX, 0)
-        self.update_widget(self.sbY, 1)
-        self.update_widget(self.sbZ, 2)
-        self.update_widget(self.sbT, 3)
-        
-class ExecView(ModelView):
-    def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
-        self.execChangeBtn.clicked.connect(self.exec_choose_file)
-        
-    def do_update(self):
-        if self.fab.changed("exec"): 
-            self.execEdit.setText(self.fab.options["fabber"])
-    
-    def exec_choose_file(self):
+        if self.fab.options.has_key(self.opt):
+            self.edit.setText(self.fab.options[self.opt])
+
+    def choose_file(self):
         fname = QFileDialog.getOpenFileName()[0]
         if fname:
-            self.execEdit.setText(fname)
-            self.fab.set_exec(self.execEdit.text())
-        
-class FileView(ModelView):
+            self.edit.setText(fname)
+            self.fab.set_option(self.opt, fname)
+
+class FileView(View):
     def __init__(self, **kwargs):
-        ModelView.__init__(self, **kwargs)
+        View.__init__(self, [], **kwargs)
         
         self.runBtn.clicked.connect(self.run)
         self.runQuickBtn.clicked.connect(self.run_quick)
@@ -581,28 +432,28 @@ class FileView(ModelView):
         # fixme overwrite
         # fixme clone data
         fname = QFileDialog.getSaveFileName()[0]
-        self.fab.set_filename(fname)
+        self.fab.set_file(fname)
         self.fab.save()
         
-    def run(self, quick=False):
+    def run(self, focus=None):
         try:
-            self.fab.run(quick)
+            self.fab.run(focus=focus)
         except:
             print sys.exc_info()
             QtGui.QMessageBox.warning(None, "Fabber error", str(sys.exc_info()[1]))
             
     def run_quick(self):
-        self.run(quick=True)
+        self.run()
     
     def do_update(self):
-        self.edit.setText(self.fab.fabfile)
+        self.edit.setText(self.fab.get_filename())
         if self.changed is None:
             self.changed = False
-        elif self.fab.changed("options", "data", "exec"):
+        else:
             self.changed = True
         
         self.saveBtn.setEnabled(self.changed)
-        self.runBtn.setEnabled(self.fab.data.has_key("data"))
-        self.runQuickBtn.setEnabled(self.fab.data.has_key("data"))
+        self.runBtn.setEnabled(self.fab.options.has_key("data"))
+        self.runQuickBtn.setEnabled(self.fab.options.has_key("data"))
         
         

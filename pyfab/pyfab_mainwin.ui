@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1045</width>
+    <width>1121</width>
     <height>1074</height>
    </rect>
   </property>
@@ -90,6 +90,7 @@
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
+            <zorder></zorder>
            </widget>
           </item>
           <item>
@@ -278,11 +279,176 @@
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_11">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout">
+         <widget class="QFrame" name="fitFrame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>400</width>
+            <height>400</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>400</width>
+            <height>400</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="paramTable">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>400</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="columnCount">
+           <number>3</number>
+          </property>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Parameter</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Mean</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Std.dev</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Data Files</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="filesTable">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>400</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>400</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+            <weight>75</weight>
+            <italic>true</italic>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="columnCount">
+           <number>2</number>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <column/>
+          <column/>
+         </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QFrame" name="fitFrame">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QPushButton" name="dataBtn">
+              <property name="text">
+               <string>Load Data</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="maskBtn">
+              <property name="text">
+               <string>Load Mask</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="showLogBtn">
+              <property name="text">
+               <string>Show logfile</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="chooseRunBtn">
+              <property name="text">
+               <string>Choose Run</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="dateLabel">
+            <property name="text">
+             <string>Current run date:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="currentRunEdit">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -291,253 +457,37 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>400</width>
-              <height>400</height>
+              <width>250</width>
+              <height>0</height>
              </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>400</width>
-              <height>400</height>
-             </size>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QTableWidget" name="paramTable">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>400</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="columnCount">
-             <number>3</number>
-            </property>
-            <attribute name="horizontalHeaderStretchLastSection">
-             <bool>true</bool>
-            </attribute>
-            <column>
-             <property name="text">
-              <string>Parameter</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Mean</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Std.dev</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_3">
-              <item>
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Input Data</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_16">
-                <item>
-                 <widget class="QLabel" name="label_3">
-                  <property name="text">
-                   <string>Data mode</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QComboBox" name="dataModeCombo">
-                  <item>
-                   <property name="text">
-                    <string>Single</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>Multiple</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <widget class="QTableWidget" name="inputFilesTable">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>100</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>200</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>9</pointsize>
-                  <weight>75</weight>
-                  <italic>true</italic>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="selectionBehavior">
-                 <enum>QAbstractItemView::SelectRows</enum>
-                </property>
-                <property name="columnCount">
-                 <number>1</number>
-                </property>
-                <attribute name="horizontalHeaderVisible">
-                 <bool>false</bool>
-                </attribute>
-                <attribute name="horizontalHeaderStretchLastSection">
-                 <bool>true</bool>
-                </attribute>
-                <attribute name="verticalHeaderVisible">
-                 <bool>false</bool>
-                </attribute>
-                <column/>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <item>
-                 <widget class="QPushButton" name="maskBtn">
-                  <property name="text">
-                   <string>Load Mask</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="dataBtn">
-                  <property name="text">
-                   <string>Load Data</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_5">
-              <item>
-               <widget class="QLabel" name="label_17">
-                <property name="text">
-                 <string>Output Data</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_11">
-                <item>
-                 <widget class="QLabel" name="dateLabel">
-                  <property name="text">
-                   <string>Run date</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <widget class="QTableWidget" name="outputFilesTable">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>100</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>200</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>9</pointsize>
-                  <weight>75</weight>
-                  <italic>true</italic>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="selectionBehavior">
-                 <enum>QAbstractItemView::SelectRows</enum>
-                </property>
-                <property name="columnCount">
-                 <number>1</number>
-                </property>
-                <attribute name="horizontalHeaderVisible">
-                 <bool>false</bool>
-                </attribute>
-                <attribute name="horizontalHeaderStretchLastSection">
-                 <bool>true</bool>
-                </attribute>
-                <attribute name="verticalHeaderVisible">
-                 <bool>false</bool>
-                </attribute>
-                <column/>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_3">
-                <item>
-                 <widget class="QPushButton" name="showLogBtn">
-                  <property name="text">
-                   <string>Show logfile</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="chooseRunBtn">
-                  <property name="text">
-                   <string>Choose Run</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_4">
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Fabber Options</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_7">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -545,121 +495,101 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Fabber Options</string>
+             <string>Forward model</string>
             </property>
            </widget>
           </item>
-          <item>
-           <layout class="QGridLayout" name="gridLayout_2">
-            <property name="sizeConstraint">
-             <enum>QLayout::SetDefaultConstraint</enum>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Inference method</string>
             </property>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Forward model</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>Inference method</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_12">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>100</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Executable</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QComboBox" name="modelCombo"/>
-            </item>
-            <item row="4" column="1">
-             <widget class="QComboBox" name="methodCombo"/>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_11">
-              <property name="text">
-               <string>General options</string>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_9"/>
-            </item>
-            <item row="5" column="2">
-             <widget class="QPushButton" name="generalOptionsBtn">
-              <property name="text">
-               <string>Edit</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QPushButton" name="methodOptionsBtn">
-              <property name="text">
-               <string>Options</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QPushButton" name="modelOptionsBtn">
-              <property name="text">
-               <string>Options</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="execChangeBtn">
-              <property name="maximumSize">
-               <size>
-                <width>100</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Change</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLineEdit" name="execEdit">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>200</width>
-                <height>16777215</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Executable</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="modelCombo"/>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="methodCombo"/>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>General options</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_9"/>
+          </item>
+          <item row="5" column="2">
+           <widget class="QPushButton" name="generalOptionsBtn">
+            <property name="text">
+             <string>Edit</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="methodOptionsBtn">
+            <property name="text">
+             <string>Options</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="modelOptionsBtn">
+            <property name="text">
+             <string>Options</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="execChangeBtn">
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Change</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="execEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -674,7 +604,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1045</width>
+     <width>1121</width>
      <height>25</height>
     </rect>
    </property>

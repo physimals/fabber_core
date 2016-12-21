@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>417</width>
-    <height>308</height>
+    <width>600</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -16,8 +16,17 @@
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>600</width>
+    <height>500</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Options</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -63,7 +72,29 @@
     </widget>
    </item>
    <item>
-    <layout class="QGridLayout" name="grid"/>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>580</width>
+        <height>391</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <layout class="QGridLayout" name="grid"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
