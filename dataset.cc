@@ -15,7 +15,6 @@
 #include "inference.h"
 #include "fabber_io.h"
 
-#include "utils/tracer_plus.h"
 #include "newmat.h"
 
 #include <stdexcept>
@@ -25,7 +24,7 @@
 #include <vector>
 
 using namespace std;
-using Utilities::Tracer_Plus;
+using namespace NEWMAT;
 
 std::ostream& operator<<(std::ostream& out, const OptionType value)
 {
@@ -36,25 +35,28 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
 		s = "BOOL";
 		break;
 	case OPT_STR:
-		s = "STRING";
+		s = "STR";
 		break;
 	case OPT_INT:
-		s = "INTEGER";
+		s = "INT";
 		break;
 	case OPT_FLOAT:
 		s = "FLOAT";
 		break;
 	case OPT_FILE:
-		s = "FILENAME";
+		s = "FILE";
 		break;
 	case OPT_IMAGE:
 		s = "IMAGE";
+		break;
+	case OPT_TIMESERIES:
+		s = "TIMESERIES";
 		break;
 	case OPT_MVN:
 		s = "MVN";
 		break;
 	case OPT_MATRIX:
-		s = "MATRIXFILE";
+		s = "MATRIX";
 		break;
 	default:
 		s = "UNKNOWN";
@@ -104,12 +106,13 @@ static OptionSpec OPTIONS[] =
 				{ "loadmodels", OPT_FILE,
 						"Load models dynamically from the specified filename, which should be a DLL/shared library",
 						OPT_NONREQ, "" },
-				{ "data", OPT_FILE, "Specify a single input data file", OPT_REQ, "" },
-				{ "data<n>", OPT_FILE, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
+				{ "data", OPT_TIMESERIES, "Specify a single input data file", OPT_REQ, "" },
+				{ "data<n>", OPT_TIMESERIES, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
 				{ "data-order", OPT_STR,
 						"If multiple data files are specified, how they will be handled: concatenate = one after the other,  interleave = first record from each file, then  second, etc.",
 						OPT_NONREQ, "interleave" },
 				{ "mask", OPT_IMAGE, "Mask file. Inference will only be performed where mask value > 0", OPT_NONREQ, "" },
+				{ "suppdata", OPT_TIMESERIES, "'Supplemental' timeseries data, required for some models", OPT_NONREQ, "" },
 				{ "dump-param-names", OPT_BOOL,
 						"Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
 				{ "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
@@ -171,7 +174,7 @@ string FabberRunData::GetDate()
 #endif
 }
 
-FabberRunData::FabberRunData(FabberIo *io) :
+FabberRunData::FabberRunData(FabberIo *io, bool compat_options) :
 		m_progress(0), m_io(io)
 {
 	// If no IO module is given, use the built in default
@@ -181,21 +184,24 @@ FabberRunData::FabberRunData(FabberIo *io) :
 		m_io = &m_default_io;
 	}
 
-	init();
+	init(compat_options);
 }
 
-void FabberRunData::init()
+void FabberRunData::init(bool compat_options)
 {
 	FabberSetup::SetupDefaults();
 
-	// For backwards compatibility with previous version of Fabber, save these data items by default
-	SetBool("save-mean");
-	SetBool("save-std");
-	SetBool("save-zstat");
-	SetBool("save-noise-mean");
-	SetBool("save-noise-std");
-	SetBool("save-free-energy");
-	SetBool("save-mvn");
+	if (compat_options)
+	{
+		// For backwards compatibility with previous version of Fabber, save these data items by default
+		SetBool("save-mean");
+		SetBool("save-std");
+		SetBool("save-zstat");
+		SetBool("save-noise-mean");
+		SetBool("save-noise-std");
+		SetBool("save-free-energy");
+		SetBool("save-mvn");
+	}
 }
 
 FabberRunData::~FabberRunData()
@@ -213,7 +219,6 @@ void FabberRunData::LogParams()
 
 void FabberRunData::Run(ProgressCheck *progress)
 {
-	Tracer_Plus tr2("FabberRunData::Run");
 	if (!m_io)
 		throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
@@ -260,9 +265,11 @@ void FabberRunData::Run(ProgressCheck *progress)
 
 	// Calculations
 	int nvoxels = m_io->GetVoxelCoords().Ncols();
+	LOG << "FabberRunData::Num voxels " << nvoxels << endl;
 	Progress(0, nvoxels);
 	infer->DoCalculations(*this);
 	Progress(nvoxels, nvoxels);
+	LOG << "FabberRunData::Saving results " << endl;
 	infer->SaveResults(*this);
 
 	LOG << "FabberRunData::All done." << endl;
@@ -287,7 +294,6 @@ static string trim(string const& str)
 
 void FabberRunData::ParseParamFile(const string filename)
 {
-	Tracer_Plus tr("FabberRunData::ParseParamFile");
 	ifstream is(filename.c_str());
 	if (!is.good())
 	{
@@ -314,7 +320,6 @@ void FabberRunData::ParseParamFile(const string filename)
 
 void FabberRunData::ParseOldStyleParamFile(const string filename)
 {
-	Tracer_Plus tr("FabberRunData::ParseOldStyleParamFile");
 	ifstream is(filename.c_str());
 	if (!is.good())
 	{
@@ -356,8 +361,6 @@ void FabberRunData::ParseOldStyleParamFile(const string filename)
 
 void FabberRunData::Parse(int argc, char** argv)
 {
-	Tracer_Plus tr("FabberRunData::Parse");
-
 	m_params[""] = argv[0];
 	for (int a = 1; a < argc; a++)
 	{
@@ -591,19 +594,21 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFil
 	//
 	// FIXME different exceptions? What about use case where
 	// data is optional?
+	string key_orig = key;
 	string data_key = "";
 	while (key != "")
 	{
 		data_key = key;
 		key = GetStringDefault(key, "");
+		// Avoid possible circular reference!
+		if (key == key_orig)
+			break;
 	}
 	return m_io->GetVoxelData(data_key);
 }
 
 const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 {
-	Tracer_Plus tr("GetMainVoxelDataMultiple");
-
 	vector<Matrix> dataSets;
 	int n = 1;
 	while (true)

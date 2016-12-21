@@ -24,10 +24,18 @@
 
 /**
  * Option types
+ *
+ * Mostly self-explanatory, apart from:
+ *
+ * OPT_IMAGE is 3D single-valued voxel data, e.g. image prior
+ * OPT_TIMESERIES is 4D timeseries voxel data, e.g. main data.
+ * OPT_MVN is MVN voxel data
+ * OPT_MATRIX is a VEST matrix file, usually used for small matrices
+ * OPT_FILE is some other type of file
  */
 enum OptionType
 {
-	OPT_BOOL, OPT_STR, OPT_INT, OPT_FLOAT, OPT_FILE, OPT_IMAGE, OPT_MVN, OPT_MATRIX
+	OPT_BOOL, OPT_STR, OPT_INT, OPT_FLOAT, OPT_FILE, OPT_IMAGE, OPT_TIMESERIES, OPT_MVN, OPT_MATRIX
 };
 
 /**
@@ -144,7 +152,7 @@ public:
 	 *           This will not be copied or freed. The caller is responsible
 	 *           for freeing it after use.
 	 */
-	FabberRunData(FabberIo *io);
+	FabberRunData(FabberIo *io, bool compat_options=true);
 	~FabberRunData();
 
 	/**
@@ -417,7 +425,7 @@ public:
 #endif
 
 private:
-	void init();
+	void init(bool compat_options);
 	void AddKeyEqualsValue(const std::string key, bool trim_comments = false);
 	const NEWMAT::Matrix &GetMainVoxelDataMultiple();
 

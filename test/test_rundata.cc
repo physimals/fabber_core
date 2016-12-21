@@ -254,6 +254,48 @@ TEST_F(RunDataTest, Unset)
 	ASSERT_EQ(false, rundata.GetBool("bobble"));
 }
 
+// Tests odd case where data name could lead to circular reference
+TEST_F(RunDataTest, CircularDataRef)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+
+	// Create coordinates and data matrices
+	NEWMAT::Matrix voxelCoords, data1;
+	data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					data1(n + 1, v) = VAL;
+				}
+				v++;
+			}
+		}
+	}
+	FabberIoMemory io;
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data", data1);
+
+	FabberRunData rundata(&io);
+	rundata.Set("data", "data");
+
+	NEWMAT::Matrix data = rundata.GetMainVoxelData();
+
+	ASSERT_EQ(VSIZE * VSIZE * VSIZE, data.Ncols());
+	ASSERT_EQ(NTIMES, data.Nrows());
+}
+
 // Tests clearing voxel data
 TEST_F(RunDataTest, ClearVoxelData)
 {
