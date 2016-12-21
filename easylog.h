@@ -58,6 +58,7 @@ public:
 	 * stringstream.
 	 */
 	EasyLog();
+	~EasyLog();
 
 	/**
 	 * Log output to a file
@@ -139,7 +140,7 @@ private:
   #ifdef USE_PTHREADS
 	static map<pthread_t , EasyLog> s_logs;
   #else
-	static EasyLog s_log;
+	static EasyLog *s_log;
   #endif
 #endif
 };

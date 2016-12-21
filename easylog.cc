@@ -48,7 +48,7 @@ static bool is_dir(string path)
   #ifdef USE_PTHREADS
 	map<pthread_t, EasyLog> EasyLog::s_logs;
   #else
-	EasyLog EasyLog::s_log;
+	EasyLog *EasyLog::s_log=0;
   #endif
 #endif
 
@@ -66,7 +66,11 @@ EasyLog& EasyLog::CurrentLog()
 	}
 	return s_logs[pthread_self()];
  #else
-	return s_log;
+	if (s_log) return *s_log;
+	else {
+		s_log = new EasyLog();
+		return *s_log;
+	}
   #endif
 #endif
 }
@@ -74,6 +78,15 @@ EasyLog& EasyLog::CurrentLog()
 EasyLog::EasyLog() :
 		filestream(0), outDir("")
 {
+}
+
+EasyLog::~EasyLog()
+{
+	// FIXME hack and not threadsafe
+	if (s_log) {
+		delete s_log;
+		s_log = NULL;
+	}
 }
 
 void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
