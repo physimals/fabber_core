@@ -12,8 +12,6 @@
 #include "fwdmodel.h"
 #include "fabber_io_newimage.h"
 
-#include "utils/tracer_plus.h"
-
 #include <exception>
 #include <iostream>
 #include <map>
@@ -24,7 +22,6 @@
 #include <memory>
 #include <vector>
 
-using Utilities::Tracer_Plus;
 using namespace std;
 
 /**
@@ -122,38 +119,8 @@ int execute(int argc, char** argv)
 				params.GetBool("link-to-latest"));
 		cout << "Logfile started: " << EasyLog::CurrentLog().GetOutputDirectory() << "/logfile" << endl;
 
-		// Start timing/tracing if requested
-		bool recordTimings = false;
-
-		if (params.GetBool("debug-timings"))
-		{
-			recordTimings = true;
-			Tracer_Plus::settimingon();
-		}
-		if (params.GetBool("debug-instant-stack"))
-		{
-			Tracer_Plus::setinstantstackon();
-		} // instant stack isn't used?
-		if (params.GetBool("debug-running-stack"))
-		{
-			Tracer_Plus::setrunningstackon();
-		}
-
-		// can't start it before this or it segfaults if an exception is thown with --debug-timings on.
-		Tracer_Plus tr("FABBER main (outer)");
-
-		// Start a new tracer for timing purposes
-		{
-			PercentProgressCheck percent;
-			params.Run(&percent);
-		}
-
-		if (recordTimings)
-		{
-			tr.dump_times(EasyLog::CurrentLog().GetOutputDirectory());
-			LOG << "Timing profile information recorded to " << EasyLog::CurrentLog().GetOutputDirectory() << "/timings.html"
-					<< endl;
-		}
+		PercentProgressCheck percent;
+		params.Run(&percent);
 
 		EasyLog::CurrentLog().ReissueWarnings();
 

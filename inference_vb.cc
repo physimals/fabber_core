@@ -11,12 +11,11 @@
 #include "convergence.h"
 #include "fabber_mc.h"
 
-#include "utils/tracer_plus.h"
-#include "newmatio.h"
+#include "newmat.h"
 
 #include <algorithm>
 
-using Utilities::Tracer_Plus;
+using namespace NEWMAT;
 
 std::ostream& operator<<(std::ostream& out, const PriorType value)
 {
@@ -302,8 +301,6 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 
 void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
-	Tracer_Plus tr("VariationalBayesInferenceTechnique::Initialize");
-
 // Call ancestor, which does most of the real work
 	InferenceTechnique::Initialize(fwd_model, args);
 
@@ -373,14 +370,12 @@ void VariationalBayesInferenceTechnique::PassModelData(int voxel)
 
 void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 {
-	Tracer_Plus tr("VariationalBayesInferenceTechnique::DoCalculations");
-
 // extract data (and the coords) from allData for the (first) VB run
 // Rows are volumes
 // Columns are (time) series
 // num Rows is size of (time) series
 // num Cols is size of volumes
-	m_origdata = &allData.GetMainVoxelData();
+        m_origdata = &allData.GetMainVoxelData();
 	m_coords = &allData.GetVoxelCoords();
 	m_suppdata = &allData.GetVoxelSuppData();
 	m_nvoxels = m_origdata->Ncols();

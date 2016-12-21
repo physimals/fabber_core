@@ -19,8 +19,6 @@ using namespace NEWIMAGE;
  */
 void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoords)
 {
-	Tracer_Plus("ConvertMaskToVoxelCoordinates");
-
 	// Mask has previously been binarized to 0 or 1 to identify
 	// voxels of interest, so sum is count of these voxels
 	ColumnVector preThresh((int) mask.sum());

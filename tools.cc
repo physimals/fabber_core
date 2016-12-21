@@ -9,16 +9,10 @@
 #include "tools.h"
 #include "easylog.h"
 
-#include "utils/tracer_plus.h"
-
 #include <limits>
-
-using Utilities::Tracer_Plus;
 
 double DescendingZeroFinder::FindZero() const
 {
-	Tracer_Plus tr("DescendingZeroFinder::FindZero");
-
 	double lower = searchMin;
 	double upper = searchMax;
 	double atLower, atUpper;
@@ -151,7 +145,6 @@ double DescendingZeroFinder::FindZero() const
 
 double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower, double atUpper)
 {
-	Tracer_Plus tr("RiddlersGuesstimator::GetGuess");
 	// equations below: from NRIC, section 9.2.  Simpler than Brent, slightly less reliable.
 
 	if (halfDone)

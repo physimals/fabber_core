@@ -54,8 +54,6 @@ else (FSL_BUILD)
 
   find_library(ZNZ_LIBRARY NAMES znz libznz
                HINTS $ENV{FSLDIR}/lib REQUIRED )
-  find_library(UTILS_LIBRARY NAMES utils libutils
-               HINTS $ENV{FSLDIR}/lib REQUIRED )
   find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths
                HINTS $ENV{FSLDIR}/lib REQUIRED )
   find_library(FSLIO_LIBRARY NAMES fslio libfslio
@@ -83,7 +81,6 @@ else (FSL_BUILD)
    
 Message("-- FSL headers in ${FSL_INCLUDE_DIR}")
 Message("-- Using libznz: ${ZNZ_LIBRARY}")
-Message("-- Using libutils: ${UTILS_LIBRARY} ${UTILS_INCLUDE_DIR}")
 Message("-- Using miscmaths: ${MISCMATHS_LIBRARY}")
 Message("-- Using fslio: ${FSLIO_LIBRARY}")
 Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
@@ -97,7 +94,6 @@ set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
          ${FSLIO_LIBRARY} 
          ${MISCMATHS_LIBRARY} 
          ${NIFTIIO_LIBRARY} 
-         ${UTILS_LIBRARY}   
          ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
 endif(FSL_BUILD)
 
@@ -137,6 +133,7 @@ add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
 # Main Targets
 add_library(fabbercore STATIC ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 add_library(fabbercore_shared SHARED ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
+target_link_libraries(fabbercore_shared ${LIBS})
 add_library(fabberexec fabber_io_newimage.cc fabber_core.cc )
 
 add_executable(fabber fabber_main.cc)

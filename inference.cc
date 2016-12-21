@@ -10,14 +10,13 @@
 #include "fabber_mc.h"
 #include "easylog.h"
 
-#include "utils/tracer_plus.h"
 #include "newmat.h"
 
 #include "math.h"
+#include <fstream>
 
 using namespace std;
 using namespace NEWMAT;
-using Utilities::Tracer_Plus;
 
 std::vector<std::string> InferenceTechnique::GetKnown()
 {
@@ -55,8 +54,6 @@ void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
 
 void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
-	Tracer_Plus tr("InferenceTechnique::Initialize");
-
 	// Set forward model.
 	model = fwd_model;
 	m_num_params = model->NumParams();
@@ -91,7 +88,6 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 
 void InferenceTechnique::SaveResults(FabberRunData& data) const
 {
-	Tracer_Plus tr("InferenceTechnique::SaveResults");
 	LOG << "InferenceTechnique::Preparing to save results..." << endl;
 
 	// Save the resultMVNs as two NIFTI files
@@ -272,8 +268,6 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 {
 // Loads in a MVN to set it as inital values for inference
 // can cope with the special scenario in which extra parameters have been added to the inference
-	Tracer_Plus tr("InferenceTechnique::InitMVNFromFile");
-
 	LOG << "InferenceTechnique::Merging supplied MVN with model intialization." << endl;
 
 	if (paramFilename == "")

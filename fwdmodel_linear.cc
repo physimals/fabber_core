@@ -9,14 +9,12 @@
 #include "fwdmodel_linear.h"
 
 #include "easylog.h"
-#include "utils/tracer_plus.h"
 #include "miscmaths/miscmaths.h"
 #include "newmatio.h"
 
 #include <iostream>
 #include <stdexcept>
 
-using Utilities::Tracer_Plus;
 using MISCMATHS::read_vest;
 using namespace std;
 
@@ -50,7 +48,6 @@ FwdModel* LinearFwdModel::NewInstance()
 
 void LinearFwdModel::Initialize(FabberRunData& args)
 {
-	Tracer_Plus tr("LinearFwdModel::Initialize");
 	string designFile = args.GetString("basis");
 	LOG << "LinearFwdModel::Reading design file: " << designFile << endl;
 	jacobian = read_vest(designFile);
@@ -81,7 +78,6 @@ void LinearFwdModel::Initialize(FabberRunData& args)
 
 void LinearFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
 {
-	Tracer_Plus tr("LinearFwdModel::HardcodedInitialDists");
 	assert(prior.means.Nrows() == NumParams());
 
 	// Set default for each parameter to a mean of 0 and close-to-zero precision.
@@ -112,7 +108,6 @@ void LinearFwdModel::NameParams(vector<string>& names) const
 
 void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 {
-	Tracer_Plus tr("LinearizedFwdModel::ReCentre");
 	assert(about == about); // isfinite
 
 	// Store new centre & offset

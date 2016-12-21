@@ -12,12 +12,10 @@
 #include "dataset.h"
 #include "easylog.h"
 
-#include "utils/tracer_plus.h"
 #include "miscmaths/miscmaths.h"
 
 #include <stdexcept>
 
-using Utilities::Tracer_Plus;
 using MISCMATHS::digamma;
 
 NoiseModel* WhiteNoiseModel::NewInstance()
@@ -32,8 +30,6 @@ int WhiteNoiseModel::NumParams()
 
 void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& posteriorIn) const
 {
-	Tracer_Plus tr("WhiteNoiseModel::HardcodedInitialDists");
-
 	WhiteParams& prior = dynamic_cast<WhiteParams&> (priorIn);
 	WhiteParams& posterior = dynamic_cast<WhiteParams&> (posteriorIn);
 
@@ -69,8 +65,6 @@ void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& p
 
 const MVNDist WhiteParams::OutputAsMVN() const
 {
-	Tracer_Plus tr("WhiteParams::OutputAsMVN");
-
 	assert((unsigned)nPhis == phis.size());
 	MVNDist mvn(phis.size());
 	SymmetricMatrix vars(phis.size());
@@ -97,7 +91,6 @@ void WhiteParams::InputFromMVN(const MVNDist& mvn)
 
 void WhiteParams::Dump(const string indent) const
 {
-	Tracer_Plus tr("WhiteParams::Dump");
 	assert( (unsigned)nPhis == phis.size() );
 	for (unsigned i = 0; i < phis.size(); i++)
 	{
@@ -111,8 +104,6 @@ void WhiteParams::Dump(const string indent) const
 
 void WhiteNoiseModel::Initialize(FabberRunData& args)
 {
-	Tracer_Plus tr("WhiteNoiseModel::Initialize");
-
 	// White noise can have a pattern. This is represented as, e.g.
 	// 123123123... or 123456789ab123456789ab...
 	// Whatever the patter is, each distinct digit/letter defines
@@ -139,7 +130,6 @@ void WhiteNoiseModel::Initialize(FabberRunData& args)
 
 void WhiteNoiseModel::MakeQis(int dataLen) const
 {
-	Tracer_Plus tr("WhiteNoiseModel::MakeQis");
 	if (!Qis.empty() && Qis[0].Nrows() == dataLen)
 		return; // Qis are already up-to-date
 
@@ -209,8 +199,6 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
 void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
 		const LinearFwdModel& linear, const ColumnVector& data) const
 {
-	Tracer_Plus tr("WhiteNoiseModel::UpdateNoise");
-
 	WhiteParams& posterior = dynamic_cast<WhiteParams&> (noise);
 	const WhiteParams& prior = dynamic_cast<const WhiteParams&> (noisePrior);
 
@@ -253,8 +241,6 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePr
 void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, const MVNDist& thetaPrior,
 		const LinearFwdModel& linear, const ColumnVector& data, MVNDist* thetaWithoutPrior, float LMalpha) const
 {
-	Tracer_Plus tr("WhiteNoiseModel::UpdateTheta");
-
 	//LOG << "start:" << theta.means.t() << endl;
 
 	//  if (thetaWithoutPrior != NULL)
@@ -324,7 +310,6 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, co
 
 	if (thetaWithoutPrior != NULL)
 	{
-		Tracer_Plus tr("WhiteNoiseModel::UpdateTheta - WithoutPrior calcs");
 		thetaWithoutPrior->SetSize(theta.GetSize());
 
 		thetaWithoutPrior->SetPrecisions(Ltmp);
@@ -356,7 +341,6 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, co
 double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoiseParams& noisePriorIn,
 		const MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& linear, const ColumnVector& data) const
 {
-	Tracer_Plus tr("WhiteNoiseModel::CalcFreeEnergy");
 	const int nPhis = Qis.size();
 	const WhiteParams& noise = dynamic_cast<const WhiteParams&> (noiseIn);
 	const WhiteParams& noisePrior = dynamic_cast<const WhiteParams&> (noisePriorIn);
@@ -435,7 +419,6 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoisePa
 
 /*
  void WhiteNoiseModel::SaveParams(const MVNDist& theta) {
- Tracer_Plus tr("WhiteNoiseModel::SaveParams");
  // save the current values of parameters
  int nPhis = phis.size();
  assert(nPhis > 0);
@@ -449,7 +432,6 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoisePa
  }
 
  void WhiteNoiseModel::RevertParams(MVNDist& theta) {
- Tracer_Plus tr("WhiteNoiseModel::RevertParams");
  int nPhis = phis.size();
  for (int i = 1; i <= nPhis; i++)
  {

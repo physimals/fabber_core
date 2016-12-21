@@ -15,9 +15,6 @@
  */
 
 #include "fwdmodel_custom.h"
-#include "utils/tracer_plus.h"
-
-using Utilities::Tracer_Plus;
 
 // Constructor:
 CustomFwdModel::CustomFwdModel(ArgsType& args)
@@ -101,7 +98,6 @@ string CustomFwdModel::ModelVersion() const
 
 void CustomFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
 {
-	Tracer_Plus tr("CustomFwdModel::HardcodedInitialDists");
 	// Pick a safe starting point for your model fits, if no other input is provided.
 	// The default one just uses a N(0,1e12) prior, and starts with all parameters set to zeroes:
 

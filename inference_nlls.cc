@@ -11,9 +11,7 @@
 #include "inference_nlls.h"
 
 #include "dataset.h"
-#include "utils/tracer_plus.h"
 
-using Utilities::Tracer_Plus;
 using namespace MISCMATHS;
 
 static int NUM_OPTIONS = 1;
@@ -48,7 +46,6 @@ InferenceTechnique* NLLSInferenceTechnique::NewInstance()
 
 void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
-	Tracer_Plus tr("NLLSInferenceTechnique::Initialize");
 	LOG << "NLLSInferenceTechnique::Initialising" << endl;
 	InferenceTechnique::Initialize(fwd_model, args);
 
@@ -79,8 +76,6 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 
 void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 {
-	Tracer_Plus tr("NLLSInferenceTechnique::DoCalculations");
-
 	// Get basic voxel data
 	const Matrix& data = allData.GetMainVoxelData();
 	const Matrix & coords = allData.GetVoxelCoords();
@@ -214,8 +209,6 @@ NLLSInferenceTechnique::~NLLSInferenceTechnique()
 
 double NLLSCF::cf(const ColumnVector& p) const
 {
-	Tracer_Plus tr("NLLSCF::cf");
-
 	// p = parameters
 	// data_pred = data predicted by model
 	ColumnVector data_pred;
@@ -229,8 +222,6 @@ double NLLSCF::cf(const ColumnVector& p) const
 
 ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
 {
-	Tracer_Plus tr("NLLSCF::grad");
-
 	// Create an initial zero gradient vector
 	ColumnVector gradv(p.Nrows());
 	gradv = 0.0;
@@ -254,8 +245,6 @@ ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
 
 boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_ptr<BFMatrix> iptr) const
 {
-	Tracer_Plus tr("NLLSCF::hess");
-
 	boost::shared_ptr<BFMatrix> hessm;
 
 	if (iptr && iptr->Nrows() == (unsigned) p.Nrows() && iptr->Ncols() == (unsigned) p.Nrows())

@@ -8,12 +8,9 @@
 
 #include "noisemodel.h"
 
-#include "utils/tracer_plus.h"
 #include "miscmaths/miscmaths.h"
 
 #include <math.h>
-
-using Utilities::Tracer_Plus;
 
 using MISCMATHS::digamma;
 
@@ -45,7 +42,6 @@ double gammaln(double x)
 // ARD stuff
 double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const
 {
-	Tracer_Plus tr("Noisemodel::SetupARD");
 	double Fard = 0;
 
 	if (~ardindices.empty())
@@ -73,7 +69,6 @@ double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDis
 
 double NoiseModel::UpdateARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const
 {
-	Tracer_Plus tr("Noisemodel::UpdateARD");
 	double Fard = 0;
 
 	if (~ardindices.empty())

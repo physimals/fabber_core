@@ -11,15 +11,12 @@
 #include "easylog.h"
 #include "dataset.h"
 
-#include "utils/tracer_plus.h"
 #include "miscmaths/miscmaths.h"
 #include "newmatio.h"
 
 #include <stdexcept>
 
 #define AR1_BANDWIDTH 3
-
-using Utilities::Tracer_Plus;
 
 using MISCMATHS::digamma;
 
@@ -81,7 +78,6 @@ else			LOG_ERR("WARNING: using --num-echoes=1 is completely untested!\nIt will p
 	// Just convert a string into a number
 int Ar1cNoiseModel::NumAlphas() const
 {
-	Tracer_Plus("Ar1cNoiseModel::NumAlphas");
 	if (ar1Type == "same")
 		return 3;
 	else if (ar1Type == "dual")
@@ -94,8 +90,6 @@ int Ar1cNoiseModel::NumAlphas() const
 
 void Ar1cNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& posteriorIn) const
 {
-	Tracer_Plus tr("Ar1cNoiseModel::HardcodedInitialDists");
-
 	Ar1cParams& prior = dynamic_cast<Ar1cParams&> (priorIn);
 	Ar1cParams& posterior = dynamic_cast<Ar1cParams&> (posteriorIn);
 
@@ -131,7 +125,6 @@ public:
 		return;
 	}
 	//    : k(k2), JLiJt(J2.Ncols(), AR1_BANDWIDTH)
-	//        { Tracer_Plus tr("OperatorKLJ::OperatorKLJ");
 	//            JLiJt << (J2*L2.i()*J2.t());
 	//            // the above doesn't work... should be some sort of lossy store, but
 	//            // it crashes with an "Undefined bandwidth" error... not sure why.
@@ -151,8 +144,6 @@ private:
 
 double OperatorKLJ::operator()(const SymmetricBandMatrix& input) const
 {
-	Tracer_Plus tr("OperatorKLJ::operator()");
-
 	//  assert(input.BandWidth().Lower() <= AR1_BANDWIDTH);
 	//  return (k.t() * input * k).AsScalar()
 	//      + (input * JLiJt).Trace();
@@ -168,8 +159,6 @@ double OperatorKLJ::operator()(const SymmetricBandMatrix& input) const
 void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
 		const LinearFwdModel& linear, const ColumnVector& data) const
 {
-	Tracer_Plus tr("Ar1cNoiseModel::UpdateAlpha");
-
 	Ar1cParams& posterior = dynamic_cast<Ar1cParams&> (noise);
 	const Ar1cParams& prior = dynamic_cast<const Ar1cParams&> (noisePrior);
 	Ar1cMatrixCache& alphaMat = posterior.alphaMat;
@@ -193,8 +182,6 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePri
 	const int T = nAlphas; // use same code for nAlphas == 3 or 4
 
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateAlpha - precision calculations");
-
 		for (int i = 1; i <= nNoiseModels; i++)
 			alphaPrecisions(i, i) += si_ci(i) * OpKLJ(alphaMat.GetMatrix(i, 2, 0));
 
@@ -224,7 +211,6 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePri
 
 	}
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateAlpha - mean calculations");
 		ColumnVector tmp(T);
 		tmp = prior.alpha.GetPrecisions() * prior.alpha.means;
 		for (int i = 1; i <= nNoiseModels; i++)
@@ -247,7 +233,6 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePri
 	}
 
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateAlpha - alphaMat updates");
 		// Update the alpha marginals (used by phi and theta updates)
 		alphaMat.Update(posterior, data.Nrows() / nPhis);
 	}
@@ -257,8 +242,6 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePri
 void Ar1cNoiseModel::UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
 		const LinearFwdModel& linear, const ColumnVector& data) const
 {
-	Tracer_Plus tr("Ar1cNoiseModel::UpdatePhi");
-
 	Ar1cParams& posterior = dynamic_cast<Ar1cParams&> (noise);
 	const Ar1cParams& prior = dynamic_cast<const Ar1cParams&> (noisePrior);
 	Ar1cMatrixCache& alphaMat = posterior.alphaMat;
@@ -270,7 +253,6 @@ void Ar1cNoiseModel::UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior
 	for (int i = 1; i <= nPhis; i++)
 	{
 		{
-			Tracer_Plus tr("Ar1cNoiseModel::UpdatePhi - main calculations");
 			const SymmetricBandMatrix &Qi = alphaMat.GetMarginal(i);
 
 			double tmp = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
@@ -288,8 +270,6 @@ void Ar1cNoiseModel::UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior
 void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const MVNDist& thetaPrior,
 		const LinearFwdModel& linear, const ColumnVector& data, MVNDist* thetaWithoutPrior, float LMalpha) const
 {
-	Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta");
-
 	const Ar1cParams& posterior = dynamic_cast<const Ar1cParams&> (noise);
 	const Ar1cMatrixCache& alphaMat = posterior.alphaMat;
 
@@ -305,7 +285,6 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 
 	SymmetricBandMatrix X;
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta - X calculations");
 		if (nPhis == 2)
 			X = si_ci(1) * alphaMat.GetMarginal(1) + si_ci(2) * alphaMat.GetMarginal(2);
 		else
@@ -315,8 +294,6 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 	//    SymmetricMatrix Ltmp = J.t() * X * J;
 	SymmetricMatrix Ltmp;
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta - L calculations");
-
 		Matrix Ltmp_tmp = J.t() * X * J;
 		// LOG<<"Max error: "<<(Ltmp_tmp.t() - Ltmp_tmp).MaximumAbsoluteValue()
 		//    <<", compared to "<<Ltmp_tmp.MaximumAbsoluteValue()<<endl;
@@ -327,7 +304,6 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 
 	ColumnVector mTmp;
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta - m calculations");
 		mTmp = J.t() * X * (data - gml + J * ml);
 
 		theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
@@ -336,7 +312,6 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 
 	if (thetaWithoutPrior != NULL)
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta - WithoutPrior calcs");
 		thetaWithoutPrior->SetSize(theta.GetSize());
 
 		// Quick hack: prevent errors when thetaWithoutPrecisions is inverted
@@ -359,7 +334,6 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams& noise, MVNDist& theta, const
 	}
 
 	{
-		Tracer_Plus tr("Ar1cNoiseModel::UpdateTheta - Error checking");
 		LogAndSign chk = theta.GetPrecisions().LogDeterminant();
 		if (chk.Sign() <= 0)
 			LOG << "Note: In UpdateTheta, theta precisions aren't positive-definite: " << chk.Sign() << ", "
@@ -377,8 +351,6 @@ ostream& operator<<(ostream& s, vector<double> n)
 double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
 		const MVNDist& thetaPrior, const LinearFwdModel& linear, const ColumnVector& data) const
 {
-	Tracer_Plus tr("Ar1cNoiseModel::CalcFreeEnergy");
-
 	const Ar1cParams& posterior = dynamic_cast<const Ar1cParams&> (noise);
 	const Ar1cParams& prior = dynamic_cast<const Ar1cParams&> (noisePrior);
 	const Ar1cMatrixCache& alphaMat = posterior.alphaMat;
@@ -523,8 +495,6 @@ void Ar1cParams::Dump(const string indent) const
 
 void Ar1cMatrixCache::Update(const Ar1cParams& dist, int nTimes)
 {
-	Tracer_Plus tr("Ar1cMatrixCache::Update");
-
 	//  LOG << "In Ar1cMatrixCache::Update..." << endl;
 	// Let's see if alphaMatrices have been defined yet
 	if (alphaMatrices.size() == 0)
@@ -688,8 +658,6 @@ const SymmetricBandMatrix& Ar1cMatrixCache::GetMarginal(unsigned n) const
 
 void Ar1cNoiseModel::Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const ColumnVector& sampleData) const
 {
-	Tracer_Plus tr("Ar1cMatrixCache::Precalculate");
-
 	Ar1cParams& posterior = dynamic_cast<Ar1cParams&> (noise);
 	const Ar1cParams& prior = dynamic_cast<const Ar1cParams&> (noisePrior);
 	Ar1cMatrixCache& alphaMat = posterior.alphaMat;
@@ -733,7 +701,6 @@ const MVNDist Ar1cParams::OutputAsMVN() const
 
 void Ar1cParams::InputFromMVN(const MVNDist& mvn)
 {
-	Tracer_Plus tr("Ar1cParams::InputFromMVN");
 	// We must already know nAlpha & nPhi from the constructor!
 	const unsigned nAlpha = alpha.means.Nrows();
 	assert( nAlpha + phis.size() == (unsigned)mvn.GetSize() );

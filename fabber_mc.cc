@@ -8,14 +8,10 @@
 
 #include "fabber_mc.h"
 
-#include "utils/tracer_plus.h"
-
 #ifdef __FABBER_MOTION
 
 MCobj::MCobj(FabberRunData& allData, int dof)
 {
-	Tracer_Plus tr("MCobj::MCobj");
-
 	Matrix coords = allData.GetVoxelCoords();
 	std::vector<int> size(3);
 	size[0] = coords.Row(1).Maximum() + 1;
@@ -62,8 +58,6 @@ MCobj::MCobj(FabberRunData& allData, int dof)
 
 void MCobj::run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat)
 {
-	Tracer_Plus tr("MCobj::run_mc");
-
 	modelpred.setmatrix(modelpred_mat,mask);
 	if (userdof>12)
 	{

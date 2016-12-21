@@ -9,20 +9,17 @@
 #include "dist_mvn.h"
 
 #include "easylog.h"
-#include "utils/tracer_plus.h"
 #include "newmatio.h"
 #include "miscmaths/miscmaths.h"
 
 #include "math.h"
 
-using Utilities::Tracer_Plus;
 using MISCMATHS::read_vest;
 
 // Constructors
 
 MVNDist::MVNDist()
 {
-	Tracer_Plus tr("MVNDist::MVNDist()");
 	m_size = -1;
 	precisionsValid = covarianceValid = false;
 }
@@ -47,7 +44,6 @@ MVNDist::MVNDist(const string filename)
 
 MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
 {
-	Tracer_Plus tr("MVNDist::MVNDist(from1,from2)");
 	m_size = from1.m_size + from2.m_size;
 	means = from1.means & from2.means;
 	precisionsValid = false;
@@ -66,7 +62,6 @@ MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
 const MVNDist& MVNDist::operator=(const MVNDist& from)
 {
 	// Not useful and dominates --debug-running-stack:
-	// Tracer_Plus tr("MVNDist::operator=");
 
 	assert(&from != NULL); // yes, this can happen.  References are but pointers in disguise...
 
@@ -114,7 +109,6 @@ MVNDist MVNDist::GetSubmatrix(int first, int last, bool checkIndependence)
 
 void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence)
 {
-	Tracer_Plus tr("MVNDist::CopyFromSubmatrix");
 	m_size = last - first + 1;
 	means = from.means.Rows(first, last);
 	precisionsValid = from.precisionsValid;
@@ -150,7 +144,6 @@ int MVNDist::GetSize() const
 void MVNDist::SetSize(int dim)
 {
 	// Not useful and dominates --debug-running-stack:
-	// Tracer_Plus tr("MVNDist::SetSize");
 	if (dim <= 0)
 		throw RBD_COMMON::Logic_error("Can't have dim<=0\n");
 
@@ -158,7 +151,6 @@ void MVNDist::SetSize(int dim)
 
 	if (m_size != dim)
 	{
-		//Tracer_Plus tr("MVNDist::SetSize (actually resizing)");
 		m_size = dim;
 		means.ReSize(dim);
 		precisions.ReSize(dim);
@@ -175,7 +167,6 @@ void MVNDist::SetSize(int dim)
 
 const SymmetricMatrix& MVNDist::GetPrecisions() const
 {
-	Tracer_Plus tr("MVNDist::GetPrecisions");
 	if (m_size == -1)
 		throw Logic_error("MVN is uninitialized!\n");
 	assert(means.Nrows() == m_size);
@@ -185,7 +176,6 @@ const SymmetricMatrix& MVNDist::GetPrecisions() const
 	// recalculated
 	if (!precisionsValid)
 	{
-		Tracer_Plus tr("MVNDist::GetPrecisions calculation");
 		assert(covarianceValid);
 		// precisions and precisionsValid are mutable,
 		// so we can change them even in a const function
@@ -199,7 +189,6 @@ const SymmetricMatrix& MVNDist::GetPrecisions() const
 
 const SymmetricMatrix& MVNDist::GetCovariance() const
 {
-	Tracer_Plus tr("MVNDist::GetCovariance");
 	if (m_size == -1)
 		throw Logic_error("MVN is uninitialized!\n");
 	assert(means.Nrows() == m_size);
@@ -209,7 +198,6 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 	// recalculated
 	if (!covarianceValid)
 	{
-		Tracer_Plus tr("MVNDist::GetCovariance calculation");
 		assert(precisionsValid);
 		// covariance and covarianceValid are mutable,
 		// so we can change them even in a const function
@@ -234,7 +222,6 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 
 void MVNDist::SetPrecisions(const SymmetricMatrix& from)
 {
-	Tracer_Plus tr("MVNDist::SetPrecisions");
 	assert(from.Nrows() == m_size);
 	assert(means.Nrows() == m_size);
 	precisions = from;
@@ -245,8 +232,6 @@ void MVNDist::SetPrecisions(const SymmetricMatrix& from)
 
 void MVNDist::SetCovariance(const SymmetricMatrix& from)
 {
-	Tracer_Plus tr("MVNDist::SetCovariance");
-
 	assert(from.Nrows() == m_size);
 	assert(means.Nrows() == m_size);
 	covariance = from;
@@ -262,7 +247,6 @@ void MVNDist::Dump(const string indent) const
 
 void MVNDist::DumpTo(ostream& out, const string indent) const
 {
-	Tracer_Plus tr("MVNDist::Dump");
 	out << indent << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
 			<< ", covarianceValid == " << covarianceValid << endl;
 	out << indent << "  Means: " << means.t();
@@ -306,8 +290,6 @@ void MVNDist::LoadVest(const string& filename)
 
 void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
 {
-	Tracer_Plus tr("MVNDist::Load (static)");
-
 	Matrix voxel_data;
 	LOG << "MVNDist::Reading MVNs from " << filename << endl;
 
@@ -373,8 +355,6 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 
 void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
 {
-	Tracer_Plus tr("MVNDist::Save");
-
 	// Save the MVNs in a NIFTI file as a single NIFTI_INTENT_SYMMATRIX
 	// last row/col is the means (1 in the corner).
 	// Note that I'm using the 4th dim and should really be using the 5th,
