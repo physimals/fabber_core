@@ -23,36 +23,64 @@ static int fabber_err(int code, const char *msg, char *err_buf)
 	// Error buffer is optional
 	if (!err_buf)
 		return code;
+	if (!msg) msg = "NULL message";
 
 	strncpy(err_buf, msg, FABBER_ERR_MAXC - 1);
 	err_buf[FABBER_ERR_MAXC - 1] = '\0';
 	return code;
 }
 
-void *fabber_new(int nx, int ny, int nz, const int *mask, char *err_buf)
+void *fabber_new(char *err_buf)
 {
-	if (!mask)
-	{
-		fabber_err(FABBER_ERR_FATAL, "Mask is NULL", err_buf);
-		return NULL;
-	}
-	if ((nx <= 0) || (ny <= 0) || (nz <= 0))
-	{
-		fabber_err(FABBER_ERR_FATAL, "Dimensions must be >0", err_buf);
-		return NULL;
-	}
-
 	try
 	{
 		FabberSetup::SetupDefaults();
-		FabberIoCarray *io = new FabberIoCarray(nx, ny, nz, mask);
-		FabberRunData* rundata = new FabberRunData(io);
+		FabberIoCarray *io = new FabberIoCarray();
+		FabberRunData* rundata = new FabberRunData(io, false);
 		return rundata;
 	} catch (...)
 	{
 		// FIXME theoretical memory leak of io
 		fabber_err(FABBER_ERR_FATAL, "Failed to allocate memory for run data", err_buf);
 		return NULL;
+	}
+}
+
+int fabber_load_models(void *fab, const char *libpath, char *err_buf)
+{
+	if (!fab)
+		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
+        if (!libpath)
+		return fabber_err(FABBER_ERR_FATAL, "Library path is NULL", err_buf);
+		
+	try
+	{
+		FabberRunData* rundata = (FabberRunData*) fab;
+		FwdModel::LoadFromDynamicLibrary(libpath);
+		return 0;
+	} catch (exception &e)
+	{
+		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+	}
+}
+
+int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *err_buf)
+{
+	if (!fab)
+		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
+        if (!mask)
+		return fabber_err(FABBER_ERR_FATAL, "Mask is NULL", err_buf);
+	if ((nx <= 0) || (ny <= 0) || (nz <= 0))
+		return fabber_err(FABBER_ERR_FATAL, "Dimensions must be >0", err_buf);
+
+	try
+	{
+		FabberRunData* rundata = (FabberRunData*) fab;
+		((FabberIoCarray*) rundata->GetIo())->SetExtent(nx, ny, nz, mask);
+		return 0;
+	} catch (exception &e)
+	{
+		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	}
 }
 
@@ -67,14 +95,7 @@ int fabber_set_opt(void *fab, const char *key, const char *value, char *err_buf)
 	try
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
-		if (strcmp(key, "loadmodels") == 0)
-		{
-			FwdModel::LoadFromDynamicLibrary(value);
-		}
-		else
-		{
-			rundata->Set(key, value);
-		}
+		rundata->Set(key, value);
 		return 0;
 	} catch (exception &e)
 	{
@@ -160,6 +181,7 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	if (!err_buf)
 		return fabber_err(FABBER_ERR_FATAL, "Error buffer is NULL", err_buf);
 
+        int ret=0;
 	FabberRunData* rundata = (FabberRunData*) fab;
 	stringstream log;
 	try
@@ -171,27 +193,27 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	{
 		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Data not found:\n  " << e.what() << endl);
-		fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (const Invalid_option& e)
 	{
 		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Invalid_option exception caught in fabber:\n  " << e.what() << endl);
-		fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (const exception& e)
 	{
 		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("STL exception caught in fabber:\n  " << e.what() << endl);
-		fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (NEWMAT::Exception& e)
 	{
 		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("NEWMAT exception caught in fabber:\n  " << e.what() << endl);
-		fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+		ret = fabber_err(FABBER_ERR_NEWMAT, e.what(), err_buf);
 	} catch (...)
 	{
 		EasyLog::CurrentLog().ReissueWarnings();
 		LOG_ERR("Some other exception caught in fabber!" << endl);
-		fabber_err(FABBER_ERR_FATAL, "Unrecognized exception", err_buf);
+		ret = fabber_err(FABBER_ERR_FATAL, "Unrecognized exception", err_buf);
 	}
 
 	EasyLog::CurrentLog().StopLog();
@@ -204,7 +226,7 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	strncpy(log_buf, log.str().c_str(), log_bufsize - 1);
 	log_buf[log_bufsize - 1] = '\0';
 
-	return 0;
+	return ret;
 }
 
 void fabber_destroy(void *fab)

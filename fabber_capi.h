@@ -5,22 +5,46 @@ extern "C"
 
 #define FABBER_ERR_MAXC 255
 #define FABBER_ERR_FATAL -255
+#define FABBER_ERR_NEWMAT -254
 
 /**
  * Create a new context for running fabber.
  *
- * Currently a mask must be specified
- *
- * @param nx Extent in x direction
- * @param ny Extent in y direction
- * @param nz Extent in z direction
- * @param mask Array of length nx*ny*nz of 0 and 1 defining a mask region (1=include voxel)
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return A handle to the context. This should not be used for any purpose apart from
  *         to pass to other API functions
  */
-void *fabber_new(int nx, int ny, int nz, const int *mask, char *err_buf);
+void *fabber_new(char *err_buf);
+
+/**
+ * Load models from a dynamic library
+ *
+ * @param fab Fabber context, returned by fabber_new
+ * @param libpath Path to library, non NULL, not empty
+ * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ *
+ * @return 0 on success, <0 on failure
+ */
+int fabber_load_models(void *fab, const char *libpath, char *err_buf);
+
+/**
+ * Set the extent of the volume to be procesed. 
+ *
+ * This must be called before any data is provided.
+ *
+ * @param fab Fabber context, returned by fabber_new
+ * @param nx Extent in x direction
+ * @param ny Extent in y direction
+ * @param nz Extent in z direction
+ * @param mask Array of length nx*ny*nz of 0 and 1 defining a mask region.
+ *             (where mask=0, voxel is ignored, where mask!=0, voxel is included)
+ *             If NULL, data is assumed to be unmasked
+ * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ *
+ * @return 0 on success, <0 on failure
+ */
+int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *err_buf);
 
 /**
  * Destroy fabber context previously created in fabber_new

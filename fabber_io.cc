@@ -144,7 +144,7 @@ void FabberIoMemory::CheckSize(std::string key, const NEWMAT::Matrix &mat)
 	}
 }
 
-FabberIoCarray::FabberIoCarray(int nx, int ny, int nz, const int *mask)
+void FabberIoCarray::SetExtent(int nx, int ny, int nz, const int *mask)
 {
 	assert(nx > 0);
 	assert(ny > 0);
@@ -152,9 +152,13 @@ FabberIoCarray::FabberIoCarray(int nx, int ny, int nz, const int *mask)
 	assert(mask);
 
 	int nv = nx * ny * nz;
-	m_mask.reserve(nv);
-	m_mask.insert(m_mask.end(), mask, mask + nv);
-
+	if (mask) {
+        	m_mask.insert(m_mask.end(), mask, mask + nv);
+        }
+        else {
+                m_mask.resize(nv, 1);
+        }
+        
 	int *maskPtr = &m_mask[0];
 	int v = 0;
 	Matrix coords(3, nv);
@@ -168,8 +172,8 @@ FabberIoCarray::FabberIoCarray(int nx, int ny, int nz, const int *mask)
 				if (!masked)
 				{
 					coords(1, v + 1) = x;
-					coords(1, v + 1) = y;
-					coords(1, v + 1) = z;
+					coords(2, v + 1) = y;
+					coords(3, v + 1) = z;
 					++v;
 				}
 				++maskPtr;
@@ -181,6 +185,7 @@ FabberIoCarray::FabberIoCarray(int nx, int ny, int nz, const int *mask)
 	m_extent[0] = nx;
 	m_extent[1] = ny;
 	m_extent[2] = nz;
+	LOG << "FabberIoCarry: Extent is " << m_extent << endl;;
 }
 
 void FabberIoCarray::GetVoxelData(string key, float *data)

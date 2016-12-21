@@ -191,7 +191,7 @@ protected:
 class FabberIoCarray: public FabberIoMemory
 {
 public:
-	FabberIoCarray(int nx, int ny, int nz, const int *mask);
+	void SetExtent(int nx, int ny, int nz, const int *mask);
 
 	void GetVoxelData(string key, float *data);
 	void SetVoxelData(string key, int data_size, const float *data);
