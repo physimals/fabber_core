@@ -21,7 +21,7 @@
 #include <vector>
 #include <memory>
 
-class InferenceTechnique
+class InferenceTechnique : public Loggable
 {
 
 public:
@@ -177,6 +177,7 @@ protected:
 	 * Number of motion correction steps to run
 	 */
 	int Nmcstep;
+
 private:
 	/**
 	 * Private to prevent assignment

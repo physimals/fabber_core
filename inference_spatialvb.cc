@@ -233,7 +233,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData& allData)
 	{
 		LOG << "Loading fixed linearization centres from the MVN '" << lockedLinearFile
 				<< "'\nNOTE: This does not check if the correct number of parameters is present!\n";
-		MVNDist::Load(lockedLinearDists, lockedLinearFile, allData);
+		MVNDist::Load(lockedLinearDists, lockedLinearFile, allData, m_log);
 		lockedLinearCentres.ReSize(m_num_params, m_nvoxels);
 	}
 
@@ -290,7 +290,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData& allData)
 
 void SpatialVariationalBayes::SetupStSMatrix()
 {
-	assert((int)m_neighbours.size() == m_nvoxels);
+	assert((int )m_neighbours.size() == m_nvoxels);
 
 	const double tiny = 1e-6;
 	WARN_ONCE("Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
@@ -328,7 +328,7 @@ void SpatialVariationalBayes::SetupStSMatrix()
 	 SymmetricMatrix connect =
 	 IdentityMatrix(m_nvoxels) * 1e-6;
 	 WARN_ONCE("Using 'S' prior with constant diagonal weight of " + stringify(connect(1,1)));
-		 for (int v = 1; v <= m_nvoxels; v++)
+	 for (int v = 1; v <= m_nvoxels; v++)
 	 {
 	 for (vector<int>::iterator nidIt = neighbours[v-1].begin();
 	 nidIt != neighbours[v-1].end(); nidIt++)
@@ -412,7 +412,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	// FIXME can't calculate free energy with spatial VB yet
 
 	// Cache for StS matrix in 'S' or 'Z' mode
-	if ((m_shrinkage_type == 'S') || (m_shrinkage_type == 'Z')) SetupStSMatrix();
+	if ((m_shrinkage_type == 'S') || (m_shrinkage_type == 'Z'))
+		SetupStSMatrix();
 
 	m_conv->Reset();
 	bool isFirstIteration = true; // slightly different behaviour in first iteratio
@@ -462,8 +463,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					// Noninformative prior:
 					double q1 = 1e12, q2 = 1e-12;
 
-					WARN_ONCE(
-							"Hyperpriors on S prior: using q1 == " + stringify(q1) + ", q2 == " + stringify(q2));
+					WARN_ONCE("Hyperpriors on S prior: using q1 == " + stringify(q1) + ", q2 == " + stringify(q2));
 
 					gk(k) = 1 / (0.5 * (sigmak * StS).Trace() + (wk.t() * StS * wk).AsScalar() + 1 / q1);
 
@@ -1311,8 +1311,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 					ColumnVector tmp3 = tmp * MuOthers;
 					XXtrMuOthers(v) = tmp3(k);
 
-					WARN_ONCE(
-							"Corrected mistake in useFullEvidenceOptimization: initialFwdPrior->means (not k)");
+					WARN_ONCE("Corrected mistake in useFullEvidenceOptimization: initialFwdPrior->means (not k)");
 					// Also notice the subtle difference above: MuOthers uses the actual posterior means, while XYtr uses
 					// the priorless posterior means.
 					// Also, the above XXtr do NOT include the correction for non-N(0,1) initialFwdPriors, because the
@@ -1616,7 +1615,7 @@ bool IsCoordMatrixCorrectlyOrdered(const Matrix& voxelCoords)
 		int d = sign(diff(1)) + 10 * sign(diff(2)) + 100 * sign(diff(3));
 		if (d <= 0)
 		{
-			LOG << "Found mis-ordered voxels " << v << " and " << v + 1 << ": d=" << d << endl;
+//			LOG << "Found mis-ordered voxels " << v << " and " << v + 1 << ": d=" << d << endl;
 			return false;
 		}
 	}
@@ -2228,9 +2227,12 @@ public:
 
 //	  LOG_ERR("\n--- OPTIMIZING FOR RHO ---\n");
 			DerivFdRho fcn2(covar, covRatio, meanDiffRatio, delta);
+			fcn2.SetLogger(m_log);
 			BisectionGuesstimator guesser;
+			guesser.SetLogger(m_log);
 			rho = DescendingZeroFinder(fcn2).InitialGuess(1).TolY(0.0001).RatioTolX(1.001).Verbosity(0).SetGuesstimator(
 					&guesser).SearchMin(-70).SearchMax(70);
+
 // Observed range: -35 to +40
 // If the inversion causes numerical problems, then the above
 // we get tmp < 0, so rho2 = NaN, so we search, and typically end
@@ -2347,36 +2349,29 @@ double DerivFdDelta::Calculate(const double delta) const
 	return out;
 }
 
-double SpatialVariationalBayes::OptimizeEvidence(
-// const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
-		const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
-		//  const vector<SymmetricMatrix>& Si,
+double SpatialVariationalBayes::OptimizeEvidence(const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
 		int k, const MVNDist* initialFwdPrior, double guess, bool allowRhoToVary, double* rhoOut) const
 {
 	assert(fwdPosteriorWithoutPrior.at(0) != NULL);
 	const int Nparams = fwdPosteriorWithoutPrior[0]->GetSize();
-//const int Nvoxels = fwdPosteriorWithoutPrior.size();
 	LOG << Nparams << ", " << k << endl;
 	assert(Nparams >= 1);
 	assert(k <= Nparams);
 
 	DerivEdDelta fcn(covar, fwdPosteriorWithoutPrior, k, initialFwdPrior, allowRhoToVary);
+	fcn.SetLogger(m_log);
 
 	LogBisectionGuesstimator guesser;
-//LogRiddlersGuesstimator guesser;
+	guesser.SetLogger(m_log);
 
 	double hardMin = 0.05; // Much below 0.2 inversion becomes painfully slow
 	double hardMax = 1e3; // Above 1e15, exp(-0.5*1/delta) == 1 (singular)
 
-	double delta = DescendingZeroFinder(fcn).InitialGuess(guess)
-//          .InitialScale(guess/16) // In two guesses, scale = guess (anywhere down to zero).
-//          .ScaleGrowth(4)  // However, increasing from 0.05 to 1000 in one iterataion would take 10 new guesses.
-	.InitialScale(guess * 0.009) // So hopefully it'll only take two guesses once settled
+	double delta = DescendingZeroFinder(fcn).InitialGuess(guess).InitialScale(guess * 0.009) // So hopefully it'll only take two guesses once settled
 	.ScaleGrowth(16) // But it can escape pretty quickly!  7 guesses to get from 0.05 to 1000.
 	.SearchMin(hardMin).SearchMax(hardMax).RatioTolX(1.01).MaxEvaluations(2 + newDeltaEvaluations).SetGuesstimator(
 			&guesser);
 
-//WARN_ALWAYS("Increased delta search precision to 1.0001 from 1.01");
 	WARN_ONCE("Hard limits on delta: [" + stringify(hardMin) + ", " + stringify(hardMax) + "]");
 
 	if (rhoOut != NULL)
@@ -2390,7 +2385,10 @@ double SpatialVariationalBayes::OptimizeSmoothingScale(const DiagonalMatrix& cov
 		bool allowDeltaToVary) const
 {
 	DerivFdDelta fcn(covar, covRatio, meanDiffRatio, allowRhoToVary);
+	fcn.SetLogger(m_log);
+
 	LogBisectionGuesstimator guesser;
+	guesser.SetLogger(m_log);
 
 	if (bruteForceDeltaSearch)
 	{
@@ -2416,7 +2414,6 @@ double SpatialVariationalBayes::OptimizeSmoothingScale(const DiagonalMatrix& cov
 //.SearchMin(0.01) // Below this, inversion becomes painfully slow
 		.SearchMax(1e15) // Above this, exp(-0.5*1/delta) == 1 (singular)
 		.RatioTolX(1.01).MaxEvaluations(2 + newDeltaEvaluations).SetGuesstimator(&guesser);
-
 		//LOG_ERR("HORRIBLE HACK: delta *= 0.95;\n");
 		//	delta *= 0.95;
 	}

@@ -89,13 +89,13 @@ void WhiteParams::InputFromMVN(const MVNDist& mvn)
 	}
 }
 
-void WhiteParams::Dump(const string indent) const
+void WhiteParams::Dump(ostream &os) const
 {
 	assert( (unsigned)nPhis == phis.size() );
 	for (unsigned i = 0; i < phis.size(); i++)
 	{
-		LOG << "WhiteNoiseModel::Phi_" << i + 1 << ": ";
-		phis[i].Dump();
+		os << "WhiteNoiseModel::Phi_" << i + 1 << ": ";
+		phis[i].Dump(os);
 	}
 }
 
@@ -104,6 +104,8 @@ void WhiteParams::Dump(const string indent) const
 
 void WhiteNoiseModel::Initialize(FabberRunData& args)
 {
+	NoiseModel::Initialize(args);
+
 	// White noise can have a pattern. This is represented as, e.g.
 	// 123123123... or 123456789ab123456789ab...
 	// Whatever the patter is, each distinct digit/letter defines

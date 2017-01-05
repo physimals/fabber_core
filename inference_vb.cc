@@ -89,7 +89,7 @@ PriorType::PriorType(int idx, string param_name, FabberRunData &data) :
 
 	if (m_type == 'I')
 	{
-		LOG << "PriorType::Reading Image prior (" << m_param_name << "): " << m_filename << endl;
+//		LOG << "PriorType::Reading Image prior (" << m_param_name << "): " << m_filename << endl;
 		m_image = data.GetVoxelData(m_filename).AsRow();
 	}
 }

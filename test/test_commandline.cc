@@ -203,6 +203,60 @@ TEST_F(ClTestTest, PolyModelNoMask)
 	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
 }
 
+// Test fabber will append a + to the output dir if it already exists
+TEST_F(ClTestTest, NoOverwrite)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "degree=2"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+
+	args = "--model=poly --output=out.tmp  --degree=1 --method=vb --noise=white ";
+		args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+	out = getLogfile("out.tmp+");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "degree=1"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+
+	system("rm -rf out.tmp+"); //Not portable!
+}
+
+// Test fabber will overwrite the output dir if it already exists with --overwrite
+TEST_F(ClTestTest, Overwrite)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "degree=2"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+
+	args = "--model=poly --output=out.tmp  --degree=1 --method=vb --noise=white ";
+		args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz --overwrite";
+
+	ASSERT_EQ(0, runFabber(args));
+	out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "degree=1"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+}
+
 TEST_F(ClTestTest, ListModels)
 {
 	string args = "--listmodels";

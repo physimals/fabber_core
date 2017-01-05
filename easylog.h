@@ -16,10 +16,20 @@
 #include <stdexcept>
 #include "assert.h"
 
-#define PRINTNOTE fprintf(stderr, "Note: %s line %d\n", __FILE__, __LINE__);
-
 /**
  * Use LOG just like you'd use cout.  (i.e. LOG << your_data << endl;)
+ * Your class must be derived from Loggable.
+ *
+ * If the log member variable m_log is not set, log output goes to stderr
+ */
+#define LOG ((m_log == 0) ? std::cerr : m_log->LogStream())
+#define LOG_ERR(x) ((void)((LOG<<x)))
+
+#define WARN_ONCE(x) if (m_log) m_log->WarnOnce(x)
+#define WARN_ALWAYS(x) if (m_log) m_log->WarnAlways(x)
+
+/**
+ * Sends logging information to an output stream
  *
  * StartLog() is used to tell the logger where to put the output - any log
  * calls made before this are stored in a temporary stringstream and then
@@ -28,29 +38,9 @@
  * If you want to dump variables directly to this stream, just implement
  * std::ostream& operator<<(std::ostream& stream, const your_type& data);
  */
-#define LOG (EasyLog::CurrentLog().LogStream())
-
-#define LOG_ERR(x) ((void)((LOG<<x)))
-
-#define WARN_ONCE(x) ((void)(EasyLog::CurrentLog().WarnOnce(x)))
-
-#define WARN_ALWAYS(x) ((void)(EasyLog::CurrentLog().WarnAlways(x)))
-
-/**
- * Sends logging information to an output stream
- *
- * The stream might be a file, a string buffer, or
- * stdout/stderr
- */
 class EasyLog
 {
 public:
-
-	/**
-	 * Return pointer to current log.
-	 */
-	static EasyLog& CurrentLog();
-
 	/**
 	 * Log output to an existing stream
 	 *
@@ -128,28 +118,25 @@ public:
 	void ReissueWarnings();
 
 private:
-	std::ostream* filestream;
+	std::ostream* stream;
 	std::stringstream templog;
 	std::string outDir;
 	std::map<std::string, int> warnCount;
-
-	// Thread-local loggers
-#ifdef _WIN32
-	static map<DWORD, EasyLog> s_logs;
-#else
-  #ifdef USE_PTHREADS
-	static map<pthread_t , EasyLog> s_logs;
-  #else
-	static EasyLog *s_log;
-  #endif
-#endif
 };
 
-// Other useful functions:
+class Loggable
+{
+public:
+	Loggable() : m_log(0) {}
+	EasyLog* GetLogger() const {return m_log;}
+	void SetLogger(EasyLog* log) {m_log = log;}
+protected:
+	EasyLog *m_log;
+};
 
-// Convert almost anything to a string
-#include <sstream>
-#include <stdexcept>
+/**
+ * Convert almost anything to a string
+ */
 template<typename type>
 inline std::string stringify(type from)
 {
@@ -159,7 +146,9 @@ inline std::string stringify(type from)
 	return s.str();
 }
 
-// output a vector<int>
+/**
+ * Output a vector<int>
+ */
 inline std::ostream& operator<<(std::ostream& out, std::vector<int> x)
 {
 	out << "[ ";

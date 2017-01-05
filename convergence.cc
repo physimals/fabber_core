@@ -27,8 +27,14 @@ ConvergenceDetector* ConvergenceDetector::NewFromName(const string& name)
 	return conv;
 }
 
+void ConvergenceDetector::Initialize(FabberRunData &params)
+{
+	m_log = params.GetLogger();
+}
+
 void CountingConvergenceDetector::Initialize(FabberRunData &params)
 {
+	ConvergenceDetector::Initialize(params);
 	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "CountingConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)
@@ -216,6 +222,8 @@ void TrialModeConvergenceDetector::DumpTo(ostream& out, const string indent) con
 
 void LMConvergenceDetector::Initialize(FabberRunData &params)
 {
+	ConvergenceDetector::Initialize(params);
+
 	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "LMConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)

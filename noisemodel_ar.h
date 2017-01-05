@@ -28,6 +28,7 @@ public:
 	{
 		return;
 	}
+
 	Ar1cMatrixCache(const Ar1cMatrixCache& from) :
 		alphaMarginals(from.alphaMarginals), alphaMatrices(from.alphaMatrices), nPhis(from.nPhis)
 	{
@@ -74,7 +75,7 @@ public:
 	virtual void InputFromMVN(const MVNDist& mvn);
 
 	// Human-readable debug output (dump internal state to LOG)
-	virtual void Dump(const string indent = "") const;
+	virtual void Dump(ostream &os) const;
 
 	// Constructor/destructor
 	Ar1cParams(int nAlpha, int nPhi) :

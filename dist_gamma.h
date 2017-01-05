@@ -11,7 +11,7 @@
 
 #include <math.h>
 
-class GammaDist
+class GammaDist : public Loggable
 {
 public:
 	GammaDist()
@@ -34,9 +34,9 @@ public:
 		b = v / m;
 		c = m / b;
 	}
-	void Dump(const string indent = "") const
+	void Dump(ostream &os) const
 	{
-		LOG << indent << "Noise stdev == " << 1.0 / sqrt(b * c) << " (b==" << b << ", c==" << c << ")" << endl;
+		os << "Noise stdev == " << 1.0 / sqrt(b * c) << " (b==" << b << ", c==" << c << ")" << endl;
 	}
 };
 

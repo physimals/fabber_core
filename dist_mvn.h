@@ -21,7 +21,7 @@
  *      one for each distinct pair of parameters and
  *      irrespective of order
  */
-class MVNDist
+class MVNDist : public Loggable
 {
 public:
 
@@ -31,7 +31,7 @@ public:
 	 * @param mvns One MVN for each voxel
 	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
 	 */
-	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data);
+	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data, EasyLog *log);
 
 	/**
 	 * Load a per-voxel vector of MVN distributions from run data
@@ -46,7 +46,7 @@ public:
 	 *            filename using the command line tool
 	 * @param data Options and voxel data
 	 */
-	static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData &data);
+	static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData &data, EasyLog *log);
 
 	/**
 	 * Save a per-voxel vector of MVN distributions.
@@ -75,7 +75,7 @@ public:
 	/**
 	 * Create distribution of known size
 	 */
-	MVNDist(int dim);
+	MVNDist(int dim, EasyLog *log=0);
 
 	/**
 	 * Copy constructor
@@ -90,7 +90,7 @@ public:
 	/**
 	 * Create from VEST file
 	 */
-	MVNDist(const string filename);
+	MVNDist(const string filename, EasyLog *log=0);
 
 	/**
 	 * Copy using a subset of another MVN distribution's parameters
@@ -179,12 +179,7 @@ public:
 	/**
 	 * Dump info to the default log
 	 */
-	void Dump(const string indent = "") const;
-
-	/**
-	 * Dump info to the specified output stream
-	 */
-	void DumpTo(ostream& out, const string indent = "") const;
+	void Dump(ostream &os) const;
 
 	/**
 	 * Load from VEST file
@@ -218,7 +213,7 @@ private:
 
 inline ostream& operator<<(ostream& out, const MVNDist& dist)
 {
-	dist.DumpTo(out);
+	dist.Dump(out);
 	return out;
 }
 

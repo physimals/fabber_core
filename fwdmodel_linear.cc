@@ -48,6 +48,7 @@ FwdModel* LinearFwdModel::NewInstance()
 
 void LinearFwdModel::Initialize(FabberRunData& args)
 {
+	FwdModel::Initialize(args);
 	string designFile = args.GetString("basis");
 	LOG << "LinearFwdModel::Reading design file: " << designFile << endl;
 	jacobian = read_vest(designFile);

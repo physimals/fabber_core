@@ -23,13 +23,11 @@ protected:
 	InferenceMethodTest()
 	{
 		FabberSetup::SetupDefaults();
-		EasyLog::CurrentLog().StartLog(".", true);
 	}
 
 	virtual ~InferenceMethodTest()
 	{
 		FabberSetup::Destroy();
-		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()

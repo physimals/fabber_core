@@ -11,6 +11,11 @@
 using namespace std;
 using NEWMAT::Matrix;
 
+void FabberIo::Initialize(FabberRunData &rundata)
+{
+	m_log = rundata.GetLogger();
+}
+
 FabberIoMemory::FabberIoMemory() :
 		m_nvoxels(-1), m_have_coords(false)
 {
@@ -18,6 +23,7 @@ FabberIoMemory::FabberIoMemory() :
 
 void FabberIoMemory::Initialize(FabberRunData &rundata)
 {
+	FabberIo::Initialize(rundata);
 }
 
 const NEWMAT::Matrix &FabberIoMemory::GetVoxelData(std::string key)

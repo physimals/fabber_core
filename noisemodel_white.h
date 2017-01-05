@@ -39,7 +39,7 @@ public:
 	virtual const MVNDist OutputAsMVN() const;
 	virtual void InputFromMVN(const MVNDist& mvn);
 
-	virtual void Dump(const string indent = "") const;
+	virtual void Dump(ostream &os) const;
 
 	WhiteParams(int N) :
 		nPhis(N), phis(N)

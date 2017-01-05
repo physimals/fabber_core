@@ -9,6 +9,7 @@
 #pragma once
 
 #include "fabber_io.h"
+#include "easylog.h"
 
 #include "newmat.h"
 
@@ -115,7 +116,7 @@ private:
  * The class will try to keep all it's voxel data consistent. Once any data is
  * obtained, subsequent per-voxel data sets must be of the correct size.
  */
-class FabberRunData
+class FabberRunData : public Loggable
 {
 public:
 
@@ -453,10 +454,7 @@ private:
 	 */
 	std::map<std::string, std::string> m_params;
 
-	/**
-	 * Used as default if none is supplied by the user
-	 */
-	FabberIoMemory m_default_io;
+	EasyLog m_default_log;
 };
 
 #ifdef DEPRECATED

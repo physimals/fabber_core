@@ -6,6 +6,8 @@
 
 /*  CCOPYRIGHT */
 
+#include "dataset.h"
+
 #include <newmatio.h>
 
 #include <math.h>
@@ -16,7 +18,7 @@
  *
  * Could add more functions.. e.g. initialGuess, domain of validity, etc.
  */
-class GenericFunction1D
+class GenericFunction1D: public Loggable
 {
 public:
 	/**
@@ -69,7 +71,7 @@ private:
  * @param atUpper Value of function at upper input
  * @return Next value to try
  */
-class Guesstimator
+class Guesstimator: public Loggable
 {
 public:
 	virtual double GetGuess(double lower, double upper, double atLower, double atUpper) = 0;
@@ -77,6 +79,8 @@ public:
 	{
 		return;
 	}
+protected:
+	EasyLog* m_log;
 };
 
 /**
@@ -87,7 +91,7 @@ class BisectionGuesstimator: public Guesstimator
 public:
 	virtual double GetGuess(double lower, double upper, double, double)
 	{
-		assert(lower<upper);
+		assert(lower < upper);
 		return (lower + upper) / 2;
 	}
 };
@@ -100,7 +104,7 @@ class LogBisectionGuesstimator: public Guesstimator
 public:
 	virtual double GetGuess(double lower, double upper, double, double)
 	{
-		assert(lower>0 && upper>lower);
+		assert(lower > 0 && upper > lower);
 		double guess = sqrt(lower * upper);
 		if (lower >= guess || guess >= upper)
 		{
@@ -118,7 +122,7 @@ class RiddlersGuesstimator: public Guesstimator
 public:
 	virtual double GetGuess(double lower, double upper, double atLower, double atUpper);
 	RiddlersGuesstimator() :
-		halfDone(false)
+			halfDone(false)
 	{
 	}
 private:
@@ -164,15 +168,15 @@ public:
  * results.  Also note that the ratio tolerances current assume that the
  * X or Y value always positive -- otherwise it'll stop too early!
  */
-class ZeroFinder
+class ZeroFinder: public Loggable
 {
 public:
 	ZeroFinder(const GenericFunction1D& f) :
-		fcn(f), searchMin(-REALMAX), searchMax(REALMAX), searchGuess(0), searchScale(REALMAX), searchScaleGrowth(2),
-				maxEvaluations(1000000), tolX(REALMAX), tolY(REALMAX), ratioTolX(REALMAX), ratioTolY(REALMAX),
-				guesstimator(new BisectionGuesstimator()), verbosity(2)
+			fcn(f), searchMin(-REALMAX), searchMax(REALMAX), searchGuess(0), searchScale(REALMAX), searchScaleGrowth(2), maxEvaluations(
+					1000000), tolX(REALMAX), tolY(REALMAX), ratioTolX(REALMAX), ratioTolY(REALMAX), guesstimator(
+					new BisectionGuesstimator()), verbosity(2)
 	{
-		return;
+		m_log = f.GetLogger();
 	}
 	/**
 	 * Return input value at which function is zero
@@ -226,7 +230,7 @@ public:
 	}
 	ZeroFinder& ScaleGrowth(double growth)
 	{
-		assert(growth>1);
+		assert(growth > 1);
 		searchScaleGrowth = growth;
 		return *this;
 	}
@@ -235,19 +239,19 @@ public:
 	 */
 	ZeroFinder& MaxEvaluations(int evals)
 	{
-		assert(evals>1);
+		assert(evals > 1);
 		maxEvaluations = evals;
 		return *this;
 	}
 	ZeroFinder& TolX(double tx)
 	{
-		assert(tx>0);
+		assert(tx > 0);
 		tolX = tx;
 		return *this;
 	}
 	ZeroFinder& TolY(double ty)
 	{
-		assert(ty>0);
+		assert(ty > 0);
 		tolY = ty;
 		return *this;
 	}
@@ -255,7 +259,7 @@ public:
 	//      { assert(rty>1); ratioTolY = rty; return *this; }
 	ZeroFinder& RatioTolX(double rtx)
 	{
-		assert(rtx>1);
+		assert(rtx > 1);
 		ratioTolX = rtx;
 		return *this;
 	}
@@ -296,7 +300,7 @@ class DescendingZeroFinder: public ZeroFinder
 {
 public:
 	DescendingZeroFinder(const GenericFunction1D& f) :
-		ZeroFinder(f)
+			ZeroFinder(f)
 	{
 		return;
 	}

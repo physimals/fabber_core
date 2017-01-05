@@ -12,12 +12,18 @@
 #ifndef __FABBER_IO_H
 #define __FABBER_IO_H
 
+#include "easylog.h"
+
 #include "newmat.h"
 
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <map>
+
+// Ugly forward declaration reflacting a circular dependency between
+// FabberIo and FabberRunData
+class FabberRunData;
 
 /**
  * Type of voxel data.
@@ -31,10 +37,6 @@ enum VoxelDataType
 {
 	VDT_SCALAR, VDT_MVN
 };
-
-// Ugly forward declaration reflacting a circular dependency between
-// FabberIo and FabberRunData
-class FabberRunData;
 
 /**
  * Thrown when data cannot be loaded from the specified location
@@ -70,7 +72,7 @@ public:
 /**
  * Abstract interface for loading and saving of voxel data
  */
-class FabberIo
+class FabberIo : public Loggable
 {
 public:
 	virtual ~FabberIo()
@@ -86,7 +88,7 @@ public:
 	 * FabberRunData will call this method as part of the Run() method before any data
 	 * requests are made.
 	 */
-	virtual void Initialize(FabberRunData &rundata) = 0;
+	virtual void Initialize(FabberRunData &rundata);
 
 	/**
 	 * Get voxel data for a given key.
@@ -135,7 +137,7 @@ public:
 	 *
 	 * @param key Voxel data to clear, or if not specified, clear all voxel data.
 	 */
-	virtual void ClearVoxelData(string key="") = 0;
+	virtual void ClearVoxelData(string key = "") = 0;
 };
 
 /**
@@ -150,7 +152,7 @@ public:
 	virtual const NEWMAT::Matrix &GetVoxelCoords();
 	virtual void SaveVoxelData(NEWMAT::Matrix &data, std::string key, VoxelDataType data_type);
 	virtual void GetExtent(vector<int> &extent, vector<float> &dims);
-	virtual void ClearVoxelData(string key="");
+	virtual void ClearVoxelData(string key = "");
 
 	/**
 	 * Set named voxel data
@@ -172,7 +174,6 @@ public:
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
 	void SetVoxelCoords(const NEWMAT::Matrix &coords);
-
 
 protected:
 	void CheckSize(std::string key, const NEWMAT::Matrix &mat);

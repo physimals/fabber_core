@@ -42,56 +42,19 @@ static bool is_dir(string path)
 		return false;
 	}
 }
-#ifdef _WIN32
-	map<DWORD, EasyLog> EasyLog::s_logs;
-#else
-  #ifdef USE_PTHREADS
-	map<pthread_t, EasyLog> EasyLog::s_logs;
-  #else
-	EasyLog *EasyLog::s_log=0;
-  #endif
-#endif
-
-EasyLog& EasyLog::CurrentLog()
-{
-#ifdef _WIN32
-	if (s_logs.count(GetCurrentThreadId()) == 0) {
-		s_logs[GetCurrentThreadId()] = EasyLog();
-	}
-	return s_logs[GetCurrentThreadId()];
-#else
-  #ifdef USE_PTHREADS
-	if (s_logs.count(pthread_self()) == 0) {
-		s_logs[pthread_self()] = EasyLog();
-	}
-	return s_logs[pthread_self()];
- #else
-	if (s_log) return *s_log;
-	else {
-		s_log = new EasyLog();
-		return *s_log;
-	}
-  #endif
-#endif
-}
 
 EasyLog::EasyLog() :
-		filestream(0), outDir("")
+		stream(0), outDir("")
 {
 }
 
 EasyLog::~EasyLog()
 {
-	// FIXME hack and not threadsafe
-	if (s_log) {
-		delete s_log;
-		s_log = NULL;
-	}
 }
 
 void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
 {
-	assert(filestream == NULL);
+	assert(stream == NULL);
 	assert(basename != "");
 	outDir = basename;
 
@@ -134,12 +97,12 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 		count++;
 	}
 
-	filestream = new ofstream((outDir + "/logfile").c_str());
+	stream = new ofstream((outDir + "/logfile").c_str());
 
-	if (!filestream->good())
+	if (!stream->good())
 	{
-		delete filestream;
-		filestream = NULL;
+		delete stream;
+		stream = NULL;
 		cout << "Cannot open logfile in " << outDir << endl;
 		throw runtime_error("Cannot open logfile!");
 	}
@@ -158,28 +121,22 @@ void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_late
 #endif
 
 	// Flush any temporary logging
-	*filestream << templog.str() << flush;
+	*stream << templog.str() << flush;
 }
 
 void EasyLog::StartLog(ostream& s)
 {
-	assert(filestream == NULL);
-	filestream = &s;
+	assert(stream == NULL);
+	stream = &s;
 	outDir = "";
 
 	// Flush any temporary logging
-	*filestream << templog.str() << flush;
-}
-
-const std::string& EasyLog::GetOutputDirectory()
-{
-	assert(filestream != NULL);
-	return outDir;
+	*stream << templog.str() << flush;
 }
 
 void EasyLog::StopLog(bool gzip)
 {
-	assert(filestream != NULL);
+	assert(stream != NULL);
 
 	if (outDir != "")
 	{
@@ -194,29 +151,34 @@ void EasyLog::StopLog(bool gzip)
 #endif
 		}
 		// We created this ofstream and need to tidy it up
-		delete filestream;
+		delete stream;
 	}
 
 	// Leave variables in consistent state in case
 	// somebody calls StartLog() again
-	filestream = NULL;
+	stream = NULL;
 	outDir = "";
 }
 
 bool EasyLog::LogStarted()
 {
-	return filestream != NULL;
+	return stream != NULL;
+}
+
+const string& EasyLog::GetOutputDirectory()
+{
+	return outDir;
 }
 
 std::ostream& EasyLog::LogStream()
 {
-	if (filestream == NULL)
+	if (stream == NULL)
 	{
 		return templog;
 	}
 	else
 	{
-		return *filestream;
+		return *stream;
 	}
 }
 

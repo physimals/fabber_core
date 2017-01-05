@@ -54,6 +54,7 @@ void InferenceTechnique::UsageFromName(const string& name, std::ostream &stream)
 
 void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
+	m_log = args.GetLogger();
 	// Set forward model.
 	model = fwd_model;
 	m_num_params = model->NumParams();
@@ -272,7 +273,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 
 	if (paramFilename == "")
 	{
-		MVNDist::Load(resultMVNs, "continue-from-mvn", allData);
+		MVNDist::Load(resultMVNs, "continue-from-mvn", allData, m_log);
 	}
 	else
 	{
@@ -308,7 +309,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 
 		//load in the MVN
 		vector<MVNDist*> MVNfile;
-		MVNDist::Load(MVNfile, "continue-from-mvn", allData);
+		MVNDist::Load(MVNfile, "continue-from-mvn", allData, m_log);
 
 		// Get defaults from the model. The prior is not used, the posterior is used
 		// if we don't have a posterior for a parameter in the file

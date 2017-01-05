@@ -179,9 +179,10 @@ FabberRunData::FabberRunData(FabberIo *io, bool compat_options) :
 {
 	// If no IO module is given, use the built in default
 	// although this will render the object fairly useless
+	// FIXME leak
 	if (!m_io)
 	{
-		m_io = &m_default_io;
+		m_io = new FabberIoMemory();
 	}
 
 	init(compat_options);
@@ -222,6 +223,10 @@ void FabberRunData::Run(ProgressCheck *progress)
 	if (!m_io)
 		throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
+	if (!m_log) {
+		m_log = &m_default_log;
+	}
+
 	m_progress = progress;
 	LOG << "FabberRunData::FABBER release v" << GetVersion() << endl;
 	LOG << "FabberRunData::Revision " << GetRevision() << endl;
@@ -238,14 +243,19 @@ void FabberRunData::Run(ProgressCheck *progress)
 
 	//Set the forward model
 	std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(GetString("model")));
+
+	// For backwards compatibility - model may not have called superclass initialize
+	fwd_model->SetLogger(m_log);
+
 	fwd_model->Initialize(*this);
+
 	assert(fwd_model->NumParams() > 0);
 	LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
 	// Write the paramnames.txt file if required
 	if (GetBool("dump-param-names"))
 	{
-		ofstream paramFile((EasyLog::CurrentLog().GetOutputDirectory() + "/paramnames.txt").c_str());
+		ofstream paramFile((GetStringDefault("output", ".") + "/paramnames.txt").c_str());
 		vector<string> paramNames;
 		fwd_model->NameParams(paramNames);
 		for (unsigned i = 0; i < paramNames.size(); i++)

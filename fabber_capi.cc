@@ -174,6 +174,8 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
 
 int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 {
+	EasyLog log;
+
 	if (!fab)
 		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
 	if (!log_buf)
@@ -183,47 +185,47 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 
         int ret=0;
 	FabberRunData* rundata = (FabberRunData*) fab;
-	stringstream log;
+	stringstream logstr;
 	try
 	{
-		EasyLog::CurrentLog().StartLog(log);
+		log.StartLog(logstr);
 		rundata->Run();
-		EasyLog::CurrentLog().ReissueWarnings();
+		log.ReissueWarnings();
 	} catch (const DataNotFound& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Data not found:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Data not found:\n  " << e.what() << endl;
 		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (const Invalid_option& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Invalid_option exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (const exception& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("STL exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "STL exception caught in fabber:\n  " << e.what() << endl;
 		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (NEWMAT::Exception& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("NEWMAT exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
 		ret = fabber_err(FABBER_ERR_NEWMAT, e.what(), err_buf);
 	} catch (...)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Some other exception caught in fabber!" << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Some other exception caught in fabber!" << endl;
 		ret = fabber_err(FABBER_ERR_FATAL, "Unrecognized exception", err_buf);
 	}
 
-	EasyLog::CurrentLog().StopLog();
+	log.StopLog();
 
 	if (log_bufsize < 0)
 		return fabber_err(FABBER_ERR_FATAL, "Log buffer size is < 0", err_buf);
 	if (log_bufsize > 0 && !log_buf)
 		return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
 
-	strncpy(log_buf, log.str().c_str(), log_bufsize - 1);
+	strncpy(log_buf, logstr.str().c_str(), log_bufsize - 1);
 	log_buf[log_bufsize - 1] = '\0';
 
 	return ret;

@@ -1,7 +1,5 @@
 #include "Update_deformation.h"
 
-#include "easylog.h"
-
 #include <newmatio.h>
 #include "warpfns/warpfns.h"
 #include "newimage/newimageall.h"

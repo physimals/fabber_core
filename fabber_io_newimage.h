@@ -37,6 +37,7 @@ private:
 	void SetVoxelCoordsFromExtent(int nx, int ny, int nz);
 	NEWIMAGE::volume<float> m_mask;
 	bool m_have_mask;
+	std::string m_outdir;
 };
 
 #endif /* NO_NEWIMAGE */

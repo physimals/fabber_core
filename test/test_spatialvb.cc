@@ -54,6 +54,7 @@ protected:
 	{
 		io.SetVoxelCoords(voxelCoords);
 		rundata->Set("noise", "white");
+		rundata->SetLogger(&log);
 		svb->Initialize(model, *rundata);
 	}
 
@@ -62,6 +63,7 @@ protected:
 	FabberRunData *rundata;
 	FwdModel *model;
 	PublicVersion *svb;
+	EasyLog log;
 };
 
 // Tests the CalcNeighbours method for a single voxel

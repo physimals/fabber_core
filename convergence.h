@@ -15,7 +15,7 @@
 /**
  * Abstract base class for method of testing whether the free energy maximisation algorithm has converged.
  */
-class ConvergenceDetector
+class ConvergenceDetector : public Loggable
 {
 public:
 	static ConvergenceDetector *NewInstance();
@@ -25,7 +25,7 @@ public:
 	/**
 	 * Initialize from run parameters
 	 */
-	virtual void Initialize(FabberRunData &params)=0;
+	virtual void Initialize(FabberRunData &params);
 
 	/**
 	 * The key method. Called before iteration with the current free energy

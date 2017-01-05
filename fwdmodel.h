@@ -25,11 +25,11 @@
 #include <string>
 #include <vector>
 
-class FwdModel
+class FwdModel : public Loggable
 {
 public:
 
-	static void LoadFromDynamicLibrary(std::string filename);
+	static void LoadFromDynamicLibrary(std::string filename, EasyLog *log=0);
 
 	/**
 	 * Static member function to return the names of all known
@@ -76,7 +76,7 @@ public:
 	 * 
 	 * @param args Configuration parameters.
 	 */
-	virtual void Initialize(FabberRunData& args) = 0;
+	virtual void Initialize(FabberRunData& args);
 
 	/**
 	 * How many parameters in the model? 
@@ -210,7 +210,7 @@ public:
 	/**
 	 * Indicies of parameters to which ARD should be applied
 	 */
-	vector<int> ardindices;
+	std::vector<int> ardindices;
 
 	virtual ~FwdModel()
 	{

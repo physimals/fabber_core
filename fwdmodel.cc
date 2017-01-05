@@ -10,8 +10,11 @@
 
 #include "easylog.h"
 
+#include <string>
 #include <sstream> 
 #include <memory>
+
+using namespace std;
 
 typedef int (*GetNumModelsFptr)(void);
 typedef const char* (*GetModelNameFptr)(int);
@@ -24,7 +27,7 @@ typedef NewInstanceFptr (*GetNewInstanceFptrFptr)(const char *);
   #define GETSYMBOL GetProcAddress
   #define GETERROR GetLastErrorAsString
 
-std::string GetLastErrorAsString()
+string GetLastErrorAsString()
 {
 	//Get the error message, if any.
 	DWORD errorMessageID = ::GetLastError();
@@ -48,13 +51,13 @@ std::string GetLastErrorAsString()
   #define GETERROR dlerror
 #endif
 
-void FwdModel::LoadFromDynamicLibrary(std::string filename)
+void FwdModel::LoadFromDynamicLibrary(std::string filename, EasyLog *log)
 {
 	FwdModelFactory* factory = FwdModelFactory::GetInstance();
 	GetNumModelsFptr get_num_models;
 	GetModelNameFptr get_model_name;
 	GetNewInstanceFptrFptr get_new_instance_fptr;
-	LOG << "Loading dynamic models from " << filename << endl;
+    if (log) log->LogStream() << "Loading dynamic models from " << filename << endl;
 
 #ifdef _WIN32
 	HINSTANCE libptr = LoadLibrary(filename.c_str());
@@ -85,7 +88,7 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename)
 	}
 
 	int num_models = get_num_models();
-	LOG << "Loading " << num_models << " models" << endl;
+	if (log) log->LogStream() << "Loading " << num_models << " models" << endl;
 	for (int i = 0; i < num_models; i++)
 	{
 		const char *model_name = get_model_name(i);
@@ -95,7 +98,7 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename)
 		}
 		else
 		{
-			LOG << "Loading model " << model_name << endl;
+			if (log) log->LogStream() << "Loading model " << model_name << endl;
 			NewInstanceFptr new_instance_fptr = get_new_instance_fptr(model_name);
 			if (!new_instance_fptr)
 			{
@@ -122,6 +125,11 @@ FwdModel* FwdModel::NewFromName(const string& name)
 		throw Invalid_option("Unrecognized forward model --model: " + name);
 	}
 	return model;
+}
+
+void FwdModel::Initialize(FabberRunData& args)
+{
+	m_log = args.GetLogger();
 }
 
 void FwdModel::UsageFromName(const string& name, std::ostream &stream)

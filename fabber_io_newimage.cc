@@ -15,23 +15,23 @@ using namespace std;
 using namespace NEWIMAGE;
 using NEWMAT::Matrix;
 
-static void DumpVolumeInfo(const volume4D<float>& info, ostream& out = LOG)
+static void DumpVolumeInfo(const volume4D<float>& info, ostream& out)
 {
-	LOG << "FabberIoNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
+	out << "FabberIoNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
 			<< ", vols=" << info.tsize() << endl;
-	LOG << "FabberIoNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
+	out << "FabberIoNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
 			<< "mm, TR=" << info.tdim() << " sec\n";
-	LOG << "FabberIoNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
+	out << "FabberIoNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
 			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
-static void DumpVolumeInfo(const volume<float>& info, ostream& out = LOG)
+static void DumpVolumeInfo(const volume<float>& info, ostream& out)
 {
-	LOG << "FabberIoNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
+	out << "FabberIoNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
 			<< ", vols=1" << endl;
-	LOG << "FabberIoNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
+	out << "FabberIoNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
 			<< "mm, TR=1" << " sec\n";
-	LOG << "FabberIoNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
+	out << "FabberIoNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
 			<< info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
@@ -42,13 +42,20 @@ FabberIoNewimage::FabberIoNewimage() :
 
 void FabberIoNewimage::Initialize(FabberRunData &rundata)
 {
+	FabberIoMemory::Initialize(rundata);
+
+	// Output files to same dir as log if configured, otherwise to current dir
+	m_outdir = "";
+	if (m_log) m_log->GetOutputDirectory();
+	if (m_outdir == "") m_outdir=".";
+
 	string mask_filename = rundata.GetStringDefault("mask", "");
 	if (mask_filename != "")
 	{
 		LOG_ERR("FabberIoNewimage::Loading mask data from '" + mask_filename << "'" << endl);
 		read_volume(m_mask, mask_filename);
 		m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
-		DumpVolumeInfo(m_mask);
+		DumpVolumeInfo(m_mask, LOG);
 		m_have_mask = true;
 		SetVoxelCoordsFromExtent(m_mask.xsize(), m_mask.ysize(), m_mask.zsize());
 	}
@@ -91,7 +98,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 		{
 			throw DataLoadError(filename);
 		}
-		DumpVolumeInfo(vol);
+		DumpVolumeInfo(vol, LOG);
 
 		if (!m_have_coords)
 			SetVoxelCoordsFromExtent(vol.xsize(), vol.ysize(), vol.zsize());
@@ -144,11 +151,8 @@ void FabberIoNewimage::SaveVoxelData(NEWMAT::Matrix &data, string filename, Voxe
 	output.set_intent(nifti_intent_code, 0, 0, 0);
 	output.setDisplayMaximumMinimum(output.max(), output.min());
 
-	// FIXME need to use logger to get outdir as this does the ++ appending, however
-	// this assumes use of CL tool and log to file
-	string outDir = EasyLog::CurrentLog().GetOutputDirectory();
-	if (outDir != "")
-		filename = outDir + "/" + filename;
+	if (m_outdir != "")
+		filename = m_outdir + "/" + filename;
 	save_volume4D(output, filename);
 }
 

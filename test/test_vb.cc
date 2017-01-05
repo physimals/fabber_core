@@ -28,13 +28,12 @@ class VbTest: public ::testing::TestWithParam<string>
 protected:
 	VbTest() : rundata(&io)
 	{
-		EasyLog::CurrentLog().StartLog(".", true);
+		rundata.SetLogger(&log);
 	}
 
 	virtual ~VbTest()
 	{
 		FabberSetup::Destroy();
-		EasyLog::CurrentLog().StopLog();
 	}
 
 	virtual void SetUp()
@@ -52,6 +51,8 @@ protected:
 
 	void Run()
 	{
+		io.Initialize(rundata);
+
 		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata.GetString("model")));
 		fwd_model->Initialize(rundata);
 
@@ -67,6 +68,7 @@ protected:
 		vb->Initialize(model, rundata);
 	}
 
+	EasyLog log;
 	NEWMAT::Matrix voxelCoords;
 	FabberIoNewimage io;
 	FabberRunData rundata;

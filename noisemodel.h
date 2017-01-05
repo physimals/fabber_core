@@ -35,7 +35,7 @@ public:
 	/**
 	 * Dump human-readable debug output to default LOG
 	 */
-	virtual void Dump(const string indent = "") const = 0;
+	virtual void Dump(ostream &os) const = 0;
 
 	virtual ~NoiseParams()
 	{
@@ -50,7 +50,7 @@ public:
  *
  * FIXME unclear why params need to be separate?
  */
-class NoiseModel
+class NoiseModel : public Loggable
 {
 
 public:
@@ -73,9 +73,7 @@ public:
 	 *
 	 * @param args Configuration parameters.
 	 */
-	virtual void Initialize(FabberRunData& args)
-	{
-	}
+	virtual void Initialize(FabberRunData& args);
 
 	/**
 	 * Create a new identical copy of this object (e.g. for spatial vb)

@@ -48,6 +48,7 @@ static void Usage()
  */
 int execute(int argc, char** argv)
 {
+	EasyLog log;
 	bool gzLog = false;
 	int ret = 1;
 
@@ -56,12 +57,13 @@ int execute(int argc, char** argv)
 		// Create a new Fabber run
 		FabberIoNewimage io;
 		FabberRunData params(&io);
+		params.SetLogger(&log);
 		params.Parse(argc, argv);
 
 		string load_models = params.GetStringDefault("loadmodels", "");
 		if (load_models != "")
 		{
-			FwdModel::LoadFromDynamicLibrary(load_models);
+			FwdModel::LoadFromDynamicLibrary(load_models, &log);
 		}
 
 		// Print usage information if no arguments given, or
@@ -115,14 +117,13 @@ int execute(int argc, char** argv)
 		cout << "Welcome to FABBER v" << FabberRunData::GetVersion() << endl;
 		cout << "----------------------" << endl;
 
-		EasyLog::CurrentLog().StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"),
-				params.GetBool("link-to-latest"));
-		cout << "Logfile started: " << EasyLog::CurrentLog().GetOutputDirectory() << "/logfile" << endl;
+		log.StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"), params.GetBool("link-to-latest"));
+		cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;
 
 		PercentProgressCheck percent;
 		params.Run(&percent);
 
-		EasyLog::CurrentLog().ReissueWarnings();
+		log.ReissueWarnings();
 
 		// Only Gzip the logfile if we exit normally
 		gzLog = params.GetBool("gzip-log");
@@ -130,42 +131,41 @@ int execute(int argc, char** argv)
 
 	} catch (const DataNotFound& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Data not found:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Data not found:\n  " << e.what() << endl;
 		cerr << "Data not found:\n  " << e.what() << endl;
 	} catch (const Invalid_option& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Invalid_option exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 		cerr << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 	} catch (const exception& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("STL exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "STL exception caught in fabber:\n  " << e.what() << endl;
 		cerr << "STL exception caught in fabber:\n  " << e.what() << endl;
 	} catch (NEWMAT::Exception& e)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("NEWMAT exception caught in fabber:\n  " << e.what() << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
 		cerr << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
 	} catch (...)
 	{
-		EasyLog::CurrentLog().ReissueWarnings();
-		LOG_ERR("Some other exception caught in fabber!" << endl);
+		log.ReissueWarnings();
+		log.LogStream() << "Some other exception caught in fabber!" << endl;
 		cerr << "Some other exception caught in fabber!" << endl;
 	}
 
-	if (EasyLog::CurrentLog().LogStarted())
+	if (log.LogStarted())
 	{
-		cout << endl << "Final logfile: " << EasyLog::CurrentLog().GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile")
-				<< endl;
-		EasyLog::CurrentLog().StopLog(gzLog);
+		cout << endl << "Final logfile: " << log.GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile") << endl;
+		log.StopLog(gzLog);
 	}
 	else
 	{
 		// Flush any errors to stdout as we didn't get as far as starting the logfile
-		EasyLog::CurrentLog().StartLog(cout);
-		EasyLog::CurrentLog().StopLog();
+		log.StartLog(cout);
+		log.StopLog();
 	}
 	return ret;
 }

@@ -39,6 +39,11 @@ double gammaln(double x)
 	return log(series(1) * total / x) + (x + 0.5) * log(x + 5.5) - x - 5.5;
 }
 
+void NoiseModel::Initialize(FabberRunData& args)
+{
+	m_log = args.GetLogger();
+}
+
 // ARD stuff
 double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const
 {

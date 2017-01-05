@@ -37,6 +37,7 @@ string PolynomialFwdModel::ModelVersion() const
 
 void PolynomialFwdModel::Initialize(FabberRunData& args)
 {
+	FwdModel::Initialize(args);
 	m_degree = convertTo<int> (args.GetString("degree"));
 }
 

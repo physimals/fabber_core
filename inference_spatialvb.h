@@ -8,7 +8,7 @@
 
 #include "inference_vb.h"
 
-class CovarianceCache
+class CovarianceCache : public Loggable
 {
 public:
 

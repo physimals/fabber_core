@@ -26,11 +26,18 @@ int main(int argc, char** argv)
 {
 	try
 	{
+		EasyLog log;
+		log.StartLog(cout);
 		cout << "FABBER: MVNtool" << endl;
 
 		FabberIoNewimage io;
 		FabberRunData args(&io);
+		args.SetLogger(&log);
 		args.Parse(argc, argv);
+
+		// MVN tool uses a different argument for the main
+		// data, set the 'data' option to match
+		args.Set("data", args.GetString("input"));
 
 		if ((argc == 1) || args.ReadBool("help"))
 		{
@@ -38,7 +45,6 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		EasyLog::CurrentLog().StartLog(cout);
 		io.Initialize(args);
 
 		/* parse command line arguments*/
@@ -236,7 +242,7 @@ int main(int argc, char** argv)
 		if (verbose)
 			cout << "Read file" << endl;
 		vector<MVNDist*> vmvnin;
-		MVNDist::Load(vmvnin, "input", args);
+		MVNDist::Load(vmvnin, "input", args, &log);
 
 		if (ins | write)
 		{

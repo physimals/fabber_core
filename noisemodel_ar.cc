@@ -48,6 +48,8 @@ NoiseModel* Ar1cNoiseModel::NewInstance()
 
 void Ar1cNoiseModel::Initialize(FabberRunData& args)
 {
+	NoiseModel::Initialize(args);
+
 	string nPhisString = args.GetStringDefault("num-echoes", "(default)");
 	if (nPhisString == "(default)")
 	{
@@ -450,44 +452,14 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams& noise, const NoiseParam
 	return F;
 }
 
-/*void Ar1cNoiseModel::Dump(const string indent) const
- {
- LOG << indent << "AR(1)c noise model\n";
-
- DumpPrior(indent + "  ");
- DumpPosterior(indent + "  ");
- }*/
-
-/*void Ar1cNoiseModel::DumpPrior(const string indent) const
- {
- if (prior)
- {
- LOG << indent << "Prior distribution:\n";
- prior->Dump(indent + "  ");
- }
- else
- LOG << indent << "Prior distribution == NULL";
- }*/
-
-/*void Ar1cNoiseModel::DumpPosterior(const string indent) const
- {
- if (posterior)
- {
- LOG << indent << "Posterior distribution:\n";
- posterior->Dump(indent + "  ");
- }
- else
- LOG << indent << "Posterior distribution == NULL";
- }*/
-
-void Ar1cParams::Dump(const string indent) const
+void Ar1cParams::Dump(ostream &os) const
 {
-	LOG << indent << "Alpha:" << endl;
-	alpha.Dump(indent + "  ");
+	os << "Alpha:" << endl;
+	alpha.Dump(os);
 	for (unsigned int i = 0; i < phis.size(); i++)
 	{
-		LOG << indent << "Phi_" << i + 1 << ": ";
-		phis[i].Dump();
+		os << "Phi_" << i + 1 << ": ";
+		phis[i].Dump(os);
 	}
 }
 

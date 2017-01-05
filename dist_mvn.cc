@@ -19,13 +19,13 @@ using MISCMATHS::read_vest;
 // Constructors
 
 MVNDist::MVNDist()
+  : m_size(-1), precisionsValid(false), covarianceValid(false)
 {
-	m_size = -1;
-	precisionsValid = covarianceValid = false;
 }
 
-MVNDist::MVNDist(int dim)
+MVNDist::MVNDist(int dim, EasyLog *log)
 {
+	m_log = log;
 	m_size = -1;
 	SetSize(dim);
 }
@@ -36,14 +36,16 @@ MVNDist::MVNDist(const MVNDist& from)
 	*this = from;
 }
 
-MVNDist::MVNDist(const string filename)
+MVNDist::MVNDist(const string filename, EasyLog *log)
 {
+	m_log = log;
 	m_size = -1;
 	LoadVest(filename);
 }
 
 MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
 {
+	m_log = from1.m_log;
 	m_size = from1.m_size + from2.m_size;
 	means = from1.means & from2.means;
 	precisionsValid = false;
@@ -68,6 +70,8 @@ const MVNDist& MVNDist::operator=(const MVNDist& from)
 	// Special case: assignment to self (is a no-op)
 	if (&from == this)
 		return *this;
+
+	m_log = from.m_log;
 
 	// Special case: assigned from an uninitialized MVNDist
 	if (from.m_size == -1)
@@ -240,24 +244,19 @@ void MVNDist::SetCovariance(const SymmetricMatrix& from)
 	assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Dump(const string indent) const
+void MVNDist::Dump(ostream& out) const
 {
-	DumpTo(LOG, indent);
-}
-
-void MVNDist::DumpTo(ostream& out, const string indent) const
-{
-	out << indent << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
+	out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
 			<< ", covarianceValid == " << covarianceValid << endl;
-	out << indent << "  Means: " << means.t();
+	out << "  Means: " << means.t();
 	if (precisionsValid || covarianceValid)
 	{
-		out << indent << "  Covariance matrix:" << endl;
+		out << "  Covariance matrix:" << endl;
 		for (int i = 1; i <= m_size; i++)
-			out << indent << "  " << GetCovariance().Row(i);
+			out << "  " << GetCovariance().Row(i);
 	}
 	else
-		out << indent << "  Covariance undefined." << endl;
+		out << "  Covariance undefined." << endl;
 
 	assert(means.Nrows() == m_size);
 }
@@ -288,10 +287,10 @@ void MVNDist::LoadVest(const string& filename)
 	assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data)
+void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData &data, EasyLog *log)
 {
 	Matrix voxel_data;
-	LOG << "MVNDist::Reading MVNs from " << filename << endl;
+	//log->LogStream() << "MVNDist::Reading MVNs from " << filename << endl;
 
 	// Input matrix contains 3d voxels with the
 	// 4th dimension containing the covariances
@@ -300,10 +299,10 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
 	// a matrix whose columns are the voxels
 	// and rows are the data
 	voxel_data = data.GetVoxelData(filename);
-	MVNDist::Load(mvns, voxel_data);
+	MVNDist::Load(mvns, voxel_data, log);
 }
 
-void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
+void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 {
 	// Prepare an output vector of the correct size
 	const int nVoxels = voxel_data.Ncols();
@@ -326,13 +325,12 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data)
 
 	SymmetricMatrix tmp(nParams);
 
-
 	// Create a new MVN dist for each voxel,
 	// and set the covariances and the means from
 	// the data in the symmetric matrix
 	for (int vox = 1; vox <= nVoxels; vox++)
 	{
-		MVNDist *mvn = new MVNDist(nParams);
+		MVNDist *mvn = new MVNDist(nParams, log);
 
 		int index = 0;
 		for (int r = 1; r <= nParams; r++)

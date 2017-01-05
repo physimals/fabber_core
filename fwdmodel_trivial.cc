@@ -28,6 +28,7 @@ string TrivialFwdModel::ModelVersion() const
 
 void TrivialFwdModel::Initialize(FabberRunData& args)
 {
+	FwdModel::Initialize(args);
 }
 
 int TrivialFwdModel::NumParams() const
