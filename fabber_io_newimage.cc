@@ -43,11 +43,7 @@ FabberIoNewimage::FabberIoNewimage() :
 void FabberIoNewimage::Initialize(FabberRunData &rundata)
 {
 	FabberIoMemory::Initialize(rundata);
-
-	// Output files to same dir as log if configured, otherwise to current dir
-	m_outdir = "";
-	if (m_log) m_log->GetOutputDirectory();
-	if (m_outdir == "") m_outdir=".";
+	m_outdir=rundata.GetOutputDir();
 
 	string mask_filename = rundata.GetStringDefault("mask", "");
 	if (mask_filename != "")

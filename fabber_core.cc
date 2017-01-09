@@ -117,7 +117,7 @@ int execute(int argc, char** argv)
 		cout << "Welcome to FABBER v" << FabberRunData::GetVersion() << endl;
 		cout << "----------------------" << endl;
 
-		log.StartLog(params.GetStringDefault("output", "."), params.GetBool("overwrite"), params.GetBool("link-to-latest"));
+		log.StartLog(params.GetOutputDir());
 		cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;
 
 		PercentProgressCheck percent;

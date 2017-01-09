@@ -288,6 +288,25 @@ public:
 	double GetDoubleDefault(const std::string key, double def);
 
 	/**
+	 * Get the output directory for this run.
+	 *
+	 * This is derived from the value of the 'output' parameter.
+	 * However if this directory already exists and the 'overwrite'
+	 * boolean parameter is not set, then we append '+' to the
+	 * directory name until we obtain a unique directory, which
+	 * will then be created. If more than 50 such directories are
+	 * tried, give up and throw an exception
+	 *
+	 * If 'overwrite' is specified, we just use the directory specified
+	 * in the 'output' parameter regardless of whether it exists or
+	 * not. If it cannot be written to an exception is thrown.
+	 *
+	 * If 'output' is not set, "." is returned so output is written
+	 * to the working directory.
+	 */
+	std::string GetOutputDir();
+
+	/**
 	 * Save the specified voxel data
 	 *
 	 * If SetSaveFiles has been set to true, the specified data will be written
@@ -453,6 +472,8 @@ private:
 	 * Options as key/value pairs
 	 */
 	std::map<std::string, std::string> m_params;
+
+	std::string m_outdir;
 
 	EasyLog m_default_log;
 };

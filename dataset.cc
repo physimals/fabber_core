@@ -22,9 +22,35 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <errno.h>
+
+#ifdef _WIN32
+#include "direct.h"
+#else
+#include <sys/stat.h>
+#endif
 
 using namespace std;
 using namespace NEWMAT;
+
+static bool is_dir(string path)
+{
+#ifdef _WIN32
+	struct _stat s;
+	if (_stat(path.c_str(), &s) == 0)
+#else
+	struct stat s;
+	if (stat(path.c_str(), &s) == 0)
+#endif
+	{
+		return (s.st_mode & S_IFDIR);
+	}
+	else
+	{
+		// Does not exist, so not a directory...
+		return false;
+	}
+}
 
 std::ostream& operator<<(std::ostream& out, const OptionType value)
 {
@@ -223,7 +249,8 @@ void FabberRunData::Run(ProgressCheck *progress)
 	if (!m_io)
 		throw runtime_error("FabberRunData::Run - No data I/O object provided");
 
-	if (!m_log) {
+	if (!m_log)
+	{
 		m_log = &m_default_log;
 	}
 
@@ -256,7 +283,7 @@ void FabberRunData::Run(ProgressCheck *progress)
 	if (GetBool("dump-param-names"))
 	{
 		ofstream paramFile((GetStringDefault("output", ".") + "/paramnames.txt").c_str());
-		vector<string> paramNames;
+		vector < string > paramNames;
 		fwd_model->NameParams(paramNames);
 		for (unsigned i = 0; i < paramNames.size(); i++)
 		{
@@ -539,6 +566,77 @@ bool FabberRunData::ReadBool(std::string key)
 	return GetBool(key);
 }
 
+string FabberRunData::GetOutputDir()
+{
+	if (m_outdir != "")
+		return m_outdir;
+
+	string basename = GetStringDefault("output", "");
+	if (basename == "")
+	{
+		m_outdir = ".";
+		return m_outdir;
+	}
+	bool overwrite = GetBool("overwrite");
+
+	// From Wooly's utils/log.cc
+	int count = 0;
+	m_outdir = basename;
+	while (true)
+	{
+		if (count >= 50) // I'm using a lot for some things
+		{
+			throw std::runtime_error(
+					("Cannot create output directory (bad path, or too many + signs?): " + m_outdir).c_str());
+		}
+
+		// Clear errno so it can be inspected later; result is only meaningful if mkdir fails.
+		errno = 0;
+		int ret = 0;
+#ifdef _WIN32
+		ret = _mkdir(m_outdir.c_str());
+#else
+		ret = mkdir(m_outdir.c_str(), 0777);
+#endif
+
+		if (ret == 0)
+		{
+			// Success, directory created
+			break;
+		}
+		else if (overwrite)
+		{
+			if ((errno == EEXIST) && is_dir(m_outdir))
+			{
+				// If directory already exists -- that's fine.
+				break;
+			}
+			else
+			{
+				// Other error -- might be a problem!
+				throw std::runtime_error(
+						("Unexpected problem creating output directory in overwrite mode: " + m_outdir).c_str());
+			}
+		}
+		m_outdir += "+";
+		count++;
+	}
+
+#ifdef _WIN32
+#else
+	// Might be useful for jobs running on the queue:
+	system(("uname -a > " + m_outdir + "/uname.txt").c_str());
+
+	if (GetBool("link-to-latest"))
+	{
+		// try to make a link to the latest version. If this fails, it doesn't really matter.
+		system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
+	}
+#endif
+
+	return m_outdir;
+}
+
 ostream& operator<<(ostream& out, const FabberRunData& opts)
 {
 	for (map<string, string>::const_iterator i = opts.m_params.begin(); i != opts.m_params.end(); i++)
@@ -619,7 +717,7 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(std::string key, bool allowFil
 
 const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 {
-	vector<Matrix> dataSets;
+	vector < Matrix > dataSets;
 	int n = 1;
 	while (true)
 	{

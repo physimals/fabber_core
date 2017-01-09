@@ -52,73 +52,19 @@ EasyLog::~EasyLog()
 {
 }
 
-void EasyLog::StartLog(const string& basename, bool overwrite, bool link_to_latest)
+void EasyLog::StartLog(const string& outDir)
 {
 	assert(stream == NULL);
-	assert(basename != "");
-	outDir = basename;
-
-	// From Wooly's utils/log.cc
-	int count = 0;
-	while (true)
-	{
-		if (count >= 50) // I'm using a lot for some things
-		{
-			throw std::runtime_error(
-					("Cannot create directory (bad path, or too many + signs?):\n    " + outDir).c_str());
-		}
-
-		// Clear errno so it can be inspected later; result is only meaningful if mkdir fails.
-		errno = 0;
-		int ret = 0;
-
-#ifdef _WIN32
-		ret = _mkdir(outDir.c_str());
-#else
-		ret = mkdir(outDir.c_str(), 0777);
-#endif
-
-		if (ret == 0) // Success, directory created
-			break;
-		else if (overwrite)
-		{
-			if ((errno == EEXIST) && is_dir(outDir))
-			{
-				// If directory already exists -- that's fine.
-				break;
-			}
-			else
-				// Other error -- might be a problem!
-				throw std::runtime_error(
-						("Unexpected problem creating directory in --overwrite mode:\n    " + outDir).c_str());
-		}
-
-		outDir += "+";
-		count++;
-	}
+	assert(outDir != "");
 
 	stream = new ofstream((outDir + "/logfile").c_str());
-
 	if (!stream->good())
 	{
 		delete stream;
 		stream = NULL;
-		cout << "Cannot open logfile in " << outDir << endl;
+		cerr << "Cannot open logfile in " << outDir << endl;
 		throw runtime_error("Cannot open logfile!");
 	}
-
-#ifdef _WIN32
-#else
-	// Might be useful for jobs running on the queue:
-	system(("uname -a > " + outDir + "/uname.txt").c_str());
-
-	if (link_to_latest)
-	{
-		// try to make a link to the latest version
-		// If this fails, it doesn't really matter.
-		system(("ln -sfn '" + outDir + "' '" + basename + "_latest'").c_str());
-	}
-#endif
 
 	// Flush any temporary logging
 	*stream << templog.str() << flush;

@@ -55,14 +55,9 @@ public:
 	 *
 	 * The file will be called 'logfile'
 	 *
-	 * @param basename Name of a directory in which to put the logfile.
-	 * @param overwrite If true, will replace any existing log file in the
-	 *                  specified directory. If false, and the specified
-	 *                  directory already exists, a new directory will
-	 *                  be created with a '+' added to basename, e.g.
-	 *                  'out', 'out+', 'out++', etc...
+	 * @param outDir Name of a directory in which to put the logfile.
 	 */
-	void StartLog(const std::string& basename, bool overwrite, bool link_to_latest=false);
+	void StartLog(const std::string& outDir);
 
 	/**
 	 * Log output to an existing stream
