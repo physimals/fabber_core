@@ -45,8 +45,6 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		io.Initialize(args);
-
 		/* parse command line arguments*/
 		bool verbose = args.ReadBool("v");
 
@@ -61,7 +59,8 @@ int main(int argc, char** argv)
 		// to save files. MVNtool uses it for the output file. So no we've
 		// got it, we clear the value so it won't confuse libfabber when
 		// we get to save
-		args.Set("output", ".");
+		args.Unset("output");
+		io.Initialize(args);
 
 		bool ins;
 		bool write;
