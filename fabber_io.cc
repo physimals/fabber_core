@@ -191,7 +191,6 @@ void FabberIoCarray::SetExtent(int nx, int ny, int nz, const int *mask)
 	m_extent[0] = nx;
 	m_extent[1] = ny;
 	m_extent[2] = nz;
-	LOG << "FabberIoCarry: Extent is " << m_extent << endl;;
 }
 
 void FabberIoCarray::GetVoxelData(string key, float *data)

@@ -185,6 +185,7 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 
         int ret=0;
 	FabberRunData* rundata = (FabberRunData*) fab;
+	rundata->SetLogger(&log);
 	stringstream logstr;
 	try
 	{
@@ -367,12 +368,10 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 	}
 }
 
-int fabber_get_model_params(void *fab, const char *model_name, int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 {
 	if (!fab)
 		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-	if (!model_name || (strlen(model_name) == 0))
-		return fabber_err(FABBER_ERR_FATAL, "Model name is NULL or empty", err_buf);
 	if (out_bufsize < 0)
 		return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
 	if (!out_buf)
@@ -381,7 +380,7 @@ int fabber_get_model_params(void *fab, const char *model_name, int out_bufsize, 
 	try
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
-		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(model_name));
+		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
 		model->Initialize(*rundata);
 		vector<string> params;
 		model->NameParams(params);

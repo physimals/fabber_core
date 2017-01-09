@@ -175,6 +175,6 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_get_model_params(void *fab, const char *model, int out_bufsize, char *out_buf, char *err_buf);
+int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err_buf);
 
 }
