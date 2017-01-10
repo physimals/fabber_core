@@ -86,7 +86,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 		  CurrentDataView(slider=self.alphaSlider, cb=self.visibleCB, cmCombo=self.cmCombo, valueEdit=self.dataValueEdit, currentEdit=self.currentEdit),
 		]
 
-                self.views = [
+        self.views = [
 		  self.imdata,
                   ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
 		  ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn, mat_dialog=MatrixEditDialog()),
@@ -96,8 +96,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 		  ChooseFileView("fabber", changeBtn=self.execChangeBtn, edit=self.execEdit),
 		]
 		
-		self.openBtn.clicked.connect(self.open)
-		self.newBtn.clicked.connect(self.new)
+        self.openBtn.clicked.connect(self.open)
+        self.newBtn.clicked.connect(self.new)
 
 	def add_views(self):	
 		for view in self.views: self.fab.add_view(view)

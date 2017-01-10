@@ -18,31 +18,31 @@ class ModelMethodView(View):
         self.methodCombo.currentIndexChanged.connect(self.method_changed)
 
     def model_changed(self):
-        self.fab.set_option("model", self.modelCombo.currentText())
+        self.fab["model"] = self.modelCombo.currentText()
         
     def method_changed(self):
-        self.fab.set_option("method", self.methodCombo.currentText())
+        self.fab["method"] = self.methodCombo.currentText()
         
     def do_update(self):
         if self.fab.changed("fabber", "loadmodels"):
             self.modelCombo.clear()
-            self.models = FabberLib(self.fab).get_models()
+            self.models = FabberLib(rundata=self.fab).get_models()
             for model in self.models:
                 self.modelCombo.addItem(model)
         
             self.methodCombo.clear()
-            self.methods = FabberLib(self.fab).get_methods()
+            self.methods = FabberLib(rundata=self.fab).get_methods()
             for method in self.methods:
                 self.methodCombo.addItem(method)
                 
-        if self.fab.options.has_key("model"):
-            cmodel = self.fab.options["model"]
+        if self.fab["model"]:
+            cmodel = self.fab["model"]
             for idx, model in enumerate(self.models):
                 if cmodel == model:
                     self.modelCombo.setCurrentIndex(idx)
 
-        if self.fab.options.has_key("method"):
-            cmethod = self.fab.options["method"]
+        if self.fab["method"]:
+            cmethod = self.fab["method"]
             for idx, method in enumerate(self.methods):
                 if cmethod == method:
                     self.methodCombo.setCurrentIndex(idx)
@@ -89,14 +89,14 @@ class OptionView(View):
         if self.label.checkState() == QtCore.Qt.CheckState.Checked:
             self.changed()
         else:
-            self.fab.clear_option(self.key)
+            del self.fab[self.key]
         
     def changed(self):
-        self.fab.set_option(self.key, "")
+        self.fab[self.key] = ""
         
     def do_update(self):
         if not self.req:
-            if not self.fab.options.has_key(self.key):
+            if not self.key in self.fab:
                 self.label.setCheckState(QtCore.Qt.CheckState.Unchecked)
             else:
                 self.label.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -117,12 +117,12 @@ class IntegerOptionView(OptionView):
     
     def changed(self):
         val = str(self.sb.value())
-        self.fab.set_option(self.key, val)
+        self.fab[self.key] = val
         
     def do_update(self):
         OptionView.do_update(self)
-        if self.fab.options.has_key(self.key):
-            self.sb.setValue(int(self.fab.options[self.key]))
+        if self.key in self.fab:
+            self.sb.setValue(int(self.fab[self.key]))
 
     def add(self, grid, row):
         OptionView.add(self, grid, row)
@@ -139,12 +139,12 @@ class StringOptionView(OptionView):
         # Note that this signal is triggered when the widget
         # is enabled/disabled!
         if self.edit.isEnabled():
-            self.fab.set_option(self.key, self.edit.text())
+            self.fab[self.key] = self.edit.text()
 
     def do_update(self):
         OptionView.do_update(self)
-        if self.fab.options.has_key(self.key):
-            self.text = self.fab.options[self.key]
+        if self.key in self.fab:
+            self.text = self.fab[self.key]
             self.edit.setText(self.text)
         
     def add(self, grid, row):
@@ -264,7 +264,7 @@ OPT_VIEW = {
 }
 
 def get_option_view(opt, **kwargs):
-    if OPT_VIEW.has_key(opt["type"]):
+    if opt["type"] in OPT_VIEW:
         return OPT_VIEW[opt["type"]](opt, **kwargs)
     else:
         return OPT_VIEW[""](opt, **kwargs)
@@ -301,7 +301,7 @@ class OptionsView(View):
     def get_concrete_opts(self, base, suffix):
         vals = [0]
         concrete = []
-        for opt in self.fab.options.keys():
+        for opt in self.fab.keys():
             if opt.startswith(base) and opt.endswith(suffix):
                 try:
                     vals.append(int(opt[:len(opt) - len(suffix)][len(base):]))
@@ -341,7 +341,7 @@ class OptionsView(View):
     def do_update(self):
         if self.fab.changed("fabber"):
             self.clear()
-            self.opts, d = FabberLib(self.fab).get_options()
+            self.opts, d = FabberLib(rundata=self.fab).get_options()
             self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
             if len(self.opts) == 0:
                 msgBox = QMessageBox()
@@ -384,13 +384,13 @@ class ComponentOptionsView(OptionsView):
         self.value = ""
         
     def do_update(self):
-        value = self.fab.options.get(self.type,"")
+        value = self.fab.get(self.type,"")
         if self.fab.changed("fabber") or self.value != value:
             self.value = value
             self.clear()
             if self.value != "":
                 args = {self.type : self.value}
-                self.opts, self.desc = FabberLib(self.fab).get_options(**args)
+                self.opts, self.desc = FabberLib(rundata=self.fab).get_options(**args)
                 self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
                 self.title = "%s: %s" % (self.text, self.value)
                 self.create_views()
@@ -405,21 +405,21 @@ class ChooseFileView(View):
         self.changeBtn.clicked.connect(self.choose_file)
         
     def do_update(self):
-        if self.fab.options.has_key(self.opt):
-            self.edit.setText(self.fab.options[self.opt])
+        if self.opt in self.fab:
+            self.edit.setText(self.fab[self.opt])
 
     def choose_file(self):
         fname = QFileDialog.getOpenFileName()[0]
         if fname:
             self.edit.setText(fname)
-            self.fab.set_option(self.opt, fname)
+            self.fab[self.opt] = fname
 
 class FileView(View):
     def __init__(self, **kwargs):
         View.__init__(self, [], **kwargs)
         
-        self.runBtn.clicked.connect(self.run)
-        self.runQuickBtn.clicked.connect(self.run_quick)
+        if self.runBtn: self.runBtn.clicked.connect(self.run)
+        if self.runQuickBtn: self.runQuickBtn.clicked.connect(self.run_quick)
         self.saveBtn.clicked.connect(self.save)
         self.saveAsBtn.clicked.connect(self.save_as)
         self.changed = None
@@ -453,7 +453,7 @@ class FileView(View):
             self.changed = True
         
         self.saveBtn.setEnabled(self.changed)
-        self.runBtn.setEnabled(self.fab.options.has_key("data"))
-        self.runQuickBtn.setEnabled(self.fab.options.has_key("data"))
+        self.runBtn.setEnabled("data" in self.fab)
+        self.runQuickBtn.setEnabled("data" in self.fab)
         
         

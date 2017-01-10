@@ -1,5 +1,6 @@
 import sys, os
 import traceback
+import collections
 
 """ Fabber has been run """
 CH_RUN = "run"
@@ -7,9 +8,13 @@ CH_RUN = "run"
 from mvc import Model
 from fabber import DirectoryRun
 
-class FabberRunData(Model):
+class FabberRunData(Model, collections.MutableMapping):
     """
-    A fabber options file
+    Options for a Fabber run
+
+    Behaves like a dict but supports save to/load from file,
+    default values and keeps list of file lines separate
+    so comments can be preserved
     """
     def __init__(self, filename=None):
         Model.__init__(self, "fab")
@@ -26,25 +31,34 @@ class FabberRunData(Model):
         else: 
             self._init_default()
 
-    def set_option(self, key, value=""):
-        key, value = key.strip(), value.strip()
+        #self.update(dict(*args, **kwargs))  # use the free update to set keys
+
+    def __getitem__(self, key):
+        return self.options[key.strip()]
+
+    def __setitem__(self, key, value):
+        key = key.strip()
         if key == "": return
         if key not in self.options:
             self.filelines.append(key)
-        self.options[key] = value
-        self._dump(sys.stdout)
-        self._change(key)        
+        self.options[key] = value.strip()
+        self._change(key)
         self._update_views()
-       
-    def clear_option(self, key):
+
+    def __delitem__(self, key):
         key = key.strip()
         if key == "": return
         if key in self.options:
             del self.options[key]
             self.filelines.remove(key)
-        self._dump(sys.stdout)
         self._change(key)
         self._update_views()
+
+    def __iter__(self):
+        return iter(self.options)
+
+    def __len__(self):
+        return len(self.options)
         
     def set_file(self, f):
         """ Set the file. Do not parse, this is just used
@@ -59,13 +73,6 @@ class FabberRunData(Model):
     def get_filename(self):
         junk, fname = os.path.split(self.filepath)
         return fname
-        
-    def set_fabber(self, ex):
-        """
-        Set the fabber executable for use with this file
-        """
-        self.fabber.set_exec(ex)
-        self.set_option("fabber", ex)
   
     def get_runs(self):
         """
@@ -117,7 +124,6 @@ class FabberRunData(Model):
                 if len(kv) > 1: value = kv[1].strip()
                 else: value = ""
                 self.options[key] = value
-                
                 self.filelines.append(key)
                 
         fabfile.close()
@@ -136,45 +142,11 @@ class FabberRunData(Model):
         
         print(fpath)
         fab = open(fpath, "w")
-        self._dump(fab, mask=mask)
-        #self._dump(sys.stdout, mask=mask)
+        self.dump(fab, mask=mask)
+        #self.dump(sys.stdout, mask=mask)
         fab.close()
-     
-    def run(self, focus=None):
-        """
-        Run fabber. If focus specified, do a quick 1-voxel run at this point
-        """
-        if focus:
-            temp_mask = self._write_temp_mask(focus)
-            fpath = self.filepath + "_tmp"
-        else:
-            temp_mask = None
-            fpath = self.filepath
-        self.save(fpath=fpath, mask=temp_mask)
-        self.fabber.run(fpath)
-        
-        if focus:
-            os.remove(fpath)
-            os.remove(temp_mask)
-        
-        self._change(CH_RUN)        
-        self._update_views()        
-  
-    def _write_temp_mask(self, focus):
-        """
-        Something of a hack
-        """
-        main_data = nib.load(self.options["data"]).get_data()
-        mask_shape = main_data.shape[:3]
-        
-        fname = os.path.join(self.get_filedir(), "fabber_mask_temp.nii.gz")
-        mask_data = np.zeros(mask_shape)
-        mask_data[focus[0], focus[1], focus[2]] = 1
-        img = nib.Nifti1Image(mask_data, main_data.affine)
-        nib.save(img, fname)
-        return fname
 
-    def _dump(self, dev, mask=None):
+    def dump(self, dev, mask=None):
         for line in self.filelines:
             if len(line) == 0 or line[0] == "#":
                 dev.write(line)
@@ -186,17 +158,6 @@ class FabberRunData(Model):
                 else:
                     dev.write("%s=%s" % (line, self.options[line]))
             dev.write("\n")
-              
-#    def _write_quickrun_file(self, dir):
-#        """
-#        Write a little file which identifies a particular
-#        run as a 1-voxel test run
-#        
-#        FIXME not used
-#        """
-#        f = open(os.path.join(dir, "QUICKRUN.txt"), "wc")
-#        f.write("This data is from a 1-voxel test run\n")
-#        f.close()
            
     def _init_default(self):
         self.set_file("newfile.fab")

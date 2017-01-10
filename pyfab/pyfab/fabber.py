@@ -121,12 +121,13 @@ class FabberExec:
     Encapsulates a Fabber executable context and provides methods
     to query models and options and also run a file
     """
-    def __init__(self, rundata, ex=None):
-        self.rundata = rundata
+    def __init__(self, ex=None, model_libs=[]):
         if ex:
             self._ex = ex
         else:
             self._ex = self._find_fabber()
+
+        self.model_libs = model_libs
 
     def set_exec(self, ex):
         """
@@ -191,13 +192,13 @@ class FabberExec:
         #print opts
         return opts, desc
 
-    def run(self):
+    def run(self, rundata):
         """
         Run Fabber on the run data specified
         """
-        self.rundata.save()
-        workdir  = self.rundata.get_filedir()
-        cmd = [self._ex, "-f", self.rundata.filepath]
+        rundata.save()
+        workdir  = rundata.get_filedir()
+        cmd = [self._ex, "-f", rundata.filepath]
         #print(cmd)
         err = ""
         p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE, cwd=workdir)
@@ -212,7 +213,7 @@ class FabberExec:
                 raise Exception(err)
 
         # Hack to get the last run
-        return self.rundata.get_runs()[0]
+        return rundata.get_runs()[0]
 
     def _write_temp_mask(self):
         pass
@@ -245,6 +246,9 @@ class FabberExec:
 	    the location of the executable first
 	    """
         cmd = [self._ex] + list(opts)
+        for lib in self.model_libs:
+            cmd += " --loadmodels=%s" % lib
+
         print cmd
         try:
             p = sub.Popen(cmd, stdout=sub.PIPE)
@@ -278,66 +282,30 @@ class FabberLib:
     """
     Interface to Fabber in library mode using simplified C-API
     """
-    def __init__(self, rundata, lib="/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"):
-        self.rundata = rundata
-        self.lib = CDLL(lib)
+    def __init__(self, fabber_lib=None, models_lib=None, rundata=None):
+
+        self.fabber_lib = fabber_lib
+        if self.fabber_lib is None:
+            if rundata is not None and "fabber" in rundata:
+                self.fabber_lib = rundata["fabber"]
+            else:
+                self.fabber_lib = self._find_fabber_lib()
+
+        self.models_lib = models_lib
+        if self.models_lib is None and rundata is not None and "loadmodels" in rundata:
+            self.models_lib = rundata["loadmodels"]
 
         self.errbuf = create_string_buffer(255)
         self.outbuf = create_string_buffer(10000)
-        
-        # Signatures of the C functions                                                   
-        c_int_arr = npct.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
-        c_float_arr = npct.ndpointer(dtype=np.float32, ndim=1, flags='CONTIGUOUS')
-        
-        self.lib.fabber_new.argtypes = [c_char_p]
-        self.lib.fabber_new.restype = c_void_p
-        self.lib.fabber_load_models.argtypes = [c_void_p, c_char_p, c_char_p]
-        self.lib.fabber_set_extent.argtypes = [c_void_p, c_int, c_int, c_int, c_int_arr, c_char_p]
-        self.lib.fabber_set_opt.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
-        self.lib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
-        self.lib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
-        self.lib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
-        self.lib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
-        self.lib.fabber_destroy.argtypes = [c_void_p]
-     
-        self.lib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
-        self.lib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
-        self.lib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+        self._refresh()
 
-        self.handle = self.lib.fabber_new(self.errbuf)
-        if self.handle == 0:
-            raise Exception("Error creating fabber context (%s)" % self.errbuf.value)
-
-        if rundata.options.has_key("loadmodels"):
-            self._trycall(self.lib.fabber_load_models, self.handle, rundata.options["loadmodels"], self.errbuf)
-        for key, value in rundata.options.items():
-            print key, value
-            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
-
-    def __del__(self):
-        handle = getattr(self, "handle")
-        if handle is not None: self.lib.fabber_destroy(handle)
-
-    def _trycall(self, call, *args):
-        ret = call(*args)
-        if ret < 0:
-            raise Exception("Error in native code: %i (%s)" % (ret, self.errbuf.value))
-        else:
-            return ret
-
-    def run(self):
-        nx, ny, nz = -1, -1, -1
+    def run(self, rundata):
         mask = None
         data = {}
-        for key, value in self.rundata.options.items():
+        for key, value in rundata.items():
             try:
                 f = nib.load(value)
                 d = f.get_data()
-                if nx == -1:
-                    nx, ny, nz = d.shape[:3]
-                else:
-                    # Check consistent shape?
-                    pass
                 if key == "mask":
                     mask = d
                 else:
@@ -348,46 +316,82 @@ class FabberLib:
                 # Otherwise ignore, most options will not be data files
                 pass
 
-        return self.run_with_data(nx, ny, nz, mask, data, [])
+        return self.run_with_data(rundata, data, mask)
 
-    def run_with_data(self, nx, ny, nz, mask, data, output_items):
+    def run_with_data(self, rundata, data, mask=None):
         """
         Run fabber
 
-        :param nx: Data extent in x direction
-        :param ny: Data extent in y direction
-        :param nz: Data extent in z direction
         :param mask: Mask as Numpy array, or None if no mask
         :param data: Dictionary of data: string key, Numpy array value
         :param output_items: List of names of data items to return
         :return: Tuple of 1. Dictionary of output data, string key, Numpy array value and 2. log
         """
-        nv = nx*ny*nz
+        if not data.has_key("data"):
+            raise Exception("Main voxel data not provided")
+        s = data["data"].shape
+        nv = s[0]*s[1]*s[2]
 
         if mask is None: mask = np.ones(nv)
         # Make suitable for passing to int* c function
         mask = np.ascontiguousarray(mask.flatten(), dtype=np.int32)
 
-        self._trycall(self.lib.fabber_set_extent, self.handle, nx, ny, nz, mask, self.errbuf)
+        for key, value in rundata.items():
+            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
+        self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        params = self.outbuf.value.splitlines()
+
+        output_items = []
+        if "save-mean" in rundata:
+            output_items += ["mean_" + p for p in params]
+        if "save-std" in rundata:
+            output_items += ["std_" + p for p in params]
+        if "save-zstat" in rundata:
+            output_items += ["zstat_" + p for p in params]
+        if "save-noise-mean" in rundata:
+            output_items.append("noise_mean")
+        if "save-noise-std" in rundata:
+            output_items.append("noise_std")
+        if "save-free-energy" in rundata:
+            output_items.append("freeEnergy")
+        if "save-model-fit" in rundata:
+            output_items.append("modelfit")
+        if "save-residuals" in rundata:
+            output_items.append("residuals")
+        if "save-mvn" in rundata:
+            output_items.append("finalMVN")
+
+        self._trycall(self.lib.fabber_set_extent, self.handle, s[0], s[1], s[2], mask, self.errbuf)
         for key, item in data.items():
             if len(item.shape) == 3: size=1
             else: size = item.shape[3]
             item = np.ascontiguousarray(item.flatten(), dtype=np.float32)
             self._trycall(self.lib.fabber_set_data, self.handle, key, size, item, self.errbuf)
-                
-        self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
 
+        self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         retdata = {}
         for key in output_items:
             size = self._trycall(self.lib.fabber_get_data_size, self.handle, key, self.errbuf)
             arr = np.ascontiguousarray(np.empty(nv*size, dtype=np.float32))
             self._trycall(self.lib.fabber_get_data, self.handle, key, arr, self.errbuf)
-            arr = np.squeeze(arr.reshape([nx,ny,nz,size]))
+            arr = np.squeeze(arr.reshape([s[0], s[1], s[2], size]))
             retdata[key] = arr
 
         return LibRun(retdata, self.outbuf.value)
               
     def get_options(self, method=None, model=None):
+        """
+        Get known Fabber options
+
+        :param method: If specified, return options for this method
+        :param model: If specified, return options for this model
+
+        Only one of method and model should be specified. If neither are specified, generic
+        Fabber options are returned.
+
+        :return: Tuple of options, description. Options is a list of options, each in the form of a dictionary.
+        Description is a simple text description of the method or model
+        """
         if method:
             key = "method"
             value = method
@@ -417,7 +421,71 @@ class FabberLib:
         self._trycall(self.lib.fabber_get_models, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         return self.outbuf.value.splitlines()
 
-    def get_params(self, opts):
+    def get_model_params(self, rundata):
         """ Get the model parameters, given the specified options"""
+        for key, value in rundata.items():
+            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
+
         self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+
+        # Reset context because we have set options and don't want them affecting a later call to run()
+        self._refresh()
         return self.outbuf.value.splitlines()
+
+    def _find_fabber_lib(self):
+        fsldir = os.environ["FSLDIR"]
+        if fsldir:
+            return os.path.join(fsldir, "lib/libfabbercore_shared.so")
+        else:
+            raise Exception("FSLDIR not set, could not find Fabber library")
+
+    def __del__(self):
+        self._destroy_handle()
+
+    def _destroy_handle(self):
+        if hasattr(self, "handle"):
+            handle = getattr(self, "handle")
+            if handle is not None:
+                self.lib.fabber_destroy(handle)
+                self.handle = None
+
+    def _refresh(self):
+        """
+        This is required because currently there is no CAPI function to clear the rundata
+        of options
+        """
+        self._destroy_handle()
+        self.lib = CDLL(self.fabber_lib)
+
+        # Signatures of the C functions
+        c_int_arr = npct.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
+        c_float_arr = npct.ndpointer(dtype=np.float32, ndim=1, flags='CONTIGUOUS')
+
+        self.lib.fabber_new.argtypes = [c_char_p]
+        self.lib.fabber_new.restype = c_void_p
+        self.lib.fabber_load_models.argtypes = [c_void_p, c_char_p, c_char_p]
+        self.lib.fabber_set_extent.argtypes = [c_void_p, c_int, c_int, c_int, c_int_arr, c_char_p]
+        self.lib.fabber_set_opt.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
+        self.lib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
+        self.lib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
+        self.lib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
+        self.lib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+        self.lib.fabber_destroy.argtypes = [c_void_p]
+
+        self.lib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
+        self.lib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+        self.lib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+
+        self.handle = self.lib.fabber_new(self.errbuf)
+        if self.handle is None:
+            raise Exception("Error creating fabber context (%s)" % self.errbuf.value)
+
+        if self.models_lib is not None:
+            self._trycall(self.lib.fabber_load_models, self.handle, self.models_lib, self.errbuf)
+
+    def _trycall(self, call, *args):
+        ret = call(*args)
+        if ret < 0:
+            raise Exception("Error in native code: %i (%s)" % (ret, self.errbuf.value))
+        else:
+            return ret
