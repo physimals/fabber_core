@@ -59,7 +59,15 @@ class FabberRunData(Model, collections.MutableMapping):
 
     def __len__(self):
         return len(self.options)
-        
+
+    def add_comment(self, comment, option=None):
+        if option is None:
+            idx = 0
+        else:
+            idx = self.filelines.index(option)
+
+        self.filelines.insert(idx, "# %s" % str(comment))
+
     def set_file(self, f):
         """ Set the file. Do not parse, this is just used
             as part of 'save as' """
@@ -83,17 +91,14 @@ class FabberRunData(Model, collections.MutableMapping):
         It continues until it cannot find any more valid run directories.
         """
         runs = []
-        if not self.options.has_key("output"):
+        if "output" not in self.options:
             print("WARNING: No output dir set, cannot check for runs")
             return []
-        if not self.options.has_key("data"):
-            print("WARNING: No data, will not check for runs")
-            return []
-            
+
         outdir = self.options["output"]
         if not os.path.isabs(outdir):
             outdir = os.path.join(self.get_filedir(), outdir)
-        if self.options.has_key("overwrite"):
+        if "overwrite" in self.options:
             try:
                 runs.append(DirectoryRun(outdir))
             except:
@@ -146,18 +151,24 @@ class FabberRunData(Model, collections.MutableMapping):
         #self.dump(sys.stdout, mask=mask)
         fab.close()
 
-    def dump(self, dev, mask=None):
+    def dump(self, stream, mask=None):
+        """
+        Dump to an output stream
+
+        :param stream: Output stream
+        :param mask: If specified, replace the mask option with this value. Used for temporary quick runs
+        """
         for line in self.filelines:
             if len(line) == 0 or line[0] == "#":
-                dev.write(line)
+                stream.write(line)
             else:
                 if self.options[line] == "":
-                    dev.write("%s" % line)
+                    stream.write("%s" % line)
                 elif line=="mask" and mask is not None:
-                    dev.write("mask=%s" % mask)
+                    stream.write("mask=%s" % mask)
                 else:
-                    dev.write("%s=%s" % (line, self.options[line]))
-            dev.write("\n")
+                    stream.write("%s=%s" % (line, self.options[line]))
+            stream.write("\n")
            
     def _init_default(self):
         self.set_file("newfile.fab")
