@@ -351,7 +351,7 @@ class FabberLib:
         if "save-noise-mean" in rundata:
             output_items.append("noise_mean")
         if "save-noise-std" in rundata:
-            output_items.append("noise_std")
+            output_items.append("noise_stdevs")
         if "save-free-energy" in rundata:
             output_items.append("freeEnergy")
         if "save-model-fit" in rundata:
