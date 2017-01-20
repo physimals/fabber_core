@@ -122,10 +122,14 @@ static OptionSpec OPTIONS[] =
 				{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
 				{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
 				{ "continue-from-mvn", OPT_MVN, "Continue previous run from output MVN files", OPT_NONREQ, "" },
-				{ "fwd-initial-prior", OPT_FILE, "VEST file containing MVN of initial model prior. Important for spatial VB using D prior", OPT_NONREQ, "" },
-				{ "fwd-initial-posterior", OPT_FILE, "VEST file containing MVN of initial model posterior", OPT_NONREQ, "" },
+				{ "fwd-initial-prior", OPT_FILE,
+						"VEST file containing MVN of initial model prior. Important for spatial VB using D prior",
+						OPT_NONREQ, "" },
+				{ "fwd-initial-posterior", OPT_FILE, "VEST file containing MVN of initial model posterior", OPT_NONREQ,
+						"" },
 				{ "noise-initial-prior", OPT_FILE, "VEST file containing MVN of initial noise prior", OPT_NONREQ, "" },
-				{ "noise-initial-posterior", OPT_FILE, "VEST file containing MVN of initial noise posterior", OPT_NONREQ, "" },
+				{ "noise-initial-posterior", OPT_FILE, "VEST file containing MVN of initial noise posterior",
+						OPT_NONREQ, "" },
 				{ "noise-pattern", OPT_STR,
 						"repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)",
 						OPT_NONREQ, "1" },
@@ -305,7 +309,7 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	InferenceTechnique::Initialize(fwd_model, args);
 
 // Get noise model.
-	noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(args.GetString("noise")));
+	noise = std::auto_ptr < NoiseModel > (NoiseModel::NewFromName(args.GetString("noise")));
 	noise->Initialize(args);
 	m_noise_params = noise->NumParams();
 	LOG << "VariationalBayesInferenceTechnique::Noise has " << m_noise_params << " parameters" << endl;
@@ -375,7 +379,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 // Columns are (time) series
 // num Rows is size of (time) series
 // num Cols is size of volumes
-        m_origdata = &allData.GetMainVoxelData();
+	m_origdata = &allData.GetMainVoxelData();
 	m_coords = &allData.GetVoxelCoords();
 	m_suppdata = &allData.GetVoxelSuppData();
 	m_nvoxels = m_origdata->Ncols();

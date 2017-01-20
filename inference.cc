@@ -95,7 +95,6 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	// Note: I should probably use a single NIFTI file with
 	// NIFTI_INTENT_NORMAL -- but I can't find the detailed
 	// documentation!  (Ordering for a multivariate norm).
-
 	int nVoxels = resultMVNs.size();
 
 	if (data.GetBool("save-mvn"))
@@ -103,28 +102,17 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 		MVNDist::Save(resultMVNs, "finalMVN", data);
 		if (resultMVNsWithoutPrior.size() > 0)
 		{
-			assert(resultMVNsWithoutPrior.size() == (unsigned )nVoxels);
+			assert(resultMVNsWithoutPrior.size() == (unsigned) nVoxels);
 			MVNDist::Save(resultMVNsWithoutPrior, "finalMVNwithoutPrior", data);
 		}
 	}
 
-	vector<string> paramNames;
+	vector < string > paramNames;
 	model->NameParams(paramNames);
 
-#if 0
-	LOG << "InferenceTechnique::Same information using DumpParameters:" << endl;
-	ColumnVector indices(m_num_params);
-	for (int i = 1; i <= indices.Nrows(); i++)
-	indices(i) = i;
-
-	model->DumpParameters(indices, "      ");
-#endif
-
 	// Create individual files for each parameter's mean and Z-stat
-
 	if (data.GetBool("save-mean") | data.GetBool("save-std") | data.GetBool("save-zstat"))
 	{
-
 		LOG << "InferenceTechnique::Writing means..." << endl;
 		for (unsigned i = 1; i <= paramNames.size(); i++)
 		{
@@ -186,7 +174,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	if (data.GetBool("save-free-energy") && !resultFs.empty())
 	{
 		LOG << "InferenceTechnique::Writing free energy" << endl;
-		assert((int )resultFs.size() == nVoxels);
+		assert((int) resultFs.size() == nVoxels);
 		Matrix freeEnergy;
 		freeEnergy.ReSize(1, nVoxels);
 		for (int vox = 1; vox <= nVoxels; vox++)
@@ -288,7 +276,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		{
 			throw Invalid_option("Check filename of the parameter name file. ");
 		}
-		vector<string> paramNames;
+		vector < string > paramNames;
 		LOG << "InferenceTechnique::Parameters from previous run: " << endl;
 		while (paramFile.good())
 		{
@@ -299,7 +287,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		paramNames.pop_back(); //remove final empty line assocaited with eof
 
 		// get the parameters in the model
-		vector<string> ModelparamNames;
+		vector < string > ModelparamNames;
 		model->NameParams(ModelparamNames);
 		LOG << "InferenceTechnique::Parameters named in model" << endl;
 		for (int p = 0; p < m_num_params; p++)
