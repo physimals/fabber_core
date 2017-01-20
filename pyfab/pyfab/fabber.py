@@ -1,4 +1,6 @@
 import os
+import warnings
+import datetime
 import collections
 import subprocess as sub
 import traceback
@@ -11,6 +13,14 @@ import numpy.ctypeslib as npct
 
 from mvc import Model
 
+class FabberException(RuntimeError):
+    def __init__(self, msg, errcode=None):
+        self.errcode = errcode
+        if errcode is not None:
+            RuntimeError.__init__(self, "%i: %s" % (errcode, msg))
+        else:
+            RuntimeError.__init__(self, msg)
+
 class FabberRunData(Model, collections.MutableMapping):
     """
     Options for a Fabber run
@@ -21,7 +31,7 @@ class FabberRunData(Model, collections.MutableMapping):
     """
 
     def __init__(self, filename=None):
-        Model.__init__(self, "fab")
+        Model.__init__(self, "rundata")
 
         # Mapping of options as key/value pairs
         self.options = {}
@@ -117,7 +127,6 @@ class FabberRunData(Model, collections.MutableMapping):
         if not fpath:
             raise RuntimeError("No file specified for save")
 
-        print(fpath)
         fab = open(fpath, "w")
         self.dump(fab, mask=mask)
         fab.close()
@@ -154,36 +163,59 @@ class FabberRunData(Model, collections.MutableMapping):
         self._change()
         self._update_views()
 
-class LibRun:
+class RunNotFound(RuntimeWarning):
+    def __init__(self, dir):
+        RuntimeWarning.__init__(self, "Not a Fabber run directory: %s" % dir)
+        self.dir = dir
+
+class FabberRun:
+
+    def get_log_timestamp(self, log):
+        prefixes = ["start time:", "fabberrundata::start time:"]
+        timestamp_str = ""
+        for line in log.splitlines():
+            l = line.strip()
+            for prefix in prefixes:
+                if l.lower().startswith(prefix):
+                    timestamp_str = l[len(prefix):].strip()
+                    try:
+                        timestamp = datetime.datetime.strptime(timestamp_str, "%c")
+                        return timestamp, timestamp_str
+                    except:
+                        warnings.warn("Failed to parse timestamp: '%s'" % timestamp_str)
+
+        warnings.warn("Could not find timestamp in log")
+        return datetime.datetime.now(), timestamp_str
+
+class LibRun(FabberRun):
     """
-    A fabber library run, with output data and logfile
+    A fabber library run, with output data and log
     """
     def __init__(self, data, log):
         self.data = data
         self.log = log
+        self.timestamp, self.timestamp_str = self.get_log_timestamp(self.log)
 
-class DirectoryRun:
+class DirectoryRun(FabberRun):
     """
-    A particular run of the fabber executable, with its output
+    A run of the fabber executable, with its output
     directory, logfile and output data
     """
-
     def __init__(self, dir):
         self.dir = dir
+        if not self._is_fabber_dir():
+            raise RunNotFound(dir)
+
         self.files = {}
         self.data = {}
-
         self.logfile, self.log = self._get_log()
-        self.time, self.timestamp = self._get_timestamp()
+        self.timestamp, self.timestamp_str = self.get_log_timestamp(self.log)
         self.isquick = self._is_quick_run()
+        self.params = self._get_params()
+        self._scan_output()
 
-        try:
-            self._get_params()
-        except:
-            print("Failed to get parameters")
-            self.params = set()
-
-        self.scan_output()
+    def _is_fabber_dir(self):
+        return os.path.isfile(os.path.join(self.dir, "logfile"))
 
     def _get_log(self):
         logfile = os.path.join(self.dir, "logfile")
@@ -192,98 +224,57 @@ class DirectoryRun:
         f.close()
         return logfile, log
 
-    def scan_output(self):
-        if len(self.files) > 0: return  # Only do this once?
+    def _scan_output(self):
         try:
             outdir_files = [f for f in os.listdir(self.dir)
                             if os.path.isfile(os.path.join(self.dir, f)) and f.endswith(".nii.gz")]
         except:
-            print("Could not read output directory: ", self.dir)
+            warnings.warn("Could not read output directory: ", self.dir)
             traceback.print_exc()
             return
 
         for fname in outdir_files:
             try:
                 name = fname.split(".")[0]
-                #role, param = self._get_role_from_name(name)
                 f = os.path.join(self.dir, fname)
                 self.files[name] = f
                 d = nib.load(f).get_data()
                 self.data[name] = d
             except:
-                print("Not a valid output data file: ", fname)
-
-    def _get_timestamp(self):
-        prefixes = ["start time:", "fabberrundata::start time:"]
-        f = open(self.logfile)
-        lines = f.readlines()
-        f.close()
-        for line in lines:
-            l = line.strip()
-            for prefix in prefixes:
-                if l.lower().startswith(prefix):
-                    timestamp = l[len(prefix):].strip()
-                    try:
-                        time = datetime.datetime.strptime(self.timestamp, "%c")
-                    except:
-                        print("Failed to parse timestamp")
-                        time = os.path.getmtime(self.logfile)
-                    return time, timestamp
-        raise Exeception("Could not find timestamp in log file")
+                warnings.warn("Not a valid output data file: ", fname)
 
     def _is_quick_run(self):
         return os.path.isfile(os.path.join(self.dir, "QUICKRUN.txt"))
 
-    def _get_role_from_name(self, name):
-        """ Get file role (human readable unique description of
-            what it contains) from its filesname"""
-        role = name
-        param = None
-        if name.startswith("mean_"):
-            role = name[5:] + " Mean value"
-            param = name[5:]
-        elif name.startswith("std_"):
-            role = name[4:] + " Std. dev."
-            param = name[4:]
-        elif name.startswith("zstat_"):
-            role = name[6:] + " Zstat"
-            param = name[6:]
-        elif name.startswith("modelfit"):
-            role = "Model prediction"
-        elif name.startswith("residuals"):
-            role = "Model residuals"
-
-        print name, role, param
-        return role, param
-
     def _get_params(self):
-        f = open(os.path.join(self.dir, "paramnames.txt"), "r")
-        self.params = set([p.strip() for p in f.readlines()])
-        f.close()
+        try:
+            f = open(os.path.join(self.dir, "paramnames.txt"), "r")
+            params = set([p.strip() for p in f.readlines()])
+            f.close()
+            return params
+        except:
+            warnings.warn("Failed to get parameters")
+            return set()
 
 class FabberExec:
     """
     Encapsulates a Fabber executable context and provides methods
     to query models and options and also run a file
     """
-    def __init__(self, ex=None, model_libs=[]):
-        if ex:
-            self._ex = ex
+    def __init__(self, ex=None, models_lib=None, rundata=None):
+        if ex is not None:
+            self.ex = ex
+        elif rundata is not None and "fabber" in rundata:
+            self.ex = rundata["fabber"]
         else:
-            self._ex = self._find_fabber()
+            self.ex = self._find_fabber()
 
-        self.model_libs = model_libs
+        if not os.path.isfile(self.ex):
+            raise FabberException("Invalid executable: %s" % self.ex)
 
-    def set_exec(self, ex):
-        """
-        Set the executable
-                
-        FIXME should check if it seems valid
-        """
-        self._ex = ex
-
-    def get_exec(self):
-        return self._ex
+        self.models_lib = models_lib
+        if self.models_lib is not None and not os.path.isfile(self.models_lib):
+            raise FabberException("Invalid models library: %s" % self.models_lib)
                 
     def get_methods(self):
         """ Get known inference methods """
@@ -294,7 +285,7 @@ class FabberExec:
         """ Get known models """
         stdout = self._run_help("--listmodels")
         return [line.strip() for line in stdout.split()]
-  
+
     def get_options(self, method=None, model=None):
         """
         Get general options, or options for a method/model. Returns a list of dictionaries
@@ -327,7 +318,7 @@ class FabberExec:
                     descnext = True
                 else: 
                     descnext = False
-                    print("Couldn't _parse option: " + line)
+                    raise FabberException("Couldn't _parse option: " + line)
             elif descnext:
                 opt["description"] = line.strip()
                 descnext = False
@@ -337,13 +328,16 @@ class FabberExec:
         #print opts
         return opts, desc
 
+    def get_model_params(self, rundata):
+        raise FabberException("get_params not implemented for executable interface")
+
     def run(self, rundata):
         """
         Run Fabber on the run data specified
         """
         rundata.save()
         workdir  = rundata.get_filedir()
-        cmd = [self._ex, "-f", rundata.filepath]
+        cmd = [self.ex, "-f", rundata.filepath]
         #print(cmd)
         err = ""
         p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE, cwd=workdir)
@@ -358,7 +352,11 @@ class FabberExec:
                 raise Exception(err)
 
         # Hack to get the last run
-        return rundata.get_runs()[0]
+        outdir = rundata["output"]
+        if not os.path.isabs(outdir):
+            outdir = os.path.join(workdir, outdir)
+
+        return self.get_previous_runs(outdir)[0]
 
     def get_previous_runs(self, outdir):
         """
@@ -368,17 +366,15 @@ class FabberExec:
         If successful, it adds + to the filename (as Fabber does) and tries again.
         It continues until it cannot find any more valid run directories.
         """
-        outdir = self.options["output"]
         runs = []
         while os.path.exists(outdir):
             try:
                 run = DirectoryRun(outdir)
                 runs.append(run)
-            except:
-                traceback.print_exc()
-                print("Could not find logfile in: %s - ignoring" % outdir)
+            except RunNotFound:
+                warnings.warn("Could not find logfile in: %s - ignoring" % outdir)
             outdir += "+"
-        runs.sort(key=lambda run: run.time)
+        runs.sort(key=lambda run: run.timestamp)
         return runs
 
     def _write_temp_mask(self):
@@ -401,7 +397,6 @@ class FabberExec:
         f = open(os.path.join(dir, "QUICKRUN.txt"), "wc")
         f.write("This data is from a 1-voxel test run\n")
         f.close()
- 
         
     def _run_help(self, *opts):
         """
@@ -411,11 +406,10 @@ class FabberExec:
 	    Does not throw on failure because user may need to set
 	    the location of the executable first
 	    """
-        cmd = [self._ex] + list(opts)
-        for lib in self.model_libs:
-            cmd += " --loadmodels=%s" % lib
+        cmd = [self.ex] + list(opts)
+        if self.models_lib is not None:
+            cmd += " --loadmodels=%s" % self.models_lib
 
-        print cmd
         try:
             p = sub.Popen(cmd, stdout=sub.PIPE)
             (stdout, stderr) = p.communicate()
@@ -423,12 +417,9 @@ class FabberExec:
             if status == 0:
                 return stdout
             else:
-                print("Failed to run fabber: " + str(cmd))
-            return ""
-        except:
-            print("Failed to run fabber: " + str(cmd))
-            traceback.print_exc()
-            return ""
+                raise FabberException("Failed to run fabber: " + str(cmd), status)
+        except Exception, e:
+            raise FabberException("Failed to run fabber: " + str(e))
  
     def _find_fabber(self):
         """ 
@@ -440,21 +431,14 @@ class FabberExec:
    	                distutils.spawn.find_executable("fabber"),
    	                "fabber"]
         for guess in guesses:
-            print guess
             if os.path.isfile(guess):
                 return guess
-
-class FabberException(RuntimeError):
-    def __init__(self, errcode, msg):
-        RuntimeError.__init__(self, "%i: %s" % (errcode, msg))
-        self.errcode = errcode
 
 class FabberLib:
     """
     Interface to Fabber in library mode using simplified C-API
     """
     def __init__(self, fabber_lib=None, models_lib=None, rundata=None):
-
         self.fabber_lib = fabber_lib
         if self.fabber_lib is None:
             if rundata is not None and "fabber" in rundata:
@@ -469,6 +453,59 @@ class FabberLib:
         self.errbuf = create_string_buffer(255)
         self.outbuf = create_string_buffer(10000)
         self._refresh()
+
+    def get_methods(self):
+        """ Get known inference methods"""
+        self._trycall(self.lib.fabber_get_methods, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        return self.outbuf.value.splitlines()
+
+    def get_models(self):
+        """ Get known models"""
+        self._trycall(self.lib.fabber_get_models, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        return self.outbuf.value.splitlines()
+
+    def get_options(self, method=None, model=None):
+        """
+        Get known Fabber options
+
+        :param method: If specified, return options for this method
+        :param model: If specified, return options for this model
+
+        Only one of method and model should be specified. If neither are specified, generic
+        Fabber options are returned.
+
+        :return: Tuple of options, description. Options is a list of options, each in the form of a dictionary.
+        Description is a simple text description of the method or model
+        """
+        if method:
+            key = "method"
+            value = method
+        elif model:
+            key = "model"
+            value = model
+        else:
+            key = None
+            value = None
+        self._trycall(self.lib.fabber_get_options, self.handle, key, value, len(self.outbuf), self.outbuf, self.errbuf)
+        opt_keys = ["name", "description", "type", "optional", "default"]
+        opts = []
+        for opt in self.outbuf.value.split("\n"):
+            if len(opt) > 0:
+                opt = dict(zip(opt_keys, opt.split("\t")))
+                opt["optional"] = opt["optional"] == "1"
+                opts.append(opt)
+        return opts, ""
+
+    def get_model_params(self, rundata):
+        """ Get the model parameters, given the specified options"""
+        for key, value in rundata.items():
+            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
+
+        self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+
+        # Reset context because we have set options and don't want them affecting a later call to run()
+        self._refresh()
+        return self.outbuf.value.splitlines()
 
     def run(self, rundata):
         mask = None
@@ -549,59 +586,6 @@ class FabberLib:
             retdata[key] = arr
 
         return LibRun(retdata, self.outbuf.value)
-              
-    def get_options(self, method=None, model=None):
-        """
-        Get known Fabber options
-
-        :param method: If specified, return options for this method
-        :param model: If specified, return options for this model
-
-        Only one of method and model should be specified. If neither are specified, generic
-        Fabber options are returned.
-
-        :return: Tuple of options, description. Options is a list of options, each in the form of a dictionary.
-        Description is a simple text description of the method or model
-        """
-        if method:
-            key = "method"
-            value = method
-        elif model:
-            key = "model"
-            value = model
-        else:
-            key = None
-            value = None
-        self._trycall(self.lib.fabber_get_options, self.handle, key, value, len(self.outbuf), self.outbuf, self.errbuf)
-        opt_keys = ["name", "description", "type", "optional", "default"]
-        opts = []
-        for opt in self.outbuf.value.split("\n"):
-            if len(opt) > 0:
-                opt = dict(zip(opt_keys, opt.split("\t")))
-                opt["optional"] = opt["optional"] == "1"
-                opts.append(opt)
-        return opts, ""
-                
-    def get_methods(self):
-        """ Get known inference methods"""
-        self._trycall(self.lib.fabber_get_methods, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
-        return self.outbuf.value.splitlines()
-
-    def get_models(self):
-        """ Get known models"""
-        self._trycall(self.lib.fabber_get_models, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
-        return self.outbuf.value.splitlines()
-
-    def get_model_params(self, rundata):
-        """ Get the model parameters, given the specified options"""
-        for key, value in rundata.items():
-            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
-
-        self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
-
-        # Reset context because we have set options and don't want them affecting a later call to run()
-        self._refresh()
-        return self.outbuf.value.splitlines()
 
     def _find_fabber_lib(self):
         fsldir = os.environ["FSLDIR"]
@@ -648,7 +632,7 @@ class FabberLib:
             self.lib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
             self.lib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
         except Exception, e:
-            raise FabberException(-1, "Error initializing Fabber library: %s" % str(e))
+            raise FabberException("Error initializing Fabber library: %s" % str(e))
 
         self.handle = self.lib.fabber_new(self.errbuf)
         if self.handle is None:
@@ -660,6 +644,6 @@ class FabberLib:
     def _trycall(self, call, *args):
         ret = call(*args)
         if ret < 0:
-            raise FabberException(ret, self.errbuf.value)
+            raise FabberException(self.errbuf.value, ret)
         else:
             return ret

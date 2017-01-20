@@ -89,7 +89,10 @@ class View:
                 widget.setEnabled(enabled)
 
     def _iswidget(self, w):
-        """ Crude check to see if this is a widget!"""
+        """
+        Crude check to see if this is a widget! Don't want to use
+        isinstance and add explicit dependency on QT
+        """
         return hasattr(w, "blockSignals") and hasattr(w, "setEnabled")
 
     def do_update(self, obj_name):

@@ -1,19 +1,10 @@
-import os
-import subprocess as sub
-import time
-import sys
 import traceback
-import distutils.spawn
-import datetime
 
 import nibabel as nib
 import numpy as np
 
 import pylab as plt
-
 from PySide import QtCore, QtGui
-
-from PySide.QtGui import QMessageBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QFileDialog, QTableWidgetItem, QPlainTextEdit, QSpinBox, QCheckBox, QPushButton
 
 from mvc import Model, View
 
@@ -77,7 +68,7 @@ class FabberImageData(Model, View):
     and optionally output data as well
     """
     def __init__(self):
-        Model.__init__(self, "fab")
+        Model.__init__(self, "imagedata")
         View.__init__(self, [])
         
         # Data items, keyed by role
@@ -101,20 +92,20 @@ class FabberImageData(Model, View):
         """
         Run data has changed
         """
-        if self.fab.changed("data"):
+        if self.rundata.changed("data"):
             self._update_input_data("data")
             self._change(CH_DATA)
-        elif self.fab.changed("mask"):
+        elif self.rundata.changed("mask"):
             self._update_input_data("mask")
             self._change(CH_DATA)
-        if self.fab.changed(CH_RUN, "output"):
+        if self.rundata.changed(CH_RUN, "output"):
             self._get_last_run()
             self._load_run()
             self._change(CH_DATA)
         self._update_views()
         
     def set_rundir(self, outdir):
-        runs = self.fab.get_runs()
+        runs = self.rundata.get_runs()
         for run in runs:
             if run.outdir == outdir:
                 self.run = run
@@ -124,7 +115,7 @@ class FabberImageData(Model, View):
         self._update_views()
         
     def _get_last_run(self):
-        runs = self.fab.get_runs()
+        runs = self.rundata.get_runs()
         if len(runs) > 0:
             self.run = runs[0]
         else: self.run = None
@@ -178,14 +169,14 @@ class FabberImageData(Model, View):
         dimensions are inconsistent, the data will not be
         added and an error is displayed to stderr
         """
-        if not self.fab.options.has_key(key):
+        if not self.rundata.options.has_key(key):
             # Data does not exist
             if self.data.has_key(key): del self.data[key]
-        elif self.data.has_key(key) and self.data[key].filename == self.fab.options[key]:
+        elif self.data.has_key(key) and self.data[key].filename == self.rundata.options[key]:
             # Data file is unchanged
             return
         else:
-            self._load_data(key, self.fab.options[key])
+            self._load_data(key, self.rundata.options[key])
         
     def _load_data(self, key, filename):
         print("loading %s from %s" % (key, filename))
@@ -243,18 +234,18 @@ class FocusView(View):
         self.sbT.valueChanged.connect(self.t_changed)
         
     def x_changed(self, value):
-        self.fab.update_focus(xp=value)
+        self.imagedata.update_focus(xp=value)
     def y_changed(self, value):
-        self.fab.update_focus(yp=value)
+        self.imagedata.update_focus(yp=value)
     def z_changed(self, value):
-        self.fab.update_focus(zp=value)
+        self.imagedata.update_focus(zp=value)
     def t_changed(self, value):
-        self.fab.update_focus(tp=value)
+        self.imagedata.update_focus(tp=value)
         
     def update_widget(self, w, idx):
         w.setMinimum(0)
-        w.setMaximum(self.fab.shape[idx]-1)
-        w.setValue(self.fab.focus[idx])
+        w.setMaximum(self.imagedata.shape[idx]-1)
+        w.setValue(self.imagedata.focus[idx])
         
     def do_update(self):
         self.update_widget(self.slider, 3)
@@ -274,24 +265,24 @@ class ParamValuesView(View):
         self.table.setRowCount(len(run.params))
         print run.params
         for idx, param in enumerate(run.params):
-            mean = self.fab.data[param + " Mean value"].get_value(self.fab.focus)
-            std = self.fab.data[param + " Std. dev."].get_value(self.fab.focus)
-            self.table.setItem(idx, 0, QTableWidgetItem(param))
-            self.table.setItem(idx, 1, QTableWidgetItem(str(mean)))
-            self.table.setItem(idx, 2, QTableWidgetItem(str(std)))
+            mean = self.imagedata.data[param + " Mean value"].get_value(self.imagedata.focus)
+            std = self.imagedata.data[param + " Std. dev."].get_value(self.imagedata.focus)
+            self.table.setItem(idx, 0, QtGui.QTableWidgetItem(param))
+            self.table.setItem(idx, 1, QtGui.QTableWidgetItem(str(mean)))
+            self.table.setItem(idx, 2, QtGui.QTableWidgetItem(str(std)))
             
     def do_update(self):
         self.table.setRowCount(0)
-        if self.fab.run:
-            self.populate(self.fab.run)
+        if self.imagedata.run:
+            self.populate(self.imagedata.run)
          
 class DataView(View):
     def __init__(self, logDialog, runDialog, **kwargs):
         View.__init__(self, [CH_DATA,], **kwargs)
         self.logDialog = logDialog
         self.runDialog = runDialog
-        self.table.setHorizontalHeaderItem(0, QTableWidgetItem("Role"))    
-        self.table.setHorizontalHeaderItem(1, QTableWidgetItem("Filename"))    
+        self.table.setHorizontalHeaderItem(0, QtGui.QTableWidgetItem("Role"))
+        self.table.setHorizontalHeaderItem(1, QtGui.QTableWidgetItem("Filename"))
         self.chooseRunBtn.clicked.connect(self.choose_run)
         self.logBtn.clicked.connect(self.view_log_pressed)
         self.table.currentItemChanged.connect(self.data_select)
@@ -299,47 +290,47 @@ class DataView(View):
         self.maskBtn.clicked.connect(self.mask_clicked)
         
     def data_clicked(self):
-        filename = QFileDialog.getOpenFileName()[0]
-        if filename: self.fab.fab.set_option("data", filename)
+        filename = QtGui.QFileDialog.getOpenFileName()[0]
+        if filename: self.imagedata.rundata.set_option("data", filename)
         
     def mask_clicked(self):
-        filename = QFileDialog.getOpenFileName()[0]
-        if filename: self.fab.fab.set_option("mask", filename)
+        filename = QtGui.QFileDialog.getOpenFileName()[0]
+        if filename: self.imagedata.rundata.set_option("mask", filename)
         
     def choose_run(self):
-        runs = self.fab.get_runs()
+        runs = self.imagedata.get_runs()
         self.runDialog.table.setRowCount(len(runs))
         for idx, run in enumerate(runs):
-            self.runDialog.table.setItem(idx, 0, QTableWidgetItem(run.dir))
-            self.runDialog.table.setItem(idx, 1, QTableWidgetItem(run.timestamp))
+            self.runDialog.table.setItem(idx, 0, QtGui.QTableWidgetItem(run.dir))
+            self.runDialog.table.setItem(idx, 1, QtGui.QTableWidgetItem(run.timestamp))
         self.runDialog.show()
         if self.runDialog.exec_():
             run = runs[self.runDialog.table.currentRow()]
-            self.fab.select_run(run.dir)
+            self.imagedata.select_run(run.dir)
  
     def view_log_pressed(self):
         self.logDialog.show()
         self.logDialog.raise_()
     
     def data_select(self, cur, prev):
-        self.fab.select(self.table.item(cur.row(), 0).text())
+        self.imagedata.select(self.table.item(cur.row(), 0).text())
         
     def relist(self):
         self.table.setRowCount(0)
         n = 0
         self.table.setRowCount(0)
-        for key, data in self.fab.data.items():
+        for key, data in self.imagedata.data.items():
             self.table.setRowCount(n+1)
             #if data.visible:
             #    item.setIcon(self.table.style().standardIcon(QtGui.QStyle.SP_FileIcon))        
-            self.table.setItem(n, 0, QTableWidgetItem(key))
-            self.table.setItem(n, 1, QTableWidgetItem(data.filename))
+            self.table.setItem(n, 0, QtGui.QTableWidgetItem(key))
+            self.table.setItem(n, 1, QtGui.QTableWidgetItem(data.filename))
             n += 1
-        if self.fab.run:
-            self.logDialog.textBrowser.setText(self.fab.run.get_log())
-            self.currentRunEdit.setText(self.fab.run.timestamp)
-            if self.fab.run.isquick:
-                msgBox = QMessageBox()
+        if self.imagedata.run:
+            self.logDialog.textBrowser.setText(self.imagedata.run.get_log())
+            self.currentRunEdit.setText(self.imagedata.run.timestamp)
+            if self.imagedata.run.isquick:
+                msgBox = QtGui.QMessageBox()
                 msgBox.setText("This was a quick 1-voxel run, not a full run")
                 msgBox.exec_()
 
@@ -361,25 +352,25 @@ class CurrentDataView(View):
             for map in self.maps:
                 self.cmCombo.addItem(map)
             
-        self.set_enabled(self.fab.focus_data is not None)
+        self.set_enabled(self.imagedata.focus_data is not None)
         
-        if self.fab.focus_data is not None:
-            self.currentEdit.setText(self.fab.focus_data.filename)
-            self.slider.setValue(100*self.fab.focus_data.alpha)
-            if self.fab.focus_data.visible:
+        if self.imagedata.focus_data is not None:
+            self.currentEdit.setText(self.imagedata.focus_data.filename)
+            self.slider.setValue(100*self.imagedata.focus_data.alpha)
+            if self.imagedata.focus_data.visible:
                 self.cb.setCheckState(QtCore.Qt.CheckState.Checked)
             else:
                 self.cb.setCheckState(QtCore.Qt.CheckState.Unchecked)
-            self.cmCombo.setCurrentIndex(self.maps.index(self.fab.focus_data.cm))
-            self.valueEdit.setText(str(self.fab.focus_data.get_value(self.fab.focus)))
+            self.cmCombo.setCurrentIndex(self.maps.index(self.imagedata.focus_data.cm))
+            self.valueEdit.setText(str(self.imagedata.focus_data.get_value(self.imagedata.focus)))
         
     def cm_changed(self, idx):
         text = self.maps[idx]
-        self.fab.set_visibility(self.fab.focus_data, cm=text)
+        self.imagedata.set_visibility(self.imagedata.focus_data, cm=text)
 
     def alpha_changed(self, value):
-        self.fab.set_visibility(self.fab.focus_data, alpha=float(value)/100)
+        self.imagedata.set_visibility(self.imagedata.focus_data, alpha=float(value)/100)
 
     def visible_changed(self):
-        self.fab.set_visibility(self.fab.focus_data, visible=self.cb.checkState() == QtCore.Qt.CheckState.Checked)
+        self.imagedata.set_visibility(self.imagedata.focus_data, visible=self.cb.checkState() == QtCore.Qt.CheckState.Checked)
           

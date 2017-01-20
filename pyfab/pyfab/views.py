@@ -15,31 +15,31 @@ class ModelMethodView(View):
         self.methodCombo.currentIndexChanged.connect(self.method_changed)
 
     def model_changed(self):
-        self.fab["model"] = self.modelCombo.currentText()
+        self.rundata["model"] = self.modelCombo.currentText()
         
     def method_changed(self):
-        self.fab["method"] = self.methodCombo.currentText()
+        self.rundata["method"] = self.methodCombo.currentText()
         
     def do_update(self):
-        if self.fab.changed("fabber", "loadmodels"):
+        if self.rundata.changed("fabber", "loadmodels"):
             self.modelCombo.clear()
-            self.models = FabberLib(rundata=self.fab).get_models()
+            self.models = FabberLib(rundata=self.rundata).get_models()
             for model in self.models:
                 self.modelCombo.addItem(model)
         
             self.methodCombo.clear()
-            self.methods = FabberLib(rundata=self.fab).get_methods()
+            self.methods = FabberLib(rundata=self.rundata).get_methods()
             for method in self.methods:
                 self.methodCombo.addItem(method)
                 
-        if "model" in self.fab:
-            cmodel = self.fab["model"]
+        if "model" in self.rundata:
+            cmodel = self.rundata["model"]
             for idx, model in enumerate(self.models):
                 if cmodel == model:
                     self.modelCombo.setCurrentIndex(idx)
 
-        if "method" in self.fab:
-            cmethod = self.fab["method"]
+        if "method" in self.rundata:
+            cmethod = self.rundata["method"]
             for idx, method in enumerate(self.methods):
                 if cmethod == method:
                     self.methodCombo.setCurrentIndex(idx)
@@ -82,18 +82,18 @@ class OptionView(View):
         self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked)
         self.label.setEnabled(True)
         
-        if self.rescan: self.fab._change() # FIXME a hack
+        if self.rescan: self.rundata._change() # FIXME a hack
         if self.label.checkState() == QtCore.Qt.CheckState.Checked:
             self.changed()
         else:
-            del self.fab[self.key]
+            del self.rundata[self.key]
         
     def changed(self):
-        self.fab[self.key] = ""
+        self.rundata[self.key] = ""
         
     def do_update(self):
         if not self.req:
-            if not self.key in self.fab:
+            if not self.key in self.rundata:
                 self.label.setCheckState(QtCore.Qt.CheckState.Unchecked)
             else:
                 self.label.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -114,12 +114,12 @@ class IntegerOptionView(OptionView):
     
     def changed(self):
         val = str(self.sb.value())
-        self.fab[self.key] = val
+        self.rundata[self.key] = val
         
     def do_update(self):
         OptionView.do_update(self)
-        if self.key in self.fab:
-            self.sb.setValue(int(self.fab[self.key]))
+        if self.key in self.rundata:
+            self.sb.setValue(int(self.rundata[self.key]))
 
     def add(self, grid, row):
         OptionView.add(self, grid, row)
@@ -136,12 +136,12 @@ class StringOptionView(OptionView):
         # Note that this signal is triggered when the widget
         # is enabled/disabled!
         if self.edit.isEnabled():
-            self.fab[self.key] = self.edit.text()
+            self.rundata[self.key] = self.edit.text()
 
     def do_update(self):
         OptionView.do_update(self)
-        if self.key in self.fab:
-            self.text = self.fab[self.key]
+        if self.key in self.rundata:
+            self.text = self.rundata[self.key]
             self.edit.setText(self.text)
         
     def add(self, grid, row):
@@ -298,7 +298,7 @@ class OptionsView(View):
     def get_concrete_opts(self, base, suffix):
         vals = [0]
         concrete = []
-        for opt in self.fab.keys():
+        for opt in self.rundata.keys():
             if opt.startswith(base) and opt.endswith(suffix):
                 try:
                     vals.append(int(opt[:len(opt) - len(suffix)][len(base):]))
@@ -327,7 +327,6 @@ class OptionsView(View):
                     view.add(self.dialog.grid, row+startrow)
                     self.views[key] = view
                     row += 1
-                
             else:
                 view = get_option_view(opt, mat_dialog=self.mat_dialog)
                 view.add(self.dialog.grid, row+startrow)
@@ -336,9 +335,9 @@ class OptionsView(View):
         return row
 
     def do_update(self):
-        if self.fab.changed("fabber"):
+        if self.rundata.changed("fabber"):
             self.clear()
-            self.opts, d = FabberLib(rundata=self.fab).get_options()
+            self.opts, d = FabberLib(rundata=self.rundata).get_options()
             self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
             if len(self.opts) == 0:
                 msgBox = QtGui.QMessageBox()
@@ -349,7 +348,7 @@ class OptionsView(View):
             self.create_views()
 
         for view in self.views.values():
-            view.update(self.fab)
+            view.update(self.rundata)
 
     def create_views(self):
         req = [opt for opt in self.opts if not opt["optional"]]
@@ -381,19 +380,19 @@ class ComponentOptionsView(OptionsView):
         self.value = ""
         
     def do_update(self):
-        value = self.fab.get(self.type,"")
-        if self.fab.changed("fabber") or self.value != value:
+        value = self.rundata.get(self.type,"")
+        if self.rundata.changed("fabber") or self.value != value:
             self.value = value
             self.clear()
             if self.value != "":
                 args = {self.type : self.value}
-                self.opts, self.desc = FabberLib(rundata=self.fab).get_options(**args)
+                self.opts, self.desc = FabberLib(rundata=self.rundata).get_options(**args)
                 self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
                 self.title = "%s: %s" % (self.text, self.value)
                 self.create_views()
 
         for view in self.views.values():
-            view.update(self.fab)
+            view.update(self.rundata)
    
 class ChooseFileView(View):
     def __init__(self, opt, **kwargs):
@@ -404,14 +403,14 @@ class ChooseFileView(View):
         self.changeBtn.clicked.connect(self.choose_file)
         
     def do_update(self):
-        if self.opt in self.fab:
-            self.edit.setText(self.fab[self.opt])
+        if self.opt in self.rundata:
+            self.edit.setText(self.rundata[self.opt])
 
     def choose_file(self):
         fname = QtGui.QFileDialog.getOpenFileName(None, self.dialogTitle, self.defaultDir)[0]
         if fname:
             self.edit.setText(fname)
-            self.fab[self.opt] = fname
+            self.rundata[self.opt] = fname
 
 class FileView(View):
     def __init__(self, **kwargs):
@@ -424,19 +423,19 @@ class FileView(View):
         self.changed = None
         
     def save(self):
-        self.fab.save()
+        self.rundata.save()
     
     def save_as(self):
         # fixme choose file name
         # fixme overwrite
         # fixme clone data
         fname = QtGui.QFileDialog.getSaveFileName()[0]
-        self.fab.set_file(fname)
-        self.fab.save()
+        self.rundata.set_file(fname)
+        self.rundata.save()
         
     def run(self, focus=None):
         try:
-            self.fab.run(focus=focus)
+            self.rundata.run(focus=focus)
         except:
             print sys.exc_info()
             QtGui.QMessageBox.warning(None, "Fabber error", str(sys.exc_info()[1]))
@@ -445,14 +444,14 @@ class FileView(View):
         self.run()
     
     def do_update(self):
-        self.edit.setText(self.fab.get_filename())
+        self.edit.setText(self.rundata.get_filename())
         if self.changed is None:
             self.changed = False
         else:
             self.changed = True
         
         self.saveBtn.setEnabled(self.changed)
-        self.runBtn.setEnabled("data" in self.fab)
-        self.runQuickBtn.setEnabled("data" in self.fab)
+        self.runBtn.setEnabled("data" in self.rundata)
+        self.runQuickBtn.setEnabled("data" in self.rundata)
         
         

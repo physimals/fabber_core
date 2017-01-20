@@ -38,14 +38,14 @@ class OrthoView(View):
         self.imgs = [{}, {}, {}]
 
     def onpick(self, event):
-        if self.fab is None: return
+        if self.imagedata is None: return
         x, y = int(event.xdata), int(event.ydata)
         if event.inaxes == self.axes[1]:
-            self.fab.update_focus(yp=x, zp=y)
+            self.imagedata.update_focus(yp=x, zp=y)
         if event.inaxes == self.axes[0]:
-            self.fab.update_focus(xp=x, zp=y)
+            self.imagedata.update_focus(xp=x, zp=y)
         if event.inaxes == self.axes[2]:
-            self.fab.update_focus(xp=x, yp=y)
+            self.imagedata.update_focus(xp=x, yp=y)
         
     def config_axes(self):
         for ax in self.axes:
@@ -59,7 +59,7 @@ class OrthoView(View):
         self.tbox.set_ylim(0, 1)
         
     def set_extents(self):
-        self.maxdim = max(self.fab.shape[:3])
+        self.maxdim = max(self.imagedata.shape[:3])
         if self.maxdim > 0: self.config_axes()
         
     def add_slices(self, key, item, focus):
@@ -87,18 +87,18 @@ class OrthoView(View):
     def do_update(self):
         self.set_extents()
                     
-        focus = self.fab.focus
+        focus = self.imagedata.focus
         # Get rid of existing data and recreate
         for img in self.imgs:
             for key in img.keys():
                 img[key].remove()
                 del img[key]
                     
-        for key, item in self.fab.data.items():
+        for key, item in self.imagedata.data.items():
             print("plotting " + key)
             self.add_slices(key, item, focus)
             
-        if max(self.fab.shape) > 0:
+        if max(self.imagedata.shape) > 0:
             for i in range(3):
                 if i == 0:
                     self.yhairs[i].set_xdata(focus[0])
@@ -128,7 +128,7 @@ class FitView(View):
     def plot(self, key, item):
         if item.ndims == 4:
             if item.visible:
-                ts = item.get_timeseries(self.fab.focus)
+                ts = item.get_timeseries(self.imagedata.focus)
                 if not self.lines.has_key(key):
                     self.lines[key], = self.ax1.plot(ts)
                 else:
@@ -139,8 +139,8 @@ class FitView(View):
             self.lines[key].remove()
             del self.lines[key]
         
-        if max(self.fab.shape) > 0:        
-            for key, item in self.fab.data.items():
+        if max(self.imagedata.shape) > 0:        
+            for key, item in self.imagedata.data.items():
                 self.plot(key, item)
            
         self.ax1.relim()
