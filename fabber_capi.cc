@@ -296,7 +296,7 @@ int fabber_get_options(void *fab, const char *key, const char *value, int out_bu
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_options", err_buf);
 	}
 }
 
@@ -330,7 +330,7 @@ int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_models", err_buf);
 	}
 }
 
@@ -364,7 +364,7 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_methods", err_buf);
 	}
 }
 
@@ -381,9 +381,12 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
 		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
+		cerr << "Created model" << endl;
 		model->Initialize(*rundata);
+		cerr << "Initialized" << endl;
 		vector<string> params;
 		model->NameParams(params);
+		cerr << "Named params" << endl;
 		stringstream out;
 		vector<string>::iterator iter;
 		for (iter = params.begin(); iter != params.end(); iter++)
@@ -391,6 +394,7 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 			out << *iter << endl;
 		}
 		string outstr = out.str();
+		cerr << outstr << endl;
 		if (outstr.size() >= out_bufsize)
 		{
 			return fabber_err(-1, "Buffer too small", err_buf);
@@ -402,6 +406,6 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_model_params", err_buf);
 	}
 }
