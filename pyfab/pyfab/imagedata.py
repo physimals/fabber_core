@@ -16,7 +16,6 @@ from PySide import QtCore, QtGui
 from PySide.QtGui import QMessageBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QFileDialog, QTableWidgetItem, QPlainTextEdit, QSpinBox, QCheckBox, QPushButton
 
 from mvc import Model, View
-from model import CH_RUN
 
 """Change to the  data"""
 CH_DATA = "data"

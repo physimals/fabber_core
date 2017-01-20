@@ -3,11 +3,8 @@ import traceback
 
 from PySide import QtCore, QtGui
 
-from PySide.QtGui import QMessageBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QFileDialog, QTableWidgetItem, QPlainTextEdit, QSpinBox, QCheckBox, QPushButton
-
 from mvc import View
-from model import FabberRunData
-from fabber import FabberLib, FabberExec
+from fabber import FabberLib
 
 class ModelMethodView(View):
     def __init__(self, **kwargs):
@@ -35,13 +32,13 @@ class ModelMethodView(View):
             for method in self.methods:
                 self.methodCombo.addItem(method)
                 
-        if self.fab["model"]:
+        if "model" in self.fab:
             cmodel = self.fab["model"]
             for idx, model in enumerate(self.models):
                 if cmodel == model:
                     self.modelCombo.setCurrentIndex(idx)
 
-        if self.fab["method"]:
+        if "method" in self.fab:
             cmethod = self.fab["method"]
             for idx, method in enumerate(self.methods):
                 if cmethod == method:
@@ -49,7 +46,7 @@ class ModelMethodView(View):
 
         
 def get_label(text, size=None, bold=False, italic=False):
-    label = QLabel(text)
+    label = QtGui.QLabel(text)
     font = label.font()
     font.setBold(bold)
     font.setItalic(italic)
@@ -70,7 +67,7 @@ class OptionView(View):
         if self.req:
             self.label = get_label(opt["name"], size=10)
         else:
-            self.label = QCheckBox(opt["name"])
+            self.label = QtGui.QCheckBox(opt["name"])
             self.label.stateChanged.connect(self.state_changed)
 
         self.widgets.append(self.label)
@@ -111,7 +108,7 @@ class OptionView(View):
 class IntegerOptionView(OptionView):
     def __init__(self, opt, **kwargs):
         OptionView.__init__(self, opt, **kwargs)
-        self.sb = QSpinBox()
+        self.sb = QtGui.QSpinBox()
         self.sb.valueChanged.connect(self.changed)
         self.widgets.append(self.sb)
     
@@ -131,7 +128,7 @@ class IntegerOptionView(OptionView):
 class StringOptionView(OptionView):
     def __init__(self, opt, **kwargs):
         OptionView.__init__(self, opt, **kwargs)
-        self.edit = QLineEdit()
+        self.edit = QtGui.QLineEdit()
         self.edit.editingFinished.connect(self.changed)
         self.widgets.append(self.edit)
         
@@ -154,16 +151,16 @@ class StringOptionView(OptionView):
 class FileOptionView(StringOptionView):
     def __init__(self, opt, **kwargs):
         StringOptionView.__init__(self, opt, **kwargs)
-        self.hbox = QHBoxLayout()
+        self.hbox = QtGui.QHBoxLayout()
         self.hbox.addWidget(self.edit)
-        self.btn = QPushButton("Choose")
+        self.btn = QtGui.QPushButton("Choose")
         self.hbox.addWidget(self.btn)
         self.widgets.append(self.btn)
         self.btn.clicked.connect(self.choose_file)
     
     def choose_file(self):
-        dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog = QtGui.QFileDialog()
+        dialog.setFileMode(QtGui.QFileDialog.AnyFile)
         if dialog.exec_():
             fname = dialog.selectedFiles()[0]
             self.edit.setText(fname)
@@ -176,7 +173,7 @@ class FileOptionView(StringOptionView):
 class MatrixFileOptionView(FileOptionView):
     def __init__(self, opt, **kwargs):
         FileOptionView.__init__(self, opt, **kwargs)
-        self.editBtn = QPushButton("Edit")
+        self.editBtn = QtGui.QPushButton("Edit")
         self.hbox.addWidget(self.editBtn)
         self.widgets.append(self.editBtn)
         self.editBtn.clicked.connect(self.edit_file)
@@ -229,18 +226,18 @@ class MatrixFileOptionView(FileOptionView):
     def edit_file(self):
         fname = self.edit.text()
         if fname.strip() == "":
-            msgBox = QMessageBox()
+            msgBox = QtGui.QMessageBox()
             msgBox.setText("Enter a filename")
-            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.setStandardButtons(QtGui.QMessageBox.Ok)
             msgBox.exec_()
             return
         elif not os.path.exists(fname):
-            msgBox = QMessageBox()
+            msgBox = QtGui.QMessageBox()
             msgBox.setText("File does not exist - create?")
-            msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msgBox.setDefaultButton(QMessageBox.Ok)
+            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             ret = msgBox.exec_()
-            if ret != QMessageBox.Ok:
+            if ret != QtGui.QMessageBox.Ok:
                 return
             open(fname, "a").close()
 
@@ -344,7 +341,7 @@ class OptionsView(View):
             self.opts, d = FabberLib(rundata=self.fab).get_options()
             self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
             if len(self.opts) == 0:
-                msgBox = QMessageBox()
+                msgBox = QtGui.QMessageBox()
                 msgBox.setText("Could not get options from Fabber - check the path to the executable")
                 msgBox.exec_()
             self.title = "Fabber General Options"
@@ -400,8 +397,10 @@ class ComponentOptionsView(OptionsView):
    
 class ChooseFileView(View):
     def __init__(self, opt, **kwargs):
-        View.__init__(self, [opt,], **kwargs)
+        self.defaultDir = ""
+        self.dialogTitle = "Choose a file"
         self.opt = opt
+        View.__init__(self, [opt,], **kwargs)
         self.changeBtn.clicked.connect(self.choose_file)
         
     def do_update(self):
@@ -409,7 +408,7 @@ class ChooseFileView(View):
             self.edit.setText(self.fab[self.opt])
 
     def choose_file(self):
-        fname = QFileDialog.getOpenFileName()[0]
+        fname = QtGui.QFileDialog.getOpenFileName(None, self.dialogTitle, self.defaultDir)[0]
         if fname:
             self.edit.setText(fname)
             self.fab[self.opt] = fname
@@ -431,7 +430,7 @@ class FileView(View):
         # fixme choose file name
         # fixme overwrite
         # fixme clone data
-        fname = QFileDialog.getSaveFileName()[0]
+        fname = QtGui.QFileDialog.getSaveFileName()[0]
         self.fab.set_file(fname)
         self.fab.save()
         
