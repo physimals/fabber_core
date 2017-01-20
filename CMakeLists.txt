@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 2.7)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(APPLE)
-  # Force use of libstdc++ on Mac as FSL uses this and we cannot link otherwise
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++")
+  # Uncomment to force use of libstdc++ on Mac as
+  # FSL uses this by default. Not required if building FSL from
+  # Cmake sources
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libstdc++")
   # Get rid of CMake warning
   set(CMAKE_MACOSX_RPATH ON)
 endif(APPLE)
