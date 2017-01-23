@@ -89,6 +89,7 @@ Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
 Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
 Message("-- Using zlib: ${ZLIB_LIBRARY}")
+Message("-- Using Boost: ${Boost_INCLUDE_DIRS}")
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
