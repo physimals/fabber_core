@@ -47,6 +47,12 @@ class FabberRunData(Model, collections.MutableMapping):
 
             # self.update(dict(*args, **kwargs))  # use the free update to set keys
 
+    def __getstate__(self):
+        return (self.options, self.filelines, self.filepath)
+
+    def __setstate__(self, state):
+        self.options, self.filelines, self.filepath = state
+
     def __getitem__(self, key):
         return self.options[key.strip()]
 
@@ -452,6 +458,8 @@ class FabberLib:
 
         self.errbuf = create_string_buffer(255)
         self.outbuf = create_string_buffer(10000)
+        self.progress_cb_type = CFUNCTYPE(None, c_int, c_int)
+
         self._refresh()
 
     def get_methods(self):
@@ -507,7 +515,7 @@ class FabberLib:
         self._refresh()
         return self.outbuf.value.splitlines()
 
-    def run(self, rundata):
+    def run(self, rundata, progress_cb=None):
         mask = None
         data = {}
         for key, value in rundata.items():
@@ -524,9 +532,9 @@ class FabberLib:
                 # Otherwise ignore, most options will not be data files
                 pass
 
-        return self.run_with_data(rundata, data, mask)
+        return self.run_with_data(rundata, data, mask, progress_cb)
 
-    def run_with_data(self, rundata, data, mask=None):
+    def run_with_data(self, rundata, data, mask=None, progress_cb=None):
         """
         Run fabber
 
@@ -576,7 +584,11 @@ class FabberLib:
             item = np.ascontiguousarray(item.flatten(), dtype=np.float32)
             self._trycall(self.lib.fabber_set_data, self.handle, key, size, item, self.errbuf)
 
-        self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        progress_cb_func = self.progress_cb_type(0)
+        if progress_cb is not None:
+            progress_cb_func = self.progress_cb_type(progress_cb)
+
+        self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf, progress_cb_func)
         retdata = {}
         for key in output_items:
             size = self._trycall(self.lib.fabber_get_data_size, self.handle, key, self.errbuf)
@@ -625,7 +637,7 @@ class FabberLib:
             self.lib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
             self.lib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
             self.lib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
-            self.lib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+            self.lib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p, self.progress_cb_type]
             self.lib.fabber_destroy.argtypes = [c_void_p]
 
             self.lib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]

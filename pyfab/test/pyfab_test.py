@@ -16,6 +16,7 @@ class TestFabberLib(unittest.TestCase):
 
     def setUp(self):
         self.fab = FabberLib()
+        self.progress = []
 
     def quad_data(self, x, y, z, t):
         t=t+1
@@ -81,6 +82,22 @@ class TestFabberLib(unittest.TestCase):
         self.assertAlmostEqual(run.data["mean_c0"][0,0,0], c0, delta=0.1)
         self.assertAlmostEqual(run.data["mean_c1"][0,0,0], c1, delta=0.1)
         self.assertAlmostEqual(run.data["mean_c2"][0,0,0], c2, delta=0.1)
+
+    def progress_cb(self, voxel, nvoxels):
+        self.progress.append((voxel, nvoxels))
+
+    def test_run_cb(self):
+        data = np.fromfunction(self.quad_data, (3,3,3,3))
+        rundata = FabberRunData()
+        rundata["model"] = "poly"
+        rundata["degree"] = "2"
+        rundata["save-mean"] = ""
+        run = self.fab.run_with_data(rundata, {"data" : data}, progress_cb=self.progress_cb)
+
+        self.assertEquals(0, self.progress[0][0])
+        last = self.progress[-1]
+        self.assertTrue(last[0] > 0)
+        self.assertEquals(last[0], last[1])
 
     def test_run_mask(self):
         data = np.fromfunction(self.quad_data, (3,3,3,3))

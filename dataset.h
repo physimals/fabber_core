@@ -100,6 +100,24 @@ private:
 };
 
 /**
+ * ProgressCheck which calls a C function pointer
+ *
+ * Used for the C API
+ */
+class CallbackProgressCheck: public ProgressCheck
+{
+public:
+	CallbackProgressCheck(void (*cb)(int, int)) :
+			m_cb(cb)
+	{
+	}
+	virtual void Progress(int voxel, int nVoxels) {m_cb(voxel, nVoxels);}
+
+private:
+	void (*m_cb)(int, int);
+};
+
+/**
  * Encapsulates all the input and output data associated with a fabber run
  *
  * Run data is of the following types:
@@ -153,7 +171,7 @@ public:
 	 *           This will not be copied or freed. The caller is responsible
 	 *           for freeing it after use.
 	 */
-	FabberRunData(FabberIo *io, bool compat_options=true);
+	FabberRunData(FabberIo *io, bool compat_options=false);
 	~FabberRunData();
 
 	/**

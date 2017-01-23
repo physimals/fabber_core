@@ -172,7 +172,7 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
 	}
 }
 
-int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
+int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int))
 {
 	EasyLog log;
 
@@ -190,7 +190,13 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	try
 	{
 		log.StartLog(logstr);
-		rundata->Run();
+		if (progress_cb) {
+			CallbackProgressCheck prog(progress_cb);
+			rundata->Run(&prog);
+		}
+		else {
+			rundata->Run();
+		}
 		log.ReissueWarnings();
 	} catch (const DataNotFound& e)
 	{
@@ -381,12 +387,9 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
 		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
-		cerr << "Created model" << endl;
 		model->Initialize(*rundata);
-		cerr << "Initialized" << endl;
 		vector<string> params;
 		model->NameParams(params);
-		cerr << "Named params" << endl;
 		stringstream out;
 		vector<string>::iterator iter;
 		for (iter = params.begin(); iter != params.end(); iter++)
@@ -394,7 +397,6 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 			out << *iter << endl;
 		}
 		string outstr = out.str();
-		cerr << outstr << endl;
 		if (outstr.size() >= out_bufsize)
 		{
 			return fabber_err(-1, "Buffer too small", err_buf);

@@ -115,10 +115,11 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
  *                    will be returned.
  * @param log_buf Char buffer of size log_bufsize to receive output log
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ * @param progress_cb Function pointer which takes two integers (current voxel, total voxels). Pass NULL if not required
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf);
+int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int));
 
 /**
  * Get fabber options, optionally for a specific method or model
