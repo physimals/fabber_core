@@ -6,6 +6,8 @@ from PySide import QtCore, QtGui
 from mvc import View
 from fabber import FabberLib
 
+NUMBERED_OPTIONS_MAX=20
+
 class ModelMethodView(View):
     def __init__(self, **kwargs):
         View.__init__(self, ["fabber", "model", "method", "loadmodels"], **kwargs)
@@ -19,7 +21,7 @@ class ModelMethodView(View):
         
     def method_changed(self):
         self.rundata["method"] = self.methodCombo.currentText()
-        
+
     def do_update(self):
         if self.rundata.changed("fabber", "loadmodels"):
             self.modelCombo.clear()
@@ -55,14 +57,14 @@ def get_label(text, size=None, bold=False, italic=False):
     return label
 
 class OptionView(View):
-    def __init__(self, opt, rescan=False, **kwargs):
+    def __init__(self, opt, **kwargs):
         View.__init__(self, [opt["name"],], **kwargs)
         self.key = opt["name"]
         self.dtype = opt["type"]
         self.req = not opt["optional"]
         self.default = opt["default"]
         self.desc = opt["description"]
-        self.rescan = rescan
+        self.dependents = []
 
         if self.req:
             self.label = get_label(opt["name"], size=10)
@@ -77,13 +79,28 @@ class OptionView(View):
         #desclabel.setWordWrap(True)
         self.widgets.append(self.desclabel)
 
+    def add_dependent(self, dep):
+        self.dependents.append(dep)
+        checked = self.label.checkState() == QtCore.Qt.CheckState.Checked
+        dep.set_visible(checked)
+        if not checked: dep.label.setChecked(False)
+
+    def set_visible(self, visible=True, widgets=None):
+        if widgets is None: widgets = self.widgets
+        for widget in widgets:
+                widget.setVisible(visible)
+
     def state_changed(self):
         # Only called if label really is a checkbox!
-        self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked)
+        checked = self.label.checkState() == QtCore.Qt.CheckState.Checked
+        self.set_enabled(checked)
         self.label.setEnabled(True)
         
-        if self.rescan: self.rundata._change() # FIXME a hack
-        if self.label.checkState() == QtCore.Qt.CheckState.Checked:
+        for dep in self.dependents:
+            dep.set_visible(checked)
+            if not checked: dep.label.setChecked(False)
+
+        if checked:
             self.changed()
         else:
             del self.rundata[self.key]
@@ -294,41 +311,29 @@ class OptionsView(View):
     def clear(self):
         self.del_layout(self.dialog.grid)
         self.views = {}
-        
-    def get_concrete_opts(self, base, suffix):
-        vals = [0]
-        concrete = []
-        for opt in self.rundata.keys():
-            if opt.startswith(base) and opt.endswith(suffix):
-                try:
-                    vals.append(int(opt[:len(opt) - len(suffix)][len(base):]))
-                    concrete.append(opt)
-                except:
-                    # Can happen with empty suffixes, e.g. PSP_byname<n> and PSP_byname<n>_image
-                    pass
-        for n in range(max(vals)+1):
-            if n+1 not in vals:
-                break
-        concrete.append(base + str(n+1) + suffix)
-        return n+1, concrete
 
     def add_opts(self, opts, startrow):
         row = 0
         for opt in opts:
             if opt["name"].find("<n>") >= 0:
-                # This is a numbered option
+                # This is a numbered option. Create one for each
                 opt_base=opt["name"][:opt["name"].find("<n>")]
                 opt_suffix = opt["name"][opt["name"].find("<n>") + 3:]
-                next, actual = self.get_concrete_opts(opt_base, opt_suffix)
-                for key in actual:
+                for n in range(1, NUMBERED_OPTIONS_MAX+1):
                     newopt = dict(opt)
-                    newopt["name"] = key
-                    view = get_option_view(newopt, rescan=True, mat_dialog=self.mat_dialog)
-                    view.add(self.dialog.grid, row+startrow)
-                    self.views[key] = view
+                    newopt["name"] = "%s%i%s" % (opt_base, n, opt_suffix)
+                    view = get_option_view(newopt)
+                    view.mat_dialog = self.mat_dialog
+                    if n > 1:
+                        prev.add_dependent(view)
+
+                    view.add(self.dialog.grid, row + startrow)
+                    self.views[newopt["name"]] = view
+                    prev = view
                     row += 1
             else:
-                view = get_option_view(opt, mat_dialog=self.mat_dialog)
+                view = get_option_view(opt)
+                view.mat_dialog = self.mat_dialog
                 view.add(self.dialog.grid, row+startrow)
                 self.views[opt["name"]] = view
                 row += 1
