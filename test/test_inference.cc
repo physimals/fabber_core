@@ -365,8 +365,6 @@ TEST_P(InferenceMethodTest, PolynomialFit)
 		}
 	}
 
-	// Do just 1 iteration
-
 	FabberIoMemory io;
 	FabberRunData rundata(&io);
 	io.SetVoxelCoords(voxelCoords);

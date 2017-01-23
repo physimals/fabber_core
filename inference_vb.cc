@@ -122,6 +122,9 @@ static OptionSpec OPTIONS[] =
 				{ "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
 				{ "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
 				{ "continue-from-mvn", OPT_MVN, "Continue previous run from output MVN files", OPT_NONREQ, "" },
+				{ "output-only", OPT_BOOL,
+						"Skip entire model fitting step, simply output requested data based on supplied MVN. Can only be used with continue-from-mvn",
+						OPT_NONREQ, "" },
 				{ "fwd-initial-prior", OPT_FILE,
 						"VEST file containing MVN of initial model prior. Important for spatial VB using D prior",
 						OPT_NONREQ, "" },
@@ -323,7 +326,11 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 // them here as the memory involved is not large (they are not per voxel).
 	m_continueFromFile = args.GetStringDefault("continue-from-mvn", "");
 	paramFilename = args.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
-
+	m_outputOnly = args.GetBool("output-only");
+	if (m_outputOnly && (m_continueFromFile == ""))
+	{
+		throw Invalid_option("output-only option requires continue-from-mvn");
+	}
 // Get the spatial prior options for each parameter, if specified
 	GetPriorTypes(args);
 
@@ -393,27 +400,32 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	data = *m_origdata;
 #endif //__FABBER_MOTION
 
-// Use this to store the model predictions in to pass to motion correction routine
+	// Use this to store the model predictions in to pass to motion correction routine
 	Matrix modelpred(m_origdata->Nrows(), m_nvoxels);
 
-// Only call DoCalculations once
+	// Only call DoCalculations once
 	assert(resultMVNs.empty());
 	assert(resultFs.empty());
 
-// Initialize output data structures
+	// Initialize output data structures
 	resultMVNs.resize(m_nvoxels, NULL);
 	resultFs.resize(m_nvoxels, 9999); // 9999 is a garbage default value
 
-//Indicates that we should continue from a previous run (i.e. after a motion correction step)
+	//Indicates that we should continue from a previous run (i.e. after a motion correction step)
 	bool continueFromPrevious = false;
 
-// If we're continuing from previous saved results, load the current
-// values of the parameters here: FIXME paramFilename is broken and ignored
+	// If we're continuing from previous saved results, load the current
+	// values of the parameters here: FIXME paramFilename is broken and ignored
 	if (m_continueFromFile != "")
 	{
 		LOG << "VbInferenceTechnique::Continuing from file " << m_continueFromFile << endl;
 		InitMVNFromFile(m_continueFromFile, allData, paramFilename);
 		continueFromPrevious = true;
+		if (m_outputOnly)
+		{
+			// Do no calculations - now we have set resultMVNs we can finish
+			return;
+		}
 	}
 
 // Main loop over motion correction iterations and VB calculations

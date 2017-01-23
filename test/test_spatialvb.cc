@@ -41,6 +41,7 @@ protected:
 		model = FwdModel::NewFromName("trivial");
 		io.ClearVoxelData();
 		rundata = new FabberRunData(&io);
+		rundata->SetLogger(&log);
 	}
 
 	virtual void TearDown()
@@ -50,11 +51,22 @@ protected:
 		delete rundata;
 	}
 
+	void Run()
+	{
+		io.Initialize(*rundata);
+
+		std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata->GetString("model")));
+		fwd_model->Initialize(*rundata);
+
+		svb->Initialize(fwd_model.get(), *rundata);
+		svb->DoCalculations(*rundata);
+		svb->SaveResults(*rundata);
+	}
+
 	void Initialize()
 	{
 		io.SetVoxelCoords(voxelCoords);
 		rundata->Set("noise", "white");
-		rundata->SetLogger(&log);
 		svb->Initialize(model, *rundata);
 	}
 
@@ -529,6 +541,96 @@ TEST_F(SpatialVbTest, CalcNeighbours2MultiVoxels3dIrregular)
 	// 2 neighbour2s, one way to get there
 	n = svb->m_neighbours2[4];
 	ASSERT_EQ(n.size(), 2);
+}
+
+// Test restarting VB run with the output-only option
+TEST_F(SpatialVbTest, RestartOutputOnly)
+{
+	int NTIMES = 10; // needs to be even
+	int VSIZE = 5;
+	float VAL = 7.32;
+	int REPEATS = 50;
+	int DEGREE = 2;
+
+	// Create coordinates and data matrices
+	// Data fitted to a quadratic function
+	NEWMAT::Matrix voxelCoords, data;
+	data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
+	voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
+	int v = 1;
+	for (int z = 0; z < VSIZE; z++)
+	{
+		for (int y = 0; y < VSIZE; y++)
+		{
+			for (int x = 0; x < VSIZE; x++)
+			{
+				voxelCoords(1, v) = x;
+				voxelCoords(2, v) = y;
+				voxelCoords(3, v) = z;
+				for (int n = 0; n < NTIMES; n++)
+				{
+					data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
+				}
+				v++;
+			}
+		}
+	}
+
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
+	rundata->Set("noise", "white");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", stringify(DEGREE));
+	rundata->Set("method", "spatialvb");
+	rundata->Set("max-iterations", "50");
+	rundata->SetBool("save-mean", false);
+	rundata->SetBool("save-modelfit", false);
+	rundata->SetBool("save-mvn", true);
+	rundata->Run();
+
+	NEWMAT::Matrix mvns = rundata->GetVoxelData("finalMVN");
+	TearDown();
+	SetUp();
+	rundata->Set("noise", "white");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", stringify(DEGREE));
+	rundata->Set("method", "spatialvb");
+	rundata->SetBool("save-mean", true);
+	rundata->SetBool("save-model-fit", true);
+	rundata->SetBool("save-mvn", false);
+	rundata->SetBool("output-only", true);
+	rundata->Set("continue-from-mvn", "mvns");
+	io.SetVoxelCoords(voxelCoords);
+	io.SetVoxelData("data",data);
+	io.SetVoxelData("mvns", mvns);
+	Run();
+
+	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		ASSERT_NEAR(VAL, mean(1, i + 1), 0.0001);
+	}
+	mean = rundata->GetVoxelData("mean_c1");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		// GTEST has difficulty with comparing floats to 0
+		ASSERT_NEAR(1, mean(1, i + 1) + 1, 0.0001);
+	}
+	mean = rundata->GetVoxelData("mean_c2");
+	ASSERT_EQ(mean.Nrows(), 1);
+	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
+	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+	{
+		ASSERT_NEAR(VAL * 1.5, mean(1, i + 1), 0.0001);
+	}
+
+	NEWMAT::Matrix fit = rundata->GetVoxelData("modelfit");
+	ASSERT_EQ(fit.Nrows(), NTIMES);
+	ASSERT_EQ(fit.Ncols(), VSIZE * VSIZE * VSIZE);
 }
 
 } // namespace

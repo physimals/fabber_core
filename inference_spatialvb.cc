@@ -290,7 +290,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData& allData)
 
 void SpatialVariationalBayes::SetupStSMatrix()
 {
-	assert((int )m_neighbours.size() == m_nvoxels);
+	assert((int) m_neighbours.size() == m_nvoxels);
 
 	const double tiny = 1e-6;
 	WARN_ONCE("Using 'S' prior with fast-calculation method and constant diagonal weight of " + stringify(tiny));
@@ -395,6 +395,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	}
 
 	SetupPerVoxelDists(allData);
+	if (m_outputOnly)
+	{
+		// Do no calculations - now we have set resultMVNs we can finish
+		return;
+	}
 
 	// Make the spatial normalization parameters
 	//akmean = 0*distsMaster.theta.means + 1e-8;
@@ -2057,7 +2062,7 @@ double DerivEdDelta::OptimizeRho(double delta) const
 	DiagonalMatrix XXtr(Nvoxels);
 	ColumnVector XYtr(Nvoxels);
 	{
-		assert(Nvoxels == (int )fwdPosteriorWithoutPrior.size());
+		assert(Nvoxels == (int) fwdPosteriorWithoutPrior.size());
 		for (int v = 1; v <= Nvoxels; v++)
 		{
 			XXtr(v, v) = fwdPosteriorWithoutPrior[v - 1]->GetPrecisions()(k, k);
@@ -2092,7 +2097,7 @@ double DerivEdDelta::Calculate(double delta) const
 	ColumnVector XYtr(Nvoxels);
 
 	{
-		assert(Nvoxels == (int )fwdPosteriorWithoutPrior.size());
+		assert(Nvoxels == (int) fwdPosteriorWithoutPrior.size());
 		for (int v = 1; v <= Nvoxels; v++)
 		{
 			XXtr(v, v) = fwdPosteriorWithoutPrior[v - 1]->GetPrecisions()(k, k)

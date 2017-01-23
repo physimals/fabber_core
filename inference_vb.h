@@ -75,6 +75,7 @@ protected:
 	std::string m_continueFromFile; // if empty, use initial posterior dists above
 	std::string paramFilename;
 	bool continueFwdOnly; // Only have fwd-model information
+	bool m_outputOnly;
 
 	// Reduce this to a linear problem, using the given
 	// voxelwise linearizations (probably loaded from an MVN)
