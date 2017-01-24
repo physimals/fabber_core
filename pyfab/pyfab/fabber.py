@@ -497,12 +497,13 @@ class FabberLib:
         self._trycall(self.lib.fabber_get_options, self.handle, key, value, len(self.outbuf), self.outbuf, self.errbuf)
         opt_keys = ["name", "description", "type", "optional", "default"]
         opts = []
-        for opt in self.outbuf.value.split("\n"):
+        lines = self.outbuf.value.split("\n")
+        for opt in lines[1:]:
             if len(opt) > 0:
                 opt = dict(zip(opt_keys, opt.split("\t")))
                 opt["optional"] = opt["optional"] == "1"
                 opts.append(opt)
-        return opts, ""
+        return opts, lines[0]
 
     def get_model_params(self, rundata):
         """ Get the model parameters, given the specified options"""

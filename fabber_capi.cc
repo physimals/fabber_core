@@ -282,7 +282,11 @@ int fabber_get_options(void *fab, const char *key, const char *value, int out_bu
 			method->GetOptions(options);
 		}
 
+		// Remove newlines from the description so we can guarantee that the first line is the description
+		desc.erase(std::remove(desc.begin(), desc.end(), '\n'), desc.end());
 		stringstream out;
+		out << desc << endl;
+
 		vector<OptionSpec>::iterator iter;
 		for (iter = options.begin(); iter != options.end(); iter++)
 		{
