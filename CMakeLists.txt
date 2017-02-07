@@ -24,7 +24,7 @@ set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
 # Noise models
 set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
 
-# Main dependencies
+# Find FSL dependencies
 
 if (FSL_BUILD)
   set(LIBS newimage fslio miscmaths niftiio utils newmat znz ${ZLIB_LIBRARY})
@@ -81,30 +81,30 @@ else (FSL_BUILD)
                  HINTS $ENV{FSLDIR}/lib REQUIRED )
   endif(NOT ZLIB_FOUND)
    
-Message("-- FSL headers in ${FSL_INCLUDE_DIR}")
-Message("-- Using libznz: ${ZNZ_LIBRARY}")
-Message("-- Using miscmaths: ${MISCMATHS_LIBRARY}")
-Message("-- Using fslio: ${FSLIO_LIBRARY}")
-Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
-Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
-Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
-Message("-- Using zlib: ${ZLIB_LIBRARY}")
-Message("-- Using Boost: ${Boost_INCLUDE_DIRS}")
+  Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}")
+  Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
+  Message("-- Using fslio: ${FSLIO_LIBRARY}")
+  Message("-- Using miscmaths: ${MISCMATHS_LIBRARY}")
+  Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
+  Message("-- Using libznz: ${ZNZ_LIBRARY}")
+  Message("-- Using zlib: ${ZLIB_LIBRARY}")
+  Message("-- Using newmat: ${NEWMAT_LIBRARY}")
+  Message("-- Using Boost: ${Boost_INCLUDE_DIRS}")
+	
+  include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-
-set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
-         ${FSLIO_LIBRARY} 
-         ${MISCMATHS_LIBRARY} 
-         ${NIFTIIO_LIBRARY} 
-         ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
+  set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
+           ${FSLIO_LIBRARY} 
+           ${MISCMATHS_LIBRARY} 
+           ${NIFTIIO_LIBRARY} 
+           ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
 endif(FSL_BUILD)
 
 if (UNIX)
   set(LIBS ${LIBS} dl)
 endif(UNIX)
 
-# Basic build configuration
+# Versioning information
 
 # the commit's SHA1, and whether the building workspace was dirty or not
 execute_process(COMMAND
@@ -120,7 +120,6 @@ execute_process(COMMAND
   OUTPUT_VARIABLE GIT_DATE
   ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-
 if (NOT GIT_SHA1)
   set(GIT_SHA1 unknown)
 endif(NOT GIT_SHA1)
@@ -134,6 +133,7 @@ add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
                 -DFABBER_BUILD_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 
 # Main Targets
+
 add_library(fabbercore STATIC ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 add_library(fabbercore_shared SHARED ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 target_link_libraries(fabbercore_shared ${LIBS})
@@ -161,7 +161,6 @@ INSTALL_FILES(/include/fabber_core .*\\.h$)
 find_library(GTEST_LIBRARY NAMES gtest libgtest OPTIONAL )
 find_library(PTHREAD_LIBRARY NAMES pthread libpthread OPTIONAL )
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h OPTIONAL )
-
 if (GTEST_LIBRARY)
   Message("-- Using gtest: ${GTEST_LIBRARY} ${GTEST_INCLUDE_DIR}")  
   if (PTHREAD_LIBRARY)
@@ -180,7 +179,6 @@ else(GTEST_LIBRARY)
 endif(GTEST_LIBRARY)
 
 find_package(Doxygen)
-
 if(DOXYGEN_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
   add_custom_target(doc ALL
@@ -196,7 +194,6 @@ endif(DOXYGEN_FOUND)
 
 find_package(PythonLibs)
 find_program(PYSIDE_UIC pyside-uic)
-
 if (PYSIDE_UIC) 
   Message("-- Pyside found: ${PYSIDE_UIC}")
   configure_file(pyfab/pyfabber.py.in pyfab/pyfabber.py)
@@ -211,7 +208,6 @@ if (PYSIDE_UIC)
   INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pyfab/pyfabber.py DESTINATION bin)
   INSTALL(DIRECTORY pyfab/pyfab DESTINATION lib/python/)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ui_qtd.py DESTINATION lib/python/pyfab)
-
 else(PYSIDE_UIC)
   Message("-- Pyside not found - will not build GUI")
 endif(PYSIDE_UIC)
