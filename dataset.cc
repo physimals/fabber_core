@@ -26,9 +26,10 @@
 
 #ifdef _WIN32
 #include "direct.h"
-#else
-#include <sys/stat.h>
 #endif
+
+#include <sys/stat.h>
+#include <time.h>
 
 using namespace std;
 using namespace NEWMAT;
