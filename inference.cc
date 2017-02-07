@@ -30,7 +30,7 @@ InferenceTechnique* InferenceTechnique::NewFromName(const string& name)
 	InferenceTechnique* inf = factory->Create(name);
 	if (inf == NULL)
 	{
-		throw Invalid_option("Unrecognized inference method: " + name);
+		throw InvalidOptionValue("method", name, "Unrecognized inference method");
 	}
 	return inf;
 }
@@ -274,7 +274,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData&
 		ifstream paramFile((paramFilename).c_str());
 		if (!paramFile.good())
 		{
-			throw Invalid_option("Check filename of the parameter name file. ");
+			throw InvalidOptionValue("", paramFilename, "Could not open parameter file");
 		}
 		vector < string > paramNames;
 		LOG << "InferenceTechnique::Parameters from previous run: " << endl;

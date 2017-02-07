@@ -23,7 +23,8 @@ static int fabber_err(int code, const char *msg, char *err_buf)
 	// Error buffer is optional
 	if (!err_buf)
 		return code;
-	if (!msg) msg = "NULL message";
+	if (!msg)
+		msg = "NULL message";
 
 	strncpy(err_buf, msg, FABBER_ERR_MAXC - 1);
 	err_buf[FABBER_ERR_MAXC - 1] = '\0';
@@ -50,9 +51,9 @@ int fabber_load_models(void *fab, const char *libpath, char *err_buf)
 {
 	if (!fab)
 		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-        if (!libpath)
+	if (!libpath)
 		return fabber_err(FABBER_ERR_FATAL, "Library path is NULL", err_buf);
-		
+
 	try
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
@@ -68,7 +69,7 @@ int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *
 {
 	if (!fab)
 		return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-        if (!mask)
+	if (!mask)
 		return fabber_err(FABBER_ERR_FATAL, "Mask is NULL", err_buf);
 	if ((nx <= 0) || (ny <= 0) || (nz <= 0))
 		return fabber_err(FABBER_ERR_FATAL, "Dimensions must be >0", err_buf);
@@ -183,7 +184,7 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	if (!err_buf)
 		return fabber_err(FABBER_ERR_FATAL, "Error buffer is NULL", err_buf);
 
-        int ret=0;
+	int ret = 0;
 	FabberRunData* rundata = (FabberRunData*) fab;
 	rundata->SetLogger(&log);
 	stringstream logstr;
@@ -192,15 +193,10 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 		log.StartLog(logstr);
 		rundata->Run();
 		log.ReissueWarnings();
-	} catch (const DataNotFound& e)
+	} catch (const FabberError& e)
 	{
 		log.ReissueWarnings();
-		log.LogStream() << "Data not found:\n  " << e.what() << endl;
-		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
-	} catch (const Invalid_option& e)
-	{
-		log.ReissueWarnings();
-		log.LogStream() << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
+		log.LogStream() << e.what() << endl;
 		ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (const exception& e)
 	{
@@ -311,7 +307,7 @@ int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 
 	try
 	{
-		vector<string> known = FwdModel::GetKnown();
+		vector < string > known = FwdModel::GetKnown();
 		stringstream out;
 		vector<string>::iterator iter;
 		for (iter = known.begin(); iter != known.end(); iter++)
@@ -345,7 +341,7 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 
 	try
 	{
-		vector<string> known = InferenceTechnique::GetKnown();
+		vector < string > known = InferenceTechnique::GetKnown();
 		stringstream out;
 		vector<string>::iterator iter;
 		for (iter = known.begin(); iter != known.end(); iter++)
@@ -382,7 +378,7 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 		FabberRunData* rundata = (FabberRunData*) fab;
 		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
 		model->Initialize(*rundata);
-		vector<string> params;
+		vector < string > params;
 		model->NameParams(params);
 		stringstream out;
 		vector<string>::iterator iter;

@@ -183,9 +183,8 @@ void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& a
 		// Check the file we've loaded has the right number of parameters
 		if (dist->GetSize() != m_num_params)
 		{
-			throw Invalid_option(
-					"Size mismatch: model wants " + stringify(m_num_params) + ", loaded MVNDist has "
-							+ stringify(dist->GetSize()));
+			throw InvalidOptionValue(param_key, stringify(dist->GetSize()) + " parameters",
+					"Model expected " + stringify(m_num_params) + " parameters");
 		}
 	}
 }
@@ -244,68 +243,6 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
 	}
 }
 
-#if 0
-void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData& args)
-{
-// Get the prior types and sources for all parameters.
-//
-// Parameters used are:
-//   PSP_byname<n> = name of parameter
-//   PSP_byname<n>_type = 'I' for an image prior
-//   PSP_byname<n>_image = Filename/data key name for image prior data
-//
-// PriorsTypes is indexed by parameter number and contains the prior type.
-// imagepriorstr similarly contains the image file name/key
-
-// Get names of model parameters
-	vector < string > modnames;
-	model->NameParams(modnames);
-	m_image_prior_file.resize(m_num_params);
-	PriorsTypes.resize(m_num_params, ' ');
-	PriorsPrec.resize(m_num_params, 0);
-	int current_psp = 0;
-	while (true)
-	{
-		current_psp++;
-		string param_name = args.GetStringDefault("PSP_byname" + stringify(current_psp), "stop!");
-		if (param_name == "stop!")
-		break; //no more spriors have been specified
-
-		// Compare name to those in list of model names
-		bool found = false;
-		for (int p = 0; p < m_num_params; p++)
-		{
-			if (param_name == modnames[p])
-			{
-				found = true;
-				char psp_type = convertTo<char>(args.GetString("PSP_byname" + stringify(current_psp) + "_type"));
-				PriorsTypes[p] = psp_type;
-
-				// A precision is optional. 0 means not set
-				double prec = args.GetDoubleDefault("PSP_byname" + stringify(current_psp) + "_prec", 0);
-				PriorsPrec[p] = prec;
-
-				// Record the index at which a PSP has been defined for use in spatialvb setup
-				PSPidx.push_back(p);
-				LOG << "VbInferenceTechnique::PSP_byname parameter " << param_name << " at entry " << p << ", type: "
-				<< psp_type << ":" << PSPidx.size() << endl;
-
-				// Record the data key for an image prior (if appropriate)
-				if (psp_type == 'I')
-				{
-					m_image_prior_file[p] = "PSP_byname" + stringify(current_psp) + "_image";
-				}
-			}
-		}
-		if (!found)
-		{
-			throw Invalid_option(
-					"ERROR: Prior specification by name, parameter " + param_name + " does not exist in the model\n");
-		}
-	}
-}
-#endif
-
 void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 {
 // Call ancestor, which does most of the real work
@@ -329,7 +266,7 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	m_outputOnly = args.GetBool("output-only");
 	if (m_outputOnly && (m_continueFromFile == ""))
 	{
-		throw Invalid_option("output-only option requires continue-from-mvn");
+		throw InvalidOptionValue("output-only", "", "Must also specify continue-from-mvn");
 	}
 // Get the spatial prior options for each parameter, if specified
 	GetPriorTypes(args);
@@ -342,8 +279,8 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel* fwd_model, FabberR
 	lockedLinearFile = args.GetStringDefault("locked-linear-from-mvn", "");
 	if (lockedLinearFile != "")
 	{
-		throw Invalid_option(
-				"The option --locked-linear-from-mvn doesn't work with --method=vb yet, but should be pretty easy to implement.\n");
+		throw InvalidOptionValue("locked-linear-from-mvn", lockedLinearFile,
+				"locked-linear-from-mvn doesn't work with method=vb");
 	}
 
 // Figure out if F needs to be calculated every iteration

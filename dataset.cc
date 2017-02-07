@@ -247,7 +247,7 @@ void FabberRunData::LogParams()
 void FabberRunData::Run(ProgressCheck *progress)
 {
 	if (!m_io)
-		throw runtime_error("FabberRunData::Run - No data I/O object provided");
+		throw FabberInternalError("FabberRunData::Run - No data I/O object provided");
 
 	if (!m_log)
 	{
@@ -334,8 +334,7 @@ void FabberRunData::ParseParamFile(const string filename)
 	ifstream is(filename.c_str());
 	if (!is.good())
 	{
-		LOG << "FabberRunData::Couldn't read input options file: '" << filename << "'";
-		throw Invalid_option("Couldn't read input options file:" + filename);
+		throw FabberRunDataError("Couldn't read input options file:" + filename);
 	}
 	string param;
 	while (is.good())
@@ -360,8 +359,7 @@ void FabberRunData::ParseOldStyleParamFile(const string filename)
 	ifstream is(filename.c_str());
 	if (!is.good())
 	{
-		LOG << "FabberRunData::Couldn't read -@ input file: '" << filename << "'";
-		throw Invalid_option("Couldn't read input file: -@ " + filename);
+		throw FabberRunDataError("Couldn't read input file: -@ " + filename);
 	}
 	char c;
 	string param;
@@ -387,11 +385,11 @@ void FabberRunData::ParseOldStyleParamFile(const string filename)
 		}
 		else if (string(param, 0, 2) == "-@")
 		{
-			throw Invalid_option("Sorry, at the moment you can only use -@ on the command line (no recursion).\n");
+			throw FabberRunDataError("Can only use -@ on the command line");
 		}
 		else
 		{
-			throw Invalid_option("Invalid option '" + param + "' found in file '" + filename + "'\n");
+			throw FabberRunDataError("Invalid data '" + param + "' found in file '" + filename + "'");
 		}
 	}
 }
@@ -418,8 +416,7 @@ void FabberRunData::Parse(int argc, char** argv)
 		}
 		else
 		{
-			LOG << "FabberRunData::Option doesn't begin with --: " + string(argv[a]);
-			throw Invalid_option("An option doesn't begin with --\n");
+			throw FabberRunDataError("Option '" + string(argv[a]) + "' doesn't begin with --");
 		}
 	}
 }
@@ -428,14 +425,15 @@ void FabberRunData::AddKeyEqualsValue(const string exp, bool trim_comments)
 {
 	string::size_type eqPos = exp.find("=");
 	string key = trim(string(exp, 0, eqPos));
-	if (m_params.count(key) > 0)
-		throw Invalid_option("Duplicated option: '" + key + "'\n");
-	else if (eqPos != (exp.npos))
+	if (eqPos != (exp.npos))
 	{
 		string::size_type end = exp.npos;
 		if (trim_comments)
 			end = exp.find("#");
 		string value = trim(exp.substr(eqPos + 1, end - (eqPos + 1)));
+		if (m_params.count(key) > 0)
+			throw InvalidOptionValue(key, value, "Already has a value: " + m_params[key]);
+
 		m_params[key] = value;
 	}
 	else
@@ -477,7 +475,7 @@ string FabberRunData::GetStringDefault(const string key, const string def)
 	if (m_params.count(key) == 0)
 		return def;
 	if (m_params[key] == "")
-		throw Invalid_option("Option requires a value: --" + key + " (or omit, equivalent to --" + key + "=" + def);
+		throw InvalidOptionValue(key, "<no value>", "Option requires a value");
 	string ret = m_params[key];
 	//   m_params.erase(key);
 	return ret;
@@ -494,7 +492,7 @@ bool FabberRunData::GetBool(const string key)
 		return true;
 	}
 
-	throw Invalid_option("Value should not be given for boolean option --" + key);
+	throw InvalidOptionValue(key, m_params[key], "Value should not be given for boolean option");
 }
 
 int FabberRunData::GetInt(const string key)
@@ -505,7 +503,7 @@ int FabberRunData::GetInt(const string key)
 		return convertTo<int>(val);
 	} catch (invalid_argument&)
 	{
-		throw Invalid_option(key + " must be an integer");
+		throw InvalidOptionValue(key, val, "Must be an integer");
 	}
 }
 
@@ -517,7 +515,7 @@ double FabberRunData::GetDouble(const string key)
 		return convertTo<double>(val);
 	} catch (invalid_argument&)
 	{
-		throw Invalid_option(key + " must be a number (was: " + val + ")");
+		throw InvalidOptionValue(key, val, "Must be an number");
 	}
 }
 
@@ -540,12 +538,12 @@ double FabberRunData::GetDoubleDefault(const string key, double def)
 string FabberRunData::Read(const string key, const string msg)
 {
 	if (m_params.count(key) == 0)
-		throw Invalid_option(msg);
+		throw MandatoryOptionMissing(msg);
 
 	if (m_params[key] == "")
-		throw Invalid_option("No value given for mandatory option: --" + key + "=???");
+		throw InvalidOptionValue(key, "<no value>", "Value must be given");
 
-	// okay, option is valid.  Now remove it.
+	// okay, option is valid.  Now remove it. FIXME not sorted
 	string ret = m_params[key];
 	//    m_params.erase(key);
 	return ret;
@@ -586,7 +584,7 @@ string FabberRunData::GetOutputDir()
 	{
 		if (count >= 50) // I'm using a lot for some things
 		{
-			throw std::runtime_error(
+			throw FabberInternalError(
 					("Cannot create output directory (bad path, or too many + signs?): " + m_outdir).c_str());
 		}
 
@@ -614,7 +612,7 @@ string FabberRunData::GetOutputDir()
 			else
 			{
 				// Other error -- might be a problem!
-				throw std::runtime_error(
+				throw FabberInternalError(
 						("Unexpected problem creating output directory in overwrite mode: " + m_outdir).c_str());
 			}
 		}
@@ -740,7 +738,7 @@ const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 	}
 	if ((order == "singlefile") && nSets > 1)
 	{
-		throw Invalid_option("data-order=singlefile but more than one file specified");
+		throw InvalidOptionValue("data-order", "singlefile", "More than one file specified");
 	}
 
 	if (order == "interleave")
@@ -758,7 +756,7 @@ const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 				if (dataSets[j].Nrows() != nTimes)
 				{
 					// Data sets need same number of time points if they are to be interleaved
-					throw Invalid_option("Data sets must all have the same number of time points");
+					throw InvalidOptionValue("data-order", "interleave", "Data sets must all have the same number of time points");
 				}
 				m_mainDataMultiple.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
 			}
@@ -782,7 +780,7 @@ const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 	}
 	else
 	{
-		throw Invalid_option("data-order not recognized: " + order);
+		throw InvalidOptionValue("data-order", order, "Value not recognized");
 	}
 
 	LOG << "FabberRunData::Done loading data, size = " << m_mainDataMultiple.Nrows() << " timepoints by "

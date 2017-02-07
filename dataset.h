@@ -116,7 +116,7 @@ private:
  * The class will try to keep all it's voxel data consistent. Once any data is
  * obtained, subsequent per-voxel data sets must be of the correct size.
  */
-class FabberRunData : public Loggable
+class FabberRunData: public Loggable
 {
 public:
 
@@ -153,13 +153,13 @@ public:
 	 *           This will not be copied or freed. The caller is responsible
 	 *           for freeing it after use.
 	 */
-	FabberRunData(FabberIo *io, bool compat_options=true);
+	FabberRunData(FabberIo *io, bool compat_options = true);
 	~FabberRunData();
 
 	/**
 	 * Run fabber
 	 */
-	void Run(ProgressCheck *check=0);
+	void Run(ProgressCheck *check = 0);
 
 	/**
 	 * Parse command line arguments into run data
@@ -358,7 +358,7 @@ public:
 	 * @throw DataNotFound If no voxel data matching key is found and no data
 	 *                     could be loaded
 	 */
-	const NEWMAT::Matrix& GetVoxelData(std::string key, bool allowFile=false);
+	const NEWMAT::Matrix& GetVoxelData(std::string key, bool allowFile = false);
 
 	/**
 	 * Get the number of data values associated with each voxel for the named data
@@ -405,7 +405,8 @@ public:
 	 */
 	void Progress(int voxel, int nVoxels)
 	{
-		if (m_progress) m_progress->Progress(voxel, nVoxels);
+		if (m_progress)
+			m_progress->Progress(voxel, nVoxels);
 	}
 
 	/**
@@ -478,49 +479,87 @@ private:
 	EasyLog m_default_log;
 };
 
-#ifdef DEPRECATED
-typedef class FabberRunData ArgsType;
-typedef class FabberRunData EasyOptions;
-#endif
+/**
+ * Exception base class
+ */
+class FabberError: public std::runtime_error
+{
+public:
+	FabberError(std::string msg) :
+			std::runtime_error(msg), m_msg(msg)
+	{
+	}
+
+	virtual ~FabberError() throw() {};
+	virtual const char* what() const throw() {return m_msg.c_str();}
+
+	std::string m_msg;
+};
+
+/**
+ * Thrown for errors that are not the direct
+ * result of bad user input, i.e. bugs in fabber
+ */
+class FabberInternalError: public FabberError
+{
+public:
+	FabberInternalError(std::string msg) :
+		FabberError(msg)
+	{
+		m_msg = "Internal error in Fabber: " + msg;
+	}
+};
+
+/**
+ * Thrown for errors that are directly caused
+ * by invalid user input
+ */
+class FabberRunDataError: public FabberError
+{
+public:
+	FabberRunDataError(std::string msg) :
+		FabberError(msg)
+	{
+	}
+};
 
 /**
  * Thrown when the value given to an option is not valid,
  * e.g. --num_mc_steps=fred (expected a number)
  */
-class Invalid_option: public std::runtime_error
+class InvalidOptionValue: public FabberRunDataError
 {
 public:
-	Invalid_option(std::string msg) :
-			std::runtime_error(msg)
+	InvalidOptionValue(std::string key, std::string value, std::string reason = "") :
+		FabberRunDataError(key)
 	{
+		m_msg = "Invalid value given for option: " + key + "=" + value + " (" + reason + ")";
 	}
 };
 
 /**
  * Thrown when a mandatory option or parameter is not given
  */
-class MandatoryParameterMissing: public Invalid_option
+class MandatoryOptionMissing: public FabberRunDataError
 {
 public:
-	MandatoryParameterMissing(std::string msg) :
-			Invalid_option(msg)
+	MandatoryOptionMissing(std::string key) :
+		FabberRunDataError(key)
 	{
+	  m_msg = "No value given for mandatory option: " + key;
 	}
 };
 
 /**
- * Thrown when data is requested but cannot be found
+ * Thrown when voxel data is requested but cannot be found
  */
-class DataNotFound: public Invalid_option
+class DataNotFound: public FabberRunDataError
 {
 public:
-	DataNotFound(std::string key, std::string filename) :
-			Invalid_option(key + " (filename: " + filename + ")")
+	DataNotFound(std::string key, std::string reason="") :
+		FabberRunDataError(key)
 	{
-	}
-	DataNotFound(std::string key) :
-			Invalid_option(key)
-	{
+		m_msg = "Voxel data not found: " + key + " (" + reason + ")";
 	}
 };
 
@@ -532,6 +571,12 @@ template<typename T> inline T convertTo(const std::string& s)
 	istringstream i(s);
 	char c;
 	if (!(i >> x) || (i.get(c)))
-		throw Invalid_option("convertTo failed... couldn't convert string '" + s + "' into a value.\n");
+		throw InvalidOptionValue("", s, "Failed to convert to required type");
 	return x;
 }
+
+#ifdef DEPRECATED
+typedef class FabberRunData ArgsType;
+typedef class FabberRunData EasyOptions;
+typedef class FabberError Invalid_option;
+#endif

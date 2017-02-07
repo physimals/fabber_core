@@ -118,7 +118,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 	{
 		LOG_ERR("LinearizedFwdModel::about:\n" << about);
 		LOG_ERR("LinearizedFwdModel::offset:\n" << offset.t());
-		throw overflow_error("ReCentre: Non-finite values found in offset");
+		throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in offset");
 	}
 
 	// Calculate the Jacobian numerically.  jacobian is len(y)-by-len(m)
@@ -169,7 +169,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 		LOG << "LinearizedFwdModel::jacobian:\n" << jacobian;
 		LOG << "LinearizedFwdModel::about':\n" << about.t();
 		LOG << "LinearizedFwdModel::offset':\n" << offset.t();
-		throw overflow_error("ReCentre: Non-finite values found in jacobian");
+		throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in jacobian");
 	}
 }
 

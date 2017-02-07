@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 		{
 			if (ins & write)
 			{
-				throw Invalid_option("Cannot insert and write at same time - choose either --new or --write");
+				throw FabberRunDataError("Cannot insert and write at same time - choose either --new or --write");
 			}
 
 			valimfile = args.ReadWithDefault("valim", "");
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
 		else
 		{
 			if (outfile == infile)
-				throw Invalid_option("Output filename has not been specified");
+				throw MandatoryOptionMissing("output");
 
 			bval = args.ReadBool("val");
 			bvar = args.ReadBool("var");
@@ -221,19 +221,19 @@ int main(int argc, char** argv)
 
 			if (bval & bvar)
 			{
-				throw Invalid_option("Cannot output value and variance at same time - choose either --val or --val");
+				throw FabberRunDataError("Cannot output value and variance at same time - choose either --val or --val");
 			}
 			if (bval & cvar)
 			{
-				throw Invalid_option("Cannot output value and covariance at same time");
+				throw FabberRunDataError("Cannot output value and covariance at same time");
 			}
 			if (bvar & cvar)
 			{
-				throw Invalid_option("Cannot output variance and covariance at same time");
+				throw FabberRunDataError("Cannot output variance and covariance at same time");
 			}
 			if (!bval & !bvar & !cvar)
 			{
-				throw Invalid_option(
+				throw FabberRunDataError(
 						"Please select whether you want to extract the value (--val) or the variance (--var) or a covaraince (--cvar)");
 			}
 		}
@@ -279,12 +279,12 @@ int main(int argc, char** argv)
 				if (verbose)
 					cout << "Inserting new parameter" << endl;
 				if (param > oldsize + 1)
-					throw Invalid_option("Cannot insert parameter here, not enough parameters in existing MVN");
+					throw FabberRunDataError("Cannot insert parameter here, not enough parameters in existing MVN");
 			}
 			else
 			{
 				if (param > oldsize)
-					throw Invalid_option("Cannot edit this parameter, not enough parameters in existing MVN");
+					throw FabberRunDataError("Cannot edit this parameter, not enough parameters in existing MVN");
 			}
 			SymmetricMatrix mvncov;
 			MVNDist mvnnew(1);
@@ -389,13 +389,13 @@ int main(int argc, char** argv)
 			cout << "Done." << endl;
 
 		return 0;
-	} catch (const Invalid_option& e)
+	} catch (const std::exception& e)
 	{
-		cout << Exception::what() << endl;
+		cout << e.what() << endl;
 		Usage();
-	} catch (Exception)
+	} catch (NEWMAT::Exception& e)
 	{
-		cout << Exception::what() << endl;
+		cout << e.what() << endl;
 	} catch (...)
 	{
 		cout << "There was an error!" << endl;

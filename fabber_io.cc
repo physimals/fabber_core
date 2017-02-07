@@ -98,7 +98,7 @@ void FabberIoMemory::SetVoxelCoords(const NEWMAT::Matrix &coords)
 	// numbers of dimensions but would require extensive refactoring
 	if (coords.Nrows() != 3)
 	{
-		throw Invalid_option("Co-ordinates must be 3 dimensional");
+		throw InvalidOptionValue("Coordinates dimensions", stringify(coords.Nrows()), "Co-ordinates must be 3 dimensional");
 	}
 
 	// FIXME we assume coords will not be negative
@@ -143,9 +143,7 @@ void FabberIoMemory::CheckSize(std::string key, const NEWMAT::Matrix &mat)
 		// as previous data
 		if (mat.Ncols() != m_nvoxels)
 		{
-			throw Invalid_option(
-					"Per-voxel matrix " + key + " is incorrect size (cols=" + stringify(mat.Ncols()) + " should be "
-							+ stringify(m_nvoxels) + ")");
+			throw InvalidOptionValue("Voxels in " + key, stringify(mat.Ncols()), "Incorrect size - should contain " + stringify(m_nvoxels));
 		}
 	}
 }

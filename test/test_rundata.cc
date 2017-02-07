@@ -199,7 +199,7 @@ TEST_F(RunDataTest, MultiDataInconsistent)
 	io.SetVoxelData("data2", data2);
 	io.SetVoxelData("data3", data3);
 	rundata.Set("data-order", "singlefile");
-	ASSERT_THROW(NEWMAT::Matrix data = rundata.GetMainVoxelData(), Invalid_option);
+	ASSERT_THROW(NEWMAT::Matrix data = rundata.GetMainVoxelData(), InvalidOptionValue);
 }
 
 // Tests that we can read config from a .fab file

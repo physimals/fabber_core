@@ -134,7 +134,7 @@ void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool c
 		Matrix deps1 = from.GetCovariance().Rows(first, last).Columns(1, first - 1);
 		Matrix deps2 = from.GetCovariance().Rows(first, last).Columns(last + 1, from.covariance.Ncols());
 		if (!deps1.IsZero() || !deps2.IsZero())
-			throw Invalid_option("Covariance found in part of MVN that should be independent from the rest!");
+			throw FabberRunDataError("Covariance found in part of MVN that should be independent from the rest!");
 	}
 	return;
 }
@@ -149,7 +149,7 @@ void MVNDist::SetSize(int dim)
 {
 	// Not useful and dominates --debug-running-stack:
 	if (dim <= 0)
-		throw RBD_COMMON::Logic_error("Can't have dim<=0\n");
+		throw FabberInternalError("MVNDist::SetSize dim<=0");
 
 	assert(means.Nrows() == m_size || m_size < 0);
 
@@ -172,7 +172,7 @@ void MVNDist::SetSize(int dim)
 const SymmetricMatrix& MVNDist::GetPrecisions() const
 {
 	if (m_size == -1)
-		throw Logic_error("MVN is uninitialized!\n");
+		throw FabberInternalError("MVNDist::GetPrecisions size = -1 (uninitialized)");
 	assert(means.Nrows() == m_size);
 
 	// If the covariances have been changed then the
@@ -194,7 +194,7 @@ const SymmetricMatrix& MVNDist::GetPrecisions() const
 const SymmetricMatrix& MVNDist::GetCovariance() const
 {
 	if (m_size == -1)
-		throw Logic_error("MVN is uninitialized!\n");
+		throw FabberInternalError("MVNDist::GetCovariance size = -1 (uninitialized)");
 	assert(means.Nrows() == m_size);
 
 	// If the precisions have been changed then the
@@ -274,8 +274,8 @@ void MVNDist::LoadVest(const string& filename)
 	if (N < 1 || mat != mat.t() || mat(N + 1, N + 1) != 1.0)
 	{
 		LOG << "N == " << N << ", matrix:\n" << mat;
-		throw Invalid_option(
-				"Inputted MVNs must be symmetric matrices!\nFormat = [covariance means(:); means(:)' 1.0]\n");
+		throw InvalidOptionValue(filename, "",
+				"MVNs must be symmetric matrices (format = [covariance means(:); means(:) 1.0])");
 	}
 	SetSize(N);
 	means = mat.Column(m_size + 1).Rows(1, N);
@@ -307,7 +307,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 	// Prepare an output vector of the correct size
 	const int nVoxels = voxel_data.Ncols();
 	if (nVoxels == 0) {
-		throw runtime_error("MVNDist::Load - Voxel data is empty");
+		throw FabberRunDataError("MVNDist::Load - Voxel data is empty");
 	}
 
 	for (unsigned i = 0; i < mvns.size(); i++)
@@ -320,7 +320,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 	// formula.
 	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
 	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
-		throw runtime_error("MVNDist::Load  - Incorrect number of rows for an MVN input");
+		throw FabberRunDataError("MVNDist::Load  - Incorrect number of rows for an MVN input");
 	}
 
 	SymmetricMatrix tmp(nParams);
@@ -343,7 +343,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 				nParams * (nParams + 1) / 2 + nParams);
 
 		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
-			throw runtime_error("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
+			throw FabberRunDataError("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
 		}
 		assert(mvn->means.Nrows() == mvn->m_size);
 		assert(mvns.at(vox-1) == NULL);

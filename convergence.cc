@@ -22,7 +22,7 @@ ConvergenceDetector* ConvergenceDetector::NewFromName(const string& name)
 	ConvergenceDetector* conv = factory->Create(name);
 	if (conv == NULL)
 	{
-		throw Invalid_option("Unrecognized convergence detector: " + name);
+		throw InvalidOptionValue("convergence", name, "Unrecognized convergence detector");
 	}
 	return conv;
 }
@@ -38,7 +38,7 @@ void CountingConvergenceDetector::Initialize(FabberRunData &params)
 	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "CountingConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)
-		throw Invalid_option("CountingConvergenceDetector::Max iterations must be positive");
+		throw InvalidOptionValue("max_iterations", stringify(m_max_its), "Must be positive");
 	Reset();
 }
 
@@ -74,7 +74,7 @@ void FchangeConvergenceDetector::Initialize(FabberRunData &params)
 	m_min_fchange = convertTo<double> (params.GetStringDefault("min-fchange", "0.01"));
 	LOG << "FchangeConvergenceDetector::Minimum F change=" << m_min_fchange << endl;
 	if (m_min_fchange <= 0)
-		throw Invalid_option("FchangeConvergenceDetector::Minimum F change must be positive");
+		throw InvalidOptionValue("min-fchange", stringify(m_min_fchange), "Must be positive");
 	Reset();
 }
 
@@ -147,8 +147,9 @@ void TrialModeConvergenceDetector::Initialize(FabberRunData &params)
 
 	m_max_trials = convertTo<int> (params.GetStringDefault("max-trials", "10"));
 	LOG << "TrialModeConvergenceDetector::Max trials=" << m_max_trials << endl;
-	if (m_min_fchange <= 0)
-		throw Invalid_option("TrialModeConvergenceDetector::Max trials must be positive");
+	if (m_max_trials <= 0)
+		throw InvalidOptionValue("max-trials", stringify(m_max_trials), "Must be positive");
+
 	Reset();
 }
 
@@ -227,12 +228,12 @@ void LMConvergenceDetector::Initialize(FabberRunData &params)
 	m_max_its = convertTo<int> (params.GetStringDefault("max-iterations", "10"));
 	LOG << "LMConvergenceDetector::Max iterations=" << m_max_its << endl;
 	if (m_max_its <= 0)
-		throw Invalid_option("LMConvergenceDetector::Max iterations must be positive");
+		throw InvalidOptionValue("max-iterations", stringify(m_max_its), "Must be positive");
 
 	m_max_fchange = convertTo<double> (params.GetStringDefault("max-fchange", "0.01"));
 	LOG << "LMConvergenceDetector::Max fchange=" << m_max_fchange << endl;
 	if (m_max_fchange <= 0)
-		throw Invalid_option("LMConvergenceDetector::Max fchange must be positive");
+		throw InvalidOptionValue("max-fchange", stringify(m_max_fchange), "Must be positive");
 	Reset();
 }
 

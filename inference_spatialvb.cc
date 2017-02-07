@@ -67,7 +67,7 @@ static int GetSpatialDims(FabberRunData& args)
 
 	if (dims < 0 || dims > 3)
 	{
-		throw Invalid_option("spatial-dims= must be 0, 1, 2 or 3");
+		throw InvalidOptionValue("spatial-dims", stringify(dims), "Must be 0, 1, 2 or 3");
 	}
 	else if (dims == 1)
 	{
@@ -143,12 +143,12 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 		case 'P':
 		case 'S':
 			if (type != m_shrinkage_type && m_shrinkage_type != '-')
-				throw Invalid_option("Sorry, only one type of shrinkage prior at a time, please!\n");
+				throw FabberRunDataError("Sorry, only one type of shrinkage prior at a time, please!\n");
 			m_shrinkage_type = type;
 			break;
 
 		default:
-			throw Invalid_option("Unrecognized spatial prior type: " + string(1, type));
+			throw InvalidOptionValue("param-spatial-priors", stringify(type), "Unrecognized spatial prior type");
 		}
 	}
 
@@ -192,7 +192,7 @@ void SpatialVariationalBayes::Initialize(FwdModel* fwd_model, FabberRunData& arg
 	if (m_prior_types_str.find("F") != string::npos) // F found
 	{
 		if (fixedDelta < 0)
-			throw Invalid_option("If --param-spatial-priors=F, you must specify a --fixed-delta value.\n");
+			throw InvalidOptionValue("param-spatial-priors", "F", "Must specify a fixed-delta value for this type of spatial prior");
 	}
 	else
 	{
@@ -629,9 +629,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 				break;
 
 			default:
-				throw Invalid_option(
-						string("Invalid spatial prior type '") + type + "' given to --param-spatial-priors\n");
-				break;
+				throw InvalidOptionValue("param-spatial-priors", stringify(type), "Invalid spatial prior type");
 
 			case 'R':
 			case 'D':
@@ -1642,7 +1640,7 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 // of priority otherwise binary search for voxel by offset will not work
 	if (!IsCoordMatrixCorrectlyOrdered(voxelCoords))
 	{
-		throw Invalid_option("Coordinate matrix must be in correct order to use adjacency-based priors.");
+		throw FabberInternalError("Coordinate matrix must be in correct order to use adjacency-based priors.");
 	}
 
 // Create a column vector with one entry per voxel.
@@ -1764,7 +1762,7 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix& voxelCoords)
 
 			if (checkNofN != 1)
 			{
-				throw std::logic_error("Each of this voxel's neighbours must have this voxel as a neighbour");
+				throw FabberInternalError("Each of this voxel's neighbours must have this voxel as a neighbour");
 			}
 		}
 	}
@@ -1957,7 +1955,7 @@ void CovarianceCache::CalcDistances(const NEWMAT::Matrix& voxelCoords, const str
 	}
 	else
 	{
-		throw Invalid_option("\nUnrecognized distance measure: " + distanceMeasure + "\n");
+		throw InvalidOptionValue("distance-measure", distanceMeasure, "Unrecognized distance measure");
 	}
 }
 

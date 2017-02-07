@@ -20,7 +20,7 @@ NoiseModel* NoiseModel::NewFromName(const string& name)
 	NoiseModel *noise = factory->Create(name);
 	if (noise == NULL)
 	{
-		throw Invalid_option("Unrecognized --noise: " + name);
+		throw InvalidOptionValue("noise", name, "Unrecognized noise type");
 	}
 	return noise;
 }

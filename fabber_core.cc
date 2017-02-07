@@ -129,21 +129,11 @@ int execute(int argc, char** argv)
 		gzLog = params.GetBool("gzip-log");
 		ret = 0;
 
-	} catch (const DataNotFound& e)
-	{
-		log.ReissueWarnings();
-		log.LogStream() << "Data not found:\n  " << e.what() << endl;
-		cerr << "Data not found:\n  " << e.what() << endl;
-	} catch (const Invalid_option& e)
-	{
-		log.ReissueWarnings();
-		log.LogStream() << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
-		cerr << "Invalid_option exception caught in fabber:\n  " << e.what() << endl;
 	} catch (const exception& e)
 	{
 		log.ReissueWarnings();
-		log.LogStream() << "STL exception caught in fabber:\n  " << e.what() << endl;
-		cerr << "STL exception caught in fabber:\n  " << e.what() << endl;
+		log.LogStream() << "Exception caught in fabber:\n  " << e.what() << endl;
+		cerr << "Exception caught in fabber:\n  " << e.what() << endl;
 	} catch (NEWMAT::Exception& e)
 	{
 		log.ReissueWarnings();

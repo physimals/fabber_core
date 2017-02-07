@@ -75,7 +75,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 		LOG << "FabberIoNewimage::Loading data from '" + filename << "'" << endl;
 		if (!fsl_imageexists(filename))
 		{
-			throw DataNotFound(filename);
+			throw DataNotFound(filename, "File is invalid or does not exist");
 		}
 
 		volume4D<float> vol;
@@ -92,7 +92,7 @@ const Matrix &FabberIoNewimage::GetVoxelData(std::string filename)
 			}
 		} catch (...)
 		{
-			throw DataLoadError(filename);
+			throw DataNotFound(filename, "Error loading file");
 		}
 		DumpVolumeInfo(vol, LOG);
 

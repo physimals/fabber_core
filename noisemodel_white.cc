@@ -85,7 +85,7 @@ void WhiteParams::InputFromMVN(const MVNDist& mvn)
 		phis[i - 1].SetMeanVariance(mvn.means(i), mvn.GetCovariance()(i, i));
 		for (int j = i + 1; j <= mvn.means.Nrows(); j++)
 			if (mvn.GetCovariance()(i, j) != 0.0)
-				throw Invalid_option("Phis should have zero covariance!");
+				throw FabberRunDataError("Phis should have zero covariance!");
 	}
 }
 
@@ -127,7 +127,7 @@ void WhiteNoiseModel::Initialize(FabberRunData& args)
 	// Set phi prior externally
 	phiprior = convertTo<double> (args.GetStringDefault("prior-noise-stddev", "-1"));
 	if (phiprior < 0 && phiprior != -1)
-		throw Invalid_option("Incorrect choice of prior-noise-stddev, is should be >0");
+		throw InvalidOptionValue("prior-noise-stddev", stringify(phiprior), "Must be > 0");
 }
 
 void WhiteNoiseModel::MakeQis(int dataLen) const
@@ -139,7 +139,7 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
 	const int patternLen = phiPattern.length();
 	assert(patternLen > 0);
 	if (patternLen > dataLen)
-		throw Invalid_option("Pattern length exceeds data length... this is probably a mistake");
+		throw InvalidOptionValue("noise-pattern", phiPattern, "Pattern length exceeds data length");
 
 	vector<int> pat;
 	int nPhis = 0;
@@ -155,7 +155,7 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
 		else if (c >= 'a' && c <= 'z')
 			n = (c - 'a' + 10);
 		else
-			throw Invalid_option(string("Invalid character in pattern: '") + c + "'");
+			throw InvalidOptionValue("noise-pattern", stringify(c), "Invalid character");
 		pat.push_back(n);
 		if (nPhis < n)
 			nPhis = n;
@@ -195,7 +195,7 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
 	// not longer than the data.
 	for (int i = 1; i <= nPhis; i++)
 		if (Qis[i - 1].Trace() < 1.0) // this phi is never used
-			throw Invalid_option("At least one Phi was unused! This is probably a bad thing.");
+			throw FabberInternalError("At least one Phi was unused! This is probably a bad thing.");
 }
 
 void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
@@ -243,12 +243,6 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePr
 void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, const MVNDist& thetaPrior,
 		const LinearFwdModel& linear, const ColumnVector& data, MVNDist* thetaWithoutPrior, float LMalpha) const
 {
-	//LOG << "start:" << theta.means.t() << endl;
-
-	//  if (thetaWithoutPrior != NULL)
-	//    throw Invalid_option("This noise model doesn't yet work with "
-	//      +string("--spatial-prior-output-correction... implement it!\n"));
-
 	const WhiteParams& noise = dynamic_cast<const WhiteParams&> (noiseIn);
 
 	const ColumnVector &ml = linear.Centre();
@@ -413,7 +407,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoisePa
 		LOG_ERR("WhiteNoiseModel::expectedLogThetaDist == " << expectedLogThetaDist << endl);
 		LOG_ERR("eWhiteNoiseModel::xpectedLogPhiDist == " << expectedLogPhiDist << endl);
 		//LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << endl);
-		throw overflow_error("WhiteNoiseModel::Non-finite free energy!");
+		throw FabberInternalError("WhiteNoiseModel::Non-finite free energy!");
 	}
 
 	return F;
