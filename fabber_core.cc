@@ -43,6 +43,12 @@ static void Usage()
 	}
 }
 
+static void set_environment()
+{
+	// This variable needs to be set, and might be missing if FSL is not installed
+	setenv("FSLOUTPUTTYPE", "NIFTI_GZ", 0);
+}
+
 /**
  * Run the default command line program
  */
@@ -54,6 +60,8 @@ int execute(int argc, char** argv)
 
 	try
 	{
+		set_environment();
+
 		// Create a new Fabber run
 		FabberIoNewimage io;
 		FabberRunData params(&io);
@@ -89,7 +97,7 @@ int execute(int argc, char** argv)
 		}
 		else if (params.GetBool("listmodels"))
 		{
-			vector<string> models = FwdModel::GetKnown();
+			vector < string > models = FwdModel::GetKnown();
 			vector<string>::iterator iter;
 			for (iter = models.begin(); iter != models.end(); iter++)
 			{
@@ -100,7 +108,7 @@ int execute(int argc, char** argv)
 		}
 		else if (params.GetBool("listmethods"))
 		{
-			vector<string> infers = InferenceTechnique::GetKnown();
+			vector < string > infers = InferenceTechnique::GetKnown();
 			vector<string>::iterator iter;
 			for (iter = infers.begin(); iter != infers.end(); iter++)
 			{
