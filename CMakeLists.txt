@@ -66,8 +66,6 @@ else (FSL_BUILD)
                HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
   find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
                HINTS $ENV{FSLDIR}/lib REQUIRED )
-  find_library(Z_LIBRARY NAMES z libz zlib zlibd 
-               HINTS $ENV{FSLDIR}/lib REQUIRED )
 
   find_package(Boost)
   if(NOT Boost_FOUND)
@@ -75,10 +73,12 @@ else (FSL_BUILD)
                 HINTS $ENV{FSLDIR}/extras/include/boost REQUIRED)
   endif(NOT Boost_FOUND)
   
-  find_package(ZLIB)
+  if(NOT WIN32) 
+    find_package(ZLIB)
+  endif(NOT WIN32)
   if (NOT ZLIB_FOUND)
-    find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd 
-                 HINTS $ENV{FSLDIR}/lib REQUIRED )
+      find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd 
+                   HINTS $ENV{FSLDIR}/lib REQUIRED NO_DEFAULT_PATH)
   endif(NOT ZLIB_FOUND)
    
   Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}")
