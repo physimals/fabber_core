@@ -1,4 +1,5 @@
 import traceback
+import collections
 
 import nibabel as nib
 import numpy as np
@@ -17,25 +18,30 @@ CH_FOCUS = "focus"
 """Change to the selected data item"""
 CH_SEL = "sel"
 
-class DataItem:
+class ImageView:
     """
-    Represents a 3d or 4d volume, either
+    Represents a view of a 3d or 4d volume,
     input or output data
     """
-    def __init__(self, filename):
-        self.filename = filename
-        self._load()
+    def __init__(self, data=None, filename=None):
+        if data is None and filename is None:
+            raise RuntimeError("Can't create ImageView without data or filename")
+        elif data is not None and filename is not None:
+                raise RuntimeError("Can't create ImageView with both data and filename")
+        elif data is None:
+            self.filename = filename
+            data = nib.load(filename).get_data()
+        else:
+            self.filename = None
+
+        self.data = np.ma.masked_values(data, 0)
         self.shape = self.data.shape 
         self.ndims = len(self.shape)
         self.alpha = 1.0
+        self.visible = True
+        self.cm = "gray"
         self.min = self.data.min()
         self.max = self.data.max()
-        
-    def _load(self):
-        print("Loading data: " + self.filename)
-        f = nib.load(self.filename)
-        self.data = np.ma.masked_values(f.get_data(), 0)
-        self.affine = f.affine
         
     def get_slice(self, focus, d):
         x,y,z,t = focus
@@ -61,72 +67,80 @@ class DataItem:
             return self.data[x,y,z,:]
         else:
             return []
-         
-class FabberImageData(Model, View):
+
+class FabberImageData(Model, View, collections.MutableMapping):
     """
-    A collection of image data items, consisting of input data
-    and optionally output data as well
+    Input / output image data for Fabber
+
+    Behaves like a dict of ImageView items
     """
     def __init__(self):
-        Model.__init__(self, "imagedata")
+        Model.__init__(self, "imdata")
         View.__init__(self, [])
-        
-        # Data items, keyed by role
-        self.data = {}
-        
-        # Data extent. All data in a DataSet must have compatible extent
-        self.shape = [0, 0, 0, 0]
-        
-        # Focus point. Although this relates to visual presentation it
-        # is in the model because all views should respect the current 
-        # focus
+
+        # Mapping of options as key/value pairs
+        self.imdata = {}
+
+        # Shape of main data
+        self.shape = None
+
+        # Point of focus
         self.focus = [0, 0, 0, 0]
-        
-        # Data item which is the current focus. 
-        self.focus_data = None
-        
-        # Current focus run
-        self.current_run = None
-    
+
+        # Selected data item which is the current focus.
+        self.selected_data = None
+
+        # Current run
+        self.run = None
+
+        # self.update(dict(*args, **kwargs))  # use the free update to set keys
+
+    def __getitem__(self, key):
+        return self.imdata[key.strip()]
+
+    def __setitem__(self, key, item):
+        self.imdata[key.strip()] = item
+
+    def __delitem__(self, key):
+        key = key.strip()
+        if key in self.imdata:
+            del self.imdata[key]
+        self._change(CH_DATA)
+        self._update_views()
+
+    def __iter__(self):
+        return iter(self.imdata)
+
+    def __len__(self):
+        return len(self.imdata)
+
     def do_update(self):
         """
         Run data has changed
         """
+        print("imdata: rundata changed", self.rundata)
         if self.rundata.changed("data"):
             self._update_input_data("data")
-            self._change(CH_DATA)
+            if "data" in self:
+                self.shape = self["data"].shape
+                self._set_default_focus()
         elif self.rundata.changed("mask"):
             self._update_input_data("mask")
-            self._change(CH_DATA)
-        if self.rundata.changed(CH_RUN, "output"):
-            self._get_last_run()
-            self._load_run()
-            self._change(CH_DATA)
         self._update_views()
-        
-    def set_rundir(self, outdir):
-        runs = self.rundata.get_runs()
-        for run in runs:
-            if run.outdir == outdir:
-                self.run = run
-                break
-        self._load_run()
-        self._change(CH_DATA)
-        self._update_views()
-        
-    def _get_last_run(self):
-        runs = self.rundata.get_runs()
-        if len(runs) > 0:
-            self.run = runs[0]
-        else: self.run = None
 
-    def _load_run(self):
+    def set_run(self, run):
         """ 
-        Load output data from the current run
+        Load output data from a run
         """
-        if self.run:
-            for role, filename in self.run.files.items():
-                self._load_data(role, filename)
+        if self.shape is None:
+            raise RuntimeError("Can't load a run without main data")
+        self.run = run
+        self._clear_output_data()
+        for name, filename in self.run.files.items():
+            item = ImageView(filename=filename)
+            self._check_dims(item.data)
+            self._set_data_defaults(item, name)
+            self[name] = item
 
     def set_visibility(self, item, alpha=None, visible=None, cm=None):
         """ 
@@ -138,76 +152,50 @@ class FabberImageData(Model, View):
         self._change(CH_DATA)
         self._update_views()
 
-    def select(self, key):
-        """ 
-        Select a data item 
-        """
-        if key in self.data:
-            self.focus_data = self.data[key]
-            print("Selected: ", self.focus_data)
+    def select_data(self, key):
+        if key in self:
+            self.selected_data = self[key]
         else:
-            raise RuntimeWarning("Data not found in ImageDataSet: %s" % key)
+            raise RuntimeWarning("Data not found: %s" % key)
         self._change(CH_SEL)        
         self._update_views()
 
     def update_focus(self, xp=None, yp=None, zp=None, tp=None):
-        """ 
-        Update the point of focus 
-        """
         if xp: self.focus[0] = xp
         if yp: self.focus[1] = yp
         if zp: self.focus[2] = zp
         if tp: self.focus[3] = tp
-        self._change(CH_FOCUS)        
+        self._change(CH_FOCUS)
         self._update_views()
    
     def _update_input_data(self, key):
-        """
-        Load a data file
-        
-        If there is a problem loading the data file, or the
-        dimensions are inconsistent, the data will not be
-        added and an error is displayed to stderr
-        """
-        if not self.rundata.options.has_key(key):
-            # Data does not exist
-            if self.data.has_key(key): del self.data[key]
-        elif self.data.has_key(key) and self.data[key].filename == self.rundata.options[key]:
-            # Data file is unchanged
-            return
-        else:
-            self._load_data(key, self.rundata.options[key])
-        
-    def _load_data(self, key, filename):
-        print("loading %s from %s" % (key, filename))
-        try:
-            item = DataItem(filename)
-            self._set_data_defaults(item, key)
-            self._check_dims(item)
-            self.data[key] = item
-            for idx, f in enumerate(self.focus):
-                if f == 0: 
-                    self.focus[idx] = self.shape[idx] / 2
-                    self._change(CH_FOCUS)
-        except:
-            print("Failed to load data: %s, %s" % (key, filename))
-            traceback.print_exc()
-  
+        print("Updating input", self.rundata)
+        if key in self and key not in self.rundata:
+            del self[key]
+        elif key in self.rundata and (key not in self or self.rundata[key] != self[key].filename):
+            self[key] = ImageView(filename=self.rundata[key])
+
+    def _set_default_focus(self):
+       self.focus = [d/2 for d in self.shape]
+       self._change(CH_FOCUS)
+
     def _set_data_defaults(self, item, role):
-        if role == "mask": 
+        if role == "mask":
             item.visible = True
             item.alpha = 0.3
             item.cm = "autumn"
         elif role == "data":
             item.visible = True
             item.cm = "gray"
-        elif role.lower() == "model prediction":
-            item.visible = True
-            item.cm = "spectral"
         else:
             item.visible = False
             item.cm = "spectral"
-            
+
+    def _clear_output_data(self):
+        for key in self.keys():
+            if key not in ("data", "mask"):
+                del self[key]
+
     def _check_dims(self, item):
         """ 
         Check that the dimensions of the given data are consistent with the
@@ -218,10 +206,10 @@ class FabberImageData(Model, View):
         to account for the data. All future data must be consistent with this
         expanded set of dimensions 
         """
-        for d in range(min(len(self.shape), len(item.shape))):
-            if self.shape[d] == 0:
-                self.shape[d] = item.shape[d]
-            elif item.shape[d] != self.shape[d]:
+        if self.data is None: return
+
+        for d in range(min(len(self.data.shape), len(item.shape))):
+            if item.shape[d] != self.shape[d]:
                 raise Exception("Inconsistent Dimensions: %i (%i != %i)" % (d, item.shape[d], self.shape[d]))
 
 class FocusView(View):
@@ -234,18 +222,21 @@ class FocusView(View):
         self.sbT.valueChanged.connect(self.t_changed)
         
     def x_changed(self, value):
-        self.imagedata.update_focus(xp=value)
+        self.imdata.update_focus(xp=value)
     def y_changed(self, value):
-        self.imagedata.update_focus(yp=value)
+        self.imdata.update_focus(yp=value)
     def z_changed(self, value):
-        self.imagedata.update_focus(zp=value)
+        self.imdata.update_focus(zp=value)
     def t_changed(self, value):
-        self.imagedata.update_focus(tp=value)
+        self.imdata.update_focus(tp=value)
         
     def update_widget(self, w, idx):
         w.setMinimum(0)
-        w.setMaximum(self.imagedata.shape[idx]-1)
-        w.setValue(self.imagedata.focus[idx])
+        if self.imdata.shape is not None:
+            w.setMaximum(self.imdata.shape[idx]-1)
+        else:
+            w.setMaximum(1)
+        w.setValue(self.imdata.focus[idx])
         
     def do_update(self):
         self.update_widget(self.slider, 3)
@@ -259,22 +250,22 @@ class ParamValuesView(View):
     Table of parameter values at the focus point
     """
     def __init__(self, **kwargs):
-        View.__init__(self, [CH_FOCUS, CH_DATA, CH_RUN], **kwargs)
+        View.__init__(self, [CH_FOCUS, CH_DATA], **kwargs)
         
     def populate(self, run):
         self.table.setRowCount(len(run.params))
         print run.params
         for idx, param in enumerate(run.params):
-            mean = self.imagedata.data[param + " Mean value"].get_value(self.imagedata.focus)
-            std = self.imagedata.data[param + " Std. dev."].get_value(self.imagedata.focus)
+            mean = self.imdata[param + " Mean value"].get_value(self.imdata.focus)
+            std = self.imdata[param + " Std. dev."].get_value(self.imdata.focus)
             self.table.setItem(idx, 0, QtGui.QTableWidgetItem(param))
             self.table.setItem(idx, 1, QtGui.QTableWidgetItem(str(mean)))
             self.table.setItem(idx, 2, QtGui.QTableWidgetItem(str(std)))
             
     def do_update(self):
         self.table.setRowCount(0)
-        if self.imagedata.run:
-            self.populate(self.imagedata.run)
+        if self.imdata.run:
+            self.populate(self.imdata.run)
          
 class DataView(View):
     def __init__(self, logDialog, runDialog, **kwargs):
@@ -291,14 +282,14 @@ class DataView(View):
         
     def data_clicked(self):
         filename = QtGui.QFileDialog.getOpenFileName()[0]
-        if filename: self.imagedata.rundata.set_option("data", filename)
+        if filename: self.imdata.rundata["data"] = filename
         
     def mask_clicked(self):
         filename = QtGui.QFileDialog.getOpenFileName()[0]
-        if filename: self.imagedata.rundata.set_option("mask", filename)
-        
+        if filename: self.imdata.rundata["mask"] = filename
+
     def choose_run(self):
-        runs = self.imagedata.get_runs()
+        runs = self.imdata.get_runs()
         self.runDialog.table.setRowCount(len(runs))
         for idx, run in enumerate(runs):
             self.runDialog.table.setItem(idx, 0, QtGui.QTableWidgetItem(run.dir))
@@ -306,30 +297,30 @@ class DataView(View):
         self.runDialog.show()
         if self.runDialog.exec_():
             run = runs[self.runDialog.table.currentRow()]
-            self.imagedata.select_run(run.dir)
+            self.imdata.select_run(run.dir)
  
     def view_log_pressed(self):
         self.logDialog.show()
         self.logDialog.raise_()
     
     def data_select(self, cur, prev):
-        self.imagedata.select(self.table.item(cur.row(), 0).text())
+        self.imdata.select(self.table.item(cur.row(), 0).text())
         
     def relist(self):
         self.table.setRowCount(0)
         n = 0
         self.table.setRowCount(0)
-        for key, data in self.imagedata.data.items():
+        for key, data in self.imdata.items():
             self.table.setRowCount(n+1)
             #if data.visible:
             #    item.setIcon(self.table.style().standardIcon(QtGui.QStyle.SP_FileIcon))        
             self.table.setItem(n, 0, QtGui.QTableWidgetItem(key))
             self.table.setItem(n, 1, QtGui.QTableWidgetItem(data.filename))
             n += 1
-        if self.imagedata.run:
-            self.logDialog.textBrowser.setText(self.imagedata.run.get_log())
-            self.currentRunEdit.setText(self.imagedata.run.timestamp)
-            if self.imagedata.run.isquick:
+        if self.imdata.run:
+            self.logDialog.textBrowser.setText(self.imdata.run.get_log())
+            self.currentRunEdit.setText(self.imdata.run.timestamp)
+            if self.imdata.run.isquick:
                 msgBox = QtGui.QMessageBox()
                 msgBox.setText("This was a quick 1-voxel run, not a full run")
                 msgBox.exec_()
@@ -352,25 +343,25 @@ class CurrentDataView(View):
             for map in self.maps:
                 self.cmCombo.addItem(map)
             
-        self.set_enabled(self.imagedata.focus_data is not None)
+        self.set_enabled(self.imdata.selected_data is not None)
         
-        if self.imagedata.focus_data is not None:
-            self.currentEdit.setText(self.imagedata.focus_data.filename)
-            self.slider.setValue(100*self.imagedata.focus_data.alpha)
-            if self.imagedata.focus_data.visible:
+        if self.imdata.selected_data is not None:
+            self.currentEdit.setText(self.imdata.selected_data.filename)
+            self.slider.setValue(100*self.imdata.selected_data.alpha)
+            if self.imdata.selected_data.visible:
                 self.cb.setCheckState(QtCore.Qt.CheckState.Checked)
             else:
                 self.cb.setCheckState(QtCore.Qt.CheckState.Unchecked)
-            self.cmCombo.setCurrentIndex(self.maps.index(self.imagedata.focus_data.cm))
-            self.valueEdit.setText(str(self.imagedata.focus_data.get_value(self.imagedata.focus)))
+            self.cmCombo.setCurrentIndex(self.maps.index(self.imdata.selected_data.cm))
+            self.valueEdit.setText(str(self.imdata.selected_data.get_value(self.imdata.focus)))
         
     def cm_changed(self, idx):
         text = self.maps[idx]
-        self.imagedata.set_visibility(self.imagedata.focus_data, cm=text)
+        self.imdata.set_visibility(self.imdata.selected_data, cm=text)
 
     def alpha_changed(self, value):
-        self.imagedata.set_visibility(self.imagedata.focus_data, alpha=float(value)/100)
+        self.imdata.set_visibility(self.imdata.selected_data, alpha=float(value)/100)
 
     def visible_changed(self):
-        self.imagedata.set_visibility(self.imagedata.focus_data, visible=self.cb.checkState() == QtCore.Qt.CheckState.Checked)
+        self.imdata.set_visibility(self.imdata.selected_data, visible=self.cb.checkState() == QtCore.Qt.CheckState.Checked)
           

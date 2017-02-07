@@ -74,7 +74,7 @@ class View:
         try:
             for widget in self.widgets:
                 widget.blockSignals(True)
-            if not obj: self.set_enabled(False)
+            if obj is None: self.set_enabled(False)
             elif not hasattr(self, obj.name) or obj.changed(*self.changes):
                 self.set_enabled(True)
                 setattr(self, obj.name, obj)

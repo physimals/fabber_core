@@ -5,6 +5,8 @@ sys.path.append("@CMAKE_INSTALL_PREFIX@/lib/python")
 import PySide.QtGui
 
 from pyfab.dialogs import *
+from pyfab.fabber import FabberRunData
+from pyfab.imagedata import FabberImageData
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -40,10 +42,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
         self.openBtn.clicked.connect(self.open)
         self.newBtn.clicked.connect(self.new)
+        for view in self.imviews: self.imdata.add_view(view)
 
     def add_views(self):
         for view in self.views: self.fab.add_view(view)
-        for view in self.imviews: self.imdata.add_view(view)
 
     def refresh(self, fab):
         self.fab = fab
@@ -63,6 +65,6 @@ if __name__ == '__main__':
     win = MainWindow()
     win.show()
     if len(sys.argv) > 1:
-        win.refresh(RunFile(sys.argv[1]))
+        win.refresh(FabberRunData(sys.argv[1]))
 
     sys.exit(app.exec_())

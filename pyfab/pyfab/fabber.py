@@ -205,9 +205,11 @@ class LibRun(FabberRun):
 class DirectoryRun(FabberRun):
     """
     A run of the fabber executable, with its output
-    directory, logfile and output data
+    directory, logfile and output data. The data is not loaded
+    by default, but load_data and load_all_data can be used to
+    do this.
     """
-    def __init__(self, dir):
+    def __init__(self, dir, load_data=False):
         self.dir = dir
         if not self._is_fabber_dir():
             raise RunNotFound(dir)
@@ -219,6 +221,20 @@ class DirectoryRun(FabberRun):
         self.isquick = self._is_quick_run()
         self.params = self._get_params()
         self._scan_output()
+        if load_data: self.load_all_data()
+
+    def load_data(self, filename):
+        if name not in self.data:
+            try:
+                self.data[name] = nib.load(self.files[name]).get_data()
+
+            except:
+                warnings.warn("Could not load data file: ", f)
+        return self.data[name]
+
+    def load_all_data(self):
+        for name in self.files:
+            self.load_data(name)
 
     def _is_fabber_dir(self):
         return os.path.isfile(os.path.join(self.dir, "logfile"))
@@ -244,8 +260,6 @@ class DirectoryRun(FabberRun):
                 name = fname.split(".")[0]
                 f = os.path.join(self.dir, fname)
                 self.files[name] = f
-                d = nib.load(f).get_data()
-                self.data[name] = d
             except:
                 warnings.warn("Not a valid output data file: ", fname)
 
