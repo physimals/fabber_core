@@ -148,7 +148,7 @@ target_link_libraries(mvntool fabberexec fabbercore ${LIBS})
 add_executable(niftidiff test/niftidiff.cc )
 target_link_libraries(niftidiff ${LIBS})
 
-INSTALL(TARGETS fabber mvntool niftidiff fabbercore fabbercore_shared fabberexec
+INSTALL(TARGETS fabber mvntool fabbercore fabbercore_shared fabberexec
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
@@ -211,4 +211,18 @@ if (PYSIDE_UIC)
 else(PYSIDE_UIC)
   Message("-- Pyside not found - will not build GUI")
 endif(PYSIDE_UIC)
+
+# Packaging
+
+if (APPLE)
+else (APPLE)
+  if (UNIX)
+    set(CPACK_GENERATOR "STGZ;TGZ;DEB")
+  endif (UNIX)
+  if (WINDOWS) 
+  endif (WINDOWS)
+endif (APPLE)
+
+include(CPackConfig.cmake)
+
 
