@@ -37,7 +37,7 @@ else (FSL_BUILD)
             HINTS $ENV{FSLDIR}/extras/include REQUIRED)
   find_path(NEWMAT_INCLUDE_DIR newmat.h
             HINTS $ENV{FSLDIR}/extras/include/newmat REQUIRED)
-  
+
   #find_path(MCFLIRT_INCLUDE_DIR /mcflirt/rigidreglib.h
   #          HINTS $ENV{FSLDIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/.. OPTIONAL)
   if(NOT MCFLIRT_INCLUDE_DIR)
@@ -72,15 +72,15 @@ else (FSL_BUILD)
       find_path(Boost_INCLUDE_DIRS boost/shared_ptr.hpp
                 HINTS $ENV{FSLDIR}/extras/include/boost REQUIRED)
   endif(NOT Boost_FOUND)
-  
-  if(NOT WIN32) 
+
+  if(NOT WIN32)
     find_package(ZLIB)
   endif(NOT WIN32)
   if (NOT ZLIB_FOUND)
-      find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd 
+      find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd
                    HINTS $ENV{FSLDIR}/lib REQUIRED NO_DEFAULT_PATH)
   endif(NOT ZLIB_FOUND)
-   
+
   Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}")
   Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
   Message("-- Using fslio: ${FSLIO_LIBRARY}")
@@ -90,13 +90,13 @@ else (FSL_BUILD)
   Message("-- Using zlib: ${ZLIB_LIBRARY}")
   Message("-- Using newmat: ${NEWMAT_LIBRARY}")
   Message("-- Using Boost: ${Boost_INCLUDE_DIRS}")
-	
+
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
   set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
-           ${FSLIO_LIBRARY} 
-           ${MISCMATHS_LIBRARY} 
-           ${NIFTIIO_LIBRARY} 
+           ${FSLIO_LIBRARY}
+           ${MISCMATHS_LIBRARY}
+           ${NIFTIIO_LIBRARY}
            ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
 endif(FSL_BUILD)
 
@@ -162,12 +162,12 @@ find_library(GTEST_LIBRARY NAMES gtest libgtest OPTIONAL )
 find_library(PTHREAD_LIBRARY NAMES pthread libpthread OPTIONAL )
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h OPTIONAL )
 if (GTEST_LIBRARY)
-  Message("-- Using gtest: ${GTEST_LIBRARY} ${GTEST_INCLUDE_DIR}")  
+  Message("-- Using gtest: ${GTEST_LIBRARY} ${GTEST_INCLUDE_DIR}")
   if (PTHREAD_LIBRARY)
     set(PTH_LIB ${PTHREAD_LIBRARY})
   endif(PTHREAD_LIBRARY)
   include_directories(${GTEST_INCLUDE_DIR})
-  
+
   set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_spatialvb.cc test/test_vb.cc
                test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc test/test_priors.cc)
   add_executable(testfabber ${TEST_SRC})
@@ -194,7 +194,7 @@ endif(DOXYGEN_FOUND)
 
 find_package(PythonLibs)
 find_program(PYSIDE_UIC pyside-uic)
-if (PYSIDE_UIC) 
+if (PYSIDE_UIC)
   Message("-- Pyside found: ${PYSIDE_UIC}")
   configure_file(pyfab/pyfabber.py.in pyfab/pyfabber.py)
   add_custom_target(pyfab_ui ALL
@@ -213,16 +213,4 @@ else(PYSIDE_UIC)
 endif(PYSIDE_UIC)
 
 # Packaging
-
-if (APPLE)
-else (APPLE)
-  if (UNIX)
-    set(CPACK_GENERATOR "STGZ;TGZ;DEB")
-  endif (UNIX)
-  if (WINDOWS) 
-  endif (WINDOWS)
-endif (APPLE)
-
 include(CPackConfig.cmake)
-
-
