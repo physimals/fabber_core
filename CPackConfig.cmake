@@ -10,7 +10,7 @@ SET(CPACK_PACKAGE_INSTALL_DIRECTORY fabber)
 
 if (UNIX)
   set(CPACK_GENERATOR "STGZ;TGZ;DEB")
-  set(CPACK_PACKAGING_INSTALL_PREFIX "/opt")
+  set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/fabber")
 
   # Debian package
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "martin.craig@eng.ox.ac.uk")
