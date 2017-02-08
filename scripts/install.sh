@@ -1,34 +1,42 @@
 #!/bin/sh
 #
-# Build Fabber and install it
+# Build and install
 #
-# Usage: install.sh [Debug|Release] [prefix]
+# Usage: install.sh [debug|release] [prefix]
 #
-# if prefix is not specified, uses $FSLDIR if set, $HOME if not
+# if prefix is not specified, uses, in order of preference, $FABBERDIR, $FSLDIR
+# or $HOME
 
-if [ -z $1 ] 
+if [ -z $1 ]
 then
   TYPE=Debug
 else
   TYPE=$1
 fi
 
-if [ -z $2 ] 
+if [ -z $2 ]
 then
-  if [ -z $FSLDIR ]
+  if [ -z $FABBERDIR ]
   then
-    PREFIX=$HOME
+    if [ -z $FSLDIR ]
+    then
+      PREFIX=$HOME
+    else
+      PREFIX=$FSLDIR
+    fi
   else
-    PREFIX=$FSLDIR
+    PREFIX=$FABBERDIR
   fi
 else
   PREFIX=$2
 fi
 
+ORIGDIR=$PWD
+
 scriptdir=`dirname $0`
 $scriptdir/build.sh $TYPE
-cd build_$TYPE
+cd $scriptdir/../build_$TYPE
 cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=$TYPE
 make install
 
-
+cd $ORIGDIR

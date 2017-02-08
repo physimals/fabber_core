@@ -1,4 +1,3 @@
-
 set ARCH=%1
 set TYPE=%2
 
@@ -12,8 +11,8 @@ call "%VCINSTALLDIR%\vcvarsall" %ARCH%
 rd /s /q %BUILDDIR%
 mkdir %BUILDDIR%
 cd %BUILDDIR%
-cmake .. -DCMAKE_BUILD_TYPE=%TYPE% -G "NMake Makefiles"
-nmake package
+cmake .. -DCMAKE_INSTALL_PREFIX=%FSLDIR% -DCMAKE_BUILD_TYPE=%TYPE% -G "NMake Makefiles"
+nmake install
 
 set PATH=%ORIGPATH%
 cd %ORIGDIR%
