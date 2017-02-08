@@ -5,13 +5,12 @@
 # Usage: package.sh
 
 ORIGDIR=$PWD
-
 scriptdir=`dirname $0`
+
 $scriptdir/build.sh release
 cd $scriptdir/../build_release
 make package
 
-scriptdir=`dirname $0`
 $scriptdir/build.sh debug
 cd $scriptdir/../build_debug
 make package
