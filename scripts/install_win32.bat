@@ -1,5 +1,7 @@
 echo "You must run this from a Visual Studio developer commmand line"
 
+set FSLDIR=%FSLDIR%
+
 set PREFIX=%FSLDIR%
 set TYPE=Debug
 set ARCH=x64
