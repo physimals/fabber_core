@@ -46,7 +46,8 @@ endif(WIN32)
 # OSX app bundle
 if(APPLE)
   set(CPACK_GENERATOR "STGZ;TGZ")
-  set(CPACK_BUNDLE_NAME "fabber")
+  set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/fabber")
+  #set(CPACK_BUNDLE_NAME "fabber")
 endif(APPLE)
 
 # Have to do this last for the above to have any effect
