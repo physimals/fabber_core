@@ -6,7 +6,7 @@ set ORIGFSLDIR=%FSLDIR%
 set ORIGDIR=%cd%
 set ORIGPATH=%PATH%
 
-set FSLDIR=%HOMEDRIVE%%HOMEPATH%\fsl_vs2013_%ARCH%_%TYPE%
+set FSLDIR=%HOMEDRIVE%%HOMEPATH%\fsl_%ARCH%_%TYPE%
 set BUILDDIR= %0\..\..\build_%ARCH%_%TYPE%
 
 call "%VCINSTALLDIR%\vcvarsall" %ARCH%

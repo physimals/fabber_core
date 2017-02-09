@@ -2,7 +2,7 @@ set ARCH=%1
 set TYPE=%2
 
 set FSLDIR=%HOMEDRIVE%%HOMEPATH%/fsl_%ARCH%_%TYPE%
-set BUILDDIR=%0\..\build_%ARCH%_%TYPE%
+set BUILDDIR=%0\..\..\build_%ARCH%_%TYPE%
 set ORIGPATH=%PATH%
 set ORIGDIR=%cd%
 
