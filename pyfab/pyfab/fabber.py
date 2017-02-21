@@ -36,8 +36,9 @@ def _find_file(f, envdir, newf):
 
 def find_fabber():
     """
-    Find the Fabber executable, core library and model
-    libraries
+    Find the Fabber executable, core library and model libraries, or return None if not found
+
+    Returns a tuple of exec, core lib, list of models
     """
     ex, lib, models = None, None, []
     for envdir in ("FABBERDIR", "FSLDIR"):
@@ -48,12 +49,23 @@ def find_fabber():
     return ex, lib, models
 
 class FabberException(RuntimeError):
+    """
+    Thrown if there is an error using the Fabber executable or library
+    """
     def __init__(self, msg, errcode=None):
         self.errcode = errcode
         if errcode is not None:
             RuntimeError.__init__(self, "%i: %s" % (errcode, msg))
         else:
             RuntimeError.__init__(self, msg)
+
+class RunNotFound(RuntimeWarning):
+    """
+    A directory looked like a Fabber output directory, but no logfile was found in it
+    """
+    def __init__(self, dir):
+        RuntimeWarning.__init__(self, "Not a Fabber run directory: %s" % dir)
+        self.dir = dir
 
 class FabberRunData(Model, collections.MutableMapping):
     """
@@ -203,13 +215,10 @@ class FabberRunData(Model, collections.MutableMapping):
         self._change()
         self._update_views()
 
-class RunNotFound(RuntimeWarning):
-    def __init__(self, dir):
-        RuntimeWarning.__init__(self, "Not a Fabber run directory: %s" % dir)
-        self.dir = dir
-
 class FabberRun:
-
+    """
+    Base class for a completed Fabber run, either from the executable or from the library
+    """
     def get_log_timestamp(self, log):
         prefixes = ["start time:", "fabberrundata::start time:"]
         timestamp_str = ""
@@ -238,10 +247,9 @@ class LibRun(FabberRun):
 
 class DirectoryRun(FabberRun):
     """
-    A run of the fabber executable, with its output
-    directory, logfile and output data. The data is not loaded
-    by default, but load_data and load_all_data can be used to
-    do this.
+    A run of the fabber executable, with its output directory, logfile and output data.
+
+    The data is not loaded by default, but load_data and load_all_data can be used to do this.
     """
     def __init__(self, dir, load_data=False):
         self.dir = dir
@@ -312,8 +320,9 @@ class DirectoryRun(FabberRun):
 
 class FabberExec:
     """
-    Encapsulates a Fabber executable context and provides methods
-    to query models and options and also run a file
+    Encapsulates a Fabber executable
+
+    Provides methods to query models and options and also run a file
     """
     def __init__(self, ex=None, models_lib=None, rundata=None):
         if ex is not None:
@@ -552,6 +561,13 @@ class FabberLib:
         return self.outbuf.value.splitlines()
 
     def run(self, rundata, progress_cb=None):
+        """
+        Run fabber on the provided rundata options
+
+        :param rundata: FabberRunData instance
+        :param progress_cb: Callable which will be called periodically during processing
+        :return: On success, a LibRun instance
+        """
         mask = None
         data = {}
         for key, value in rundata.items():
@@ -574,10 +590,10 @@ class FabberLib:
         """
         Run fabber
 
-        :param mask: Mask as Numpy array, or None if no mask
         :param data: Dictionary of data: string key, Numpy array value
-        :param output_items: List of names of data items to return
-        :return: Tuple of 1. Dictionary of output data, string key, Numpy array value and 2. log
+        :param mask: Mask as Numpy array, or None if no mask
+        :param progress_cb: Callable which will be called periodically during processing
+        :return: On success, a LibRun instance
         """
         if not data.has_key("data"):
             raise Exception("Main voxel data not provided")
