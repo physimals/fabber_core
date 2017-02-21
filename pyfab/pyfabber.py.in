@@ -4,49 +4,67 @@ sys.path.append("@CMAKE_INSTALL_PREFIX@/lib/python")
 
 import PySide.QtGui
 
-from pyfab.ui import MainWindow
+from fabber import FabberRunData
+from fabber.dialogs import *
+from fabber.imagedata import FabberImageData
 
-def read_vest(fname):
-    f = None
-    try:
-        f = open(fname)
-        lines = f.readlines()
-        print(lines)
-        nx, ny = 0, 0
-        in_matrix = False
-        mat = []
-        for line in lines:
-            if in_matrix:
-                nums = [float(num) for num in line.split()]
-                if len(nums) != nx: raise Exception ("Incorrect number of x values")
-                mat.append(nums)
-            elif line.startswith("/Matrix"):
-              if nx == 0 or ny == 0: raise Exception("Missing /NumWaves or /NumPoints")
-              in_matrix = True
-            elif line.startswith("/NumWaves"):
-              parts = line.split()
-              print parts
-              if len(parts) == 1: raise Exception("No number following /NumWaves")
-              nx = int(parts[1])
-            elif line.startswith("/NumPoints") or line.startswith("/NumContrasts"):
-              parts = line.split()
-              if len(parts) == 1: raise Exception("No number following /NumPoints")
-              ny = int(parts[1])
-        if len(mat) != ny:
-            raise Exception("Incorrect number of y values")      
-    finally:
-        if f is not None: f.close()
-    return mat
+class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
+    def __init__(self, parent=None):
+        QtGui.QMainWindow.__init__(self, parent)
+        self.setupUi(self)
+
+        self.imdata = FabberImageData()
+
+        self.imviews = [
+            OrthoView(self.orthoFrame),
+            FitView(self.fitFrame),
+            FocusView(slider=self.timeSlider, sbX=self.sbX, sbY=self.sbY, sbZ=self.sbZ, sbT=self.sbT),
+            ParamValuesView(table=self.paramTable),
+            DataView(LogViewerDialog(), ChooseRunDialog(), table=self.filesTable, dateLabel=self.dateLabel,
+                     logBtn=self.showLogBtn, chooseRunBtn=self.chooseRunBtn, dataBtn=self.dataBtn,
+                     maskBtn=self.maskBtn),
+            CurrentDataView(slider=self.alphaSlider, cb=self.visibleCB, cmCombo=self.cmCombo,
+                            valueEdit=self.dataValueEdit, currentEdit=self.currentEdit),
+        ]
+
+        self.views = [
+            self.imdata,
+            ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
+            ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn,
+                                 mat_dialog=MatrixEditDialog()),
+            ComponentOptionsView("method", "Inference method", dialog=ModelOptionsDialog(), btn=self.methodOptionsBtn,
+                                 mat_dialog=MatrixEditDialog()),
+            OptionsView(dialog=ModelOptionsDialog(), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog()),
+            FileView(runBtn=self.runBtn, runQuickBtn=self.runQuickBtn, saveBtn=self.saveBtn, saveAsBtn=self.saveAsBtn,
+                     edit=self.filenameEdit),
+            ChooseFileView("fabber", changeBtn=self.execChangeBtn, edit=self.execEdit),
+        ]
+
+        self.openBtn.clicked.connect(self.open)
+        self.newBtn.clicked.connect(self.new)
+        for view in self.imviews: self.imdata.add_view(view)
+
+    def add_views(self):
+        for view in self.views: self.fab.add_view(view)
+
+    def refresh(self, fab):
+        self.fab = fab
+        self.add_views()
+
+    def new(self):
+        # fixme unsaved changes
+        self.refresh(FabberRunData())
+
+    def open(self):
+        filename = QFileDialog.getOpenFileName()[0]
+        if filename: self.refresh(FabberRunData(filename))
 
 if __name__ == '__main__':
- 
-    #print(read_vest("/home/martinc/dev/fabber_gui/design.mat"))
-    
     app = PySide.QtGui.QApplication(sys.argv)
 
     win = MainWindow()
     win.show()
     if len(sys.argv) > 1:
-        win.refresh(RunFile(sys.argv[1]))
-		
+        win.refresh(FabberRunData(sys.argv[1]))
+
     sys.exit(app.exec_())

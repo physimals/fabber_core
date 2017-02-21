@@ -117,10 +117,11 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
  *                    will be returned.
  * @param log_buf Char buffer of size log_bufsize to receive output log
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ * @param progress_cb Function pointer which takes two integers (current voxel, total voxels). Pass NULL if not required
  *
  * @return 0 on success, <0 on failure
  */
-int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf);
+int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int));
 
 /**
  * Get fabber options, optionally for a specific method or model
@@ -130,9 +131,11 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf);
  *            for general Fabber options
  * @param value Name of method or model. Ignored for general options
  * @param out_bufsize Size of the output buffer. If too small, no output is returned
- * @param out_buf Char buffer of size log_bufsize to receive output. Will contain
- *                tab-separated data with each option on a single line. Order of data
- *                is option name, description, type, optional (1 or 0), default value
+ * @param out_buf Char buffer of size log_bufsize to receive output. First line will contain
+ *                description of the model, method, or Fabber generally. This will be blank
+ *                if no description exists, but the line will be included. The remaining lines
+ *                will contain tab-separated data with each option on a single line. Order of
+ *                data is option name, description, type, optional (1 or 0), default value
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return 0 on success, <0 on failure

@@ -78,7 +78,7 @@ int execute(int argc, char** argv)
 
 		// Create a new Fabber run
 		FabberIoNewimage io;
-		FabberRunData params(&io);
+		FabberRunData params(&io, true);
 		params.SetLogger(&log);
 		params.Parse(argc, argv);
 

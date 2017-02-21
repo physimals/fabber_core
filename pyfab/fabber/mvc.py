@@ -63,17 +63,18 @@ class View:
     """
     def __init__(self, changes, *widgets, **kwidgets):
         self.changes = set(changes)
-        self.widgets = list(widgets)
+        self.widgets = [w for w in widgets if self._iswidget(w)]
         for name, w in kwidgets.items():
-            self.widgets.append(w)
             setattr(self, name, w)
+            if self._iswidget(w):
+                self.widgets.append(w)
         self.update(None)
 
     def update(self, obj):
         try:
             for widget in self.widgets:
                 widget.blockSignals(True)
-            if not obj: self.set_enabled(False)
+            if obj is None: self.set_enabled(False)
             elif not hasattr(self, obj.name) or obj.changed(*self.changes):
                 self.set_enabled(True)
                 setattr(self, obj.name, obj)
@@ -86,7 +87,14 @@ class View:
         if widgets is None: widgets = self.widgets
         for widget in widgets:
                 widget.setEnabled(enabled)
-            
+
+    def _iswidget(self, w):
+        """
+        Crude check to see if this is a widget! Don't want to use
+        isinstance and add explicit dependency on QT
+        """
+        return hasattr(w, "blockSignals") and hasattr(w, "setEnabled")
+
     def do_update(self, obj_name):
         pass
 

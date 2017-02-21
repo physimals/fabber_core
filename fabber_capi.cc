@@ -173,7 +173,7 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
 	}
 }
 
-int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
+int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int))
 {
 	EasyLog log;
 
@@ -191,7 +191,13 @@ int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf)
 	try
 	{
 		log.StartLog(logstr);
-		rundata->Run();
+		if (progress_cb) {
+			CallbackProgressCheck prog(progress_cb);
+			rundata->Run(&prog);
+		}
+		else {
+			rundata->Run();
+		}
 		log.ReissueWarnings();
 	} catch (const FabberError& e)
 	{
@@ -272,7 +278,11 @@ int fabber_get_options(void *fab, const char *key, const char *value, int out_bu
 			method->GetOptions(options);
 		}
 
+		// Remove newlines from the description so we can guarantee that the first line is the description
+		desc.erase(std::remove(desc.begin(), desc.end(), '\n'), desc.end());
 		stringstream out;
+		out << desc << endl;
+
 		vector<OptionSpec>::iterator iter;
 		for (iter = options.begin(); iter != options.end(); iter++)
 		{
@@ -292,7 +302,7 @@ int fabber_get_options(void *fab, const char *key, const char *value, int out_bu
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_options", err_buf);
 	}
 }
 
@@ -326,7 +336,7 @@ int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_models", err_buf);
 	}
 }
 
@@ -360,7 +370,7 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_methods", err_buf);
 	}
 }
 
@@ -398,6 +408,6 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
 	} catch (...)
 	{
-		return fabber_err(FABBER_ERR_FATAL, "Error in get_opts", err_buf);
+		return fabber_err(FABBER_ERR_FATAL, "Error in get_model_params", err_buf);
 	}
 }

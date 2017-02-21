@@ -206,8 +206,9 @@ if (PYSIDE_UIC)
                    )
 
   INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pyfab/pyfabber.py DESTINATION bin)
-  INSTALL(DIRECTORY pyfab/pyfab DESTINATION lib/python/)
-  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ui_qtd.py DESTINATION lib/python/pyfab)
+  INSTALL(DIRECTORY pyfab/fabber DESTINATION lib/python/)
+  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ui_qtd.py DESTINATION lib/python/fabber)
+
 else(PYSIDE_UIC)
   Message("-- Pyside not found - will not build GUI")
 endif(PYSIDE_UIC)

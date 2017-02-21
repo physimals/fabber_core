@@ -7,7 +7,6 @@ CVS
 *.a
 .DS_Store
 depend.mk
-fabber
 testfabber
 doc
 .sconsign.dblite
