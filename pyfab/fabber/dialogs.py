@@ -1,11 +1,6 @@
 from PySide.QtGui import QDialog
 
-from ui_qtd import Ui_LogViewer, Ui_MainWindow, Ui_ModelOptionsDialog, Ui_ChooseRunDialog, Ui_VestDialog
-
-from pyfab.views import *
-from pyfab.imagedata import *
-from pyfab.plotviews import OrthoView, FitView
-from pyfab.fabber import FabberRunData
+from .ui_qtd import Ui_LogViewer, Ui_MainWindow, Ui_ModelOptionsDialog, Ui_ChooseRunDialog, Ui_VestDialog
 
 class LogViewerDialog(QDialog, Ui_LogViewer):
     def __init__(self, log="", parent=None):

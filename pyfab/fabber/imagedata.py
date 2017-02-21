@@ -7,7 +7,7 @@ import numpy as np
 import pylab as plt
 from PySide import QtCore, QtGui
 
-from mvc import Model, View
+from .mvc import Model, View
 
 """Change to the  data"""
 CH_DATA = "data"

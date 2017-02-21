@@ -4,9 +4,9 @@ sys.path.append("@CMAKE_INSTALL_PREFIX@/lib/python")
 
 import PySide.QtGui
 
-from pyfab.dialogs import *
-from pyfab.fabber import FabberRunData
-from pyfab.imagedata import FabberImageData
+from fabber import FabberRunData
+from fabber.dialogs import *
+from fabber.imagedata import FabberImageData
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):

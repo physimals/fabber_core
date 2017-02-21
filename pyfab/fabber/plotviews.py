@@ -1,14 +1,13 @@
 import matplotlib
 matplotlib.use('Qt4Agg')
-import pylab
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from PySide.QtGui import QHBoxLayout
 
-from mvc import View
-from imagedata import CH_DATA, CH_FOCUS
+from .mvc import View
+from .imagedata import CH_DATA, CH_FOCUS
 
 class OrthoView(View):
     def __init__(self, frame):

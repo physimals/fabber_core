@@ -3,7 +3,7 @@ import traceback
 
 from PySide import QtCore, QtGui
 
-from mvc import View
+from .mvc import View
 from fabber import FabberLib, find_fabber
 
 NUMBERED_OPTIONS_MAX=20
