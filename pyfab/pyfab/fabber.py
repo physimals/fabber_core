@@ -1,7 +1,9 @@
 import os
+import sys
 import warnings
 import datetime
 import collections
+import glob
 import subprocess as sub
 import traceback
 import distutils.spawn
@@ -12,6 +14,38 @@ import numpy as np
 import numpy.ctypeslib as npct
 
 from mvc import Model
+
+if sys.platform.startswith("win"):
+    _lib_format = "lib/%s.dll"
+elif sys.platform.startswith("darwin"):
+    _lib_format = "lib/lib%s.dylib"
+else:
+    _lib_format = "lib/lib%s.so"
+
+def _find_file(f, envdir, newf):
+    if f is not None:
+        return f
+    elif envdir in os.environ:
+        newfpath = os.path.join(os.environ[envdir], newf)
+        if os.path.isfile(newfpath):
+            return newfpath
+        else:
+            return f
+    else:
+        return None
+
+def find_fabber():
+    """
+    Find the Fabber executable, core library and model
+    libraries
+    """
+    ex, lib, models = None, None, []
+    for envdir in ("FABBERDIR", "FSLDIR"):
+        ex = _find_file(ex, envdir, "bin/fabber")
+        lib = _find_file(lib, envdir, _lib_format % "fabbercore_shared")
+        models += glob.glob(os.path.join(os.environ.get(envdir, ""), _lib_format % "fabber_models_*"))
+
+    return ex, lib, models
 
 class FabberException(RuntimeError):
     def __init__(self, msg, errcode=None):
@@ -287,7 +321,7 @@ class FabberExec:
         elif rundata is not None and "fabber" in rundata:
             self.ex = rundata["fabber"]
         else:
-            self.ex = self._find_fabber()
+            self.ex = find_fabber()[0]
 
         if not os.path.isfile(self.ex):
             raise FabberException("Invalid executable: %s" % self.ex)
@@ -440,19 +474,6 @@ class FabberExec:
                 raise FabberException("Failed to run fabber: " + str(cmd), status)
         except Exception, e:
             raise FabberException("Failed to run fabber: " + str(e))
- 
-    def _find_fabber(self):
-        """ 
-   	    Find a fabber executable
-   	     
-   	    FIXME need to do better than this!
-   	    """
-        guesses = [os.path.join(os.environ["FSLDIR"], "bin/fabber"),
-   	                distutils.spawn.find_executable("fabber"),
-   	                "fabber"]
-        for guess in guesses:
-            if os.path.isfile(guess):
-                return guess
 
 class FabberLib:
     """
@@ -464,7 +485,7 @@ class FabberLib:
             if rundata is not None and "fabber" in rundata:
                 self.fabber_lib = rundata["fabber"]
             else:
-                self.fabber_lib = self._find_fabber_lib()
+                self.fabber_lib = find_fabber()[1]
 
         self.models_lib = models_lib
         if self.models_lib is None and rundata is not None and "loadmodels" in rundata:
@@ -613,13 +634,6 @@ class FabberLib:
             retdata[key] = arr
 
         return LibRun(retdata, self.outbuf.value)
-
-    def _find_fabber_lib(self):
-        fsldir = os.environ["FSLDIR"]
-        if fsldir:
-            return os.path.join(fsldir, "lib/libfabbercore_shared.so")
-        else:
-            raise FabberException("FSLDIR not set, could not find Fabber library")
 
     def __del__(self):
         self._destroy_handle()
