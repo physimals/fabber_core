@@ -4,7 +4,7 @@ import traceback
 from PySide import QtCore, QtGui
 
 from mvc import View
-from fabber import FabberLib
+from fabber import FabberLib, find_fabber
 
 NUMBERED_OPTIONS_MAX=20
 
@@ -416,6 +416,43 @@ class ChooseFileView(View):
         if fname:
             self.edit.setText(fname)
             self.rundata[self.opt] = fname
+            self.defaultDir = os.path.dirname(fname)
+
+class ChooseModelLib(View):
+    def __init__(self, **kwargs):
+        self.opt = "loadmodels"
+        View.__init__(self, [self.opt, ], **kwargs)
+        ex, lib, model_libs = find_fabber()
+        self.defaultDir = os.path.dirname(lib)
+        for model_lib in model_libs:
+            self.combo.addItem(model_lib)
+        self.changeBtn.clicked.connect(self.choose_file)
+        self.combo.currentIndexChanged.connect(self.lib_changed)
+        self.combo.setCurrentIndex(-1)
+
+    def do_update(self):
+        if self.opt in self.rundata:
+            self.edit.setText(self.rundata[self.opt])
+
+    def select_lib(self, lib):
+        if self.combo.findText(lib) < 0:
+            self.combo.addItem(lib)
+        if self.combo.currentText != lib:
+            self.combo.setCurrentIndex(self.combo.findText(lib))
+
+    def choose_file(self):
+        fname = QtGui.QFileDialog.getOpenFileName(None, "Choose model library", self.defaultDir)[0]
+        if fname:
+            self.defaultDir = os.path.dirname(fname)
+            self.select_lib(fname)
+
+    def lib_changed(self, idx):
+        if idx >= 0:
+            self.rundata[self.opt] = self.combo.currentText()
+
+    def do_update(self):
+        if self.opt in self.rundata:
+            self.select_lib(self.rundata[self.opt])
 
 class FileView(View):
     def __init__(self, **kwargs):
