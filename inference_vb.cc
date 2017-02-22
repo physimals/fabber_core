@@ -328,7 +328,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData& allData)
 	m_suppdata = &allData.GetVoxelSuppData();
 	m_nvoxels = m_origdata->Ncols();
 
-	PassModelData(1);
+	if (m_nvoxels > 0) PassModelData(1);
 
 #ifdef __FABBER_MOTION
 	MCobj mcobj(allData,6); // hard coded DOF (future TODO item)

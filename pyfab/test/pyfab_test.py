@@ -115,6 +115,18 @@ class TestFabberLib(unittest.TestCase):
         self.assertAlmostEqual(run.data["mean_c1"][0,1,2], c1, delta=0.1)
         self.assertAlmostEqual(run.data["mean_c2"][0,1,2], c2, delta=0.1)
 
+    def test_run_empty_mask(self):
+        data = np.fromfunction(self.quad_data, (3,3,3,3))
+        mask = np.zeros((3, 3, 3))
+        rundata = FabberRunData()
+        rundata["model"] = "poly"
+        rundata["degree"] = "2"
+        rundata["save-mean"] = ""
+        run = self.fab.run_with_data(rundata, {"data" : data}, mask)
+        self.assertEqual(run.data["mean_c0"].max(), 0)
+        self.assertEqual(run.data["mean_c1"].max(), 0)
+        self.assertEqual(run.data["mean_c2"].max(), 0)
+
 class TestFabberExec(unittest.TestCase):
 
     def setUp(self):

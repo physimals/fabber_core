@@ -101,6 +101,11 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec &value)
 
 void PercentProgressCheck::Progress(int voxel, int nVoxels)
 {
+	if (nVoxels == 0) {
+		cout << "100%" << endl;
+		return;
+	}
+
 	int percent = (100 * voxel) / nVoxels;
 	if (percent / 10 > m_last)
 	{

@@ -101,11 +101,13 @@ void FabberIoMemory::SetVoxelCoords(const NEWMAT::Matrix &coords)
 		throw InvalidOptionValue("Coordinates dimensions", stringify(coords.Nrows()), "Co-ordinates must be 3 dimensional");
 	}
 
-	// FIXME we assume coords will not be negative
 	m_extent.resize(3);
-	m_extent[0] = coords.Row(1).Maximum() - coords.Row(1).Minimum() + 1;
-	m_extent[1] = coords.Row(2).Maximum() - coords.Row(2).Minimum() + 1;
-	m_extent[2] = coords.Row(3).Maximum() - coords.Row(3).Minimum() + 1;
+	if (m_nvoxels > 0) {
+		// FIXME we assume coords will not be negative
+		m_extent[0] = coords.Row(1).Maximum() - coords.Row(1).Minimum() + 1;
+		m_extent[1] = coords.Row(2).Maximum() - coords.Row(2).Minimum() + 1;
+		m_extent[2] = coords.Row(3).Maximum() - coords.Row(3).Minimum() + 1;
+	}
 
 	m_dims.resize(3);
 	m_dims[0] = 1.0;
@@ -184,6 +186,7 @@ void FabberIoCarray::SetExtent(int nx, int ny, int nz, const int *mask)
 			}
 		}
 	}
+	
 	coords = coords.Columns(1, v);
 	SetVoxelCoords(coords);
 	m_extent[0] = nx;

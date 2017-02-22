@@ -82,6 +82,12 @@ int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *
 	} catch (exception &e)
 	{
 		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+	} catch (NEWMAT::Exception &e)
+	{
+		return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+	} catch (...)
+	{
+		return fabber_err(FABBER_ERR_FATAL, "Error setting extent", err_buf);
 	}
 }
 

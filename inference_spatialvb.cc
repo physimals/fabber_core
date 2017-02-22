@@ -368,7 +368,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData& allData)
 	// pass in some (dummy) data/coords here just in case the model relies upon it
 	// use the first voxel values as our dummies FIXME this shouldn't really be
 	// necessary, need to find way for model to know about the data beforehand.
-	PassModelData(1);
+	if (m_nvoxels > 0) PassModelData(1);
 
 	// Added to diagonal to make sure the spatial precision matrix
 	// doesn't become singular -- and isolated voxels behave sensibly.

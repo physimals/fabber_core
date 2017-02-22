@@ -96,6 +96,7 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	// NIFTI_INTENT_NORMAL -- but I can't find the detailed
 	// documentation!  (Ordering for a multivariate norm).
 	int nVoxels = resultMVNs.size();
+	if (nVoxels == 0) return;
 
 	if (data.GetBool("save-mvn"))
 	{

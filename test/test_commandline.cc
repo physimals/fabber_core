@@ -158,6 +158,22 @@ TEST_F(ClTestTest, PolyModel)
 	compareNifti("out.tmp/std_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c2.nii.gz");
 }
 
+// Test real data with an empty mask. May occur when running in parallel if some chunks have not ROI
+TEST_F(ClTestTest, EmptyMask)
+{
+	string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
+	args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_empty.nii.gz --data=" + string(FABBER_SRC_DIR)
+			+ "/test/test_data.nii.gz";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=poly"));
+	ASSERT_TRUE(contains(out, "method=vb"));
+	ASSERT_TRUE(contains(out, "noise=white"));
+	ASSERT_TRUE(contains(out, "test_mask_empty.nii.gz"));
+	ASSERT_TRUE(contains(out, "test_data.nii.gz"));
+}
+
 // Test if output data retains properties from input
 TEST_F(ClTestTest, OutputCopiesPropsMask)
 {
