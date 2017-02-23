@@ -6,7 +6,7 @@
 #    else
 #        define FABBER_DLL_API __declspec(dllimport)
 #    endif
-#elif
+#else
 #    define FABBER_DLL_API
 #endif
 
