@@ -393,7 +393,9 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
 	{
 		FabberRunData* rundata = (FabberRunData*) fab;
 		std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
-		model->Initialize(*rundata);
+    EasyLog log;
+    model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+    model->Initialize(*rundata);
 		vector < string > params;
 		model->NameParams(params);
 		stringstream out;
