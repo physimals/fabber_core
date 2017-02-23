@@ -16,11 +16,14 @@ import numpy.ctypeslib as npct
 from fabber.mvc import Model
 
 if sys.platform.startswith("win"):
-    _lib_format = "lib/%s.dll"
+    _lib_format = "bin\\%s.dll"
+    _bin_format = "bin\\%s.exe"
 elif sys.platform.startswith("darwin"):
     _lib_format = "lib/lib%s.dylib"
+    _bin_format = "bin/%s"
 else:
     _lib_format = "lib/lib%s.so"
+    _bin_format = "bin/%s"
 
 
 def _find_file(f, envdir, newf):
@@ -44,7 +47,7 @@ def find_fabber():
     """
     ex, lib, models = None, None, []
     for envdir in ("FABBERDIR", "FSLDIR"):
-        ex = _find_file(ex, envdir, "bin/fabber")
+        ex = _find_file(ex, envdir, _bin_format % "fabber")
         lib = _find_file(lib, envdir, _lib_format % "fabbercore_shared")
         models += glob.glob(os.path.join(os.environ.get(envdir, ""), _lib_format % "fabber_models_*"))
 
@@ -649,6 +652,7 @@ class FabberLib:
         if "save-mvn" in rundata:
             output_items.append("finalMVN")
 
+        retdata, log = {}, ""
         self._trycall(self.lib.fabber_set_extent, self.handle, s[0], s[1], s[2], mask, self.errbuf)
         for key, item in data.items():
             if len(item.shape) == 3:
@@ -663,15 +667,18 @@ class FabberLib:
             progress_cb_func = self.progress_cb_type(progress_cb)
 
         self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf, progress_cb_func)
-        retdata = {}
+        log = self.outbuf.value
         for key in output_items:
             size = self._trycall(self.lib.fabber_get_data_size, self.handle, key, self.errbuf)
             arr = np.ascontiguousarray(np.empty(nv * size, dtype=np.float32))
             self._trycall(self.lib.fabber_get_data, self.handle, key, arr, self.errbuf)
-            arr = np.squeeze(arr.reshape([s[0], s[1], s[2], size]))
+            if size > 1:
+                arr = arr.reshape([s[0], s[1], s[2], size])
+            else:
+                arr = arr.reshape([s[0], s[1], s[2]])
             retdata[key] = arr
 
-        return LibRun(retdata, self.outbuf.value)
+        return LibRun(retdata, log)
 
     def __del__(self):
         self._destroy_handle()
