@@ -357,13 +357,15 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 	// last row/col is the means (1 in the corner).
 	// Note that I'm using the 4th dim and should really be using the 5th,
 	// according to the specification -- but I don't think it really matters.
-	
+
 	Matrix vols;
-	
+
 	const int nVoxels = mvns.size();
-	if (nVoxels == 0) return;
-	assert(nVoxels > 0 && mvns.at(0) != NULL);
-	const int nParams = mvns.at(0)->means.Nrows();
+  int nParams = 0; // In case we have no voxels
+	if (nVoxels == 0) {
+    assert(nVoxels > 0 && mvns.at(0) != NULL);
+	  nParams = mvns.at(0)->means.Nrows();
+  }
 
 	// This is what the matrix will look like (C = covariances, M=means)
 	//
@@ -397,4 +399,3 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 
 	data.SaveVoxelData(filename, vols, VDT_MVN);
 }
-

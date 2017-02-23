@@ -58,6 +58,7 @@ void InferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
 	// Set forward model.
 	model = fwd_model;
 	m_num_params = model->NumParams();
+  m_noise_params = 0; // Other methods (i.e. VB) will override this
 	LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
 
 	saveModelFit = args.GetBool("save-model-fit");
@@ -96,7 +97,6 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	// NIFTI_INTENT_NORMAL -- but I can't find the detailed
 	// documentation!  (Ordering for a multivariate norm).
 	int nVoxels = resultMVNs.size();
-	if (nVoxels == 0) return;
 
 	if (data.GetBool("save-mvn"))
 	{
@@ -146,21 +146,18 @@ void InferenceTechnique::SaveResults(FabberRunData& data) const
 	// the size of the output matrix and the number of parameters in the model.
 	if (data.GetBool("save-noise-mean") | data.GetBool("save-noise-std"))
 	{
-
-		const int nParams = paramNames.size();
-		const int nNoise = resultMVNs[0]->means.Nrows() - paramNames.size();
-		if (nNoise > 0)
+		if (m_noise_params > 0)
 		{
 			LOG << "InferenceTechnique::Writing noise" << endl;
 			Matrix noiseMean, noiseStd;
-			noiseMean.ReSize(nNoise, nVoxels);
-			noiseStd.ReSize(nNoise, nVoxels);
+			noiseMean.ReSize(m_noise_params, nVoxels);
+			noiseStd.ReSize(m_noise_params, nVoxels);
 			for (int vox = 1; vox <= nVoxels; vox++)
 			{
-				for (int i = 1; i <= nNoise; i++)
+				for (int i = 1; i <= m_noise_params; i++)
 				{
-					noiseStd(i, vox) = sqrt(resultMVNs[vox - 1]->GetCovariance()(i + nParams, i + nParams));
-					noiseMean(i, vox) = resultMVNs[vox - 1]->means(i + nParams);
+					noiseStd(i, vox) = sqrt(resultMVNs[vox - 1]->GetCovariance()(i + m_num_params, i + m_num_params));
+					noiseMean(i, vox) = resultMVNs[vox - 1]->means(i + m_num_params);
 				}
 			}
 			// FIXME was this being saved before? Should it be?
