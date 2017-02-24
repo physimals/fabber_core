@@ -225,27 +225,29 @@ class MatrixFileOptionView(FileOptionView):
             if f is not None: f.close()
 
         if not in_matrix:
-            return None
+            raise Exception("No VEST matrix found in file")
         else:
-            return mat
+            return mat, ""
 
     def read_ascii(self, fname):
         f = None
         in_matrix = False
+        mat = []
+        desc = ""
         try:
             f = open(fname, "r")
             lines = f.readlines()
             nx = 0
-            mat = []
             for line in lines:
-                if line.strip().startswith("#"): continue
+                if line.strip().startswith("#"):
+                    desc += line.lstrip("#")
                 else:
                     row = [float(n) for n in line.split()]
                     if not in_matrix:
                         nx = len(row)
                         in_matrix = True
                     elif len(row) != nx:
-                        raise Exception("Incorrect number of x values")
+                        raise Exception("Incorrect number of x values: %s" % line)
                     mat.append(row)
         finally:
             if f is not None: f.close()
@@ -253,9 +255,9 @@ class MatrixFileOptionView(FileOptionView):
         if not in_matrix:
             raise Exception("No data in file")
 
-        return mat
+        return mat, desc
 
-    def write_vest(self, fname, m):
+    def write_vest(self, fname, m, desc=""):
         f = None
         try:
             f = open(fname, "w")
@@ -270,10 +272,12 @@ class MatrixFileOptionView(FileOptionView):
         finally:
             if f is not None: f.close()
 
-    def write_ascii(self, fname, m):
+    def write_ascii(self, fname, m, desc=""):
         f = None
         try:
             f = open(fname, "w")
+            for line in desc.splitlines():
+                f.write("#%s\n" % line)
             for row in m:
                 f.write(" ".join([str(v) for v in row]))
                 f.write("\n")
@@ -300,19 +304,20 @@ class MatrixFileOptionView(FileOptionView):
             open(fname, "a").close()
 
         try:
-            mat = self.read_vest(fname)
-            if mat is None:
-                ascii = True
-                mat = self.read_ascii(fname)
-            else:
+            try:
+                mat, desc = self.read_vest(fname)
                 ascii = False
-            self.mat_dialog.set_matrix(mat)
+            except:
+                mat, desc = self.read_ascii(fname)
+                ascii = True
+            self.mat_dialog.set_matrix(mat, desc)
             if self.mat_dialog.exec_():
-                print(self.mat_dialog.get_matrix())
+                mat, desc = self.mat_dialog.get_matrix()
+                print(mat, desc)
                 if ascii:
-                    self.write_ascii(fname, self.mat_dialog.get_matrix())
+                    self.write_ascii(fname, mat, desc)
                 else:
-                    self.write_vest(fname, self.mat_dialog.get_matrix())
+                    self.write_vest(fname, mat, desc)
         except:
             traceback.print_exc()
 

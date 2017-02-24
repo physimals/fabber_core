@@ -43,7 +43,9 @@ class MatrixEditDialog(QDialog, Ui_VestDialog):
         if self.table.rowCount() > 1:
             self.table.removeRow(self.table.currentRow())
 
-    def set_matrix(self, m):
+    def set_matrix(self, m, desc=""):
+        self.descEdit.clear()
+        self.descEdit.insertPlainText(desc)
         self.table.setRowCount(max(1, len(m)))
         if len(m) > 0: self.table.setColumnCount(max(1, len(m[0])))
         for x, row in enumerate(m):
@@ -52,14 +54,14 @@ class MatrixEditDialog(QDialog, Ui_VestDialog):
 
     def get_matrix(self):
         m = []
-        for x in range(self.table.columnCount()):
+        for r in range(self.table.rowCount()):
             row = []
-            for y in range(self.table.rowCount()):
+            for c in range(self.table.columnCount()):
                 try:
-                    data = self.table.item(x, y).text()
+                    data = self.table.item(r, c).text()
                     row.append(float(data))
                 except:
                     row.append(0)
                     print("WARNING: non-numeric data, converting to zero")
             m.append(row)
-        return m                 
+        return m, self.descEdit.toPlainText()
