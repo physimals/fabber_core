@@ -74,12 +74,13 @@ TEST_F(InferenceMethodTest, OneParamOneVoxelOneTimeslice)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
-	rundata.Set("model", "trivial");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", "0");
 	rundata.SetBool("print-free-energy", true);
 	rundata.Set("method", "nlls");
 	ASSERT_NO_THROW(rundata.Run());
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), 1);
 	ASSERT_FLOAT_EQ(mean(1, 1), VAL);
@@ -108,11 +109,12 @@ TEST_P(InferenceMethodTest, OneParamOneVoxelMultiTimeslice)
 	io.SetVoxelData("data", data);
 	rundata.SetBool("print-free-energy", true);
 	rundata.Set("noise", "white");
-	rundata.Set("model", "trivial");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", "0");
 	rundata.Set("method", GetParam());
 	rundata.Run();
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), 1);
 	ASSERT_FLOAT_EQ(mean(1, 1), VAL);
@@ -154,11 +156,12 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
-	rundata.Set("model", "trivial");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", "0");
 	rundata.Set("method", GetParam());
 	rundata.Run();
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -206,11 +209,12 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data", data);
 	rundata.Set("noise", "white");
-	rundata.Set("model", "trivial");
+	rundata.Set("model", "poly");
+	rundata.Set("degree", "0");
 	rundata.Set("method", GetParam());
 	rundata.Run();
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -255,7 +259,7 @@ TEST_P(InferenceMethodTest, ConfigFile)
 
 	ofstream os;
 	os.open(FILENAME.c_str(), ios::out);
-	os << "--noise=white" << endl << "--model=trivial" << endl << "--method=" << GetParam() << endl;
+	os << "--noise=white" << endl << "--model=poly --degree=0" << endl << "--method=" << GetParam() << endl;
 	os.close();
 
 	FabberIoMemory io;
@@ -265,7 +269,7 @@ TEST_P(InferenceMethodTest, ConfigFile)
 	rundata.ParseOldStyleParamFile(FILENAME);
 	rundata.Run();
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -311,8 +315,8 @@ TEST_P(InferenceMethodTest, CLArgs)
 
 	string method = (string) "--method=" + GetParam();
 	const char *argv[] =
-	{ "fabber", "--noise=white", "--model=trivial", method.c_str() };
-	int argc = 4;
+	{ "fabber", "--noise=white", "--model=poly", "--degree=0", method.c_str() };
+	int argc = 5;
 
 	FabberIoMemory io;
 	FabberRunData rundata(&io);
@@ -321,7 +325,7 @@ TEST_P(InferenceMethodTest, CLArgs)
 	rundata.Parse(argc, (char **) argv);
 	ASSERT_NO_THROW(rundata.Run());
 
-	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)

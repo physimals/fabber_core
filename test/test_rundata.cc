@@ -209,7 +209,7 @@ TEST_F(RunDataTest, OptionsFile)
 
 	ofstream os;
 	os.open(FILENAME.c_str(), ios::out);
-	os << "noise=white" << endl << "model=trivial" << endl << "method=vb" << endl << "bool-option" << endl
+	os << "noise=white" << endl << "model=poly" << endl << "method=vb" << endl << "bool-option" << endl
 			<< "#comment, ignored" << endl;
 	os.close();
 
@@ -217,7 +217,7 @@ TEST_F(RunDataTest, OptionsFile)
 	FabberRunData rundata(&io);
 	rundata.ParseParamFile(FILENAME);
 	ASSERT_EQ("white", rundata.GetString("noise"));
-	ASSERT_EQ("trivial", rundata.GetString("model"));
+	ASSERT_EQ("poly", rundata.GetString("model"));
 	ASSERT_EQ("vb", rundata.GetString("method"));
 	ASSERT_EQ(true, rundata.GetBool("bool-option"));
 }
@@ -229,13 +229,13 @@ TEST_F(RunDataTest, OptionsFileEmbeddedComment)
 
 	ofstream os;
 	os.open(FILENAME.c_str(), ios::out);
-	os << "model=trivial #just keep things simple" << endl;
+	os << "model=poly" << endl << "degree=0 # Keep things simple" << endl;
 	os.close();
 
 	FabberIoMemory io;
 	FabberRunData rundata(&io);
 	rundata.ParseParamFile(FILENAME);
-	ASSERT_EQ("trivial", rundata.GetString("model"));
+	ASSERT_EQ("poly", rundata.GetString("model"));
 }
 
 // Tests unsetting an option

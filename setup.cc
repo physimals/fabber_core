@@ -14,7 +14,6 @@
 #include "noisemodel_white.h"
 
 #include "fwdmodel_linear.h"
-#include "fwdmodel_trivial.h"
 #include "fwdmodel_poly.h"
 
 #include "convergence.h"
@@ -42,7 +41,6 @@ void FabberSetup::SetupDefaultFwdModels()
 {
 	FwdModelFactory* factory = FwdModelFactory::GetInstance();
 	factory->Add("linear", &LinearFwdModel::NewInstance);
-	factory->Add("trivial", &TrivialFwdModel::NewInstance);
 	factory->Add("poly", &PolynomialFwdModel::NewInstance);
 }
 

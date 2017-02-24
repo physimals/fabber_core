@@ -313,7 +313,6 @@ TEST_F(ClTestTest, ListModels)
 	string out = getStdout();
 	ASSERT_TRUE(contains(out, "poly"));
 	ASSERT_TRUE(contains(out, "linear"));
-	ASSERT_TRUE(contains(out, "trivial"));
 }
 
 TEST_F(ClTestTest, ListMethods)

@@ -42,7 +42,7 @@ protected:
 		vb =
 				reinterpret_cast<PublicVersion*>(static_cast<VariationalBayesInferenceTechnique*>(InferenceTechnique::NewFromName(
 						"vb")));
-		model = FwdModel::NewFromName("trivial");
+		model = FwdModel::NewFromName("poly");
 		io.ClearVoxelData();
 		rundata = new FabberRunData(&io);
 		rundata->SetLogger(&log);
@@ -178,10 +178,11 @@ TEST_P(VbTest, ImagePriors)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data",data);
 	rundata->Set("noise", "white");
-	rundata->Set("model", "trivial");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", "0");
 	rundata->Set("method", GetParam());
 
-	rundata->Set("PSP_byname1", "p");
+	rundata->Set("PSP_byname1", "c0");
 	rundata->Set("PSP_byname1_type", "I");
 	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	Run();
@@ -191,7 +192,7 @@ TEST_P(VbTest, ImagePriors)
 	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
-	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -238,10 +239,11 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data",data);
 	rundata->Set("noise", "white");
-	rundata->Set("model", "trivial");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", "0");
 	rundata->Set("method", GetParam());
 
-	rundata->Set("PSP_byname1", "p");
+	rundata->Set("PSP_byname1", "c0");
 	rundata->Set("PSP_byname1_type", "I");
 	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	rundata->Set("PSP_byname1_prec", "1234567");
@@ -253,7 +255,7 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
 	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
-	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -303,10 +305,11 @@ TEST_P(VbTest, ImagePriorsPrecLow)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data",data);
 	rundata->Set("noise", "white");
-	rundata->Set("model", "trivial");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", "0");
 	rundata->Set("method", GetParam());
 
-	rundata->Set("PSP_byname1", "p");
+	rundata->Set("PSP_byname1", "c0");
 	rundata->Set("PSP_byname1_type", "I");
 	io.SetVoxelData("PSP_byname1_image", iprior_data);
 	rundata->Set("PSP_byname1_prec", "1e-5");
@@ -318,7 +321,7 @@ TEST_P(VbTest, ImagePriorsPrecLow)
 	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
-	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
@@ -377,10 +380,11 @@ TEST_P(VbTest, ImagePriorsFile)
 	io.SetVoxelCoords(voxelCoords);
 	io.SetVoxelData("data",data);
 	rundata->Set("noise", "white");
-	rundata->Set("model", "trivial");
+	rundata->Set("model", "poly");
+	rundata->Set("degree", "0");
 	rundata->Set("method", GetParam());
 
-	rundata->Set("PSP_byname1", "p");
+	rundata->Set("PSP_byname1", "c0");
 	rundata->Set("PSP_byname1_type", "I");
 	rundata->Set("PSP_byname1_image", FILENAME);
 
@@ -391,7 +395,7 @@ TEST_P(VbTest, ImagePriorsFile)
 	NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
 	ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
-	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_p");
+	NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
 	ASSERT_EQ(mean.Nrows(), 1);
 	ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
 	for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)

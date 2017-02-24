@@ -38,7 +38,7 @@ protected:
 	{
 		svb = reinterpret_cast<PublicVersion*> (static_cast<SpatialVariationalBayes*> (InferenceTechnique::NewFromName(
 				"spatialvb")));
-		model = FwdModel::NewFromName("trivial");
+		model = FwdModel::NewFromName("poly");
 		io.ClearVoxelData();
 		rundata = new FabberRunData(&io);
 		rundata->SetLogger(&log);
@@ -66,6 +66,7 @@ protected:
 	void Initialize()
 	{
 		io.SetVoxelCoords(voxelCoords);
+		rundata->Set("degree", "0");
 		rundata->Set("noise", "white");
 		svb->Initialize(model, *rundata);
 	}

@@ -16,7 +16,7 @@ set(BASIC_SRC fabber_io.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc f
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc utils.cc fwdmodel_linear.cc
-	     fwdmodel_trivial.cc fwdmodel_poly.cc convergence.cc fabber_mc.cc)
+	           fwdmodel_poly.cc convergence.cc fabber_mc.cc)
 
 # Inference methods
 set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
