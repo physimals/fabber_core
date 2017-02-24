@@ -102,8 +102,8 @@ TEST_F(ClTestTest, Help)
 	ASSERT_TRUE(contains(out, "Usage"));
 }
 
-// Test real data with a linear model
-TEST_P(ClTestTest, LinearModel)
+// Test real data with a linear model and a VEST format basis
+TEST_P(ClTestTest, LinearModelVest)
 {
 	string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR) + "/test/test_linear_design.mat ";
 	args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
@@ -135,6 +135,38 @@ TEST_P(ClTestTest, LinearModel)
 			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
 }
 
+// Test real data with a linear model and an ASCII format basis
+TEST_P(ClTestTest, LinearModelAscii)
+{
+	string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR) + "/test/test_linear_design_ascii.mat ";
+	args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
+			+ "/test/test_data.nii.gz --noise=white";
+	args += " --method=" + GetParam() + " ";
+
+	ASSERT_EQ(0, runFabber(args));
+	string out = getLogfile("out.tmp");
+	ASSERT_TRUE(contains(out, "model=linear"));
+	ASSERT_TRUE(contains(out, "method=" + GetParam()));
+	ASSERT_TRUE(contains(out, "test_mask_small.nii.gz"));
+	ASSERT_TRUE(contains(out, "test_data.nii.gz"));
+
+	compareNifti("out.tmp/mean_Parameter_1.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_1.nii.gz");
+	compareNifti("out.tmp/mean_Parameter_2.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_2.nii.gz");
+	compareNifti("out.tmp/mean_Parameter_3.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_3.nii.gz");
+	compareNifti("out.tmp/mean_Parameter_4.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_4.nii.gz");
+	compareNifti("out.tmp/zstat_Parameter_1.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_1.nii.gz");
+	compareNifti("out.tmp/zstat_Parameter_2.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_2.nii.gz");
+	compareNifti("out.tmp/zstat_Parameter_3.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_3.nii.gz");
+	compareNifti("out.tmp/zstat_Parameter_4.nii.gz",
+			string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
+}
 // Test real data with a simple polynomial model
 TEST_F(ClTestTest, PolyModel)
 {

@@ -7,7 +7,30 @@
 
 #include "utils.h"
 
+#include <miscmaths/miscmaths.h>
+
 using namespace std;
+
+using NEWMAT::Matrix;
+
+using MISCMATHS::read_vest;
+using MISCMATHS::read_ascii_matrix;
+
+namespace fabber {
+
+   Matrix read_matrix_file(std::string filename)
+   {
+	   // Detect if file contains a VEST matrix or not
+	   try {
+		   return read_vest(filename);
+	   }
+	   catch(...) {
+		   // Do not care why this failed, if it was 'file not found'
+		   // we will discover that now we try to read it as ASCII
+		   return read_ascii_matrix(filename);
+	   }
+   }
+}
 
 Dispatcher::Dispatcher() {
   // No-op.

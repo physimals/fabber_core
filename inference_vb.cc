@@ -126,12 +126,12 @@ static OptionSpec OPTIONS[] =
 						"Skip entire model fitting step, simply output requested data based on supplied MVN. Can only be used with continue-from-mvn",
 						OPT_NONREQ, "" },
 				{ "fwd-initial-prior", OPT_FILE,
-						"VEST file containing MVN of initial model prior. Important for spatial VB using D prior",
+						"VEST or ASCII matrix file containing MVN of initial model prior. Important for spatial VB using D prior",
 						OPT_NONREQ, "" },
-				{ "fwd-initial-posterior", OPT_FILE, "VEST file containing MVN of initial model posterior", OPT_NONREQ,
+				{ "fwd-initial-posterior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial model posterior", OPT_NONREQ,
 						"" },
-				{ "noise-initial-prior", OPT_FILE, "VEST file containing MVN of initial noise prior", OPT_NONREQ, "" },
-				{ "noise-initial-posterior", OPT_FILE, "VEST file containing MVN of initial noise posterior",
+				{ "noise-initial-prior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial noise prior", OPT_NONREQ, "" },
+				{ "noise-initial-posterior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial noise posterior",
 						OPT_NONREQ, "" },
 				{ "noise-pattern", OPT_STR,
 						"repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)",
@@ -179,7 +179,7 @@ void VariationalBayesInferenceTechnique::InitializeMVNFromParam(FabberRunData& a
 	if (filename != "modeldefault")
 	{
 		LOG << "VbInferenceTechnique::Loading " << param_key << " MVNDist from " << filename << endl;
-		dist->LoadVest(filename);
+		dist->LoadFromMatrix(filename);
 		// Check the file we've loaded has the right number of parameters
 		if (dist->GetSize() != m_num_params)
 		{

@@ -29,9 +29,9 @@
  * Mostly self-explanatory, apart from:
  *
  * OPT_IMAGE is 3D single-valued voxel data, e.g. image prior
- * OPT_TIMESERIES is 4D timeseries voxel data, e.g. main data.
+ * OPT_TIMESERIES is 4D voxel data, e.g. main/supplemental data.
  * OPT_MVN is MVN voxel data
- * OPT_MATRIX is a VEST matrix file, usually used for small matrices
+ * OPT_MATRIX is a matrix file (either VEST or ASCII), usually used for small matrices
  * OPT_FILE is some other type of file
  */
 enum OptionType

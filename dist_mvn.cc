@@ -13,13 +13,14 @@
 #include "miscmaths/miscmaths.h"
 
 #include "math.h"
+#include "utils.h"
 
-using MISCMATHS::read_vest;
+using fabber::read_matrix_file;
 
 // Constructors
 
-MVNDist::MVNDist()
-  : m_size(-1), precisionsValid(false), covarianceValid(false)
+MVNDist::MVNDist() :
+		m_size(-1), precisionsValid(false), covarianceValid(false)
 {
 }
 
@@ -40,7 +41,7 @@ MVNDist::MVNDist(const string filename, EasyLog *log)
 {
 	m_log = log;
 	m_size = -1;
-	LoadVest(filename);
+	LoadFromMatrix(filename);
 }
 
 MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
@@ -211,8 +212,7 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
 		} catch (Exception)
 		{
 			// Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
-			WARN_ONCE(
-					"MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
+			WARN_ONCE("MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
 			LOG << means.t() << endl;
 			LOG << precisions << endl;
 			covariance = (precisions + IdentityMatrix(m_size) * 1e-10).i();
@@ -246,8 +246,8 @@ void MVNDist::SetCovariance(const SymmetricMatrix& from)
 
 void MVNDist::Dump(ostream& out) const
 {
-	out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
-			<< ", covarianceValid == " << covarianceValid << endl;
+	out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid << ", covarianceValid == "
+			<< covarianceValid << endl;
 	out << "  Means: " << means.t();
 	if (precisionsValid || covarianceValid)
 	{
@@ -261,10 +261,10 @@ void MVNDist::Dump(ostream& out) const
 	assert(means.Nrows() == m_size);
 }
 
-void MVNDist::LoadVest(const string& filename)
+void MVNDist::LoadFromMatrix(const string& filename)
 {
 	LOG << "Reading MVN from file '" << filename << "'...\n";
-	Matrix mat = read_vest(filename);
+	Matrix mat = read_matrix_file(filename);
 
 	LOG << "Converting to an MVN...\n";
 
@@ -306,7 +306,8 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 {
 	// Prepare an output vector of the correct size
 	const int nVoxels = voxel_data.Ncols();
-	if (nVoxels == 0) {
+	if (nVoxels == 0)
+	{
 		throw FabberRunDataError("MVNDist::Load - Voxel data is empty");
 	}
 
@@ -319,7 +320,8 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 	// for N as a function of P given in Load, using the quadratic
 	// formula.
 	const int nParams = ((int) sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
-	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
+	if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1)
+	{
 		throw FabberRunDataError("MVNDist::Load  - Incorrect number of rows for an MVN input");
 	}
 
@@ -342,11 +344,12 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix &voxel_data, EasyLog *log)
 		mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
 				nParams * (nParams + 1) / 2 + nParams);
 
-		if (voxel_data(voxel_data.Nrows(), vox) != 1) {
+		if (voxel_data(voxel_data.Nrows(), vox) != 1)
+		{
 			throw FabberRunDataError("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
 		}
 		assert(mvn->means.Nrows() == mvn->m_size);
-		assert(mvns.at(vox-1) == NULL);
+		assert(mvns.at(vox - 1) == NULL);
 		mvns[vox - 1] = mvn;
 	}
 }
@@ -361,11 +364,12 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 	Matrix vols;
 
 	const int nVoxels = mvns.size();
-  int nParams = 0; // In case we have no voxels
-	if (nVoxels == 0) {
-    assert(nVoxels > 0 && mvns.at(0) != NULL);
-	  nParams = mvns.at(0)->means.Nrows();
-  }
+	int nParams = 0; // In case we have no voxels
+	if (nVoxels != 0)
+	{
+		assert(nVoxels > 0 && mvns.at(0) != NULL);
+		nParams = mvns.at(0)->means.Nrows();
+	}
 
 	// This is what the matrix will look like (C = covariances, M=means)
 	//

@@ -63,7 +63,7 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
 	if (filePosterior != "modeldefault")
 	{
 		LOG << "NLLSInferenceTechnique::File posterior" << endl;
-		loadPosterior->LoadVest(filePosterior);
+		loadPosterior->LoadFromMatrix(filePosterior);
 	}
 
 	initialFwdPosterior = loadPosterior;
