@@ -1,6 +1,7 @@
 out.tmp*
 logfile
-build
+build_release
+build_debug
 CVS
 *.o
 *~
@@ -14,3 +15,4 @@ doc
 Debug
 Release
 out*
+*.pyc
