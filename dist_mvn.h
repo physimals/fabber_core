@@ -88,7 +88,7 @@ public:
 	MVNDist(const MVNDist& from1, const MVNDist& from2);
 
 	/**
-	 * Create from VEST file
+	 * Create from matrix file (VEST or ASCII)
 	 */
 	MVNDist(const string filename, EasyLog *log=0);
 
@@ -182,7 +182,9 @@ public:
 	void Dump(ostream &os) const;
 
 	/**
-	 * Load from VEST file
+	 * Load from matrix file
+	 *
+	 * The matrix may be in VEST or ASCII format
 	 *
 	 * The file must contain an N+1 x N+1 symmetric matrix.
 	 * This contains the covariances and the means in the
@@ -196,9 +198,9 @@ public:
 	 * Precisions will be updated lazily on next
 	 * call to GetPrecisions
 	 *
-	 * @param filename VEST matrix file
+	 * @param filename VEST or ASCII matrix file
 	 */
-	void LoadVest(const string& filename);
+	void LoadFromMatrix(const string& filename);
 
 private:
 	int m_size; // should only be changed explicitly

@@ -11,11 +11,12 @@
 #include "easylog.h"
 #include "miscmaths/miscmaths.h"
 #include "newmatio.h"
+#include "utils.h"
 
 #include <iostream>
 #include <stdexcept>
 
-using MISCMATHS::read_vest;
+using fabber::read_matrix_file;
 using namespace std;
 
 std::string LinearFwdModel::GetDescription() const
@@ -51,7 +52,7 @@ void LinearFwdModel::Initialize(FabberRunData& args)
 	FwdModel::Initialize(args);
 	string designFile = args.GetString("basis");
 	LOG << "LinearFwdModel::Reading design file: " << designFile << endl;
-	jacobian = read_vest(designFile);
+	jacobian = read_matrix_file(designFile);
 
 	const int Ntimes = jacobian.Nrows();
 	const int Nbasis = jacobian.Ncols();

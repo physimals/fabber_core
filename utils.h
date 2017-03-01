@@ -13,6 +13,17 @@
 #include <iostream>
 #include <vector>
 
+#include <newmat/newmat.h>
+
+namespace fabber {
+   /**
+	* Read 'small' matrix from file.
+	*
+	* The matrix may be in ASCII or VEST format
+	*/
+	NEWMAT::Matrix read_matrix_file(std::string filename);
+}
+
 /**
  * Template factory class.
  *

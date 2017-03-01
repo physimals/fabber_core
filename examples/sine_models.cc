@@ -2,12 +2,12 @@
 #include "fwdmodel_sine.h"
 
 extern "C" {
-  int get_num_models()
+  int CALL get_num_models()
   {
     return 1;
   }
 
-  const char *get_model_name(int index)
+  const char * CALL get_model_name(int index)
   {
     switch(index) {
       case 0:
@@ -18,7 +18,7 @@ extern "C" {
     }
   }
 
-  NewInstanceFptr get_new_instance_func(const char *name)
+  NewInstanceFptr CALL get_new_instance_func(const char *name)
   {
     if (string(name) == "sine") {
       return SineFwdModel::NewInstance;
