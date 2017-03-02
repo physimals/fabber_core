@@ -6,7 +6,7 @@ run cmake directly instead.
 
 ## Unix entironments
 
-  build.sh <type>
+    build.sh <type>
 
 Rebuild from scratch. `<type>` is the build type - `debug` or `release`. The
 default is `debug`. The built files will be placed in the directory

@@ -6,16 +6,14 @@
 
 /*  CCOPYRIGHT */
 
-#ifndef __FABBER_CORE_H
-#define __FABBER_CORE_H 1
+#pragma once
 
 /**
- * Run FABBER.
+ * Command line tool entry point for running Fabber.
  *
  * @param argc Number of arguments.
- * @param argv Arguments controlling execution.
- * @return 0 if all went well, 1 otherwise.
+ * @param argv Command line arguments controlling execution.
+ *
+ * @return 0 if all went well, !=0 otherwise.
  */
 int execute(int argc, char** argv);
-
-#endif // __FABBER_CORE_H

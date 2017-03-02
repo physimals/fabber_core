@@ -16,22 +16,22 @@ XFILES = fabber mvntool
 # Sets of objects separated into logical divisions
 
 # Basic objects - things that have nothing directly to do with inference
-BASICOBJS = fabber_io.o tools.o dataset.o dist_mvn.o easylog.o 
+BASICOBJS = fabber_tools.o fabber_rundata.o fabber_dist_mvn.o fabber_log.o 
 
 # Core objects - things that implement the framework for inference
-COREOBJS =  noisemodel.o fwdmodel.o inference.o utils.o fwdmodel_linear.o fwdmodel_trivial.o fwdmodel_poly.o convergence.o fabber_mc.o
+COREOBJS =  fabber_noise.o fabber_fwdmodel.o fabber_inference.o fabber_utils.o fabber_fwdmodel_linear.o fabber_fwdmodel_poly.o fabber_convergence.o fabber_mc.o
 
 # Infernce methods
-INFERENCEOBJS = inference_vb.o inference_nlls.o inference_spatialvb.o
+INFERENCEOBJS = fabber_inference_vb.o fabber_inference_nlls.o fabber_inference_spatialvb.o
 
 # Noise models
-NOISEOBJS = noisemodel_white.o noisemodel_ar.o
+NOISEOBJS = fabber_noise_white.o fabber_noise_ar.o
 
 # Configuration
 CONFIGOBJS = setup.o
 
 # Library for executables
-EXECOBJS = fabber_io_newimage.o fabber_core.o
+EXECOBJS = fabber_rundata_newimage.o fabber_core.o
 
 # Executable main object
 CLIENTOBJS =  fabber_main.o
@@ -48,7 +48,7 @@ OPTFLAGS = -ggdb -Wall
 
 all:	${XFILES} libfabbercore.a libfabberexec.a
 
-mvntool: ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o 
+mvntool: ${OBJS} mvn_tool/mvntool.o fabber_rundata_newimage.o 
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o fabber_io_newimage.o ${LIBS}
 
 #

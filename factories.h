@@ -1,28 +1,15 @@
-/*  utils.h - Assorted template factory, singleton factory and dispatcher class declarations.
+/*  factories.h - Assorted template factory, singleton factory and dispatcher class declarations.
 
      Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
 
     Copyright (C) 2015 University of Oxford  */
 
+#pragma once
 
-#ifndef __FABBER_UTILS_H
-#define __FABBER_UTILS_H 1
-
+#include <iostream>
 #include <map>
 #include <string>
-#include <iostream>
 #include <vector>
-
-#include <newmat/newmat.h>
-
-namespace fabber {
-   /**
-	* Read 'small' matrix from file.
-	*
-	* The matrix may be in ASCII or VEST format
-	*/
-	NEWMAT::Matrix read_matrix_file(std::string filename);
-}
 
 /**
  * Template factory class.
@@ -33,7 +20,7 @@ namespace fabber {
  */
 template <class T>
 class TemplateFactory {
-  public:
+public:
     /**
      * Function pointer to a zero argument function that returns a
      * pointer to an object of type T.
@@ -56,7 +43,7 @@ class TemplateFactory {
      * @param name
      * @return pointer, or NULL if name is
      * not known.
-     */ 
+     */
     T* Create(const std::string& name);
     /** 
      * Get the list of names.
@@ -69,47 +56,53 @@ class TemplateFactory {
      * @return true if so, false otherwise.
      */
     bool HasName(const std::string& name);
-  private:
+
+private:
     /** Map from names to function pointers. */
     std::map<std::string, Function> functionMap_;
 };
 
 template <class T>
-TemplateFactory<T>::TemplateFactory() {
-  // No-op.
+TemplateFactory<T>::TemplateFactory()
+{
+    // No-op.
 }
 
 template <class T>
-TemplateFactory<T>::~TemplateFactory() {
-  functionMap_.clear(); 
+TemplateFactory<T>::~TemplateFactory()
+{
+    functionMap_.clear();
 }
 
 template <class T>
-std::vector<std::string> TemplateFactory<T>::GetNames() {
-	std::vector<std::string> names;
-  for (typename std::map<std::string, Function>::iterator it =
-       functionMap_.begin(); it != functionMap_.end(); it++) {
-    names.push_back(it->first);
-  }
-  return names;
+std::vector<std::string> TemplateFactory<T>::GetNames()
+{
+    std::vector<std::string> names;
+    for (typename std::map<std::string, Function>::iterator it = functionMap_.begin(); it != functionMap_.end(); ++it) {
+        names.push_back(it->first);
+    }
+    return names;
 }
 
 template <class T>
-bool TemplateFactory<T>::HasName(const std::string& name) {
-  return (functionMap_.find(name) != functionMap_.end());
+bool TemplateFactory<T>::HasName(const std::string& name)
+{
+    return (functionMap_.find(name) != functionMap_.end());
 }
 
 template <class T>
-void TemplateFactory<T>::Add(const std::string& name, Function function) {
-  functionMap_[name] = function;
+void TemplateFactory<T>::Add(const std::string& name, Function function)
+{
+    functionMap_[name] = function;
 }
 
 template <class T>
-T* TemplateFactory<T>::Create(const std::string& name) {
-  if (functionMap_.count(name)) {
-    return functionMap_[name]();
-  }
-  return NULL;
+T* TemplateFactory<T>::Create(const std::string& name)
+{
+    if (functionMap_.count(name)) {
+        return functionMap_[name]();
+    }
+    return NULL;
 }
 
 /**
@@ -119,7 +112,7 @@ T* TemplateFactory<T>::Create(const std::string& name) {
  */
 template <class T>
 class SingletonFactory : public TemplateFactory<T> {
-  public:
+public:
     /**
      * Returns pointer to singleton instance of this class.
      * @return instance.
@@ -129,7 +122,8 @@ class SingletonFactory : public TemplateFactory<T> {
      * Delete the singleton instance.
      */
     static void Destroy();
-  private:
+
+private:
     /** Singleton instance of this class. */
     static SingletonFactory* singleton_;
     /** Constructor. */
@@ -137,30 +131,31 @@ class SingletonFactory : public TemplateFactory<T> {
 };
 
 template <class T>
-SingletonFactory<T>::SingletonFactory() {
-  // No-op.
+SingletonFactory<T>::SingletonFactory()
+{
+    // No-op.
 }
 
 template <class T>
-void SingletonFactory<T>::Destroy() {
-  if (singleton_ != NULL) {
-    delete singleton_;
-    singleton_ = NULL;
-  }
+void SingletonFactory<T>::Destroy()
+{
+    if (singleton_ != NULL) {
+        delete singleton_;
+        singleton_ = NULL;
+    }
 }
 
 template <class T>
 SingletonFactory<T>* SingletonFactory<T>::singleton_ = NULL;
 
 template <class T>
-SingletonFactory<T>* SingletonFactory<T>::GetInstance() {
-  if (singleton_ == NULL) {
-    singleton_ = new SingletonFactory<T>();
-  }
-  return singleton_;
+SingletonFactory<T>* SingletonFactory<T>::GetInstance()
+{
+    if (singleton_ == NULL) {
+        singleton_ = new SingletonFactory<T>();
+    }
+    return singleton_;
 }
-
-
 
 /**
  * Template class for registration of classes with factories.
@@ -170,19 +165,18 @@ SingletonFactory<T>* SingletonFactory<T>::GetInstance() {
  * Assumes U supports a NewInstance function that conforms to the type
  * suppoorted by T's Add function.
  */
-template<class T, class U>
+template <class T, class U>
 class FactoryRegistration {
-  public:
+public:
     /**
      * Constructor.
      * @param name Name by which U's function will be registered,
      */
-    FactoryRegistration(std::string name) {
-      (T::GetInstance())->Add(name, &U::NewInstance);
+    explicit FactoryRegistration(std::string name)
+    {
+        (T::GetInstance())->Add(name, &U::NewInstance);
     }
 };
-
-
 
 /**
  * Simple dispatcher class.
@@ -192,7 +186,7 @@ class FactoryRegistration {
  * action.
  */
 class Dispatcher {
-  public:
+public:
     /**
      * Function pointer to a zero argument function that does some
      * action, but returns no result.
@@ -212,7 +206,7 @@ class Dispatcher {
     /**
      * Invoke the function pointer with the given name.
      * @param name
-     */ 
+     */
     void Dispatch(const std::string& name);
     /** 
      * Get the list of names.
@@ -225,9 +219,8 @@ class Dispatcher {
      * @return true if so, false otherwise.
      */
     bool HasName(const std::string& name);
-  private:
+
+private:
     /** Map from names to function pointers. */
     std::map<std::string, Function> functionMap_;
 };
-
-#endif // __FABBER_UTILS_H

@@ -12,11 +12,11 @@ if(APPLE)
 endif(APPLE)
 
 # Basic objects - things that have nothing directly to do with inference
-set(BASIC_SRC fabber_io.cc tools.cc dataset.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc)
+set(BASIC_SRC tools.cc rundata.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc rundata_array.cc dist_gamma.cc version.cc)
 
 # Core objects - things that implement the framework for inference
-set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc utils.cc fwdmodel_linear.cc
-	           fwdmodel_poly.cc convergence.cc fabber_mc.cc)
+set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc factories.cc fwdmodel_linear.cc
+	           fwdmodel_poly.cc convergence.cc motioncorr.cc)
 
 # Inference methods
 set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
@@ -50,7 +50,6 @@ else (FSL_BUILD)
        Message("-- Found warpfns ${WARPFNS_LIBRARY}")
        include_directories(${MCFLIRT_INCLUDE_DIR})
        add_definitions(-D__FABBER_MOTION -DEXPOSE_TREACHEROUS)
-       set(CORE_SRC ${CORE_SRC} Update_deformation.cc)
      endif(WARPFNS_LIBRARY)
   endif(NOT MCFLIRT_INCLUDE_DIR)
 
@@ -137,7 +136,7 @@ add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
 add_library(fabbercore STATIC ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 add_library(fabbercore_shared SHARED ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 target_link_libraries(fabbercore_shared ${LIBS})
-add_library(fabberexec fabber_io_newimage.cc fabber_core.cc )
+add_library(fabberexec rundata_newimage.cc fabber_core.cc )
 
 add_executable(fabber fabber_main.cc)
 target_link_libraries(fabber fabberexec fabbercore ${LIBS})

@@ -6,66 +6,58 @@
 
 /*  CCOPYRIGHT */
 
-#ifndef __FABBER_INFERENCE_H
-#define __FABBER_INFERENCE_H 1
+#pragma once
 
-#include "dataset.h"
+#include "dist_mvn.h"
 #include "fwdmodel.h"
 #include "easylog.h"
 #include "noisemodel.h"
-#include "utils.h"
+#include "rundata.h"
+#include "factories.h"
 
-#include <map>
 #include <string>
-#include <typeinfo>
 #include <vector>
-#include <memory>
 
-class InferenceTechnique : public Loggable
-{
-
+class InferenceTechnique : public Loggable {
 public:
-	/**
+    /**
 	 * Static member function to return the names of all known
 	 * inference techniques
 	 */
-	static std::vector<std::string> GetKnown();
+    static std::vector<std::string> GetKnown();
 
-	/**
+    /**
 	 * Static member function, to pick an inference technique from a name
 	 */
-	static InferenceTechnique* NewFromName(const string& name);
+    static InferenceTechnique* NewFromName(const std::string& name);
 
-	/**
+    /**
 	 * Get usage information for a named method
 	 */
-	static void UsageFromName(const string& name, std::ostream &stream);
+    static void UsageFromName(const std::string& name, std::ostream& stream);
 
-	/**
+    /**
 	 * Create a new instance of this class.
 	 * @return pointer to new instance.
 	 */
-	static InferenceTechnique* NewInstance();
+    static InferenceTechnique* NewInstance();
 
-	/**
-	 * Constructor.
+    /**
+	 * Default constructor.
 	 */
-	InferenceTechnique() :
-		model(NULL), noise(NULL)
-	{
-	}
+    InferenceTechnique();
 
-	/**
+    /**
 	 * Get option descriptions for this inference method.
 	 */
-	virtual void GetOptions(std::vector<OptionSpec> &opts) const {};
+    virtual void GetOptions(std::vector<OptionSpec>& opts) const {};
 
-	/**
+    /**
 	 * @return human-readable description of the inference method.
 	 */
-	virtual std::string GetDescription() const = 0;
+    virtual std::string GetDescription() const = 0;
 
-	/**
+    /**
 	 * Get the code version. There is no fixed format for this,
 	 * and it has no meaning other than by comparison with different
 	 * versions of the same inference method code.
@@ -75,18 +67,18 @@ public:
 	 *
 	 * @return a string indicating the inference code version.
 	 */
-	virtual string GetVersion() const = 0;
+    virtual std::string GetVersion() const = 0;
 
-	/**
+    /**
 	 * Initialize a new instance to use the given forward model
 	 * and extract additional configuration from the given
 	 * arguments.
 	 * @param fwd_model Forward model to be used.
 	 * @param args Additional configuration parameters.
 	 */
-	virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
+    virtual void Initialize(FwdModel* fwd_model, FabberRunData& rundata);
 
-	/**
+    /**
 	 * Perform inference using the given model upon the given data.
 	 *
 	 * This method should only be called after Initialize()
@@ -95,98 +87,61 @@ public:
 	 *
 	 * @param data
 	 */
-	virtual void DoCalculations(FabberRunData& data) = 0;
+    virtual void DoCalculations(FabberRunData& rundata) = 0;
 
-	/**
+    /**
 	 * Save the results
 	 */
-	virtual void SaveResults(FabberRunData& data) const;
+    virtual void SaveResults(FabberRunData& rundata) const;
 
-	/**
+    /**
 	 * Destructor.
 	 */
-	virtual ~InferenceTechnique();
+    virtual ~InferenceTechnique();
 
 protected:
-	/**
+    void InitMVNFromFile(std::string continueFromFile, FabberRunData& rundata, std::string paramFilename);
+
+    /**
 	 * Pointer to forward model, passed in to initialize.
 	 *
 	 * Will not be deleted, that is the responsibility of
 	 * the caller
 	 */
-	FwdModel* model;
+    FwdModel* m_model;
 
-	/**
+    /**
 	 * Number of model parameters.
 	 *
 	 * This is used regularly so it's sensible to keep a
 	 * copy around
 	 */
-	int m_num_params;
+    int m_num_params;
 
-	/**
-	 * Number of noise parameters.
-	 *
-	 * This is used regularly so it's sensible to keep a
-	 * copy around
-	 */
-	int m_noise_params;
-
-	/**
-	 * Noise model in use. This is created by the inference
-	 * method deleted on destruction
-	 */
-	std::auto_ptr<NoiseModel> noise;
-
-	/**
-	 * If true, save the model prediction
-	 */
-	bool saveModelFit;
-
-	/**
-	 * If true, save the difference between the data and the model prediction
-	 */
-	bool saveResiduals;
-
-	/**
+    /**
 	 * If true, stop if we get a numerical execption in any voxel. If false,
 	 * simply print a warning and continue
 	 */
-	bool haltOnBadVoxel;
+    bool m_halt_bad_voxel;
 
-	/**
+    /**
 	 * Results of the inference method
 	 *
 	 * Vector of MVNDist, one for each voxel
 	 * Each MVNDist contains the means and covariance/precisions for
 	 * the parameters in the model
 	 */
-	vector<MVNDist*> resultMVNs;
-
-	/**
-	 * Used by Adrian's spatial priors research
-	 */
-	vector<MVNDist*> resultMVNsWithoutPrior;
-
-	/** Free energy for each voxel? */
-	vector<double> resultFs;
-
-	void InitMVNFromFile(string continueFromFile, FabberRunData& allData, string paramFilename);
-
-	/**
-	 * Number of motion correction steps to run
-	 */
-	int Nmcstep;
+    std::vector<MVNDist*> resultMVNs;
 
 private:
-	/**
+    /**
 	 * Private to prevent assignment
 	 */
-	const InferenceTechnique& operator=(const InferenceTechnique& from)
-	{
-		assert(false);
-		return from;
-	}
+    const InferenceTechnique& operator=(const InferenceTechnique& from)
+    {
+        assert(false);
+        return from;
+    }
 };
 
 /**
@@ -194,5 +149,3 @@ private:
  * \ref InferenceTechnique.
  */
 typedef SingletonFactory<InferenceTechnique> InferenceTechniqueFactory;
-
-#endif /* __FABBER_INFERENCE_H */

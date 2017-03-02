@@ -4,28 +4,33 @@
 #define FWDMODEL_SINE_H
 
 #include "fabber_core/fwdmodel.h"
-#include "fabber_core/dataset.h"
 
 #include "newmat.h"
 
 #include <string>
 
-class SineFwdModel: public FwdModel
-{
+class SineFwdModel : public FwdModel {
 public:
-	static FwdModel* NewInstance();
-	void GetOptions(std::vector<OptionSpec> &opts) const;
+    static FwdModel* NewInstance();
 
-	void Initialize(FabberRunData& args);
-	int NumParams() const;
-	void NameParams(std::vector<std::string>& names) const;
-	string ModelVersion() const;
-	void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-	void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
+    SineFwdModel()
+        : m_include_offset(false)
+    {
+    }
+
+    void GetOptions(std::vector<OptionSpec>& opts) const;
+    std::string GetDescription() const;
+    std::string ModelVersion() const;
+
+    void Initialize(FabberRunData& args);
+    int NumParams() const;
+    void NameParams(std::vector<std::string>& names) const;
+    void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
+    void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
+
 private:
-	bool m_include_offset;
-	static FactoryRegistration<FwdModelFactory, SineFwdModel> registration;
+    bool m_include_offset;
+    static FactoryRegistration<FwdModelFactory, SineFwdModel> registration;
 };
 
 #endif
-

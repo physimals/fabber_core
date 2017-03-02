@@ -8,8 +8,13 @@
 
 #pragma once
 
-#include "dataset.h"
 #include "easylog.h"
+#include "rundata.h"
+
+#include <newmat.h>
+#include <ostream>
+#include <string>
+#include <vector>
 
 /**
  * Multivariate Normal Distribution
@@ -21,19 +26,17 @@
  *      one for each distinct pair of parameters and
  *      irrespective of order
  */
-class MVNDist : public Loggable
-{
+class MVNDist : public Loggable {
 public:
-
-	/**
+    /**
 	 * Load a per-voxel vector of MVN distributions from existing voxel data
 	 *
 	 * @param mvns One MVN for each voxel
 	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
 	 */
-	static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix &voxel_data, EasyLog *log);
+    static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix& voxel_data, EasyLog* log);
 
-	/**
+    /**
 	 * Load a per-voxel vector of MVN distributions from run data
 	 *
 	 * This may load from a NIFTI file or from data explicitly provided
@@ -46,9 +49,9 @@ public:
 	 *            filename using the command line tool
 	 * @param data Options and voxel data
 	 */
-	static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData &data, EasyLog *log);
+    static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData& data, EasyLog* log);
 
-	/**
+    /**
 	 * Save a per-voxel vector of MVN distributions.
 	 *
 	 * This may save to a NIFTI file if the run has been configured to save
@@ -62,75 +65,75 @@ public:
 	 *
 	 * @param mvns One MVN for each voxel
 	 */
-	static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData &data);
+    static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData& data);
 
-	/**
+    /**
 	 * Default constructor
 	 *
 	 * Size will be undefined -- will be fixed by first SetPrecisions/SetCovariance. Any
 	 * attempt to get data before this will throw an exception.
 	 */
-	MVNDist();
+    MVNDist();
 
-	/**
+    /**
 	 * Create distribution of known size
 	 */
-	MVNDist(int dim, EasyLog *log=0);
+    MVNDist(int dim, EasyLog* log = 0);
 
-	/**
+    /**
 	 * Copy constructor
 	 */
-	MVNDist(const MVNDist& from);
+    MVNDist(const MVNDist& from);
 
-	/**
+    /**
 	 * Concatentate two MVNs
 	 */
-	MVNDist(const MVNDist& from1, const MVNDist& from2);
+    MVNDist(const MVNDist& from1, const MVNDist& from2);
 
-	/**
+    /**
 	 * Create from matrix file (VEST or ASCII)
 	 */
-	MVNDist(const string filename, EasyLog *log=0);
+    MVNDist(const string filename, EasyLog* log = 0);
 
-	/**
+    /**
 	 * Copy using a subset of another MVN distribution's parameters
 	 */
-	void CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence = true);
+    void CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence = true);
 
-	/**
+    /**
 	 * Get a subset of this MVN distribution as another MVN distribution
 	 */
-	MVNDist GetSubmatrix(int first, int last, bool checkIndependence = true);
+    MVNDist GetSubmatrix(int first, int last, bool checkIndependence = true);
 
-	/**
+    /**
 	 * Assignment operator
 	 */
-	const MVNDist& operator=(const MVNDist& from);
+    MVNDist& operator=(const MVNDist& from);
 
-	/**
+    /**
 	 * Set the size
 	 *
 	 * Will resize means and covariances/precisions to match
 	 */
-	void SetSize(int dim);
+    void SetSize(int dim);
 
-	/**
+    /**
 	 * Get the size (number of parameters)
 	 *
 	 * @return size or -1 if not initialized
 	 */
-	int GetSize() const;
+    int GetSize() const;
 
-	/**
+    /**
 	 * Mean values of each parameter
 	 *
 	 * FIXME this is a public member which shouldn't be
 	 * resized - should encapsulate it to protect
 	 * against misuse
 	 */
-	NEWMAT::ColumnVector means;
+    NEWMAT::ColumnVector means;
 
-	/**
+    /**
 	 * Get the precisions
 	 *
 	 * This is a symmetric matrix, i.e. the precision of two
@@ -145,16 +148,16 @@ public:
 	 * it could become out of date if a subsequent call
 	 * to SetXXX is made. It should not be stored for future use.
 	 */
-	const NEWMAT::SymmetricMatrix& GetPrecisions() const;
+    const NEWMAT::SymmetricMatrix& GetPrecisions() const;
 
-	/**
+    /**
 	 * Get the covariances
 	 *
 	 * @see GetPrecisions
 	 */
-	const NEWMAT::SymmetricMatrix& GetCovariance() const;
+    const NEWMAT::SymmetricMatrix& GetCovariance() const;
 
-	/**
+    /**
 	 * Set the precisions
 	 *
 	 * Also checks that size of matrix
@@ -163,9 +166,9 @@ public:
 	 * Covariances will be updated lazily on next
 	 * call to GetCovariances
 	 */
-	void SetPrecisions(const NEWMAT::SymmetricMatrix& from);
+    void SetPrecisions(const NEWMAT::SymmetricMatrix& from);
 
-	/**
+    /**
 	 * Set the covariances
 	 *
 	 * Also checks that size of matrix
@@ -174,14 +177,9 @@ public:
 	 * Precisions will be updated lazily on next
 	 * call to GetPrecisions
 	 */
-	void SetCovariance(const NEWMAT::SymmetricMatrix& from);
+    void SetCovariance(const NEWMAT::SymmetricMatrix& from);
 
-	/**
-	 * Dump info to the default log
-	 */
-	void Dump(ostream &os) const;
-
-	/**
+    /**
 	 * Load from matrix file
 	 *
 	 * The matrix may be in VEST or ASCII format
@@ -200,22 +198,26 @@ public:
 	 *
 	 * @param filename VEST or ASCII matrix file
 	 */
-	void LoadFromMatrix(const string& filename);
+    void LoadFromMatrix(const std::string& filename);
+
+    /**
+	 * Dump info to output ostream
+	 */
+    void Dump(std::ostream& os) const;
 
 private:
-	int m_size; // should only be changed explicitly
+    int m_size; // should only be changed explicitly
 
-	// Mutable, because they're a lazily calculated on first use
-	// even for const instance.
-	mutable NEWMAT::SymmetricMatrix precisions;
-	mutable NEWMAT::SymmetricMatrix covariance;
-	mutable bool precisionsValid;
-	mutable bool covarianceValid;
+    // Mutable, because they're a lazily calculated on first use
+    // even for const instance.
+    mutable NEWMAT::SymmetricMatrix precisions;
+    mutable NEWMAT::SymmetricMatrix covariance;
+    mutable bool precisionsValid;
+    mutable bool covarianceValid;
 };
 
-inline ostream& operator<<(ostream& out, const MVNDist& dist)
+inline std::ostream& operator<<(std::ostream& out, const MVNDist& dist)
 {
-	dist.Dump(out);
-	return out;
+    dist.Dump(out);
+    return out;
 }
-

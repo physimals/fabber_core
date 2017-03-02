@@ -31,9 +31,11 @@ Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_EXT_IN
 Message("-- Fabber headers in ${FABBER_INCLUDE_DIR}/fabber_core")
 
 find_library(FABBER_LIBRARY NAMES fabbercore libfabbercore
-             HINTS $ENV{FSLDIR}/lib ../fabber_core/Release ../fabber_core/Debug REQUIRED )
+             HINTS $ENV{FSLDIR}/lib ../fabber_core/build_release ../fabber_core/build_debug ../fabber_core/build_relwithdebinfo REQUIRED )
+
 find_library(FABBER_EXEC_LIBRARY NAMES fabberexec libfabberexec
-             HINTS $ENV{FSLDIR}/lib ../fabber_core/Release ../fabber_core/Debug REQUIRED )
+             HINTS $ENV{FSLDIR}/lib ../fabber_core/build_release ../fabber_core/build_debug ../fabber_core/build_relwithdebinfo REQUIRED )
+
 find_library(NEWMAT_LIBRARY NAMES newmat libnewmat
              HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
 find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths

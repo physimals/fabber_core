@@ -5,180 +5,95 @@
  Copyright (C) 2007-2015 University of Oxford  */
 
 /*  CCOPYRIGHT */
+#pragma once
 
 #include "noisemodel.h"
 
 #include "dist_gamma.h"
 
+#include <ostream>
+#include <string>
 #include <vector>
 
 class Ar1cParams;
 
 // Helper class -- caches some of the AR matrices
-class Ar1cMatrixCache
-{
+class Ar1cMatrixCache {
 public:
-	const NEWMAT::SymmetricBandMatrix& GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
-	const NEWMAT::SymmetricBandMatrix& GetMarginal(unsigned n) const;
-
-	void Update(const Ar1cParams& dist, int nTimes);
-
-	Ar1cMatrixCache(int numPhis) :
-		nPhis(numPhis)
-	{
-		return;
-	}
-
-	Ar1cMatrixCache(const Ar1cMatrixCache& from) :
-		alphaMarginals(from.alphaMarginals), alphaMatrices(from.alphaMatrices), nPhis(from.nPhis)
-	{
-		return;
-	}
+    explicit Ar1cMatrixCache(int numPhis);
+    Ar1cMatrixCache(const Ar1cMatrixCache& from);
+    const NEWMAT::SymmetricBandMatrix& GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
+    const NEWMAT::SymmetricBandMatrix& GetMarginal(unsigned n) const;
+    void Update(const Ar1cParams& dist, int nTimes);
 
 private:
-	vector<NEWMAT::SymmetricBandMatrix> alphaMarginals;
-	// recalculated whenever alpha changes
-	unsigned FlattenIndex(unsigned n, unsigned a12pow, unsigned a34pow) const
-	{
-		assert(n==1 || n==2 && a12pow<=2 && a34pow<=2);
-		return n - 1 + 2 * (a12pow + 3 * (a34pow));
-	}
+    std::vector<NEWMAT::SymmetricBandMatrix> alphaMarginals;
+    // recalculated whenever alpha changes
+    unsigned FlattenIndex(unsigned n, unsigned a12pow, unsigned a34pow) const;
 
-	vector<NEWMAT::SymmetricBandMatrix> alphaMatrices;
-	// should only be calculated once
-	// Note that if more than one model is being inferred upon at a time,
-	// this will be unnecessarily duplicated in every one of them --
-	// might speed things up considerably by sharing.
+    // should only be calculated once
+    // Note that if more than one model is being inferred upon at a time,
+    // this will be unnecessarily duplicated in every one of them --
+    // might speed things up considerably by sharing.
+    std::vector<NEWMAT::SymmetricBandMatrix> alphaMatrices;
 
-	int nPhis;
+    int nPhis;
 };
 
 // Parameter-storage class -- it's really just an enhanced structure
-class Ar1cParams: public NoiseParams
-{
+class Ar1cParams : public NoiseParams {
 public:
-	virtual Ar1cParams* Clone() const
-	{
-		return new Ar1cParams(*this);
-	}
+    // Constructors
+    Ar1cParams(int nAlpha, int nPhi);
+    Ar1cParams(const Ar1cParams& from);
+    virtual const Ar1cParams& operator=(const NoiseParams& in);
+    virtual Ar1cParams* Clone() const;
 
-	virtual const Ar1cParams& operator=(const NoiseParams& in)
-	{
-		const Ar1cParams& from = dynamic_cast<const Ar1cParams&> (in);
-		alpha = from.alpha;
-		phis = from.phis;
-		alphaMat = from.alphaMat;
-		return *this;
-	}
-
-	virtual const MVNDist OutputAsMVN() const;
-	virtual void InputFromMVN(const MVNDist& mvn);
-
-	// Human-readable debug output (dump internal state to LOG)
-	virtual void Dump(ostream &os) const;
-
-	// Constructor/destructor
-	Ar1cParams(int nAlpha, int nPhi) :
-		alpha(nAlpha), phis(nPhi), alphaMat(nPhi)
-	{
-		return;
-	}
-	Ar1cParams(const Ar1cParams& from) :
-		alpha(from.alpha), phis(from.phis), alphaMat(from.alphaMat)
-	{
-		return;
-	}
-	virtual ~Ar1cParams()
-	{
-		return;
-	}
+    virtual const MVNDist OutputAsMVN() const;
+    virtual void InputFromMVN(const MVNDist& mvn);
+    virtual void Dump(std::ostream& os) const;
 
 private:
-	friend class Ar1cNoiseModel; // Needs to use this class like it's a structure
-	friend class Ar1cMatrixCache;
-	MVNDist alpha;
-	vector<GammaDist> phis;
+    friend class Ar1cNoiseModel; // Needs to use this class like it's a structure
+    friend class Ar1cMatrixCache;
+    MVNDist alpha;
+    std::vector<GammaDist> phis;
 
-	Ar1cMatrixCache alphaMat;
+    Ar1cMatrixCache alphaMat;
 };
 
-class Ar1cNoiseModel: public NoiseModel
-{
+class Ar1cNoiseModel : public NoiseModel {
 public:
-	static NoiseModel* NewInstance();
+    static NoiseModel* NewInstance();
 
-	//  virtual Ar1cNoiseModel* Clone() const;
-	// makes a new identical copy of this object
+    virtual void Initialize(FabberRunData& args);
+    int NumParams();
+    virtual Ar1cParams* NewParams() const;
 
-	virtual Ar1cParams* NewParams() const
-	{
-		return new Ar1cParams(NumAlphas(), nPhis);
-	}
+    virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
 
-	virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
+    // Used to pre-evaluate the alpha matrices in the cache
+    virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const NEWMAT::ColumnVector& sampleData) const;
 
-	//  virtual void LoadPrior( const string& filename );
-	// loads priors from file, and also initializes posteriors
+    virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+        const LinearFwdModel& linear, const NEWMAT::ColumnVector& data) const;
 
-	virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const NEWMAT::ColumnVector& sampleData) const;
-	// Used to pre-evaluate the alpha matrices in the cache
+    virtual void UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+        const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
-	// virtual void AdjustPrior(...) might be needed for multi-voxel methods...
-	// probably best for that to go in a derived class.
+    virtual void UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+        const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
-	//  virtual void Dump(const string indent = "") const;
-	//  virtual void DumpPrior(const string indent = "") const;
-	//  virtual void DumpPosterior(const string indent = "") const;
-	// human-readable debug output
+    virtual void UpdateTheta(const NoiseParams& noise,
+        //    const NoiseParams& noisePrior,
+        MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data,
+        MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
-	//  virtual const MVNDist GetResultsAsMVN() const;
-
-	// Constructor/destructor
-	virtual void Initialize(FabberRunData& args);
-	//Ar1cNoiseModel(const string& ar1CrossTerms, int numPhis );
-	// ar1CrossTerms must be either "none", "dual", or "same".
-
-	virtual ~Ar1cNoiseModel()
-	{
-		return;
-	}
-
-	// VB Updates
-
-	virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-		const LinearFwdModel& linear, const NEWMAT::ColumnVector& data) const
-	{
-		UpdateAlpha(noise, noisePrior, theta, linear, data);
-		UpdatePhi(noise, noisePrior, theta, linear, data);
-	}
-
-	virtual void UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
-
-	virtual void UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-		const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
-
-	virtual void UpdateTheta(const NoiseParams& noise,
-			//    const NoiseParams& noisePrior,
-			MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data,
-			MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
-
-	virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-		const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
-
-	int NumParams();
-
-	//  void SaveParams(const MVNDist& theta) {};
-	//  void RevertParams(MVNDist& theta) {};
+    virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
+        const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
 
 protected:
-	//  Ar1cParameters* prior;
-	//  Ar1cParameters* posterior;
-	// Whenever this changes, call alphaMat.Update!
-
-	//  Ar1cMatrixCache alphaMat;
-	string ar1Type;
-	int NumAlphas() const; // converts the above string into a number
-	int nPhis;
+    std::string ar1Type;
+    int NumAlphas() const; // converts the above string into a number
+    int nPhis;
 };
-
