@@ -47,6 +47,7 @@ class MatrixEditDialog(QDialog, Ui_VestDialog):
         self.descEdit.clear()
         self.descEdit.insertPlainText(desc)
         self.table.setRowCount(max(1, len(m)))
+        self.table.setCurrentCell(0, 0);
         if len(m) > 0: self.table.setColumnCount(max(1, len(m[0])))
         for x, row in enumerate(m):
             for y, d in enumerate(row):

@@ -198,11 +198,11 @@ class MatrixFileOptionView(FileOptionView):
     def read_vest(self, fname):
         f = None
         in_matrix = False
+        mat = []
         try:
             f = open(fname, "r")
             lines = f.readlines()
             nx, ny = 0, 0
-            mat = []
             for line in lines:
                 if in_matrix:
                     nums = [float(num) for num in line.split()]
@@ -224,10 +224,7 @@ class MatrixFileOptionView(FileOptionView):
         finally:
             if f is not None: f.close()
 
-        if not in_matrix:
-            raise Exception("No VEST matrix found in file")
-        else:
-            return mat, ""
+        return mat, ""
 
     def read_ascii(self, fname):
         f = None
@@ -251,9 +248,6 @@ class MatrixFileOptionView(FileOptionView):
                     mat.append(row)
         finally:
             if f is not None: f.close()
-
-        if not in_matrix:
-            raise Exception("No data in file")
 
         return mat, desc
 

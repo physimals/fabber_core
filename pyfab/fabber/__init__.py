@@ -25,7 +25,6 @@ else:
     _lib_format = "lib/lib%s.so"
     _bin_format = "bin/%s"
 
-
 def _find_file(f, envdir, newf):
     if f is not None:
         return f
@@ -37,7 +36,6 @@ def _find_file(f, envdir, newf):
             return f
     else:
         return None
-
 
 def find_fabber():
     """
@@ -408,7 +406,6 @@ class FabberExec:
             elif not line.startswith("Usage") and not line.startswith("Options") and not line.startswith("Description"):
                 desc += line.strip()
 
-        # print opts
         return opts, desc
 
     def get_model_params(self, rundata):
@@ -421,13 +418,11 @@ class FabberExec:
         rundata.save()
         workdir = rundata.get_filedir()
         cmd = [self.ex, "-f", rundata.filepath]
-        # print(cmd)
         err = ""
         p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE, cwd=workdir)
         while 1:
             (stdout, stderr) = p.communicate()
             status = p.poll()
-            # print stdout
             if stderr: err += stderr
             if status is not None: break
 
