@@ -7,7 +7,7 @@ version control diffs show only meaningful changes and not irrelevant
 changes to spacing, etc.
 
 Updating Fabber to these guidelines is an ongoing task as files are edited
-and refactored. Currently many files are not updated. dataset.cc/dataset.h are 
+and refactored. Currently many files are not updated. rundata.cc/rundata.h are 
 believed to be reasonably consistent with these guidelines.
 
 Guidelines will be added as required, but the intention is to keep this as
@@ -43,10 +43,15 @@ reformat your current file in this style. The only difference from the Eclipse
 default is that lines up to 120 characters long are allowed - Eclipse wraps at
 80 characters which seems anachronistic.
 
+A .clang-format file is also provided which can be used with the clang-reformat
+formatter. Some editors can use this, e.g. Visual Studio Code (note this is not 
+the same as Visual Studio!)
+
 2. Tabs/spaces
 
-Tabs are used for all indentation, and would normally be viewed as 4 spaces. Spaces can be used
-for other whitespace.
+Spaces are used for all indentation. Tabs in existing files are converted to 4 spaces.
+Ideally tabs are better but in practice tend to cause problems when they are interpreted
+differently by different editors.
 
 3. Naming conventions
 
@@ -84,7 +89,11 @@ Header files should include guards against multiple inclusion, e.g.
 ...
 #endif
 
-Header files should not generally contain function implementations. 
+or 
+
+#pragma once
+
+Header files should not normally contain function implementations. 
 As a general rule, only empty functions or one-line functions (e.g.
 getters/setters) should be implemented in a header file.
 
@@ -93,7 +102,7 @@ any code which includes that header.
 
 5. Documentation and comments
 
-All public members should have Doxygen documentation
+All public and protected members should have Doxygen documentation
 
 // Comments should be used to explain code in cc files
 
