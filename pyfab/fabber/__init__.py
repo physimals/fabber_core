@@ -692,7 +692,7 @@ class FabberLib:
         """
         try:
             self._destroy_handle()
-            self.lib = CDLL(self.fabber_lib)
+            self.lib = CDLL(str(self.fabber_lib))
 
             # Signatures of the C functions
             c_int_arr = npct.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
