@@ -11,7 +11,8 @@
  * Functions to record the available inference techniques, noise
  * models and forward models so they are available across FABBER.
  */
-class FabberSetup {
+class FabberSetup
+{
 public:
     /**
 	 * Invoke each Setup function in turn.

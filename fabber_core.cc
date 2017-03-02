@@ -41,15 +41,17 @@ static void Usage()
     vector<OptionSpec> options;
     FabberRunData::GetOptions(options);
 
-    for (int i = 0; i < options.size(); i++) {
+    for (int i = 0; i < options.size(); i++)
+    {
         cout << options[i] << endl;
     }
 }
 
 #ifdef _WIN32
-static int setenv(const char* name, const char* value, int overwrite)
+static int setenv(const char *name, const char *value, int overwrite)
 {
-    if (!overwrite) {
+    if (!overwrite)
+    {
         size_t envsize = 0;
         int errcode = getenv_s(&envsize, NULL, 0, name);
         if (errcode || envsize)
@@ -68,51 +70,65 @@ static void set_environment()
 /**
  * Run the default command line program
  */
-int execute(int argc, char** argv)
+int execute(int argc, char **argv)
 {
     EasyLog log;
     bool gzLog = false;
     int ret = 1;
 
-    try {
+    try
+    {
         set_environment();
 
         // Create a new Fabber run
-        FabberRunDataNewimage* params = new FabberRunDataNewimage(true);
+        FabberRunDataNewimage *params = new FabberRunDataNewimage(true);
         params->SetLogger(&log);
         params->Parse(argc, argv);
 
         string load_models = params->GetStringDefault("loadmodels", "");
-        if (load_models != "") {
+        if (load_models != "")
+        {
             FwdModel::LoadFromDynamicLibrary(load_models, &log);
         }
 
         // Print usage information if no arguments given, or
         // if --help specified
-        if (params->GetBool("help") || argc == 1) {
+        if (params->GetBool("help") || argc == 1)
+        {
             string model = params->GetStringDefault("model", "");
             string method = params->GetStringDefault("method", "");
-            if (model != "") {
+            if (model != "")
+            {
                 FwdModel::UsageFromName(model, cout);
-            } else if (method != "") {
+            }
+            else if (method != "")
+            {
                 InferenceTechnique::UsageFromName(method, cout);
-            } else {
+            }
+            else
+            {
                 Usage();
             }
 
             return 0;
-        } else if (params->GetBool("listmodels")) {
+        }
+        else if (params->GetBool("listmodels"))
+        {
             vector<string> models = FwdModel::GetKnown();
             vector<string>::iterator iter;
-            for (iter = models.begin(); iter != models.end(); ++iter) {
+            for (iter = models.begin(); iter != models.end(); ++iter)
+            {
                 cout << *iter << endl;
             }
 
             return 0;
-        } else if (params->GetBool("listmethods")) {
+        }
+        else if (params->GetBool("listmethods"))
+        {
             vector<string> infers = InferenceTechnique::GetKnown();
             vector<string>::iterator iter;
-            for (iter = infers.begin(); iter != infers.end(); ++iter) {
+            for (iter = infers.begin(); iter != infers.end(); ++iter)
+            {
                 cout << *iter << endl;
             }
 
@@ -138,26 +154,34 @@ int execute(int argc, char** argv)
         // Only Gzip the logfile if we exit normally
         gzLog = params->GetBool("gzip-log");
         ret = 0;
-
-    } catch (const exception& e) {
+    }
+    catch (const exception &e)
+    {
         log.ReissueWarnings();
         log.LogStream() << "Exception caught in fabber:\n  " << e.what() << endl;
         cerr << "Exception caught in fabber:\n  " << e.what() << endl;
-    } catch (NEWMAT::Exception& e) {
+    }
+    catch (NEWMAT::Exception &e)
+    {
         log.ReissueWarnings();
         log.LogStream() << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
         cerr << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
-    } catch (...) {
+    }
+    catch (...)
+    {
         log.ReissueWarnings();
         log.LogStream() << "Some other exception caught in fabber!" << endl;
         cerr << "Some other exception caught in fabber!" << endl;
     }
 
-    if (log.LogStarted()) {
+    if (log.LogStarted())
+    {
         cout << endl
              << "Final logfile: " << log.GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile") << endl;
         log.StopLog(gzLog);
-    } else {
+    }
+    else
+    {
         // Flush any errors to stdout as we didn't get as far as starting the logfile
         log.StartLog(cout);
         log.StopLog();

@@ -25,7 +25,7 @@
 
 void FabberSetup::SetupDefaultInferenceTechniques()
 {
-    InferenceTechniqueFactory* factory = InferenceTechniqueFactory::GetInstance();
+    InferenceTechniqueFactory *factory = InferenceTechniqueFactory::GetInstance();
     factory->Add("vb", &VariationalBayesInferenceTechnique::NewInstance);
     factory->Add("spatialvb", &SpatialVariationalBayes::NewInstance);
 #ifndef NO_NLLS
@@ -35,21 +35,21 @@ void FabberSetup::SetupDefaultInferenceTechniques()
 
 void FabberSetup::SetupDefaultNoiseModels()
 {
-    NoiseModelFactory* factory = NoiseModelFactory::GetInstance();
+    NoiseModelFactory *factory = NoiseModelFactory::GetInstance();
     factory->Add("ar", &Ar1cNoiseModel::NewInstance);
     factory->Add("white", &WhiteNoiseModel::NewInstance);
 }
 
 void FabberSetup::SetupDefaultFwdModels()
 {
-    FwdModelFactory* factory = FwdModelFactory::GetInstance();
+    FwdModelFactory *factory = FwdModelFactory::GetInstance();
     factory->Add("linear", &LinearFwdModel::NewInstance);
     factory->Add("poly", &PolynomialFwdModel::NewInstance);
 }
 
 void FabberSetup::SetupDefaultConvergenceDetectors()
 {
-    ConvergenceDetectorFactory* factory = ConvergenceDetectorFactory::GetInstance();
+    ConvergenceDetectorFactory *factory = ConvergenceDetectorFactory::GetInstance();
     factory->Add("maxits", &CountingConvergenceDetector::NewInstance);
     factory->Add("pointzeroone", &FchangeConvergenceDetector::NewInstance);
     factory->Add("freduce", &FreduceConvergenceDetector::NewInstance);

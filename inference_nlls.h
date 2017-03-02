@@ -18,7 +18,8 @@
 /**
  * Inference technique using non-linear least squares
  */
-class NLLSInferenceTechnique : public InferenceTechnique {
+class NLLSInferenceTechnique : public InferenceTechnique
+{
 public:
     /**
 	 * Create a new NLLSInferenceTechnique instance
@@ -29,17 +30,17 @@ public:
 	 *
 	 * This calculation is done independently for each voxel
 	 */
-    static InferenceTechnique* NewInstance();
+    static InferenceTechnique *NewInstance();
 
-    virtual void GetOptions(std::vector<OptionSpec>& opts) const;
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const;
     virtual std::string GetDescription() const;
     virtual std::string GetVersion() const;
 
-    virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
-    virtual void DoCalculations(FabberRunData& data);
+    virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
+    virtual void DoCalculations(FabberRunData &data);
 
 protected:
-    const MVNDist* initialFwdPosterior;
+    const MVNDist *initialFwdPosterior;
     bool m_vbinit;
     bool m_lm;
 };
@@ -47,7 +48,8 @@ protected:
 /**
  * Cost function for NLLS method
  */
-class NLLSCF : public MISCMATHS::NonlinCF {
+class NLLSCF : public MISCMATHS::NonlinCF
+{
 public:
     /**
 	 * Create a cost function evaluator
@@ -56,7 +58,7 @@ public:
 	 * @param pm  Model whose parameters we are trying to
 	 *            adjust to fit the data
 	 */
-    NLLSCF(const NEWMAT::ColumnVector& pdata, const FwdModel* pm)
+    NLLSCF(const NEWMAT::ColumnVector &pdata, const FwdModel *pm)
         : m_data(pdata)
         , m_model(pm)
         , m_linear(pm)
@@ -73,14 +75,14 @@ public:
 	 *
 	 * @param p Current parameters
 	 */
-    virtual double cf(const NEWMAT::ColumnVector& p) const;
+    virtual double cf(const NEWMAT::ColumnVector &p) const;
 
     /**
 	 * Calculate the gradient of the linearized model
 	 *
 	 * @param p Current model parameters
 	 */
-    virtual NEWMAT::ReturnMatrix grad(const NEWMAT::ColumnVector& p) const;
+    virtual NEWMAT::ReturnMatrix grad(const NEWMAT::ColumnVector &p) const;
 
     /**
 	 * Calculate the Hessian of the linearized model
@@ -88,11 +90,11 @@ public:
 	 * @param p Current model parameters
 	 * @param iptr FIXME ???
 	 */
-    virtual boost::shared_ptr<MISCMATHS::BFMatrix> hess(const NEWMAT::ColumnVector& p, boost::shared_ptr<MISCMATHS::BFMatrix> iptr) const;
+    virtual boost::shared_ptr<MISCMATHS::BFMatrix> hess(const NEWMAT::ColumnVector &p, boost::shared_ptr<MISCMATHS::BFMatrix> iptr) const;
 
 private:
     const NEWMAT::ColumnVector m_data;
-    const FwdModel* m_model;
+    const FwdModel *m_model;
     mutable LinearizedFwdModel m_linear;
 };
 #endif

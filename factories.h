@@ -19,13 +19,14 @@
  * an object of type T.
  */
 template <class T>
-class TemplateFactory {
+class TemplateFactory
+{
 public:
     /**
      * Function pointer to a zero argument function that returns a
      * pointer to an object of type T.
      */
-    typedef T* (*Function)(void);
+    typedef T *(*Function)(void);
     /** Constructor. */
     TemplateFactory();
     /** Destructor. */
@@ -36,7 +37,7 @@ public:
      * accessed.
      * @param function Function pointer.
      */
-    void Add(const std::string& name, Function function);
+    void Add(const std::string &name, Function function);
     /**
      * Invoke the function pointer with the given name and return a
      * pointer to an object.
@@ -44,7 +45,7 @@ public:
      * @return pointer, or NULL if name is
      * not known.
      */
-    T* Create(const std::string& name);
+    T *Create(const std::string &name);
     /** 
      * Get the list of names.
      * @return list of names.
@@ -55,7 +56,7 @@ public:
      * @param name
      * @return true if so, false otherwise.
      */
-    bool HasName(const std::string& name);
+    bool HasName(const std::string &name);
 
 private:
     /** Map from names to function pointers. */
@@ -78,28 +79,30 @@ template <class T>
 std::vector<std::string> TemplateFactory<T>::GetNames()
 {
     std::vector<std::string> names;
-    for (typename std::map<std::string, Function>::iterator it = functionMap_.begin(); it != functionMap_.end(); ++it) {
+    for (typename std::map<std::string, Function>::iterator it = functionMap_.begin(); it != functionMap_.end(); ++it)
+    {
         names.push_back(it->first);
     }
     return names;
 }
 
 template <class T>
-bool TemplateFactory<T>::HasName(const std::string& name)
+bool TemplateFactory<T>::HasName(const std::string &name)
 {
     return (functionMap_.find(name) != functionMap_.end());
 }
 
 template <class T>
-void TemplateFactory<T>::Add(const std::string& name, Function function)
+void TemplateFactory<T>::Add(const std::string &name, Function function)
 {
     functionMap_[name] = function;
 }
 
 template <class T>
-T* TemplateFactory<T>::Create(const std::string& name)
+T *TemplateFactory<T>::Create(const std::string &name)
 {
-    if (functionMap_.count(name)) {
+    if (functionMap_.count(name))
+    {
         return functionMap_[name]();
     }
     return NULL;
@@ -111,13 +114,14 @@ T* TemplateFactory<T>::Create(const std::string& name)
  * Maintains a singleton instance of a \ref TemplateFactory.
  */
 template <class T>
-class SingletonFactory : public TemplateFactory<T> {
+class SingletonFactory : public TemplateFactory<T>
+{
 public:
     /**
      * Returns pointer to singleton instance of this class.
      * @return instance.
      */
-    static SingletonFactory* GetInstance();
+    static SingletonFactory *GetInstance();
     /**
      * Delete the singleton instance.
      */
@@ -125,7 +129,7 @@ public:
 
 private:
     /** Singleton instance of this class. */
-    static SingletonFactory* singleton_;
+    static SingletonFactory *singleton_;
     /** Constructor. */
     SingletonFactory();
 };
@@ -139,19 +143,21 @@ SingletonFactory<T>::SingletonFactory()
 template <class T>
 void SingletonFactory<T>::Destroy()
 {
-    if (singleton_ != NULL) {
+    if (singleton_ != NULL)
+    {
         delete singleton_;
         singleton_ = NULL;
     }
 }
 
 template <class T>
-SingletonFactory<T>* SingletonFactory<T>::singleton_ = NULL;
+SingletonFactory<T> *SingletonFactory<T>::singleton_ = NULL;
 
 template <class T>
-SingletonFactory<T>* SingletonFactory<T>::GetInstance()
+SingletonFactory<T> *SingletonFactory<T>::GetInstance()
 {
-    if (singleton_ == NULL) {
+    if (singleton_ == NULL)
+    {
         singleton_ = new SingletonFactory<T>();
     }
     return singleton_;
@@ -166,7 +172,8 @@ SingletonFactory<T>* SingletonFactory<T>::GetInstance()
  * suppoorted by T's Add function.
  */
 template <class T, class U>
-class FactoryRegistration {
+class FactoryRegistration
+{
 public:
     /**
      * Constructor.
@@ -185,7 +192,8 @@ public:
  * pointer is assumed to point to a function that carries out some
  * action.
  */
-class Dispatcher {
+class Dispatcher
+{
 public:
     /**
      * Function pointer to a zero argument function that does some
@@ -202,12 +210,12 @@ public:
      * accessed.
      * @param function Function pointer.
      */
-    void Add(const std::string& name, Function function);
+    void Add(const std::string &name, Function function);
     /**
      * Invoke the function pointer with the given name.
      * @param name
      */
-    void Dispatch(const std::string& name);
+    void Dispatch(const std::string &name);
     /** 
      * Get the list of names.
      * @return list of names.
@@ -218,7 +226,7 @@ public:
      * @param name
      * @return true if so, false otherwise.
      */
-    bool HasName(const std::string& name);
+    bool HasName(const std::string &name);
 
 private:
     /** Map from names to function pointers. */

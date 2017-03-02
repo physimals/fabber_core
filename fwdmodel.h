@@ -17,9 +17,10 @@
 #include <string>
 #include <vector>
 
-class FwdModel : public Loggable {
+class FwdModel : public Loggable
+{
 public:
-    static void LoadFromDynamicLibrary(std::string filename, EasyLog* log = 0);
+    static void LoadFromDynamicLibrary(std::string filename, EasyLog *log = 0);
 
     /**
 	 * Static member function to return the names of all known
@@ -30,24 +31,22 @@ public:
     /**
 	 * Static member function, to pick a forward model from a name
 	 */
-    static FwdModel* NewFromName(const std::string& name);
+    static FwdModel *NewFromName(const std::string &name);
 
     /**
 	 * Get usage information for a named model
 	 */
-    static void UsageFromName(const std::string& name, std::ostream& stream);
+    static void UsageFromName(const std::string &name, std::ostream &stream);
 
     /**
 	 * Get option descriptions for this model. The default returns
 	 * nothing to enable compatibility with older model code
 	 */
-    virtual void GetOptions(std::vector<OptionSpec>& opts) const {}
-
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
     /**
 	 * @return human-readable description of the model.
 	 */
     virtual std::string GetDescription() const { return ""; }
-
     /**
 	 * Get the model version. There is no fixed format for this,
 	 * and it has no meaning other than by comparison with different
@@ -66,7 +65,7 @@ public:
 	 * 
 	 * @param args Configuration parameters.
 	 */
-    virtual void Initialize(FabberRunData& args);
+    virtual void Initialize(FabberRunData &args);
 
     /**
 	 * How many parameters in the model? 
@@ -85,7 +84,7 @@ public:
 	 *
 	 * See fwdmodel_linear.h for a generic implementation
 	 */
-    virtual void NameParams(std::vector<std::string>& names) const = 0;
+    virtual void NameParams(std::vector<std::string> &names) const = 0;
 
     /**
 	 * Load up some sensible suggestions for initial prior & posterior values
@@ -99,7 +98,7 @@ public:
 	 *        
 	 * @param posterior As above for posterior distribution
 	 */
-    virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const = 0;
+    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const = 0;
 
     /**
 	 * For models that need the data values in the voxel to calculate
@@ -109,7 +108,7 @@ public:
 	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
 	 *                number of values that are in this vector
 	 */
-    virtual void pass_in_data(const NEWMAT::ColumnVector& voxdata)
+    virtual void pass_in_data(const NEWMAT::ColumnVector &voxdata)
     {
         data = voxdata;
     }
@@ -123,7 +122,7 @@ public:
 	 *                number of values that are in this vector
 	 * @param voxsuppdata Supplementary data if provided. Must be the same length as voxdata.
 	 */
-    virtual void pass_in_data(const NEWMAT::ColumnVector& voxdata, const NEWMAT::ColumnVector& voxsuppdata)
+    virtual void pass_in_data(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxsuppdata)
     {
         data = voxdata;
         suppdata = voxsuppdata;
@@ -136,7 +135,7 @@ public:
 	 * 
 	 * @param coords Vector of length 3 containing x, y, z coords
 	 */
-    virtual void pass_in_coords(const NEWMAT::ColumnVector& coords);
+    virtual void pass_in_coords(const NEWMAT::ColumnVector &coords);
 
     /**
 	 * Voxelwise initialization of the posterior, i.e. a parameter initialisation
@@ -152,7 +151,7 @@ public:
 	 *        may set mean/variances to suggested prior, or just do nothing to
 	 *        accept general default
 	 */
-    virtual void InitParams(MVNDist& posterior) const
+    virtual void InitParams(MVNDist &posterior) const
     {
     }
 
@@ -167,7 +166,7 @@ public:
 	 *               The length of this vector will be set to the same as the number of
 	 *               data points passed in via pass_in_data
 	 */
-    virtual void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const = 0;
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
 
     /**
 	 * Evaluate the gradient
@@ -178,12 +177,12 @@ public:
 	 * 
 	 * @return false if no valid gradient is returned by the model, true if it is
 	 */
-    virtual bool Gradient(const NEWMAT::ColumnVector& params, NEWMAT::Matrix& grad) const;
+    virtual bool Gradient(const NEWMAT::ColumnVector &params, NEWMAT::Matrix &grad) const;
 
     /**
 	 * An ARD update step can be specified in the model
 	 */
-    virtual void UpdateARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+    virtual void UpdateARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
     {
     }
 
@@ -193,7 +192,7 @@ public:
 	 * Forces the prior on the parameter that is subject to ARD to be correct -
 	 * really a worst case scenario if people are loading in their own priors
 	 */
-    virtual void SetupARD(const MVNDist& posterior, MVNDist& prior, double& Fard) const
+    virtual void SetupARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
     {
     }
 
@@ -212,7 +211,7 @@ public:
 	 *
 	 * Default implementation uses NameParams to give reasonably meaningful output
 	 */
-    virtual void DumpParameters(const NEWMAT::ColumnVector& params, const std::string& indent = "") const;
+    virtual void DumpParameters(const NEWMAT::ColumnVector &params, const std::string &indent = "") const;
 
     /**
 	 * Return model usage information.
@@ -221,7 +220,7 @@ public:
 	 *
 	 * @return vector of strings, one per line of information.
 	 */
-    virtual void Usage(std::ostream& stream) const;
+    virtual void Usage(std::ostream &stream) const;
 #endif
 
 protected:
@@ -250,4 +249,4 @@ typedef SingletonFactory<FwdModel> FwdModelFactory;
  *
  * Used for the dynamic loading of models
  */
-typedef FwdModel* (*NewInstanceFptr)(void);
+typedef FwdModel *(*NewInstanceFptr)(void);

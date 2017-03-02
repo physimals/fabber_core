@@ -30,14 +30,15 @@ static OptionSpec OPTIONS[] = {
     { "basis", OPT_MATRIX, "File containing design matrix", OPT_REQ, "" }
 };
 
-FwdModel* LinearFwdModel::NewInstance()
+FwdModel *LinearFwdModel::NewInstance()
 {
     return new LinearFwdModel();
 }
 
-void LinearFwdModel::GetOptions(std::vector<OptionSpec>& opts) const
+void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {
-    for (int i = 0; i < NUM_OPTIONS; i++) {
+    for (int i = 0; i < NUM_OPTIONS; i++)
+    {
         opts.push_back(OPTIONS[i]);
     }
 }
@@ -52,7 +53,7 @@ string LinearFwdModel::ModelVersion() const
     return fabber_release_version();
 }
 
-void LinearFwdModel::Initialize(FabberRunData& args)
+void LinearFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
     string designFile = args.GetString("basis");
@@ -69,7 +70,8 @@ void LinearFwdModel::Initialize(FabberRunData& args)
     offset.ReSize(Ntimes);
     offset = 0;
 
-    if (args.GetBool("add-ones-regressor")) {
+    if (args.GetBool("add-ones-regressor"))
+    {
         // Add an additional 'parameter' whose timeseries if constant
         LOG << "LinearFwdModel::Plus an additional regressor of all ones\n";
         ColumnVector ones(Ntimes);
@@ -82,7 +84,7 @@ void LinearFwdModel::Initialize(FabberRunData& args)
     // Warning: Nbasis is now wrong!
 }
 
-void LinearFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
+void LinearFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
 {
     assert(prior.means.Nrows() == NumParams());
 
@@ -92,7 +94,7 @@ void LinearFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) c
     posterior = prior;
 }
 
-void LinearFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
+void LinearFwdModel::Evaluate(const ColumnVector &params, ColumnVector &result) const
 {
     result = jacobian * (params - centre) + offset;
 }
@@ -102,7 +104,7 @@ int LinearFwdModel::NumParams() const
     return centre.Nrows();
 }
 
-void LinearFwdModel::NameParams(vector<string>& names) const
+void LinearFwdModel::NameParams(vector<string> &names) const
 {
     names.clear();
 
@@ -111,14 +113,15 @@ void LinearFwdModel::NameParams(vector<string>& names) const
         names.push_back("Parameter_" + stringify(i));
 }
 
-void LinearizedFwdModel::ReCentre(const ColumnVector& about)
+void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 {
     assert(about == about); // isfinite
 
     // Store new centre & offset
     centre = about;
     fcn->Evaluate(centre, offset);
-    if (0 * offset != 0 * offset) {
+    if (0 * offset != 0 * offset)
+    {
         LOG_ERR("LinearizedFwdModel::about:\n"
             << about);
         LOG_ERR("LinearizedFwdModel::offset:\n"
@@ -135,10 +138,12 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
 
     // If the gradient is not supported by the model, use
     // numerical differentiation to calculate it.
-    if (!gradfrommodel) {
+    if (!gradfrommodel)
+    {
         ColumnVector centre2, centre3;
         ColumnVector offset2, offset3;
-        for (int i = 1; i <= centre.Nrows(); i++) {
+        for (int i = 1; i <= centre.Nrows(); i++)
+        {
             double delta = centre(i) * 1e-5;
             if (delta < 0)
                 delta = -delta;
@@ -166,7 +171,8 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
         }
     }
 
-    if (0 * jacobian != 0 * jacobian) {
+    if (0 * jacobian != 0 * jacobian)
+    {
         LOG << "LinearizedFwdModel::jacobian:\n"
             << jacobian;
         LOG << "LinearizedFwdModel::about':\n"
@@ -177,7 +183,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector& about)
     }
 }
 
-void LinearizedFwdModel::DumpParameters(const ColumnVector& vec, const string& indent) const
+void LinearizedFwdModel::DumpParameters(const ColumnVector &vec, const string &indent) const
 {
     //    LOG << indent << "This is what the nonlinear model has to say:" << endl;
     fcn->DumpParameters(vec, indent);

@@ -9,16 +9,17 @@
 #pragma once
 
 #include "dist_mvn.h"
-#include "fwdmodel.h"
 #include "easylog.h"
+#include "factories.h"
+#include "fwdmodel.h"
 #include "noisemodel.h"
 #include "rundata.h"
-#include "factories.h"
 
 #include <string>
 #include <vector>
 
-class InferenceTechnique : public Loggable {
+class InferenceTechnique : public Loggable
+{
 public:
     /**
 	 * Static member function to return the names of all known
@@ -29,18 +30,18 @@ public:
     /**
 	 * Static member function, to pick an inference technique from a name
 	 */
-    static InferenceTechnique* NewFromName(const std::string& name);
+    static InferenceTechnique *NewFromName(const std::string &name);
 
     /**
 	 * Get usage information for a named method
 	 */
-    static void UsageFromName(const std::string& name, std::ostream& stream);
+    static void UsageFromName(const std::string &name, std::ostream &stream);
 
     /**
 	 * Create a new instance of this class.
 	 * @return pointer to new instance.
 	 */
-    static InferenceTechnique* NewInstance();
+    static InferenceTechnique *NewInstance();
 
     /**
 	 * Default constructor.
@@ -50,7 +51,7 @@ public:
     /**
 	 * Get option descriptions for this inference method.
 	 */
-    virtual void GetOptions(std::vector<OptionSpec>& opts) const {};
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const {};
 
     /**
 	 * @return human-readable description of the inference method.
@@ -76,7 +77,7 @@ public:
 	 * @param fwd_model Forward model to be used.
 	 * @param args Additional configuration parameters.
 	 */
-    virtual void Initialize(FwdModel* fwd_model, FabberRunData& rundata);
+    virtual void Initialize(FwdModel *fwd_model, FabberRunData &rundata);
 
     /**
 	 * Perform inference using the given model upon the given data.
@@ -87,12 +88,12 @@ public:
 	 *
 	 * @param data
 	 */
-    virtual void DoCalculations(FabberRunData& rundata) = 0;
+    virtual void DoCalculations(FabberRunData &rundata) = 0;
 
     /**
 	 * Save the results
 	 */
-    virtual void SaveResults(FabberRunData& rundata) const;
+    virtual void SaveResults(FabberRunData &rundata) const;
 
     /**
 	 * Destructor.
@@ -100,7 +101,7 @@ public:
     virtual ~InferenceTechnique();
 
 protected:
-    void InitMVNFromFile(std::string continueFromFile, FabberRunData& rundata, std::string paramFilename);
+    void InitMVNFromFile(std::string continueFromFile, FabberRunData &rundata, std::string paramFilename);
 
     /**
 	 * Pointer to forward model, passed in to initialize.
@@ -108,7 +109,7 @@ protected:
 	 * Will not be deleted, that is the responsibility of
 	 * the caller
 	 */
-    FwdModel* m_model;
+    FwdModel *m_model;
 
     /**
 	 * Number of model parameters.
@@ -131,13 +132,13 @@ protected:
 	 * Each MVNDist contains the means and covariance/precisions for
 	 * the parameters in the model
 	 */
-    std::vector<MVNDist*> resultMVNs;
+    std::vector<MVNDist *> resultMVNs;
 
 private:
     /**
 	 * Private to prevent assignment
 	 */
-    const InferenceTechnique& operator=(const InferenceTechnique& from)
+    const InferenceTechnique &operator=(const InferenceTechnique &from)
     {
         assert(false);
         return from;

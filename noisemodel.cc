@@ -18,32 +18,35 @@
 using MISCMATHS::digamma;
 using namespace std;
 
-NoiseModel* NoiseModel::NewFromName(const string& name)
+NoiseModel *NoiseModel::NewFromName(const string &name)
 {
-    NoiseModelFactory* factory = NoiseModelFactory::GetInstance();
-    NoiseModel* noise = factory->Create(name);
-    if (noise == NULL) {
+    NoiseModelFactory *factory = NoiseModelFactory::GetInstance();
+    NoiseModel *noise = factory->Create(name);
+    if (noise == NULL)
+    {
         throw InvalidOptionValue("noise", name, "Unrecognized noise type");
     }
     return noise;
 }
 
-void NoiseModel::Initialize(FabberRunData& rundata)
+void NoiseModel::Initialize(FabberRunData &rundata)
 {
     m_log = rundata.GetLogger();
 }
 
 // ARD stuff
-double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const
+double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const
 {
     double Fard = 0;
 
-    if (~ardindices.empty()) {
+    if (~ardindices.empty())
+    {
         SymmetricMatrix PriorPrec;
         PriorPrec = thetaPrior.GetPrecisions();
         SymmetricMatrix PostCov = theta.GetCovariance();
 
-        for (int i = 0; i < ardindices.size(); i++) {
+        for (int i = 0; i < ardindices.size(); i++)
+        {
             PriorPrec(ardindices[i], ardindices[i]) = 1e-12; //set prior to be initally non-informative
             thetaPrior.means(ardindices[i]) = 0;
 
@@ -59,17 +62,19 @@ double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist& theta, MVNDis
     return Fard;
 }
 
-double NoiseModel::UpdateARD(vector<int> ardindices, const MVNDist& theta, MVNDist& thetaPrior) const
+double NoiseModel::UpdateARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const
 {
     double Fard = 0;
 
-    if (~ardindices.empty()) {
+    if (~ardindices.empty())
+    {
         SymmetricMatrix PriorCov;
         SymmetricMatrix PostCov;
         PriorCov = thetaPrior.GetCovariance();
         PostCov = theta.GetCovariance();
 
-        for (int i = 0; i < ardindices.size(); i++) {
+        for (int i = 0; i < ardindices.size(); i++)
+        {
             PriorCov(ardindices[i], ardindices[i]) = theta.means(ardindices[i]) * theta.means(ardindices[i]) + PostCov(
                                                                                                                    ardindices[i], ardindices[i]);
 

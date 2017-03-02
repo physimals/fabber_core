@@ -8,10 +8,11 @@
 #include "rundata.h"
 #include "setup.h"
 
-namespace {
-
+namespace
+{
 // Hack to allow us to get at private/protected members
-class PublicVersion : public SpatialVariationalBayes {
+class PublicVersion : public SpatialVariationalBayes
+{
 public:
     using SpatialVariationalBayes::CalcNeighbours;
     using SpatialVariationalBayes::m_neighbours;
@@ -19,7 +20,8 @@ public:
 };
 
 // The fixture for testing class Foo.
-class SpatialVbTest : public ::testing::Test {
+class SpatialVbTest : public ::testing::Test
+{
 protected:
     SpatialVbTest()
         : rundata(NULL)
@@ -36,7 +38,7 @@ protected:
 
     virtual void SetUp()
     {
-        svb = reinterpret_cast<PublicVersion*>(static_cast<SpatialVariationalBayes*>(InferenceTechnique::NewFromName(
+        svb = reinterpret_cast<PublicVersion *>(static_cast<SpatialVariationalBayes *>(InferenceTechnique::NewFromName(
             "spatialvb")));
         model = FwdModel::NewFromName("poly");
         rundata = new FabberRunData();
@@ -69,9 +71,9 @@ protected:
     }
 
     NEWMAT::Matrix voxelCoords;
-    FabberRunData* rundata;
-    FwdModel* model;
-    PublicVersion* svb;
+    FabberRunData *rundata;
+    FwdModel *model;
+    PublicVersion *svb;
     EasyLog log;
 };
 
@@ -108,7 +110,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsX)
 
     // Create coordinates and data matrices
     voxelCoords.ReSize(3, NVOXELS);
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         voxelCoords(1, v) = v;
         voxelCoords(2, v) = 1;
         voxelCoords(3, v) = 1;
@@ -118,7 +121,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsX)
     svb->CalcNeighbours(voxelCoords);
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         int expected = 2;
         if (v == 1 || v == NVOXELS)
             expected = 1;
@@ -133,7 +137,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsY)
 
     // Create coordinates and data matrices
     voxelCoords.ReSize(3, NVOXELS);
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         voxelCoords(1, v) = 1;
         voxelCoords(2, v) = v;
         voxelCoords(3, v) = 1;
@@ -143,7 +148,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsY)
     svb->CalcNeighbours(voxelCoords);
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         int expected = 2;
         if (v == 1 || v == NVOXELS)
             expected = 1;
@@ -158,7 +164,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsZ)
 
     // Create coordinates and data matrices
     voxelCoords.ReSize(3, NVOXELS);
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         voxelCoords(1, v) = 1;
         voxelCoords(2, v) = 1;
         voxelCoords(3, v) = v;
@@ -168,7 +175,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxelsZ)
     svb->CalcNeighbours(voxelCoords);
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
-    for (int v = 1; v <= NVOXELS; v++) {
+    for (int v = 1; v <= NVOXELS; v++)
+    {
         int expected = 2;
         if (v == 1 || v == NVOXELS)
             expected = 1;
@@ -185,9 +193,12 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
 
     voxelCoords.ReSize(3, NVOXELS);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
@@ -201,9 +212,12 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
     v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 vector<int> expected;
                 if (x != 0)
                     expected.push_back(v - 1);
@@ -220,7 +234,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
                 //                cout << "voxel " << v << " expected=" << expected.size() << endl;
                 ASSERT_EQ(svb->m_neighbours[v - 1].size(), expected.size());
                 vector<int> nb = svb->m_neighbours[v - 1];
-                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++) {
+                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
+                {
                     vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
@@ -239,9 +254,12 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
 
     voxelCoords.ReSize(3, NVOXELS);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
@@ -256,9 +274,12 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
     v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 vector<int> expected;
                 if (x != 0)
                     expected.push_back(v - 1);
@@ -267,7 +288,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
                 //                cout << "voxel " << v << " expected=" << expected.size() << endl;
                 ASSERT_EQ(svb->m_neighbours[v - 1].size(), expected.size());
                 vector<int> nb = svb->m_neighbours[v - 1];
-                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++) {
+                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
+                {
                     vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
@@ -286,9 +308,12 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
 
     voxelCoords.ReSize(3, NVOXELS);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
@@ -303,9 +328,12 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
     v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 vector<int> expected;
                 if (x != 0)
                     expected.push_back(v - 1);
@@ -318,7 +346,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
                 //                cout << "voxel " << v << " expected=" << expected.size() << endl;
                 ASSERT_EQ(svb->m_neighbours[v - 1].size(), expected.size());
                 vector<int> nb = svb->m_neighbours[v - 1];
-                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++) {
+                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
+                {
                     vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
@@ -337,9 +366,12 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
 
     voxelCoords.ReSize(3, NVOXELS);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
@@ -353,9 +385,12 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
     v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 vector<int> expected;
                 if (x >= 2)
                     expected.push_back(v - 2);
@@ -373,7 +408,8 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
                 // Neighbours on a diagonal. Note that all of these can be
                 // reached in two ways and current code keeps these duplicates,
                 // so we expect them here too.
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < 2; i++)
+                {
                     if ((x >= 1) && (y >= 1))
                         expected.push_back(v - 1 - VSIZE);
                     if ((x >= 1) && (y <= VSIZE - 2))
@@ -404,7 +440,8 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
                 //                cout << "voxel " << v << " expected=" << expected.size() << endl;
                 ASSERT_EQ(svb->m_neighbours2[v - 1].size(), expected.size());
                 vector<int> nb = svb->m_neighbours2[v - 1];
-                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++) {
+                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
+                {
                     vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
@@ -423,9 +460,12 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
 
     voxelCoords.ReSize(3, NVOXELS);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x + 1;
                 voxelCoords(2, v) = y + 1;
                 voxelCoords(3, v) = z + 1;
@@ -439,9 +479,12 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
     ASSERT_EQ(svb->m_neighbours.size(), NVOXELS);
 
     v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 vector<int> expected;
                 if (x != 0)
                     expected.push_back(v - 1);
@@ -458,7 +501,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
                 //                cout << "voxel " << v << " expected=" << expected.size() << endl;
                 ASSERT_EQ(svb->m_neighbours[v - 1].size(), expected.size());
                 vector<int> nb = svb->m_neighbours[v - 1];
-                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++) {
+                for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
+                {
                     vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
@@ -543,7 +587,6 @@ TEST_F(SpatialVbTest, RestartOutputOnly)
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
     float VAL = 7.32;
-    int REPEATS = 50;
     int DEGREE = 2;
 
     // Create coordinates and data matrices
@@ -552,13 +595,17 @@ TEST_F(SpatialVbTest, RestartOutputOnly)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
                 }
                 v++;
@@ -598,20 +645,23 @@ TEST_F(SpatialVbTest, RestartOutputOnly)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_NEAR(VAL, mean(1, i + 1), 0.0001);
     }
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_NEAR(1, mean(1, i + 1) + 1, 0.0001);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_NEAR(VAL * 1.5, mean(1, i + 1), 0.0001);
     }
 

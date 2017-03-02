@@ -40,7 +40,7 @@ string GetLastErrorAsString()
 
     LPSTR messageBuffer = nullptr;
     size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                                 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 
     std::string message(messageBuffer, size);
 
@@ -79,21 +79,21 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename, EasyLog *log)
     if (!get_num_models)
     {
         throw InvalidOptionValue("loadmodels", filename,
-                                 string("Failed to resolve symbol 'get_num_models' ") + GETERROR());
+            string("Failed to resolve symbol 'get_num_models' ") + GETERROR());
     }
 
     get_model_name = (GetModelNameFptr)GETSYMBOL(libptr, "get_model_name");
     if (!get_model_name)
     {
         throw InvalidOptionValue("loadmodels", filename,
-                                 string("Failed to resolve symbol 'get_model_name' ") + GETERROR());
+            string("Failed to resolve symbol 'get_model_name' ") + GETERROR());
     }
 
     get_new_instance_fptr = (GetNewInstanceFptrFptr)GETSYMBOL(libptr, "get_new_instance_func");
     if (!get_new_instance_fptr)
     {
         throw InvalidOptionValue("loadmodels", filename,
-                                 string("Failed to resolve symbol 'get_new_instance_func' ") + GETERROR());
+            string("Failed to resolve symbol 'get_new_instance_func' ") + GETERROR());
     }
 
     int num_models = get_num_models();
@@ -105,7 +105,7 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename, EasyLog *log)
         if (!model_name)
         {
             throw InvalidOptionValue("loadmodels", filename,
-                                     "Dynamic library failed to return model name for index " + stringify(i));
+                "Dynamic library failed to return model name for index " + stringify(i));
         }
         else
         {
@@ -115,7 +115,7 @@ void FwdModel::LoadFromDynamicLibrary(std::string filename, EasyLog *log)
             if (!new_instance_fptr)
             {
                 throw InvalidOptionValue("loadmodels", filename,
-                                         string("Dynamic library failed to return new instance function for model") + model_name);
+                    string("Dynamic library failed to return new instance function for model") + model_name);
             }
             factory->Add(model_name, new_instance_fptr);
         }

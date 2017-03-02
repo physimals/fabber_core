@@ -8,21 +8,22 @@
 
 #include "inference_vb.h"
 
-class CovarianceCache : public Loggable {
+class CovarianceCache : public Loggable
+{
 public:
-    void CalcDistances(const NEWMAT::Matrix& voxelCoords, const string& distanceMeasure);
-    const NEWMAT::SymmetricMatrix& GetDistances() const
+    void CalcDistances(const NEWMAT::Matrix &voxelCoords, const string &distanceMeasure);
+    const NEWMAT::SymmetricMatrix &GetDistances() const
     {
         return distances;
     }
 
     const NEWMAT::ReturnMatrix GetC(double delta) const; // quick to calculate
-    const NEWMAT::SymmetricMatrix& GetCinv(double delta) const;
+    const NEWMAT::SymmetricMatrix &GetCinv(double delta) const;
 
     //  const Matrix& GetCiCodist(double delta) const;
-    const NEWMAT::SymmetricMatrix& GetCiCodistCi(double delta, double* CiCodistTrace = NULL) const;
+    const NEWMAT::SymmetricMatrix &GetCiCodistCi(double delta, double *CiCodistTrace = NULL) const;
 
-    bool GetCachedInRange(double* guess, double lower, double upper, bool allowEndpoints = false) const;
+    bool GetCachedInRange(double *guess, double lower, double upper, bool allowEndpoints = false) const;
     // If there's a cached value in (lower, upper), set *guess = value and
     // return true; otherwise return false and don't change *guess.
 
@@ -37,11 +38,12 @@ private:
     mutable CiCodistCi_cache_type CiCodistCi_cache;
 };
 
-class SpatialVariationalBayes : public VariationalBayesInferenceTechnique {
+class SpatialVariationalBayes : public VariationalBayesInferenceTechnique
+{
 public:
-    static InferenceTechnique* NewInstance();
+    static InferenceTechnique *NewInstance();
 
-    virtual void GetOptions(vector<OptionSpec>& opts) const;
+    virtual void GetOptions(vector<OptionSpec> &opts) const;
 
     SpatialVariationalBayes()
         : VariationalBayesInferenceTechnique()
@@ -65,8 +67,8 @@ public:
         , bruteForceDeltaSearch(false)
     {
     }
-    virtual void Initialize(FwdModel* fwd_model, FabberRunData& args);
-    virtual void DoCalculations(FabberRunData& data);
+    virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
+    virtual void DoCalculations(FabberRunData &data);
     //    virtual ~SpatialVariationalBayes();
 
 protected:
@@ -79,7 +81,7 @@ protected:
 	 * created on the fly for normal VB and throw away after each
 	 * voxel is done.
 	 */
-    void SetupPerVoxelDists(FabberRunData& allData);
+    void SetupPerVoxelDists(FabberRunData &allData);
 
     /**
 	 * Set up the StS matrix used for S and Z spatial priors
@@ -89,12 +91,12 @@ protected:
     // Per-voxel prior and posterior distributions. For Spatial VB we need to
     // keep these around during iteration as the influence the calculations on
     // neighbouring voxels
-    std::vector<NoiseParams*> noiseVox; // these change. polymorphic type, so need to use pointers
-    std::vector<NoiseParams*> noiseVoxPrior; // these may change in future
+    std::vector<NoiseParams *> noiseVox;      // these change. polymorphic type, so need to use pointers
+    std::vector<NoiseParams *> noiseVoxPrior; // these may change in future
     std::vector<MVNDist> fwdPriorVox;
     std::vector<MVNDist> fwdPosteriorVox;
     std::vector<LinearizedFwdModel> linearVox;
-    std::vector<MVNDist*> fwdPosteriorWithoutPrior;
+    std::vector<MVNDist *> fwdPosteriorWithoutPrior;
 
     // StS matrix used for S and Z spatial priors
     NEWMAT::SymmetricMatrix StS;
@@ -148,7 +150,7 @@ protected:
     /**
 	 * Calculate first and second nearest neighbours of each voxel
 	 */
-    void CalcNeighbours(const NEWMAT::Matrix& voxelCoords);
+    void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
 
     // For the new (Sahani-based) smoothing method:
     CovarianceCache covar;
@@ -198,14 +200,14 @@ protected:
 
     bool bruteForceDeltaSearch;
 
-    double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix& covRatio,
+    double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix &covRatio,
         //const SymmetricMatrix& covRatioSupplemented,
-        const NEWMAT::ColumnVector& meanDiffRatio, double guess, double* optimizedRho = NULL, bool allowRhoToVary = true, bool allowDeltaToVary = true) const;
+        const NEWMAT::ColumnVector &meanDiffRatio, double guess, double *optimizedRho = NULL, bool allowRhoToVary = true, bool allowDeltaToVary = true) const;
 
     double
     OptimizeEvidence(
         // const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
-        const vector<MVNDist*>& fwdPosteriorWithoutPrior, // used for parameter k
+        const vector<MVNDist *> &fwdPosteriorWithoutPrior, // used for parameter k
         // const vector<SymmetricMatrix>& Si,
-        int k, const MVNDist* ifp, double guess, bool allowRhoToVary = false, double* rhoOut = NULL) const;
+        int k, const MVNDist *ifp, double guess, bool allowRhoToVary = false, double *rhoOut = NULL) const;
 };

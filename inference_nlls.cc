@@ -10,8 +10,8 @@
 
 #include "inference_nlls.h"
 
-#include "fwdmodel.h"
 #include "easylog.h"
+#include "fwdmodel.h"
 #include "rundata.h"
 #include "version.h"
 
@@ -30,10 +30,11 @@ static OptionSpec OPTIONS[] = {
     { "lm", OPT_BOOL, "Whether to use LM convergence (default is L)", OPT_NONREQ, "" },
 };
 
-void NLLSInferenceTechnique::GetOptions(vector<OptionSpec>& opts) const
+void NLLSInferenceTechnique::GetOptions(vector<OptionSpec> &opts) const
 {
     InferenceTechnique::GetOptions(opts);
-    for (int i = 0; i < NUM_OPTIONS; i++) {
+    for (int i = 0; i < NUM_OPTIONS; i++)
+    {
         opts.push_back(OPTIONS[i]);
     }
 }
@@ -48,12 +49,12 @@ string NLLSInferenceTechnique::GetVersion() const
     return fabber_release_version();
 }
 
-InferenceTechnique* NLLSInferenceTechnique::NewInstance()
+InferenceTechnique *NLLSInferenceTechnique::NewInstance()
 {
     return new NLLSInferenceTechnique();
 }
 
-void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args)
+void NLLSInferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &args)
 {
     InferenceTechnique::Initialize(fwd_model, args);
     LOG << "NLLSInferenceTechnique::Initialising" << endl;
@@ -63,13 +64,14 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
     m_vbinit = args.GetBool("vb-init");
 
     // Initialize the model with MVN distributions for its parameters
-    MVNDist* loadPosterior = new MVNDist(m_model->NumParams());
-    MVNDist* junk = new MVNDist(m_model->NumParams());
+    MVNDist *loadPosterior = new MVNDist(m_model->NumParams());
+    MVNDist *junk = new MVNDist(m_model->NumParams());
     m_model->HardcodedInitialDists(*junk, *loadPosterior);
 
     // Option to load a 'posterior' which will allow the setting of intial parameter estimates for NLLS
     string filePosterior = args.GetStringDefault("fwd-inital-posterior", "modeldefault");
-    if (filePosterior != "modeldefault") {
+    if (filePosterior != "modeldefault")
+    {
         LOG << "NLLSInferenceTechnique::File posterior" << endl;
         loadPosterior->LoadFromMatrix(filePosterior);
     }
@@ -82,21 +84,22 @@ void NLLSInferenceTechnique::Initialize(FwdModel* fwd_model, FabberRunData& args
     LOG << "NLLSInferenceTechnique::Done initialising" << endl;
 }
 
-void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
+void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
 {
     // Get basic voxel data
-    const Matrix& data = allData.GetMainVoxelData();
-    const Matrix& coords = allData.GetVoxelCoords();
+    const Matrix &data = allData.GetMainVoxelData();
+    const Matrix &coords = allData.GetVoxelCoords();
     unsigned int Nvoxels = data.Ncols();
 
     // pass in some (dummy) data/coords here just in case the model relies upon it
     // use the first voxel values as our dummies
 
-    if (Nvoxels > 0) {
+    if (Nvoxels > 0)
+    {
         m_model->pass_in_data(data.Column(1));
         m_model->pass_in_coords(coords.Column(1));
     }
-    
+
     // Check how many samples in time series - should
     // be same as model outputs
     int Nsamples = data.Nrows();
@@ -104,7 +107,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
     // Loop over voxels. The result for each voxel is
     // stored as a MVN distribution for its parameters
     // in resultMVNs.
-    for (unsigned int voxel = 1; voxel <= Nvoxels; voxel++) {
+    for (unsigned int voxel = 1; voxel <= Nvoxels; voxel++)
+    {
         ColumnVector y = data.Column(voxel);
         ColumnVector vcoords = coords.Column(voxel);
 
@@ -132,7 +136,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
         // Set the convergence method
         // either Levenberg (L) or Levenberg-Marquardt (LM)
         NonlinParam nlinpar(Nparams, NL_LM);
-        if (!m_lm) {
+        if (!m_lm)
+        {
             nlinpar.SetGaussNewtonType(LM_L);
         }
 
@@ -142,10 +147,11 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
         nlinpar.LogPar(true);
         nlinpar.LogCF(true);
 
-        try {
+        try
+        {
             // Run the nonlinear optimizer
-            // output variable status is unused - unsure if nonlin has any effect
-            NonlinOut status = nonlin(nlinpar, costfn);
+            // output variable is unused - unsure if nonlin has any effect
+            nonlin(nlinpar, costfn);
 
 #if 0
 			LOG << "NLLSInferenceTechnique::The solution is: " << nlinpar.Par() << endl;
@@ -164,7 +170,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 
             // Recenter linearized model on new parameters
             linear.ReCentre(fwdPosterior.means);
-            const Matrix& J = linear.Jacobian();
+            const Matrix &J = linear.Jacobian();
 
             // Calculate the NLLS precision
             // This is (J'*J)/mse
@@ -176,14 +182,18 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
 
             // Look for zero diagonal elements (implies parameter is not observable)
             // and set precision small, but non-zero - so that covariance can be calculated
-            for (int i = 1; i <= nllsprec.Nrows(); i++) {
-                if (nllsprec(i, i) < 1e-6) {
+            for (int i = 1; i <= nllsprec.Nrows(); i++)
+            {
+                if (nllsprec(i, i) < 1e-6)
+                {
                     nllsprec(i, i) = 1e-6;
                 }
             }
             fwdPosterior.SetPrecisions(nllsprec);
             fwdPosterior.GetCovariance();
-        } catch (Exception& e) {
+        }
+        catch (Exception &e)
+        {
             LOG << "NLLSInferenceTechnique::NEWMAT Exception in this voxel:\n"
                 << e.what() << endl;
 
@@ -209,7 +219,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData& allData)
     }
 }
 
-double NLLSCF::cf(const ColumnVector& p) const
+double NLLSCF::cf(const ColumnVector &p) const
 {
     // p = parameters
     // data_pred = data predicted by model
@@ -222,14 +232,14 @@ double NLLSCF::cf(const ColumnVector& p) const
     return cfv;
 }
 
-ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
+ReturnMatrix NLLSCF::grad(const ColumnVector &p) const
 {
     // Create an initial zero gradient vector
     ColumnVector gradv(p.Nrows());
 
     // Need to recenter the linearised model to the current parameter values
     m_linear.ReCentre(p);
-    const Matrix& J = m_linear.Jacobian();
+    const Matrix &J = m_linear.Jacobian();
 
 #if 0 // FIXME Old code?
 	//this is g(w) i.e. model evaluated at current parameters?
@@ -244,24 +254,28 @@ ReturnMatrix NLLSCF::grad(const ColumnVector& p) const
     return (gradv);
 }
 
-boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector& p, boost::shared_ptr<BFMatrix> iptr) const
+boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector &p, boost::shared_ptr<BFMatrix> iptr) const
 {
     boost::shared_ptr<BFMatrix> hessm;
 
-    if (iptr && iptr->Nrows() == (unsigned)p.Nrows() && iptr->Ncols() == (unsigned)p.Nrows()) {
+    if (iptr && iptr->Nrows() == (unsigned)p.Nrows() && iptr->Ncols() == (unsigned)p.Nrows())
+    {
         hessm = iptr;
-    } else {
+    }
+    else
+    {
         hessm = boost::shared_ptr<BFMatrix>(new FullBFMatrix(p.Nrows(), p.Nrows()));
     }
 
     // need to recenter the linearised model to the current parameter values
     m_linear.ReCentre(p);
-    const Matrix& J = m_linear.Jacobian();
+    const Matrix &J = m_linear.Jacobian();
     Matrix hesstemp = 2 * J.t() * J; //Make the G-N approximation to the hessian
 
     //(*hessm) = J.t()*J;
 
-    for (int i = 1; i <= p.Nrows(); i++) {
+    for (int i = 1; i <= p.Nrows(); i++)
+    {
         for (int j = 1; j <= p.Nrows(); j++)
             hessm->Set(i, j, hesstemp(i, j));
     }

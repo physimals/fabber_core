@@ -22,7 +22,7 @@
 using namespace NEWIMAGE;
 using namespace NEWMAT;
 
-MCobj::MCobj(FabberRunData& allData, int dof)
+MCobj::MCobj(FabberRunData &allData, int dof)
 {
     Matrix coords = allData.GetVoxelCoords();
     std::vector<int> size(3);
@@ -34,7 +34,8 @@ MCobj::MCobj(FabberRunData& allData, int dof)
 
     //cout << size[0] << ", " << size[1] << ", " << size[2] << endl;
     //cout << coords.Ncols() << endl;
-    for (int v = 1; v <= coords.Ncols(); v++) {
+    for (int v = 1; v <= coords.Ncols(); v++)
+    {
         mask(coords(1, v), coords(2, v), coords(3, v)) = 1.0;
         //	cout << coords(1, v) << ", " << coords(2, v) << ", " <<  coords(3, v) << endl;
     }
@@ -46,7 +47,8 @@ MCobj::MCobj(FabberRunData& allData, int dof)
     num_iter = 10;
     modelpred = wholeimage;
     modelpred = 0.0f;
-    if (userdof > 12) {
+    if (userdof > 12)
+    {
         defx = modelpred;
         defx.setROIlimits(0, 2);
         defx.activateROI();
@@ -57,27 +59,33 @@ MCobj::MCobj(FabberRunData& allData, int dof)
         tmpx = defx;
         tmpy = defx;
         tmpz = defx;
-    } else {
+    }
+    else
+    {
         mcf.setparams("verbose", false);
     }
     affmat = IdentityMatrix(4);
     finalimage = modelpred;
 }
 
-void MCobj::run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat)
+void MCobj::run_mc(const Matrix &modelpred_mat, Matrix &finalimage_mat)
 {
     modelpred.setmatrix(modelpred_mat, mask);
-    if (userdof > 12) {
+    if (userdof > 12)
+    {
         UpdateDeformation(wholeimage, modelpred, num_iter, defx, defy, defz, finalimage, tmpx, tmpy, tmpz);
         defx = tmpx;
         defy = tmpy;
         defz = tmpz;
-    } else {
+    }
+    else
+    {
         // mcf.register_volumes(4D reference,4D input image,refweight,inweight,4D output image);
         affmat = mcf.register_volumes(modelpred, wholeimage, mask, mask, finalimage);
 
         // apply transforms to wholeimage to get finalimage (the above is a dummy)
-        for (int n = 0; n < wholeimage.maxt(); n++) {
+        for (int n = 0; n < wholeimage.maxt(); n++)
+        {
             affine_transform(wholeimage[n], finalimage[n], affmat.Rows(n * 4 + 1, n * 4 + 4));
         }
     }
@@ -87,7 +95,7 @@ void MCobj::run_mc(const Matrix& modelpred_mat, Matrix& finalimage_mat)
 /////////////////// Diffeomorphic code
 
 // assuming everything is in mm
-void diffeomorphic_new(const volume4D<float>& input_velocity, volume4D<float>& output_def, int steps)
+void diffeomorphic_new(const volume4D<float> &input_velocity, volume4D<float> &output_def, int steps)
 {
     float coeff = 1.0f / (2 ^ steps);
     //cerr << "DN::COEFF = " << coeff << endl;
@@ -95,7 +103,8 @@ void diffeomorphic_new(const volume4D<float>& input_velocity, volume4D<float>& o
     prewarp = input_velocity * coeff;
 
     convertwarp_rel2abs(prewarp);
-    for (int i = 0; i < steps; i++) {
+    for (int i = 0; i < steps; i++)
+    {
         //print_volume_info(prewarp,"DN::prewarp");
         concat_warps(prewarp, prewarp, output_def);
         //print_volume_info(output_def,"DN::output_def");
@@ -106,10 +115,9 @@ void diffeomorphic_new(const volume4D<float>& input_velocity, volume4D<float>& o
 
 ////////////////// Other code
 
-void calculate_gradients(volume4D<float>& gradient_imagex, volume4D<float>& gradient_imagey,
-    volume4D<float>& gradient_imagez, const volume4D<float>& wholeimage)
+void calculate_gradients(volume4D<float> &gradient_imagex, volume4D<float> &gradient_imagey,
+    volume4D<float> &gradient_imagez, const volume4D<float> &wholeimage)
 {
-
     if (gradient_imagex.tsize() != wholeimage.tsize())
         gradient_imagex = wholeimage;
     if (gradient_imagey.tsize() != wholeimage.tsize())
@@ -119,7 +127,8 @@ void calculate_gradients(volume4D<float>& gradient_imagex, volume4D<float>& grad
 
     volume4D<float> gradient_all;
 
-    for (int t = 0; t < wholeimage.tsize(); t++) {
+    for (int t = 0; t < wholeimage.tsize(); t++)
+    {
         gradient(wholeimage[t], gradient_all);
         gradient_imagex[t] = gradient_all[0];
         gradient_imagey[t] = gradient_all[1];
@@ -127,8 +136,8 @@ void calculate_gradients(volume4D<float>& gradient_imagex, volume4D<float>& grad
     }
 }
 
-void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>& modelpred, int no_iter,
-    const volume4D<float>& prevdefx, const volume4D<float>& prevdefy, const volume4D<float>& prevdefz, volume4D<float>& finalimage, volume4D<float>& defx, volume4D<float>& defy, volume4D<float>& defz)
+void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> &modelpred, int no_iter,
+    const volume4D<float> &prevdefx, const volume4D<float> &prevdefy, const volume4D<float> &prevdefz, volume4D<float> &finalimage, volume4D<float> &defx, volume4D<float> &defy, volume4D<float> &defz)
 {
     int steps = 4;
 
@@ -192,7 +201,8 @@ void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>&
     int znum = wholeimage.zsize();
     int tnum = wholeimage.tsize();
 
-    for (int t = 0; t < tnum; t++) {
+    for (int t = 0; t < tnum; t++)
+    {
         input_velocity[0] = prevdefx[t];
         input_velocity[1] = prevdefy[t];
         input_velocity[2] = prevdefz[t];
@@ -237,7 +247,8 @@ void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>&
         defz += H31 * gradient_imagex + H32 * gradient_imagey + H33 * gradient_imagez;
         defz = smooth(defz, 2);
 
-        for (int t = 0; t < tnum; t++) {
+        for (int t = 0; t < tnum; t++)
+        {
             input_velocity[0] = defx[t];
             input_velocity[1] = defy[t];
             input_velocity[2] = defz[t];
@@ -280,18 +291,7 @@ void UpdateDeformation(const volume4D<float>& wholeimage, const volume4D<float>&
         //print_volume_info(gradient_imagey,"gradient_imagey");
         //print_volume_info(gradient_imagez,"gradient_imagez");
 
-        Det = (lamda + gradient_imagex * gradient_imagex) * ((lamda + gradient_imagey * gradient_imagey) * (lamda
-                                                                                                               + gradient_imagez * gradient_imagez)
-                                                                - gradient_imagey * gradient_imagez * gradient_imagey
-                                                                    * gradient_imagez)
-            - gradient_imagex * gradient_imagey * (gradient_imagex * gradient_imagey * (lamda
-                                                                                           + gradient_imagez * gradient_imagez)
-                                                      - gradient_imagex * gradient_imagez * gradient_imagey
-                                                          * gradient_imagez)
-            + gradient_imagex * gradient_imagez * (gradient_imagex * gradient_imagey
-                                                          * gradient_imagey * gradient_imagez
-                                                      - (lamda + gradient_imagey * gradient_imagey) * gradient_imagex
-                                                          * gradient_imagez);
+        Det = (lamda + gradient_imagex * gradient_imagex) * ((lamda + gradient_imagey * gradient_imagey) * (lamda + gradient_imagez * gradient_imagez) - gradient_imagey * gradient_imagez * gradient_imagey * gradient_imagez) - gradient_imagex * gradient_imagey * (gradient_imagex * gradient_imagey * (lamda + gradient_imagez * gradient_imagez) - gradient_imagex * gradient_imagez * gradient_imagey * gradient_imagez) + gradient_imagex * gradient_imagez * (gradient_imagex * gradient_imagey * gradient_imagey * gradient_imagez - (lamda + gradient_imagey * gradient_imagey) * gradient_imagex * gradient_imagez);
 
         print_volume_info(Det, "Det");
 

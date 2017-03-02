@@ -6,17 +6,18 @@
 
 #include "gtest/gtest.h"
 
-#include "inference.h"
 #include "easylog.h"
+#include "inference.h"
 #include "rundata.h"
 #include "setup.h"
 
 #include <fstream>
 
-namespace {
-
+namespace
+{
 // The fixture for testing class Foo.
-class InferenceMethodTest : public ::testing::TestWithParam<string> {
+class InferenceMethodTest : public ::testing::TestWithParam<string>
+{
 protected:
     InferenceMethodTest()
     {
@@ -48,7 +49,7 @@ protected:
 // Tests that the VB inference method can be created
 TEST_P(InferenceMethodTest, CanCreate)
 {
-    InferenceTechnique* vb = InferenceTechnique::NewFromName(GetParam());
+    InferenceTechnique *vb = InferenceTechnique::NewFromName(GetParam());
     ASSERT_TRUE(vb);
 }
 
@@ -56,7 +57,7 @@ TEST_P(InferenceMethodTest, CanCreate)
 TEST_P(InferenceMethodTest, NoVoxels)
 {
     NEWMAT::Matrix empty;
-    
+
     FabberRunData rundata;
     rundata.SetVoxelCoords(empty);
     rundata.SetVoxelData("data", empty);
@@ -66,7 +67,7 @@ TEST_P(InferenceMethodTest, NoVoxels)
     rundata.Set("method", GetParam());
     //ASSERT_NO_THROW(rundata.Run());
     rundata.Run();
-    
+
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Ncols(), 0);
 }
@@ -95,7 +96,7 @@ TEST_F(InferenceMethodTest, OneParamOneVoxelOneTimeslice)
     rundata.SetBool("print-free-energy", true);
     rundata.Set("method", "nlls");
     ASSERT_NO_THROW(rundata.Run());
-    
+
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), 1);
@@ -114,7 +115,8 @@ TEST_P(InferenceMethodTest, OneParamOneVoxelMultiTimeslice)
     data.ReSize(NTIMES, 1);
     voxelCoords.ReSize(3, 1);
     voxelCoords << 1 << 1 << 1;
-    for (int i = 0; i < NTIMES; i++) {
+    for (int i = 0; i < NTIMES; i++)
+    {
         data(i + 1, 1) = VAL;
     }
 
@@ -147,13 +149,17 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL;
                 }
                 v++;
@@ -173,7 +179,8 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimeslice)
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL);
     }
 }
@@ -191,13 +198,17 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -220,7 +231,8 @@ TEST_P(InferenceMethodTest, OneParamMultiVoxelMultiTimesliceVariable)
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
     }
 }
@@ -238,13 +250,17 @@ TEST_P(InferenceMethodTest, ConfigFile)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -271,7 +287,8 @@ TEST_P(InferenceMethodTest, ConfigFile)
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
     }
     remove(FILENAME.c_str());
@@ -290,13 +307,17 @@ TEST_P(InferenceMethodTest, CLArgs)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -308,19 +329,20 @@ TEST_P(InferenceMethodTest, CLArgs)
     }
 
     string method = (string) "--method=" + GetParam();
-    const char* argv[] = { "fabber", "--noise=white", "--model=poly", "--degree=0", method.c_str() };
+    const char *argv[] = { "fabber", "--noise=white", "--model=poly", "--degree=0", method.c_str() };
     int argc = 5;
 
     FabberRunData rundata;
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data", data);
-    rundata.Parse(argc, (char**)argv);
+    rundata.Parse(argc, (char **)argv);
     ASSERT_NO_THROW(rundata.Run());
 
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
     }
     remove(FILENAME.c_str());
@@ -341,13 +363,17 @@ TEST_P(InferenceMethodTest, PolynomialFit)
     data.ReSize(NTIMES, n_voxels);
     voxelCoords.ReSize(3, n_voxels);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
                 }
@@ -369,14 +395,16 @@ TEST_P(InferenceMethodTest, PolynomialFit)
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         ASSERT_TRUE(FloatEq(VAL, mean(1, i + 1)));
     }
 
     mean = rundata.GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_TRUE(FloatEq(1, mean(1, i + 1) + 1));
     }
@@ -384,14 +412,16 @@ TEST_P(InferenceMethodTest, PolynomialFit)
     mean = rundata.GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         ASSERT_TRUE(FloatEq(VAL * 1.5, mean(1, i + 1)));
     }
 
     mean = rundata.GetVoxelData("mean_c3");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         ASSERT_TRUE(FloatEq(-VAL * 2, mean(1, i + 1)));
     }
 }
@@ -411,13 +441,17 @@ TEST_P(InferenceMethodTest, SaveModelFit)
     data.ReSize(NTIMES, n_voxels);
     voxelCoords.ReSize(3, n_voxels);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
                 }

@@ -20,14 +20,17 @@ using NEWMAT::Matrix;
 using MISCMATHS::read_vest;
 using MISCMATHS::read_ascii_matrix;
 
-namespace fabber {
-
+namespace fabber
+{
 Matrix read_matrix_file(std::string filename)
 {
     // Detect if file contains a VEST matrix or not
-    try {
+    try
+    {
         return read_vest(filename);
-    } catch (...) {
+    }
+    catch (...)
+    {
         // Do not care why this failed, if it was 'file not found'
         // we will discover that now we try to read it as ASCII
         return read_ascii_matrix(filename);
@@ -47,7 +50,8 @@ double DescendingZeroFinder::FindZero() const
         LOG_ERR("IG: f(" << (searchGuess)
                          << ") == " << atSearchGuess << endl);
 
-    if (atSearchGuess < 0) {
+    if (atSearchGuess < 0)
+    {
         upper = searchGuess;
         atUpper = atSearchGuess;
         atLower = fcn(lower);
@@ -55,7 +59,9 @@ double DescendingZeroFinder::FindZero() const
             LOG_ERR("LG: f(" << (lower) << ") == " << atLower << endl);
         if (atLower <= 0)
             return lower; // hit the limit
-    } else {
+    }
+    else
+    {
         lower = searchGuess;
         atLower = atSearchGuess;
         atUpper = fcn(upper);
@@ -71,10 +77,12 @@ double DescendingZeroFinder::FindZero() const
     //    double nonlinearity = 10; // force a bisection first time
 
     // Interpolation only
-    while ((evals > 0) && (upper - lower > tolX || atLower - atUpper > tolY || upper / lower > ratioTolX || atUpper / atLower > ratioTolY)) {
+    while ((evals > 0) && (upper - lower > tolX || atLower - atUpper > tolY || upper / lower > ratioTolX || atUpper / atLower > ratioTolY))
+    {
         guess = guesstimator->GetGuess(lower, upper, atLower, atUpper);
 
-        if (lower == guess || guess == upper) {
+        if (lower == guess || guess == upper)
+        {
             // This should only happen if we're near the limits of
             // double precision (constant factor probably depends on
             // the guesstimator)
@@ -126,10 +134,13 @@ double DescendingZeroFinder::FindZero() const
         //             << "\natLower = " << atLower
         //             << "\natUpper = " << atUpper << endl;
 
-        if (atGuess < 0) {
+        if (atGuess < 0)
+        {
             upper = guess;
             atUpper = atGuess;
-        } else {
+        }
+        else
+        {
             lower = guess;
             atLower = atGuess;
         }
@@ -161,15 +172,19 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
 {
     // equations below: from NRIC, section 9.2.  Simpler than Brent, slightly less reliable.
 
-    if (halfDone) {
+    if (halfDone)
+    {
         // Phase two: fancy estimation.
         halfDone = false;
         double x3, fx3;
 
-        if (x1 == lower) {
+        if (x1 == lower)
+        {
             x3 = upper;
             fx3 = atUpper;
-        } else {
+        }
+        else
+        {
             assert(x2 == upper);
             x3 = lower;
             fx3 = atLower;
@@ -185,7 +200,8 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
             LOG_ERR("x3 == " << x3 << ", x1 == " << x1 << ", x2 = " << x2 << endl);
             LOG_ERR("x3 - (x1+x2)/2 == " << x3 - (x1 + x2) / 2 << endl);
             WARN_ALWAYS("Riddler's Method: x3 != (x1+x2)/2");
-        } else if (true) //(fx2 < fx3 && fx3 < fx1)
+        }
+        else if (true) //(fx2 < fx3 && fx3 < fx1)
         {
             double s = (fx1 - fx2 > 0) ? +1.0 : -1.0; // s = sign(fx1-fx2)
             double x4 = x3 + (x3 - x1) * s * fx3 / sqrt(fx3 * fx3 - fx1 * fx2);
@@ -195,7 +211,9 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
             assert(lower < x4 && x4 < upper);
 
             return x4;
-        } else {
+        }
+        else
+        {
             WARN_ALWAYS("Riddler's Method cheat: dropping back to the bisection method!");
         }
     }

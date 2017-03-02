@@ -25,7 +25,7 @@ MVNDist::MVNDist()
 {
 }
 
-MVNDist::MVNDist(int dim, EasyLog* log)
+MVNDist::MVNDist(int dim, EasyLog *log)
     : Loggable(log)
     , m_size(-1)
     , precisionsValid(false)
@@ -35,7 +35,7 @@ MVNDist::MVNDist(int dim, EasyLog* log)
     SetSize(dim);
 }
 
-MVNDist::MVNDist(const MVNDist& from)
+MVNDist::MVNDist(const MVNDist &from)
     : Loggable(from.m_log)
     , m_size(-1)
     , precisionsValid(false)
@@ -44,7 +44,7 @@ MVNDist::MVNDist(const MVNDist& from)
     *this = from;
 }
 
-MVNDist::MVNDist(const string filename, EasyLog* log)
+MVNDist::MVNDist(const string filename, EasyLog *log)
     : Loggable(log)
     , m_size(-1)
     , precisionsValid(false)
@@ -53,7 +53,7 @@ MVNDist::MVNDist(const string filename, EasyLog* log)
     LoadFromMatrix(filename);
 }
 
-MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
+MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
     : Loggable(from1.m_log)
     , m_size(-1)
     , precisionsValid(false)
@@ -74,7 +74,7 @@ MVNDist::MVNDist(const MVNDist& from1, const MVNDist& from2)
     assert(means.Nrows() == m_size);
 }
 
-MVNDist& MVNDist::operator=(const MVNDist& from)
+MVNDist &MVNDist::operator=(const MVNDist &from)
 {
     // Special case: assignment to self (is a no-op)
     if (&from == this)
@@ -83,7 +83,8 @@ MVNDist& MVNDist::operator=(const MVNDist& from)
     m_log = from.m_log;
 
     // Special case: assigned from an uninitialized MVNDist
-    if (from.m_size == -1) {
+    if (from.m_size == -1)
+    {
         m_size = -1;
         precisionsValid = covarianceValid = false;
         // Free any memory from previous instance
@@ -114,7 +115,7 @@ MVNDist MVNDist::GetSubmatrix(int first, int last, bool checkIndependence)
     return ret;
 }
 
-void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence)
+void MVNDist::CopyFromSubmatrix(const MVNDist &from, int first, int last, bool checkIndependence)
 {
     SetSize(last - first + 1);
     means = from.means.Rows(first, last);
@@ -128,7 +129,8 @@ void MVNDist::CopyFromSubmatrix(const MVNDist& from, int first, int last, bool c
 
     assert(means.Nrows() == m_size);
 
-    if (checkIndependence) {
+    if (checkIndependence)
+    {
         Matrix deps1 = from.GetCovariance().Rows(first, last).Columns(1, first - 1);
         Matrix deps2 = from.GetCovariance().Rows(first, last).Columns(last + 1, from.covariance.Ncols());
         if (!deps1.IsZero() || !deps2.IsZero())
@@ -149,7 +151,8 @@ void MVNDist::SetSize(int dim)
 
     assert(means.Nrows() == m_size || m_size < 0);
 
-    if (m_size != dim) {
+    if (m_size != dim)
+    {
         m_size = dim;
         means.ReSize(dim);
         precisions.ReSize(dim);
@@ -164,7 +167,7 @@ void MVNDist::SetSize(int dim)
     assert(covariance.Nrows() == m_size);
 }
 
-const SymmetricMatrix& MVNDist::GetPrecisions() const
+const SymmetricMatrix &MVNDist::GetPrecisions() const
 {
     if (m_size == -1)
         throw FabberInternalError("MVNDist::GetPrecisions size = -1 (uninitialized)");
@@ -173,7 +176,8 @@ const SymmetricMatrix& MVNDist::GetPrecisions() const
     // If the covariances have been changed then the
     // precisions are out of date and need to be
     // recalculated
-    if (!precisionsValid) {
+    if (!precisionsValid)
+    {
         assert(covarianceValid);
         // precisions and precisionsValid are mutable,
         // so we can change them even in a const function
@@ -185,7 +189,7 @@ const SymmetricMatrix& MVNDist::GetPrecisions() const
     return precisions;
 }
 
-const SymmetricMatrix& MVNDist::GetCovariance() const
+const SymmetricMatrix &MVNDist::GetCovariance() const
 {
     if (m_size == -1)
         throw FabberInternalError("MVNDist::GetCovariance size = -1 (uninitialized)");
@@ -194,13 +198,17 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
     // If the precisions have been changed then the
     // covariances are out of date and need to be
     // recalculated
-    if (!covarianceValid) {
+    if (!covarianceValid)
+    {
         assert(precisionsValid);
         // covariance and covarianceValid are mutable,
         // so we can change them even in a const function
-        try {
+        try
+        {
             covariance = precisions.i();
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
             WARN_ONCE("MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
             LOG << means.t() << endl;
@@ -214,7 +222,7 @@ const SymmetricMatrix& MVNDist::GetCovariance() const
     return covariance;
 }
 
-void MVNDist::SetPrecisions(const SymmetricMatrix& from)
+void MVNDist::SetPrecisions(const SymmetricMatrix &from)
 {
     assert(from.Nrows() == m_size);
     assert(means.Nrows() == m_size);
@@ -224,7 +232,7 @@ void MVNDist::SetPrecisions(const SymmetricMatrix& from)
     assert(means.Nrows() == m_size);
 }
 
-void MVNDist::SetCovariance(const SymmetricMatrix& from)
+void MVNDist::SetCovariance(const SymmetricMatrix &from)
 {
     assert(from.Nrows() == m_size);
     assert(means.Nrows() == m_size);
@@ -234,7 +242,7 @@ void MVNDist::SetCovariance(const SymmetricMatrix& from)
     assert(means.Nrows() == m_size);
 }
 
-void MVNDist::LoadFromMatrix(const string& filename)
+void MVNDist::LoadFromMatrix(const string &filename)
 {
     LOG << "Reading MVN from file '" << filename << "'...\n";
     Matrix mat = read_matrix_file(filename);
@@ -244,7 +252,8 @@ void MVNDist::LoadFromMatrix(const string& filename)
     // Format: [covariance means(:); means(:)' 1.0]
     const int N = mat.Nrows() - 1;
 
-    if (N < 1 || mat != mat.t() || mat(N + 1, N + 1) != 1.0) {
+    if (N < 1 || mat != mat.t() || mat(N + 1, N + 1) != 1.0)
+    {
         LOG << "N == " << N << ", matrix:\n"
             << mat;
         throw InvalidOptionValue(filename, "",
@@ -260,7 +269,7 @@ void MVNDist::LoadFromMatrix(const string& filename)
     assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData& data, EasyLog* log)
+void MVNDist::Load(vector<MVNDist *> &mvns, const string &filename, FabberRunData &data, EasyLog *log)
 {
     // Input matrix contains 3d voxels with the
     // 4th dimension containing the covariances
@@ -272,11 +281,12 @@ void MVNDist::Load(vector<MVNDist*>& mvns, const string& filename, FabberRunData
     MVNDist::Load(mvns, voxel_data, log);
 }
 
-void MVNDist::Load(vector<MVNDist*>& mvns, Matrix& voxel_data, EasyLog* log)
+void MVNDist::Load(vector<MVNDist *> &mvns, Matrix &voxel_data, EasyLog *log)
 {
     // Prepare an output vector of the correct size
     const int nVoxels = voxel_data.Ncols();
-    if (nVoxels == 0) {
+    if (nVoxels == 0)
+    {
         throw FabberRunDataError("MVNDist::Load - Voxel data is empty");
     }
 
@@ -289,7 +299,8 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix& voxel_data, EasyLog* log)
     // for N as a function of P given in Load, using the quadratic
     // formula.
     const int nParams = ((int)sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
-    if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1) {
+    if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1)
+    {
         throw FabberRunDataError("MVNDist::Load  - Incorrect number of rows for an MVN input");
     }
 
@@ -298,8 +309,9 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix& voxel_data, EasyLog* log)
     // Create a new MVN dist for each voxel,
     // and set the covariances and the means from
     // the data in the symmetric matrix
-    for (int vox = 1; vox <= nVoxels; vox++) {
-        MVNDist* mvn = new MVNDist(nParams, log);
+    for (int vox = 1; vox <= nVoxels; vox++)
+    {
+        MVNDist *mvn = new MVNDist(nParams, log);
 
         int index = 0;
         for (int r = 1; r <= nParams; r++)
@@ -311,7 +323,8 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix& voxel_data, EasyLog* log)
         mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
             nParams * (nParams + 1) / 2 + nParams);
 
-        if (voxel_data(voxel_data.Nrows(), vox) != 1) {
+        if (voxel_data(voxel_data.Nrows(), vox) != 1)
+        {
             throw FabberRunDataError("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
         }
         assert(mvn->means.Nrows() == mvn->m_size);
@@ -320,7 +333,7 @@ void MVNDist::Load(vector<MVNDist*>& mvns, Matrix& voxel_data, EasyLog* log)
     }
 }
 
-void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData& data)
+void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, FabberRunData &data)
 {
     // Save the MVNs in a NIFTI file as a single NIFTI_INTENT_SYMMATRIX
     // last row/col is the means (1 in the corner).
@@ -330,7 +343,8 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
 
     const int nVoxels = mvns.size();
     int nParams = 0; // In case we have no voxels
-    if (nVoxels != 0) {
+    if (nVoxels != 0)
+    {
         assert(nVoxels > 0 && mvns.at(0) != NULL);
         nParams = mvns.at(0)->means.Nrows();
     }
@@ -352,7 +366,8 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
     ColumnVector aOne(1);
     aOne = 1.0;
 
-    for (int vox = 1; vox <= nVoxels; vox++) {
+    for (int vox = 1; vox <= nVoxels; vox++)
+    {
         // Each column contains the values a voxel
         // Covariances first, but only the lower triangular numbers
         // Then means, and finally the last 1 as required by format above
@@ -366,16 +381,18 @@ void MVNDist::Save(const vector<MVNDist*>& mvns, const string& filename, FabberR
     data.SaveVoxelData(filename, vols, VDT_MVN);
 }
 
-void MVNDist::Dump(ostream& out) const
+void MVNDist::Dump(ostream &out) const
 {
     out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid << ", covarianceValid == "
         << covarianceValid << endl;
     out << "  Means: " << means.t();
-    if (precisionsValid || covarianceValid) {
+    if (precisionsValid || covarianceValid)
+    {
         out << "  Covariance matrix:" << endl;
         for (int i = 1; i <= m_size; i++)
             out << "  " << GetCovariance().Row(i);
-    } else
+    }
+    else
         out << "  Covariance undefined." << endl;
 
     assert(means.Nrows() == m_size);

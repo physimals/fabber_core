@@ -8,9 +8,9 @@
 
 #include "rundata.h"
 
+#include "easylog.h"
 #include "fwdmodel.h"
 #include "inference.h"
-#include "easylog.h"
 #include "setup.h"
 #include "version.h"
 
@@ -44,16 +44,19 @@ static bool is_dir(string path)
 #endif
     {
         return (s.st_mode & S_IFDIR);
-    } else {
+    }
+    else
+    {
         // Does not exist, so not a directory...
         return false;
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const OptionType value)
+std::ostream &operator<<(std::ostream &out, const OptionType value)
 {
-    const char* s = 0;
-    switch (value) {
+    const char *s = 0;
+    switch (value)
+    {
     case OPT_BOOL:
         s = "BOOL";
         break;
@@ -88,7 +91,7 @@ std::ostream& operator<<(std::ostream& out, const OptionType value)
     return out << s;
 }
 
-std::ostream& operator<<(std::ostream& out, const OptionSpec& value)
+std::ostream &operator<<(std::ostream &out, const OptionSpec &value)
 {
     return out << "--" << value.name << " [" << value.type << "," << (value.optional ? "NOT REQUIRED" : "REQUIRED")
                << "," << ((value.def == "") ? "NO DEFAULT" : "DEFAULT=" + value.def) << "]" << endl
@@ -98,13 +101,15 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec& value)
 
 void PercentProgressCheck::Progress(int voxel, int nVoxels)
 {
-    if (nVoxels == 0) {
+    if (nVoxels == 0)
+    {
         cout << "100%" << endl;
         return;
     }
 
     int percent = (100 * voxel) / nVoxels;
-    if (percent / 10 > m_last) {
+    if (percent / 10 > m_last)
+    {
         cout << "\b\b\b";
         m_last = percent / 10;
         if (m_last == 0)
@@ -169,9 +174,10 @@ static OptionSpec OPTIONS[] = {
     { "" },
 };
 
-void FabberRunData::GetOptions(std::vector<OptionSpec>& opts)
+void FabberRunData::GetOptions(std::vector<OptionSpec> &opts)
 {
-    for (int i = 0; OPTIONS[i].name != ""; i++) {
+    for (int i = 0; OPTIONS[i].name != ""; i++)
+    {
         opts.push_back(OPTIONS[i]);
     }
 }
@@ -186,7 +192,8 @@ void FabberRunData::init(bool compat_options)
 {
     FabberSetup::SetupDefaults();
 
-    if (compat_options) {
+    if (compat_options)
+    {
         // For backwards compatibility with previous version of Fabber, save these data items by default
         SetBool("save-mean");
         SetBool("save-std");
@@ -205,14 +212,16 @@ FabberRunData::~FabberRunData()
 void FabberRunData::LogParams()
 {
     map<string, string>::iterator iter;
-    for (iter = m_params.begin(); iter != m_params.end(); ++iter) {
+    for (iter = m_params.begin(); iter != m_params.end(); ++iter)
+    {
         LOG << "FabberRunData::Parameter " << iter->first << "=" << iter->second << endl;
     }
 }
 
-void FabberRunData::Run(ProgressCheck* progress)
+void FabberRunData::Run(ProgressCheck *progress)
 {
-    if (!m_log) {
+    if (!m_log)
+    {
         m_log = &m_default_log;
     }
 
@@ -239,11 +248,13 @@ void FabberRunData::Run(ProgressCheck* progress)
     LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
     // Write the paramnames.txt file if required
-    if (GetBool("dump-param-names")) {
+    if (GetBool("dump-param-names"))
+    {
         ofstream paramFile((GetStringDefault("output", ".") + "/paramnames.txt").c_str());
         vector<string> paramNames;
         fwd_model->NameParams(paramNames);
-        for (unsigned i = 0; i < paramNames.size(); i++) {
+        for (unsigned i = 0; i < paramNames.size(); i++)
+        {
             paramFile << paramNames[i] << endl;
         }
         paramFile.close();
@@ -275,7 +286,7 @@ void FabberRunData::Run(ProgressCheck* progress)
     LOG << "FabberRunData::Duration: " << endTime - startTime << " seconds." << endl;
 }
 
-static string trim(string const& str)
+static string trim(string const &str)
 {
     if (str.empty())
         return str;
@@ -286,82 +297,103 @@ static string trim(string const& str)
     return str.substr(first, last - first + 1);
 }
 
-void FabberRunData::ParseParamFile(const string& filename)
+void FabberRunData::ParseParamFile(const string &filename)
 {
     ifstream is(filename.c_str());
-    if (!is.good()) {
+    if (!is.good())
+    {
         throw FabberRunDataError("Couldn't read input options file:" + filename);
     }
-    while (is.good()) {
+    while (is.good())
+    {
         string input;
         std::getline(is, input);
         input = trim(input);
-        if (input.size() > 0) {
+        if (input.size() > 0)
+        {
             if (input[0] == '#')
                 continue;
-            else {
+            else
+            {
                 AddKeyEqualsValue(input, true);
             }
         }
     }
 }
 
-void FabberRunData::ParseOldStyleParamFile(const string& filename)
+void FabberRunData::ParseOldStyleParamFile(const string &filename)
 {
     ifstream is(filename.c_str());
-    if (!is.good()) {
+    if (!is.good())
+    {
         throw FabberRunDataError("Couldn't read input file: -@ " + filename);
     }
     char c;
     string param;
-    while (is.good()) {
+    while (is.good())
+    {
         is.get(c);
         if (!isspace(c))
             param += c;
-        else if (param == "") {
-        } // repeated whitespace, so do nothing
+        else if (param == "")
+        {
+        }                                     // repeated whitespace, so do nothing
         else if (string(param, 0, 2) == "--") // we have an option
         {
             AddKeyEqualsValue(string(param, 2, string::npos));
             param = "";
-        } else if (string(param, 0, 1) == "#") // comment
+        }
+        else if (string(param, 0, 1) == "#") // comment
         {
             // discard this word and the rest of the line.
             param = "";
             while (is.good() && c != '\n')
                 is.get(c);
-        } else if (string(param, 0, 2) == "-@") {
+        }
+        else if (string(param, 0, 2) == "-@")
+        {
             throw FabberRunDataError("Can only use -@ on the command line");
-        } else {
+        }
+        else
+        {
             throw FabberRunDataError("Invalid data '" + param + "' found in file '" + filename + "'");
         }
     }
 }
 
-void FabberRunData::Parse(int argc, char** argv)
+void FabberRunData::Parse(int argc, char **argv)
 {
     m_params[""] = argv[0];
-    for (int a = 1; a < argc; a++) {
-        if (string(argv[a]) == "-f") {
+    for (int a = 1; a < argc; a++)
+    {
+        if (string(argv[a]) == "-f")
+        {
             // FIXME what if no file specified?
             ParseParamFile(argv[++a]);
             ++a;
-        } else if (string(argv[a], 0, 2) == "--") {
+        }
+        else if (string(argv[a], 0, 2) == "--")
+        {
             string key = argv[a] + 2; // skip the "--"
             AddKeyEqualsValue(key);
-        } else if (string(argv[a]) == "-@") {
+        }
+        else if (string(argv[a]) == "-@")
+        {
             ParseOldStyleParamFile(argv[++a]);
-        } else {
+        }
+        else
+        {
             throw FabberRunDataError("Option '" + string(argv[a]) + "' doesn't begin with --");
         }
     }
 }
 
-void FabberRunData::AddKeyEqualsValue(const string& exp, bool trim_comments)
+void FabberRunData::AddKeyEqualsValue(const string &exp, bool trim_comments)
 {
     string::size_type eqPos = exp.find("=");
     string key = trim(string(exp, 0, eqPos));
-    if (eqPos != (exp.npos)) {
+    if (eqPos != (exp.npos))
+    {
         string::size_type end = exp.npos;
         if (trim_comments)
             end = exp.find("#");
@@ -370,22 +402,24 @@ void FabberRunData::AddKeyEqualsValue(const string& exp, bool trim_comments)
             throw InvalidOptionValue(key, value, "Already has a value: " + m_params[key]);
 
         m_params[key] = value;
-    } else {
+    }
+    else
+    {
         m_params[exp] = "";
     }
 }
 
-void FabberRunData::Set(const string& key, const string& value)
+void FabberRunData::Set(const string &key, const string &value)
 {
     m_params[key] = value;
 }
 
-void FabberRunData::Set(const string& key, double value)
+void FabberRunData::Set(const string &key, double value)
 {
     m_params[key] = stringify(value);
 }
 
-void FabberRunData::SetBool(const string& key, bool value)
+void FabberRunData::SetBool(const string &key, bool value)
 {
     if (value)
         m_params[key] = "";
@@ -393,29 +427,30 @@ void FabberRunData::SetBool(const string& key, bool value)
         m_params.erase(key);
 }
 
-void FabberRunData::Unset(const std::string& key)
+void FabberRunData::Unset(const std::string &key)
 {
     m_params.erase(key);
 }
 
-string FabberRunData::GetString(const string& key)
+string FabberRunData::GetString(const string &key)
 {
     return Read(key, key);
 }
 
-string FabberRunData::GetStringDefault(const string& key, const string& def) const
+string FabberRunData::GetStringDefault(const string &key, const string &def) const
 {
     if (m_params.count(key) == 0)
         return def;
     return m_params.find(key)->second;
 }
 
-bool FabberRunData::GetBool(const string& key)
+bool FabberRunData::GetBool(const string &key)
 {
     if (m_params.count(key) == 0)
         return false;
 
-    if (m_params[key] == "") {
+    if (m_params[key] == "")
+    {
         //       m_params.erase(key);
         return true;
     }
@@ -423,27 +458,33 @@ bool FabberRunData::GetBool(const string& key)
     throw InvalidOptionValue(key, m_params[key], "Value should not be given for boolean option");
 }
 
-int FabberRunData::GetInt(const string& key)
+int FabberRunData::GetInt(const string &key)
 {
     string val = GetString(key);
-    try {
+    try
+    {
         return convertTo<int>(val);
-    } catch (invalid_argument&) {
+    }
+    catch (invalid_argument &)
+    {
         throw InvalidOptionValue(key, val, "Must be an integer");
     }
 }
 
-double FabberRunData::GetDouble(const string& key)
+double FabberRunData::GetDouble(const string &key)
 {
     string val = GetString(key);
-    try {
+    try
+    {
         return convertTo<double>(val);
-    } catch (invalid_argument&) {
+    }
+    catch (invalid_argument &)
+    {
         throw InvalidOptionValue(key, val, "Must be an number");
     }
 }
 
-int FabberRunData::GetIntDefault(const string& key, int def)
+int FabberRunData::GetIntDefault(const string &key, int def)
 {
     if (m_params.count(key) == 0)
         return def;
@@ -451,7 +492,7 @@ int FabberRunData::GetIntDefault(const string& key, int def)
         return GetInt(key);
 }
 
-double FabberRunData::GetDoubleDefault(const string& key, double def)
+double FabberRunData::GetDoubleDefault(const string &key, double def)
 {
     if (m_params.count(key) == 0)
         return def;
@@ -459,7 +500,7 @@ double FabberRunData::GetDoubleDefault(const string& key, double def)
         return GetDouble(key);
 }
 
-string FabberRunData::Read(const string& key, const string& msg)
+string FabberRunData::Read(const string &key, const string &msg)
 {
     if (m_params.count(key) == 0)
         throw MandatoryOptionMissing(msg);
@@ -473,17 +514,17 @@ string FabberRunData::Read(const string& key, const string& msg)
     return ret;
 }
 
-std::string FabberRunData::Read(const std::string& key)
+std::string FabberRunData::Read(const std::string &key)
 {
     return GetString(key);
 }
 
-std::string FabberRunData::ReadWithDefault(const std::string& key, const std::string& def)
+std::string FabberRunData::ReadWithDefault(const std::string &key, const std::string &def)
 {
     return GetStringDefault(key, def);
 }
 
-bool FabberRunData::ReadBool(const std::string& key)
+bool FabberRunData::ReadBool(const std::string &key)
 {
     return GetBool(key);
 }
@@ -494,7 +535,8 @@ string FabberRunData::GetOutputDir()
         return m_outdir;
 
     string basename = GetStringDefault("output", "");
-    if (basename == "") {
+    if (basename == "")
+    {
         m_outdir = ".";
         return m_outdir;
     }
@@ -503,7 +545,8 @@ string FabberRunData::GetOutputDir()
     // From Wooly's utils/log.cc
     int count = 0;
     m_outdir = basename;
-    while (true) {
+    while (true)
+    {
         if (count >= 50) // I'm using a lot for some things
         {
             throw FabberInternalError(
@@ -519,14 +562,20 @@ string FabberRunData::GetOutputDir()
         ret = mkdir(m_outdir.c_str(), 0777);
 #endif
 
-        if (ret == 0) {
+        if (ret == 0)
+        {
             // Success, directory created
             break;
-        } else if (overwrite) {
-            if ((errno == EEXIST) && is_dir(m_outdir)) {
+        }
+        else if (overwrite)
+        {
+            if ((errno == EEXIST) && is_dir(m_outdir))
+            {
                 // If directory already exists -- that's fine.
                 break;
-            } else {
+            }
+            else
+            {
                 // Other error -- might be a problem!
                 throw FabberInternalError(
                     ("Unexpected problem creating output directory in overwrite mode: " + m_outdir).c_str());
@@ -541,7 +590,8 @@ string FabberRunData::GetOutputDir()
     // Might be useful for jobs running on the queue:
     system(("uname -a > " + m_outdir + "/uname.txt").c_str());
 
-    if (GetBool("link-to-latest")) {
+    if (GetBool("link-to-latest"))
+    {
         // try to make a link to the latest version. If this fails, it doesn't really matter.
         system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
     }
@@ -550,9 +600,10 @@ string FabberRunData::GetOutputDir()
     return m_outdir;
 }
 
-ostream& operator<<(ostream& out, const FabberRunData& opts)
+ostream &operator<<(ostream &out, const FabberRunData &opts)
 {
-    for (map<string, string>::const_iterator i = opts.m_params.begin(); i != opts.m_params.end(); ++i) {
+    for (map<string, string>::const_iterator i = opts.m_params.begin(); i != opts.m_params.end(); ++i)
+    {
         if (i->second == "")
             out << "--" << i->first << endl;
         else
@@ -561,17 +612,23 @@ ostream& operator<<(ostream& out, const FabberRunData& opts)
     return out;
 }
 
-const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
+const NEWMAT::Matrix &FabberRunData::GetMainVoxelData()
 {
     // Main voxel data is a bit special because it can
     // come from multiple files
-    try {
+    try
+    {
         return GetVoxelData("data");
-    } catch (DataNotFound& e) {
+    }
+    catch (DataNotFound &e)
+    {
         // See if we seem to have multi-data
-        try {
+        try
+        {
             GetVoxelData("data1");
-        } catch (DataNotFound& e2) {
+        }
+        catch (DataNotFound &e2)
+        {
             // Throw original exception
             throw(e);
         }
@@ -579,28 +636,31 @@ const NEWMAT::Matrix& FabberRunData::GetMainVoxelData()
     }
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelSuppData()
+const NEWMAT::Matrix &FabberRunData::GetVoxelSuppData()
 {
     // FIXME Currently Fabber models assume that suppdata will return an empty matrix if none present.
-    try {
+    try
+    {
         return GetVoxelData("suppdata");
-    } catch (DataNotFound& e) {
+    }
+    catch (DataNotFound &e)
+    {
         return m_empty;
     }
 }
 
-int FabberRunData::GetVoxelDataSize(const std::string& key)
+int FabberRunData::GetVoxelDataSize(const std::string &key)
 {
     NEWMAT::Matrix mat = GetVoxelData(key);
     return mat.Nrows();
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelCoords()
+const NEWMAT::Matrix &FabberRunData::GetVoxelCoords()
 {
     return GetVoxelData("coords");
 }
 
-const NEWMAT::Matrix& FabberRunData::GetVoxelData(const std::string& key)
+const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
 {
     // Attempt to load data if not already present. Will
     // throw an exception if parameter not specified
@@ -610,7 +670,8 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(const std::string& key)
     // data is optional?
     string key_cur = key;
     string data_key = "";
-    while (key_cur != "") {
+    while (key_cur != "")
+    {
         data_key = key_cur;
         key_cur = GetStringDefault(key_cur, "");
         // Avoid possible circular reference!
@@ -618,22 +679,34 @@ const NEWMAT::Matrix& FabberRunData::GetVoxelData(const std::string& key)
             break;
     }
 
-    if (m_voxel_data.count(data_key) == 0) {
-        throw DataNotFound(data_key);
-    } else {
-        return m_voxel_data.find(data_key)->second;
+    return LoadVoxelData(data_key);
+}
+
+const NEWMAT::Matrix &FabberRunData::LoadVoxelData(const std::string &key)
+{
+    if (m_voxel_data.count(key) == 0)
+    {
+        throw DataNotFound(key);
+    }
+    else
+    {
+        return m_voxel_data.find(key)->second;
     }
 }
 
-const Matrix& FabberRunData::GetMainVoxelDataMultiple()
+const Matrix &FabberRunData::GetMainVoxelDataMultiple()
 {
     vector<Matrix> dataSets;
     int n = 1;
-    while (true) {
-        try {
+    while (true)
+    {
+        try
+        {
             dataSets.push_back(GetVoxelData("data" + stringify(n)));
             n++;
-        } catch (DataNotFound& e) {
+        }
+        catch (DataNotFound &e)
+        {
             // No more data sets to combine, carry on with what we've got
             break;
         }
@@ -641,41 +714,54 @@ const Matrix& FabberRunData::GetMainVoxelDataMultiple()
 
     string order = GetStringDefault("data-order", "interleave");
     int nSets = dataSets.size();
-    if (nSets < 1) {
+    if (nSets < 1)
+    {
         throw DataNotFound("data");
     }
-    if ((order == "singlefile") && nSets > 1) {
+    if ((order == "singlefile") && nSets > 1)
+    {
         throw InvalidOptionValue("data-order", "singlefile", "More than one file specified");
     }
 
-    if (order == "interleave") {
+    if (order == "interleave")
+    {
         LOG << "FabberRunData::Combining data into one big matrix by interleaving..." << endl;
         // Interleave - For example if the data sets are A, B, C and each
         // has 3 time points 1, 2, 3 the final time series will be
         // A1B1C1A2B2C2A3B3C3
         int nTimes = dataSets[0].Nrows();
         m_mainDataMultiple.ReSize(nTimes * nSets, dataSets[0].Ncols());
-        for (int i = 0; i < nTimes; i++) {
-            for (int j = 0; j < nSets; j++) {
-                if (dataSets[j].Nrows() != nTimes) {
+        for (int i = 0; i < nTimes; i++)
+        {
+            for (int j = 0; j < nSets; j++)
+            {
+                if (dataSets[j].Nrows() != nTimes)
+                {
                     // Data sets need same number of time points if they are to be interleaved
                     throw InvalidOptionValue("data-order", "interleave", "Data sets must all have the same number of time points");
                 }
                 m_mainDataMultiple.Row(nSets * i + j + 1) = dataSets.at(j).Row(i + 1);
             }
         }
-    } else if (order == "concatenate") {
+    }
+    else if (order == "concatenate")
+    {
         LOG << "FabberRunData::Combining data into one big matrix by concatenating..." << endl;
         // Concatentate - For example if the data sets are A, B, C and each
         // has 3 time points 1, 2, 3 the final time series will be
         // A1A2A3B1B2B3C1C2C3
         m_mainDataMultiple = dataSets.at(0);
-        for (unsigned j = 1; j < dataSets.size(); j++) {
+        for (unsigned j = 1; j < dataSets.size(); j++)
+        {
             m_mainDataMultiple &= dataSets.at(j);
         }
-    } else if (order == "singlefile") {
+    }
+    else if (order == "singlefile")
+    {
         m_mainDataMultiple = dataSets[0];
-    } else {
+    }
+    else
+    {
         throw InvalidOptionValue("data-order", order, "Value not recognized");
     }
 
@@ -686,44 +772,53 @@ const Matrix& FabberRunData::GetMainVoxelDataMultiple()
 
 void FabberRunData::ClearVoxelData(string key)
 {
-    if (key != "") {
+    if (key != "")
+    {
         m_voxel_data.erase(key);
-    } else {
+    }
+    else
+    {
         m_voxel_data.clear();
     }
 }
 
-void FabberRunData::SetVoxelData(string key, const NEWMAT::Matrix& data)
+void FabberRunData::SetVoxelData(string key, const NEWMAT::Matrix &data)
 {
     CheckSize(key, data);
     m_voxel_data[key] = data;
 }
 
-void FabberRunData::SaveVoxelData(const std::string& filename, NEWMAT::Matrix& data, VoxelDataType data_type)
+void FabberRunData::SaveVoxelData(const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
     LOG << "FabberRunData::Saving to memory: " << filename << endl;
     // FIXME what should we do with data_type?
     SetVoxelData(filename, data);
 }
 
-void FabberRunData::SetVoxelCoords(const NEWMAT::Matrix& coords)
+void FabberRunData::SetVoxelCoords(const NEWMAT::Matrix &coords)
 {
     // We assume 3D coordinates. Fabber could work for different
     // numbers of dimensions but would require extensive refactoring
-    if (coords.Ncols() > 0 && coords.Nrows() != 3) {
+    if (coords.Ncols() > 0 && coords.Nrows() != 3)
+    {
         throw InvalidOptionValue("Coordinates dimensions", stringify(coords.Nrows()), "Co-ordinates must be 3 dimensional");
     }
 
     SetVoxelData("coords", coords);
 
-    if (m_extent.size() == 0) {
+    if (m_extent.size() == 0)
+    {
         m_extent.resize(3);
         m_dims.resize(3);
-        for (int i = 0; i < 3; i++) {
-            if (coords.Ncols() > 0) {
+        for (int i = 0; i < 3; i++)
+        {
+            if (coords.Ncols() > 0)
+            {
                 // FIXME we assume coords will not be negative
                 m_extent[i] = coords.Row(i + 1).Maximum() - coords.Row(i + 1).Minimum() + 1;
-            } else {
+            }
+            else
+            {
                 m_extent[i] = 0;
             }
             m_dims[i] = 1.0;
@@ -731,7 +826,7 @@ void FabberRunData::SetVoxelCoords(const NEWMAT::Matrix& coords)
     }
 }
 
-void FabberRunData::GetExtent(vector<int>& extent, vector<float>& dims)
+void FabberRunData::GetExtent(vector<int> &extent, vector<float> &dims)
 {
     extent = m_extent;
     dims = m_dims;
@@ -739,7 +834,8 @@ void FabberRunData::GetExtent(vector<int>& extent, vector<float>& dims)
 
 void FabberRunData::SetExtent(int nx, int ny, int nz, float sx, float sy, float sz)
 {
-    if ((nx < 0) || (ny < 0) || (nz < 0) || (sx <= 0) || (sy <= 0) || (sz <= 0)) {
+    if ((nx < 0) || (ny < 0) || (nz < 0) || (sx <= 0) || (sy <= 0) || (sz <= 0))
+    {
         throw InvalidOptionValue("extent", "negative values", "Extent and voxel sizes must be positive");
     }
 
@@ -753,11 +849,13 @@ void FabberRunData::SetExtent(int nx, int ny, int nz, float sx, float sy, float 
     m_dims[2] = sz;
 }
 
-void FabberRunData::CheckSize(std::string key, const NEWMAT::Matrix& mat)
+void FabberRunData::CheckSize(std::string key, const NEWMAT::Matrix &mat)
 {
-    if (m_voxel_data.size() > 0) {
+    if (m_voxel_data.size() > 0)
+    {
         int nvoxels = m_voxel_data.begin()->second.Ncols();
-        if (mat.Ncols() != nvoxels) {
+        if (mat.Ncols() != nvoxels)
+        {
             throw InvalidOptionValue("Voxels in " + key, stringify(mat.Ncols()), "Incorrect size - should contain " + stringify(nvoxels));
         }
     }

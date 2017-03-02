@@ -11,7 +11,7 @@
 #include <math.h>
 #include <ostream>
 
-GammaDist::GammaDist(EasyLog* log)
+GammaDist::GammaDist(EasyLog *log)
     : Loggable(log)
     , b(0)
     , c(0)
@@ -34,7 +34,7 @@ void GammaDist::SetMeanVariance(double m, double v)
     c = m / b;
 }
 
-void GammaDist::Dump(std::ostream& os) const
+void GammaDist::Dump(std::ostream &os) const
 {
     os << "Noise stdev == " << 1.0 / sqrt(b * c) << " (b==" << b << ", c==" << c << ")" << std::endl;
 }

@@ -5,7 +5,8 @@
 
 #include "newmat.h"
 
-class PriorsTest : public ::testing::Test {
+class PriorsTest : public ::testing::Test
+{
 protected:
     PriorsTest()
     {
@@ -130,9 +131,12 @@ TEST_F(PriorsTest, ImagePriorSpatialMethod)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;
@@ -164,9 +168,12 @@ TEST_F(PriorsTest, ImagePriorSpatialMethodMultiple)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;
@@ -206,9 +213,12 @@ TEST_F(PriorsTest, ImagePriorByName)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;
@@ -241,9 +251,12 @@ TEST_F(PriorsTest, ImagePriorByNameCorrectParam)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;
@@ -283,9 +296,12 @@ TEST_F(PriorsTest, ImagePriorByNameMultiple)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;
@@ -336,9 +352,12 @@ TEST_F(PriorsTest, ImagePriorPrec)
     iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 iprior_data1(1, v) = VAL * 1.5;
                 iprior_data2(1, v) = VAL * 2.5;
                 v++;

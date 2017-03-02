@@ -16,22 +16,23 @@
 
 using namespace std;
 
-ConvergenceDetector* ConvergenceDetector::NewFromName(const string& name)
+ConvergenceDetector *ConvergenceDetector::NewFromName(const string &name)
 {
-    ConvergenceDetectorFactory* factory = ConvergenceDetectorFactory::GetInstance();
-    ConvergenceDetector* conv = factory->Create(name);
-    if (conv == NULL) {
+    ConvergenceDetectorFactory *factory = ConvergenceDetectorFactory::GetInstance();
+    ConvergenceDetector *conv = factory->Create(name);
+    if (conv == NULL)
+    {
         throw InvalidOptionValue("convergence", name, "Unrecognized convergence detector");
     }
     return conv;
 }
 
-void ConvergenceDetector::Initialize(FabberRunData& params)
+void ConvergenceDetector::Initialize(FabberRunData &params)
 {
     m_log = params.GetLogger();
 }
 
-void CountingConvergenceDetector::Initialize(FabberRunData& params)
+void CountingConvergenceDetector::Initialize(FabberRunData &params)
 {
     ConvergenceDetector::Initialize(params);
     m_max_its = convertTo<int>(params.GetStringDefault("max-iterations", "10"));
@@ -44,15 +45,18 @@ void CountingConvergenceDetector::Initialize(FabberRunData& params)
 bool CountingConvergenceDetector::Test(double)
 {
     ++m_its;
-    if (m_its >= m_max_its) {
+    if (m_its >= m_max_its)
+    {
         m_reason = "Max iterations reached";
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
 
-void CountingConvergenceDetector::Dump(ostream& out, const string& indent) const
+void CountingConvergenceDetector::Dump(ostream &out, const string &indent) const
 {
     out << indent << "Starting iteration " << m_its + 1 << " of " << m_max_its << endl
         << endl;
@@ -64,7 +68,7 @@ void CountingConvergenceDetector::Reset(double F)
     m_reason = "";
 }
 
-void FchangeConvergenceDetector::Initialize(FabberRunData& params)
+void FchangeConvergenceDetector::Initialize(FabberRunData &params)
 {
     CountingConvergenceDetector::Initialize(params);
 
@@ -92,20 +96,22 @@ bool FchangeConvergenceDetector::Test(double F)
     m_prev_f = F;
 
     diff = diff > 0 ? diff : -diff;
-    if (diff < m_min_fchange) {
+    if (diff < m_min_fchange)
+    {
         m_reason = "Absolute difference less than minimum";
         return true;
-    } else
+    }
+    else
         return CountingConvergenceDetector::Test(F);
 }
 
-void FchangeConvergenceDetector::Dump(ostream& out, const string& indent) const
+void FchangeConvergenceDetector::Dump(ostream &out, const string &indent) const
 {
     out << indent << "Iteration " << m_its << " of at most " << m_max_its << endl;
     out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
-void FreduceConvergenceDetector::Initialize(FabberRunData& params)
+void FreduceConvergenceDetector::Initialize(FabberRunData &params)
 {
     FchangeConvergenceDetector::Initialize(params);
     Reset();
@@ -115,22 +121,25 @@ bool FreduceConvergenceDetector::Test(double F)
 {
     double diff = F - m_prev_f;
 
-    if (diff < 0) {
+    if (diff < 0)
+    {
         m_reason = "F reduced";
         m_revert = true;
         return true;
-    } else {
+    }
+    else
+    {
         return FchangeConvergenceDetector::Test(F);
     }
 }
 
-void FreduceConvergenceDetector::Dump(ostream& out, const string& indent) const
+void FreduceConvergenceDetector::Dump(ostream &out, const string &indent) const
 {
     out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << m_reason << endl;
     out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
-void TrialModeConvergenceDetector::Initialize(FabberRunData& params)
+void TrialModeConvergenceDetector::Initialize(FabberRunData &params)
 {
     FchangeConvergenceDetector::Initialize(params);
 
@@ -158,9 +167,11 @@ bool TrialModeConvergenceDetector::Test(double F)
     double diff = F - m_prev_f;
 
     //if we are not in trial mode
-    if (!m_trialmode) {
+    if (!m_trialmode)
+    {
         // if F has reduced then we will enter trial mode
-        if (diff < 0) {
+        if (diff < 0)
+        {
             ++m_trials;
             m_trialmode = true;
             m_revert = true;
@@ -169,13 +180,15 @@ bool TrialModeConvergenceDetector::Test(double F)
         return FchangeConvergenceDetector::Test(F);
     }
     // if we are in trial mode
-    else {
+    else
+    {
         ++m_trials;
 
         // if F has improved over our previous best then resume iterations
         // FIXME not necessarily improved over previous best, just over
         // previous decrease. Should save=true?
-        if (diff > 0) {
+        if (diff > 0)
+        {
             m_trialmode = false;
             m_save = true;
             m_revert = false;
@@ -183,25 +196,27 @@ bool TrialModeConvergenceDetector::Test(double F)
             return FchangeConvergenceDetector::Test(F);
         }
         //if we have exceeded max trials then stop and output previous best result
-        else if (m_trials >= m_max_trials) {
+        else if (m_trials >= m_max_trials)
+        {
             m_reason = "Reached max trials";
             return true;
         }
         // otherwise continue in trial mode for time being. FIXME do we want
         // to stop if difference is < 0 but very small?
-        else {
+        else
+        {
             return FchangeConvergenceDetector::Test(F);
         }
     }
 }
 
-void TrialModeConvergenceDetector::Dump(ostream& out, const string& indent) const
+void TrialModeConvergenceDetector::Dump(ostream &out, const string &indent) const
 {
     out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << m_reason << endl;
     out << indent << "Previous Free Energy == " << m_prev_f << endl;
 }
 
-void LMConvergenceDetector::Initialize(FabberRunData& params)
+void LMConvergenceDetector::Initialize(FabberRunData &params)
 {
     ConvergenceDetector::Initialize(params);
 
@@ -240,14 +255,17 @@ bool LMConvergenceDetector::Test(double F)
     // cout << diff << endl;
 
     double absdiff = diff; //look at magnitude of diff in absdiff
-    if (diff < 0) {
+    if (diff < 0)
+    {
         absdiff = -diff;
     }
 
     //if we are not in LM mode
-    if (!m_LM) {
+    if (!m_LM)
+    {
         // if F has reduced then we go into LM mode
-        if (diff < 0) {
+        if (diff < 0)
+        {
             m_LM = true;
             m_revert = true; //revert to the previous solution and try again with LM adjustment
             m_alpha = m_alphastart;
@@ -255,32 +273,40 @@ bool LMConvergenceDetector::Test(double F)
             return false;
         }
         //otherwise if we have converged stop
-        else if (absdiff < m_max_fchange) {
+        else if (absdiff < m_max_fchange)
+        {
             m_reason = "F converged";
             m_revert = false;
             return true;
         }
         //otherwise if we have reached max iterations stop
-        else if (m_its >= m_max_its) {
+        else if (m_its >= m_max_its)
+        {
             m_reason = "Max iterations reached";
             m_revert = false;
             return true;
         }
         // otherwise carry on to next iteration
-        else {
+        else
+        {
             m_prev = F;
             ++m_its;
             return false;
         }
     }
     // if we are in LM mode (NB we dont increase iterations if we are increasing the LM m_alpha, onyl when we make a sucessful step)
-    else {
+    else
+    {
         // if F has improved over our previous best then reduce the m_alpha and continue from current estimate
 
-        if (diff > 0) {
-            if (m_alpha == m_alphastart) { //leave LM mode if m_alpha returns to inital value
+        if (diff > 0)
+        {
+            if (m_alpha == m_alphastart)
+            { //leave LM mode if m_alpha returns to inital value
                 m_LM = false;
-            } else {
+            }
+            else
+            {
                 m_alpha /= 10;
                 m_LM = true;
             }
@@ -291,20 +317,23 @@ bool LMConvergenceDetector::Test(double F)
             return false;
         }
         //if m_alpha gets too large then we cannot achieve any gain here so stop and revert to previous best solution
-        else if (m_alpha >= m_alphamax) {
+        else if (m_alpha >= m_alphamax)
+        {
             m_reason = "Reached max m_alpha";
             m_revert = true;
             //cout << "LM maxed out" << endl;
             return true;
         }
         //otherwise if we have reached max iterations stop
-        else if (m_its >= m_max_its) {
+        else if (m_its >= m_max_its)
+        {
             m_reason = "Max iterations reached";
             m_revert = false;
             return true;
         }
         // otherwise continue in LM mode for time being, try increasing m_alpha
-        else {
+        else
+        {
             m_alpha *= 10;
             m_revert = true; //revert to the previous solution and try again with new LM adjustment
             //cout << "Increasing LM" << endl;
@@ -313,7 +342,7 @@ bool LMConvergenceDetector::Test(double F)
     }
 }
 
-void LMConvergenceDetector::Dump(ostream& out, const string& indent) const
+void LMConvergenceDetector::Dump(ostream &out, const string &indent) const
 {
     out << indent << "Iteration " << m_its << " of at most " << m_max_its << " : " << m_reason << endl;
     out << indent << "Previous Free Energy == " << m_prev << endl;

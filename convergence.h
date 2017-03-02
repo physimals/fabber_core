@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "rundata.h"
 #include "factories.h"
+#include "rundata.h"
 
 #include <ostream>
 #include <string>
@@ -17,11 +17,12 @@
 /**
  * Abstract base class for method of testing whether the free energy maximisation algorithm has converged.
  */
-class ConvergenceDetector : public Loggable {
+class ConvergenceDetector : public Loggable
+{
 public:
-    static ConvergenceDetector* NewInstance();
+    static ConvergenceDetector *NewInstance();
 
-    static ConvergenceDetector* NewFromName(const std::string& name);
+    static ConvergenceDetector *NewFromName(const std::string &name);
 
     virtual ~ConvergenceDetector()
     {
@@ -30,7 +31,7 @@ public:
     /**
 	 * Initialize from run parameters
 	 */
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     /**
 	 * The key method. Called before iteration with the current free energy
@@ -94,7 +95,7 @@ public:
 	 * Send information on current progress to output stream
 	 */
     virtual void
-    Dump(std::ostream& out, const std::string& indent = "") const = 0;
+    Dump(std::ostream &out, const std::string &indent = "") const = 0;
 
 protected:
     std::string m_reason;
@@ -104,14 +105,15 @@ protected:
  * Simple implementation which just carries out a fixed number
  * of iterations
  */
-class CountingConvergenceDetector : public ConvergenceDetector {
+class CountingConvergenceDetector : public ConvergenceDetector
+{
 public:
-    static ConvergenceDetector* NewInstance()
+    static ConvergenceDetector *NewInstance()
     {
         return new CountingConvergenceDetector();
     }
 
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     virtual bool Test(double);
 
@@ -120,7 +122,7 @@ public:
 	 */
     virtual void Reset(double F = -99e99);
 
-    virtual void Dump(std::ostream& out, const std::string& indent = "") const;
+    virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
     int m_its;
@@ -131,14 +133,15 @@ protected:
  * Converges when the absolute difference between F and the previous
  * value is sufficiently small
  */
-class FchangeConvergenceDetector : public CountingConvergenceDetector {
+class FchangeConvergenceDetector : public CountingConvergenceDetector
+{
 public:
-    static ConvergenceDetector* NewInstance()
+    static ConvergenceDetector *NewInstance()
     {
         return new FchangeConvergenceDetector();
     }
 
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     /**
 	 * @return true if F differs from previous value by less than
@@ -171,7 +174,7 @@ public:
         return m_revert;
     }
 
-    virtual void Dump(std::ostream& out, const std::string& indent = "") const;
+    virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
     double m_prev_f;
@@ -185,9 +188,10 @@ protected:
  * value is sufficiently small or if F has reduced since the
  * previous iteration
  */
-class FreduceConvergenceDetector : public FchangeConvergenceDetector {
+class FreduceConvergenceDetector : public FchangeConvergenceDetector
+{
 public:
-    static ConvergenceDetector* NewInstance()
+    static ConvergenceDetector *NewInstance()
     {
         return new FreduceConvergenceDetector();
     }
@@ -197,7 +201,7 @@ public:
 	 *   max-iterations Maximum number of iterations
 	 *   fchange Change if F smaller than this amount means convergence
 	 */
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     /**
 	 * @return true if difference to previous is less than
@@ -205,7 +209,7 @@ public:
 	 */
     virtual bool Test(double F);
 
-    virtual void Dump(std::ostream& out, const std::string& indent = "") const;
+    virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
 };
@@ -221,13 +225,14 @@ protected:
  * until either F reduces again, or the absolute difference from
  * the previous is sufficiently small
  */
-class TrialModeConvergenceDetector : public FchangeConvergenceDetector {
+class TrialModeConvergenceDetector : public FchangeConvergenceDetector
+{
 public:
-    static ConvergenceDetector* NewInstance()
+    static ConvergenceDetector *NewInstance()
     {
         return new TrialModeConvergenceDetector();
     }
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     virtual bool Test(double F);
 
@@ -238,7 +243,7 @@ public:
         return m_save;
     }
 
-    virtual void Dump(std::ostream& out, const std::string& indent = "") const;
+    virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
     int m_trials;
@@ -254,14 +259,15 @@ protected:
  * well but not done yet as do not have tests for this
  * class
  */
-class LMConvergenceDetector : public ConvergenceDetector {
+class LMConvergenceDetector : public ConvergenceDetector
+{
 public:
-    static ConvergenceDetector* NewInstance()
+    static ConvergenceDetector *NewInstance()
     {
         return new LMConvergenceDetector();
     }
 
-    virtual void Initialize(FabberRunData& params);
+    virtual void Initialize(FabberRunData &params);
 
     /**
 	 * Convergence is reached if maximum number
@@ -280,7 +286,7 @@ public:
 	 * @return true if convergence reached
 	 */
     virtual bool Test(double F);
-    virtual void Dump(std::ostream& out, const std::string& indent = "") const;
+    virtual void Dump(std::ostream &out, const std::string &indent = "") const;
     virtual void Reset(double F = -99e99);
 
     virtual bool UseF() const
@@ -317,7 +323,7 @@ private:
     double m_alphamax;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const ConvergenceDetector& conv)
+inline std::ostream &operator<<(std::ostream &out, const ConvergenceDetector &conv)
 {
     conv.Dump(out);
     return out;

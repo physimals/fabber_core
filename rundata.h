@@ -33,7 +33,8 @@
  * OPT_MATRIX is a matrix file (either VEST or ASCII), usually used for small matrices
  * OPT_FILE is some other type of file
  */
-enum OptionType {
+enum OptionType
+{
     OPT_BOOL,
     OPT_STR,
     OPT_INT,
@@ -48,17 +49,19 @@ enum OptionType {
 /**
  * Option required
  */
-enum OptionReq {
+enum OptionReq
+{
     OPT_REQ = 0,
-    OPT_NONREQ = 1,
+    OPT_NONREQ = 1
 };
 
-std::ostream& operator<<(std::ostream& out, const OptionType value);
+std::ostream &operator<<(std::ostream &out, const OptionType value);
 
 /**
  * Describes a runtime option for a model, inference method, etc
  */
-struct OptionSpec {
+struct OptionSpec
+{
     /** Option name as used on command line --name */
     std::string name;
     /** Option type - string or boolean */
@@ -71,7 +74,7 @@ struct OptionSpec {
     std::string def;
 };
 
-std::ostream& operator<<(std::ostream& out, const OptionSpec& value);
+std::ostream &operator<<(std::ostream &out, const OptionSpec &value);
 
 /**
  * Type of voxel data.
@@ -81,7 +84,8 @@ std::ostream& operator<<(std::ostream& out, const OptionSpec& value);
  * voxel. The size of this data depends on the number of model
  * and noise parameters in a non-trivial way.
  */
-enum VoxelDataType {
+enum VoxelDataType
+{
     VDT_SCALAR,
     VDT_MVN
 };
@@ -91,7 +95,8 @@ enum VoxelDataType {
  *
  * The default does nothing.
  */
-class ProgressCheck {
+class ProgressCheck
+{
 public:
     virtual void Progress(int voxel, int nVoxels)
     {
@@ -103,7 +108,8 @@ public:
  *
  * This is basically an example of how to use it
  */
-class PercentProgressCheck : public ProgressCheck {
+class PercentProgressCheck : public ProgressCheck
+{
 public:
     PercentProgressCheck()
         : m_last(-1)
@@ -120,14 +126,14 @@ private:
  *
  * Used for the C API
  */
-class CallbackProgressCheck : public ProgressCheck {
+class CallbackProgressCheck : public ProgressCheck
+{
 public:
     explicit CallbackProgressCheck(void (*cb)(int, int))
         : m_cb(cb)
     {
     }
     virtual void Progress(int voxel, int nVoxels) { m_cb(voxel, nVoxels); }
-
 private:
     void (*m_cb)(int, int);
 };
@@ -149,12 +155,13 @@ private:
  * The class will try to keep all it's voxel data consistent. Once any data is
  * obtained, subsequent per-voxel data sets must be of the correct size.
  */
-class FabberRunData : public Loggable {
+class FabberRunData : public Loggable
+{
 public:
     /**
 	 * Get general Fabber option descriptions
 	 */
-    static void GetOptions(std::vector<OptionSpec>& opts);
+    static void GetOptions(std::vector<OptionSpec> &opts);
 
     /**
 	 * Constructor
@@ -164,12 +171,12 @@ public:
 	 *           for freeing it after use.
 	 */
     FabberRunData(bool compat_options = true);
-    ~FabberRunData();
+    virtual ~FabberRunData();
 
     /**
 	 * Run fabber
 	 */
-    void Run(ProgressCheck* check = 0);
+    void Run(ProgressCheck *check = 0);
 
     /**
 	 * Parse command line arguments into run data
@@ -186,7 +193,7 @@ public:
 	 * - use a multimap so duplicate options are okay
 	 * - accept short-form options (e.g. -k)
 	 */
-    void Parse(int argc, char** argv);
+    void Parse(int argc, char **argv);
 
     /**
 	 * Parse options from a .fab file
@@ -197,7 +204,7 @@ public:
 	 * option=value
 	 * bool-option
 	 */
-    void ParseParamFile(const std::string& file);
+    void ParseParamFile(const std::string &file);
 
     /**
 	 * Set string option.
@@ -207,7 +214,7 @@ public:
 	 * @param key Name of the string option
 	 * @param value It's value
 	 */
-    void Set(const std::string& key, const std::string& value);
+    void Set(const std::string &key, const std::string &value);
 
     /**
 	 * Set string option from a number.
@@ -217,7 +224,7 @@ public:
 	 * @param key Name of the string option
 	 * @param value which will be converted to string
 	 */
-    void Set(const std::string& key, double value);
+    void Set(const std::string &key, double value);
 
     /**
 	 * 'Unset' an option
@@ -225,7 +232,7 @@ public:
 	 * If the option is normally treated as a bool its
 	 * value will now be 'false'
 	 */
-    void Unset(const std::string& key);
+    void Unset(const std::string &key);
 
     /**
 	 * Set boolean option.
@@ -239,7 +246,7 @@ public:
 	 * @param key Name of the boolean option
 	 * @param value true or false
 	 */
-    void SetBool(const std::string& key, bool value = true);
+    void SetBool(const std::string &key, bool value = true);
 
     /**
 	 * Get string option.
@@ -247,7 +254,7 @@ public:
 	 * @param key Name of the string option
 	 * @throw if option is missing or is a boolean
 	 */
-    std::string GetString(const std::string& key);
+    std::string GetString(const std::string &key);
 
     /**
 	 * Get string option with default if not found.
@@ -255,7 +262,7 @@ public:
 	 * @param key Name of the string option
 	 * @param def Default value to return if not found
 	 */
-    std::string GetStringDefault(const std::string& key, const std::string& def) const;
+    std::string GetStringDefault(const std::string &key, const std::string &def) const;
 
     /**
 	 * Get boolean option
@@ -263,7 +270,7 @@ public:
 	 * @param key Name of the boolean option
 	 * @throw if string option specified
 	 */
-    bool GetBool(const std::string& key);
+    bool GetBool(const std::string &key);
 
     /**
 	 * Get an integer option
@@ -271,7 +278,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not an integer
 	 */
-    int GetInt(const std::string& key);
+    int GetInt(const std::string &key);
 
     /**
 	 * Get an integer option, returning default if not specified
@@ -279,7 +286,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid integer
 	 */
-    int GetIntDefault(const std::string& key, int def);
+    int GetIntDefault(const std::string &key, int def);
 
     /**
 	 * Get an double option
@@ -287,7 +294,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not a double
 	 */
-    double GetDouble(const std::string& key);
+    double GetDouble(const std::string &key);
 
     /**
 	 * Get an double option, returning default if not specified
@@ -295,7 +302,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid number
 	 */
-    double GetDoubleDefault(const std::string& key, double def);
+    double GetDoubleDefault(const std::string &key, double def);
 
     /**
 	 * Get the output directory for this run.
@@ -331,7 +338,7 @@ public:
 	 * @param data Data as a matrix in which each column is a voxel, and
 	 *        rows contain a series of data values for that voxel
 	 */
-    virtual void SaveVoxelData(const std::string& filename, NEWMAT::Matrix& coords, VoxelDataType data_type = VDT_SCALAR);
+    virtual void SaveVoxelData(const std::string &filename, NEWMAT::Matrix &coords, VoxelDataType data_type = VDT_SCALAR);
 
     /**
 	 * Get the voxel co-ordinates
@@ -340,7 +347,7 @@ public:
 	 *         are the xyz co-ords of the voxel. The co-ordinates are
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
-    const NEWMAT::Matrix& GetVoxelCoords();
+    const NEWMAT::Matrix &GetVoxelCoords();
 
     /**
 	 * Get named voxel data
@@ -368,7 +375,15 @@ public:
 	 * @throw DataNotFound If no voxel data matching key is found and no data
 	 *                     could be loaded
 	 */
-    virtual const NEWMAT::Matrix& GetVoxelData(const std::string& key);
+    const NEWMAT::Matrix &GetVoxelData(const std::string &key);
+
+    /**
+	 * Get named voxel data, with no further resolution of the name.
+	 *
+	 * Can be overridden in a subclass to, for example, load data from
+	 * an external file. In this case, key will be the filename
+	 */
+    virtual const NEWMAT::Matrix &LoadVoxelData(const std::string &key);
 
     /**
 	 * Get the number of data values associated with each voxel for the named data
@@ -377,7 +392,7 @@ public:
 	 * @return The number of data values, e.g. 1 for a simple image, or for a time
 	 *         series the number of time slices, etc.
 	 */
-    int GetVoxelDataSize(const std::string& key);
+    int GetVoxelDataSize(const std::string &key);
 
     /**
 	 * Get the main voxel data
@@ -389,7 +404,7 @@ public:
 	 * @return an NxT matrix where each column contains the data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-    const NEWMAT::Matrix& GetMainVoxelData();
+    const NEWMAT::Matrix &GetMainVoxelData();
 
     /**
 	 * Get the voxel supplementary data
@@ -401,7 +416,7 @@ public:
 	 * @return an NxT matrix where each column contains the supplementary data for a single
 	 *         voxel. The rows contain the time series of data for that voxel
 	 */
-    const NEWMAT::Matrix& GetVoxelSuppData();
+    const NEWMAT::Matrix &GetVoxelSuppData();
 
     /**
 	 * Get the data extent.
@@ -412,7 +427,7 @@ public:
 	 * @param dims will be set to a list of the mm physical sizes of each voxel in the x,y, z dimensions,
 	 *             if these are available. If not, they will be set equal to extent.
 	 */
-    virtual void GetExtent(std::vector<int>& extent, std::vector<float>& dims);
+    virtual void GetExtent(std::vector<int> &extent, std::vector<float> &dims);
 
     /**
 	 * Set the data extent.
@@ -450,7 +465,7 @@ public:
 	 *        of each parameter for that voxel.
 	 * @throw If number of columns in data is not equal to the number of voxels
 	 */
-    virtual void SetVoxelData(std::string key, const NEWMAT::Matrix& data);
+    virtual void SetVoxelData(std::string key, const NEWMAT::Matrix &data);
 
     /**
 	 * Set the voxel co-ordinates
@@ -459,7 +474,7 @@ public:
 	 *         are the xyz co-ords of the voxel. The co-ordinates are
 	 *         grid positions (integers), not physical co-ordiantes (mm)
 	 */
-    void SetVoxelCoords(const NEWMAT::Matrix& coords);
+    void SetVoxelCoords(const NEWMAT::Matrix &coords);
 
     /**
 	 * Report progress
@@ -486,37 +501,37 @@ public:
 	 * Friend function to allow summary of Parameters to be streamed
 	 * using the << operator.
 	 */
-    friend ostream& operator<<(ostream& out, const FabberRunData& opts);
+    friend ostream &operator<<(ostream &out, const FabberRunData &opts);
 
 // Following methods present for compatibility only
 #ifdef DEPRECATED
     /** @deprecated Use GetString instead */
-    std::string Read(const std::string& key);
+    std::string Read(const std::string &key);
 
     /** @deprecated Use GetString instead */
-    std::string Read(const std::string& key, const std::string& msg);
+    std::string Read(const std::string &key, const std::string &msg);
 
     /** @deprecated Use GetStringDefault instead */
-    std::string ReadWithDefault(const std::string& key, const std::string& def);
+    std::string ReadWithDefault(const std::string &key, const std::string &def);
 
     /** @deprecated Use GetBool instead */
-    bool ReadBool(const std::string& key);
+    bool ReadBool(const std::string &key);
 
-    void ParseOldStyleParamFile(const std::string& filename);
+    void ParseOldStyleParamFile(const std::string &filename);
 #endif
 
 protected:
     void init(bool compat_options);
-    void AddKeyEqualsValue(const std::string& key, bool trim_comments = false);
-    const NEWMAT::Matrix& GetMainVoxelDataMultiple();
-    void CheckSize(std::string key, const NEWMAT::Matrix& mat);
+    void AddKeyEqualsValue(const std::string &key, bool trim_comments = false);
+    const NEWMAT::Matrix &GetMainVoxelDataMultiple();
+    void CheckSize(std::string key, const NEWMAT::Matrix &mat);
 
     std::map<std::string, NEWMAT::Matrix> m_voxel_data;
     std::vector<int> m_extent;
     std::vector<float> m_dims;
 
     /** Optional progress checker, could be NULL - not owned and will not be freed */
-    ProgressCheck* m_progress;
+    ProgressCheck *m_progress;
 
     /**
 	 * Empty matrix
@@ -544,7 +559,8 @@ protected:
 /**
  * Exception base class
  */
-class FabberError : public std::runtime_error {
+class FabberError : public std::runtime_error
+{
 public:
     explicit FabberError(std::string msg)
         : std::runtime_error(msg)
@@ -553,8 +569,7 @@ public:
     }
 
     virtual ~FabberError() throw(){};
-    virtual const char* what() const throw() { return m_msg.c_str(); }
-
+    virtual const char *what() const throw() { return m_msg.c_str(); }
     std::string m_msg;
 };
 
@@ -562,7 +577,8 @@ public:
  * Thrown for errors that are not the direct
  * result of bad user input, i.e. bugs in fabber
  */
-class FabberInternalError : public FabberError {
+class FabberInternalError : public FabberError
+{
 public:
     explicit FabberInternalError(std::string msg)
         : FabberError(msg)
@@ -575,7 +591,8 @@ public:
  * Thrown for errors that are directly caused
  * by invalid user input
  */
-class FabberRunDataError : public FabberError {
+class FabberRunDataError : public FabberError
+{
 public:
     explicit FabberRunDataError(std::string msg)
         : FabberError(msg)
@@ -587,7 +604,8 @@ public:
  * Thrown when the value given to an option is not valid,
  * e.g. --num_mc_steps=fred (expected a number)
  */
-class InvalidOptionValue : public FabberRunDataError {
+class InvalidOptionValue : public FabberRunDataError
+{
 public:
     InvalidOptionValue(std::string key, std::string value, std::string reason = "")
         : FabberRunDataError(key)
@@ -599,7 +617,8 @@ public:
 /**
  * Thrown when a mandatory option or parameter is not given
  */
-class MandatoryOptionMissing : public FabberRunDataError {
+class MandatoryOptionMissing : public FabberRunDataError
+{
 public:
     explicit MandatoryOptionMissing(std::string key)
         : FabberRunDataError(key)
@@ -611,7 +630,8 @@ public:
 /**
  * Thrown when voxel data is requested but cannot be found
  */
-class DataNotFound : public FabberRunDataError {
+class DataNotFound : public FabberRunDataError
+{
 public:
     DataNotFound(std::string key, std::string reason = "")
         : FabberRunDataError(key)
@@ -623,7 +643,7 @@ public:
 // Convert a string into almost anything, using operator>>. See the C++ FAQ-Lite:
 // http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.3
 template <typename T>
-inline T convertTo(const std::string& s)
+inline T convertTo(const std::string &s)
 {
     T x;
     istringstream i(s);

@@ -37,7 +37,7 @@ extern "C" {
  * @return A handle to the context. This should not be used for any purpose apart from
  *         to pass to other API functions
  */
-FABBER_DLL_API void* fabber_new(char* err_buf);
+FABBER_DLL_API void *fabber_new(char *err_buf);
 
 /**
  * Load models from a dynamic library
@@ -48,7 +48,7 @@ FABBER_DLL_API void* fabber_new(char* err_buf);
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_load_models(void* fab, const char* libpath, char* err_buf);
+FABBER_DLL_API int fabber_load_models(void *fab, const char *libpath, char *err_buf);
 
 /**
  * Set the extent of the volume to be procesed.
@@ -67,7 +67,7 @@ FABBER_DLL_API int fabber_load_models(void* fab, const char* libpath, char* err_
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_set_extent(void* fab, int nx, int ny, int nz, const int* mask, char* err_buf);
+FABBER_DLL_API int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *err_buf);
 
 /**
  * Destroy fabber context previously created in fabber_new
@@ -77,7 +77,7 @@ FABBER_DLL_API int fabber_set_extent(void* fab, int nx, int ny, int nz, const in
  * @param fab Fabber context, returned by fabber_new. NULL will be ignored. Anything
  *            else will probably cause a crash.
  */
-FABBER_DLL_API void fabber_destroy(void* fab);
+FABBER_DLL_API void fabber_destroy(void *fab);
 
 /**
  * Set an option
@@ -89,7 +89,7 @@ FABBER_DLL_API void fabber_destroy(void* fab);
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_set_opt(void* fab, const char* key, const char* value, char* err_buf);
+FABBER_DLL_API int fabber_set_opt(void *fab, const char *key, const char *value, char *err_buf);
 
 /**
  * Set voxel data
@@ -105,7 +105,7 @@ FABBER_DLL_API int fabber_set_opt(void* fab, const char* key, const char* value,
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_set_data(void* fab, const char* name, int data_size, const float* data, char* err_buf);
+FABBER_DLL_API int fabber_set_data(void *fab, const char *name, int data_size, const float *data, char *err_buf);
 
 /**
  * Get the size of output voxel data
@@ -116,7 +116,7 @@ FABBER_DLL_API int fabber_set_data(void* fab, const char* name, int data_size, c
  *
  * @return Size of data in 4th dimension, or <0 on error
  */
-FABBER_DLL_API int fabber_get_data_size(void* fab, const char* name, char* err_buf);
+FABBER_DLL_API int fabber_get_data_size(void *fab, const char *name, char *err_buf);
 
 /**
  * Get output voxel data
@@ -129,7 +129,7 @@ FABBER_DLL_API int fabber_get_data_size(void* fab, const char* name, char* err_b
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_get_data(void* fab, const char* name, float* data_buf, char* err_buf);
+FABBER_DLL_API int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf);
 
 /**
  * Run Fabber model fitting on already configured options and data
@@ -143,7 +143,7 @@ FABBER_DLL_API int fabber_get_data(void* fab, const char* name, float* data_buf,
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_dorun(void* fab, int log_bufsize, char* log_buf, char* err_buf, void (*progress_cb)(int, int));
+FABBER_DLL_API int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int));
 
 /**
  * Get fabber options, optionally for a specific method or model
@@ -162,7 +162,7 @@ FABBER_DLL_API int fabber_dorun(void* fab, int log_bufsize, char* log_buf, char*
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_get_options(void* fab, const char* key, const char* value, int out_bufsize, char* out_buf, char* err_buf);
+FABBER_DLL_API int fabber_get_options(void *fab, const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf);
 
 /**
  * Get list of known models
@@ -175,7 +175,7 @@ FABBER_DLL_API int fabber_get_options(void* fab, const char* key, const char* va
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_get_models(void* fab, int out_bufsize, char* out_buf, char* err_buf);
+FABBER_DLL_API int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf);
 
 /**
  * Get list of known inference methods
@@ -188,7 +188,7 @@ FABBER_DLL_API int fabber_get_models(void* fab, int out_bufsize, char* out_buf, 
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_get_methods(void* fab, int out_bufsize, char* out_buf, char* err_buf);
+FABBER_DLL_API int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf);
 
 /**
  * Get list model parameters that will be output. Note that this will depend
@@ -202,5 +202,5 @@ FABBER_DLL_API int fabber_get_methods(void* fab, int out_bufsize, char* out_buf,
  *
  * @return 0 on success, <0 on failure
  */
-FABBER_DLL_API int fabber_get_model_params(void* fab, int out_bufsize, char* out_buf, char* err_buf);
+FABBER_DLL_API int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err_buf);
 }

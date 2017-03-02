@@ -9,10 +9,11 @@
 
 #include <fstream>
 
-namespace {
-
+namespace
+{
 // The fixture for testing class Foo.
-class RunDataTest : public ::testing::Test {
+class RunDataTest : public ::testing::Test
+{
 protected:
     RunDataTest()
     {
@@ -53,13 +54,17 @@ TEST_F(RunDataTest, ConcatenatedData)
     data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data1(n + 1, v) = VAL;
                     data2(n + 1, v) = VAL * 2;
                     data3(n + 1, v) = VAL * 3;
@@ -79,8 +84,10 @@ TEST_F(RunDataTest, ConcatenatedData)
 
     ASSERT_EQ(data.Nrows(), NTIMES * 3);
     ASSERT_EQ(data.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
-        for (int t = 0; t < NTIMES * 3; t++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
+        for (int t = 0; t < NTIMES * 3; t++)
+        {
             if (t < NTIMES)
                 ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL);
             else if (t < NTIMES * 2)
@@ -105,13 +112,17 @@ TEST_F(RunDataTest, InterleavedData)
     data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data1(n + 1, v) = VAL;
                     data2(n + 1, v) = VAL * 2;
                     data3(n + 1, v) = VAL * 3;
@@ -131,8 +142,10 @@ TEST_F(RunDataTest, InterleavedData)
 
     ASSERT_EQ(data.Nrows(), NTIMES * 3);
     ASSERT_EQ(data.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
-        for (int t = 0; t < NTIMES * 3; t++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
+        for (int t = 0; t < NTIMES * 3; t++)
+        {
             if (t % 3 == 0)
                 ASSERT_FLOAT_EQ(data(t + 1, i + 1), VAL);
             else if (t % 3 == 1)
@@ -156,13 +169,17 @@ TEST_F(RunDataTest, MultiDataInconsistent)
     data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data1(n + 1, v) = VAL;
                     data2(n + 1, v) = VAL * 2;
                     data3(n + 1, v) = VAL * 3;
@@ -222,7 +239,6 @@ TEST_F(RunDataTest, OptionsFileEmbeddedComment)
 // Tests unsetting an option
 TEST_F(RunDataTest, Unset)
 {
-
     FabberRunData rundata;
     rundata.Set("wibble", "wobble");
     rundata.SetBool("bobble");
@@ -247,13 +263,17 @@ TEST_F(RunDataTest, CircularDataRef)
     data1.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data1(n + 1, v) = VAL;
                 }
                 v++;
@@ -286,13 +306,17 @@ TEST_F(RunDataTest, ClearVoxelData)
     data3.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data1(n + 1, v) = VAL;
                     data2(n + 1, v) = VAL * 2;
                     data3(n + 1, v) = VAL * 3;

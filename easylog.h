@@ -42,7 +42,8 @@
  * If you want to dump variables directly to this stream, just implement
  * std::ostream& operator<<(std::ostream& stream, const your_type& data);
  */
-class EasyLog {
+class EasyLog
+{
 public:
     /**
 	 * Log output to an existing stream
@@ -60,7 +61,7 @@ public:
 	 *
 	 * @param outDir Name of a directory in which to put the logfile.
 	 */
-    void StartLog(const std::string& outDir);
+    void StartLog(const std::string &outDir);
 
     /**
 	 * Log output to an existing stream
@@ -68,13 +69,13 @@ public:
 	 * This might be std::cout/cerr or something else, e.g. a
 	 * stringstream.
 	 */
-    void StartLog(std::ostream& s);
+    void StartLog(std::ostream &s);
 
     /**
 	 * Get the output directory for the log file, or
 	 * an empty string if not logging to a file.
 	 */
-    const std::string& GetOutputDirectory();
+    const std::string &GetOutputDirectory();
 
     /**
 	 * Stop logging.
@@ -91,7 +92,7 @@ public:
     /**
 	 * Get the logging stream. Easier to use the LOG macro defined above
 	 */
-    std::ostream& LogStream();
+    std::ostream &LogStream();
 
     /**
 	 * Issue a warning
@@ -101,14 +102,14 @@ public:
 	 * be repeated, apart from if ReissueWarnings is
 	 * called
 	 */
-    void WarnOnce(const std::string& text);
+    void WarnOnce(const std::string &text);
 
     /**
 	 * Issue a warning
 	 *
 	 * The warning will appear in the log each time it is issued.
 	 */
-    void WarnAlways(const std::string& text);
+    void WarnAlways(const std::string &text);
 
     /**
 	 * Resend all warnings recorded so far to the log
@@ -116,22 +117,23 @@ public:
     void ReissueWarnings();
 
 private:
-    std::ostream* stream;
+    std::ostream *stream;
     std::stringstream templog;
     std::string outDir;
     std::map<std::string, int> warnCount;
 };
 
-class Loggable {
+class Loggable
+{
 public:
-    explicit Loggable(EasyLog* log = 0)
+    explicit Loggable(EasyLog *log = 0)
         : m_log(log)
     {
     }
-    EasyLog* GetLogger() const { return m_log; }
-    void SetLogger(EasyLog* log) { m_log = log; }
+    EasyLog *GetLogger() const { return m_log; }
+    void SetLogger(EasyLog *log) { m_log = log; }
 protected:
-    EasyLog* m_log;
+    EasyLog *m_log;
 };
 
 /**
@@ -149,7 +151,7 @@ inline std::string stringify(type from)
 /**
  * Output a vector<int>
  */
-inline std::ostream& operator<<(std::ostream& out, std::vector<int> x)
+inline std::ostream &operator<<(std::ostream &out, std::vector<int> x)
 {
     out << "[ ";
     for (unsigned i = 0; i < x.size(); i++)

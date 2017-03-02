@@ -27,17 +27,18 @@
  *
  * Each Phi is associated with a gamma distribution
  */
-class WhiteParams : public NoiseParams {
+class WhiteParams : public NoiseParams
+{
 public:
     explicit WhiteParams(int N);
-    WhiteParams(const WhiteParams& from);
-    virtual const WhiteParams& operator=(const NoiseParams& in);
+    WhiteParams(const WhiteParams &from);
+    virtual const WhiteParams &operator=(const NoiseParams &in);
 
-    virtual WhiteParams* Clone() const;
+    virtual WhiteParams *Clone() const;
 
     virtual const MVNDist OutputAsMVN() const;
-    virtual void InputFromMVN(const MVNDist& mvn);
-    virtual void Dump(std::ostream& os) const;
+    virtual void InputFromMVN(const MVNDist &mvn);
+    virtual void Dump(std::ostream &os) const;
 
 private:
     friend class WhiteNoiseModel;
@@ -45,41 +46,42 @@ private:
     std::vector<GammaDist> phis;
 };
 
-class WhiteNoiseModel : public NoiseModel {
+class WhiteNoiseModel : public NoiseModel
+{
 public:
     /**
 	 * Create a new instance of white noise. Used by factory
 	 * to create noise models by name. Parameters are set
 	 * during initialization
 	 */
-    static NoiseModel* NewInstance();
+    static NoiseModel *NewInstance();
 
-    virtual void Initialize(FabberRunData& args);
+    virtual void Initialize(FabberRunData &args);
     int NumParams();
-    virtual WhiteParams* NewParams() const;
-    virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
+    virtual WhiteParams *NewParams() const;
+    virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const;
 
     /**
 	 * Update the noise parameters
 	 */
-    virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
+    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
     /**
 	 * Update the model parameters?
 	 */
     virtual void
-    UpdateTheta(const NoiseParams& noise, MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model,
-        const NEWMAT::ColumnVector& data, MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
+    UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
+        const NEWMAT::ColumnVector &data, MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
-    virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
+    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
 protected:
     std::string phiPattern;
 
     double lockedNoiseStdev; // Allow phi to be locked externally
-    double phiprior; //allow external setting of the prior nosie std deviation (and thence phi)
+    double phiprior;         //allow external setting of the prior nosie std deviation (and thence phi)
 
     // Diagonal matrices, indicating which data points use each phi
     mutable std::vector<NEWMAT::DiagonalMatrix> Qis; // mutable because it's used as a cache

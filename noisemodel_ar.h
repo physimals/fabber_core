@@ -18,13 +18,14 @@
 class Ar1cParams;
 
 // Helper class -- caches some of the AR matrices
-class Ar1cMatrixCache {
+class Ar1cMatrixCache
+{
 public:
     explicit Ar1cMatrixCache(int numPhis);
-    Ar1cMatrixCache(const Ar1cMatrixCache& from);
-    const NEWMAT::SymmetricBandMatrix& GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
-    const NEWMAT::SymmetricBandMatrix& GetMarginal(unsigned n) const;
-    void Update(const Ar1cParams& dist, int nTimes);
+    Ar1cMatrixCache(const Ar1cMatrixCache &from);
+    const NEWMAT::SymmetricBandMatrix &GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
+    const NEWMAT::SymmetricBandMatrix &GetMarginal(unsigned n) const;
+    void Update(const Ar1cParams &dist, int nTimes);
 
 private:
     std::vector<NEWMAT::SymmetricBandMatrix> alphaMarginals;
@@ -41,17 +42,18 @@ private:
 };
 
 // Parameter-storage class -- it's really just an enhanced structure
-class Ar1cParams : public NoiseParams {
+class Ar1cParams : public NoiseParams
+{
 public:
     // Constructors
     Ar1cParams(int nAlpha, int nPhi);
-    Ar1cParams(const Ar1cParams& from);
-    virtual const Ar1cParams& operator=(const NoiseParams& in);
-    virtual Ar1cParams* Clone() const;
+    Ar1cParams(const Ar1cParams &from);
+    virtual const Ar1cParams &operator=(const NoiseParams &in);
+    virtual Ar1cParams *Clone() const;
 
     virtual const MVNDist OutputAsMVN() const;
-    virtual void InputFromMVN(const MVNDist& mvn);
-    virtual void Dump(std::ostream& os) const;
+    virtual void InputFromMVN(const MVNDist &mvn);
+    virtual void Dump(std::ostream &os) const;
 
 private:
     friend class Ar1cNoiseModel; // Needs to use this class like it's a structure
@@ -62,35 +64,36 @@ private:
     Ar1cMatrixCache alphaMat;
 };
 
-class Ar1cNoiseModel : public NoiseModel {
+class Ar1cNoiseModel : public NoiseModel
+{
 public:
-    static NoiseModel* NewInstance();
+    static NoiseModel *NewInstance();
 
-    virtual void Initialize(FabberRunData& args);
+    virtual void Initialize(FabberRunData &args);
     int NumParams();
-    virtual Ar1cParams* NewParams() const;
+    virtual Ar1cParams *NewParams() const;
 
-    virtual void HardcodedInitialDists(NoiseParams& prior, NoiseParams& posterior) const;
+    virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const;
 
     // Used to pre-evaluate the alpha matrices in the cache
-    virtual void Precalculate(NoiseParams& noise, const NoiseParams& noisePrior, const NEWMAT::ColumnVector& sampleData) const;
+    virtual void Precalculate(NoiseParams &noise, const NoiseParams &noisePrior, const NEWMAT::ColumnVector &sampleData) const;
 
-    virtual void UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const LinearFwdModel& linear, const NEWMAT::ColumnVector& data) const;
+    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &linear, const NEWMAT::ColumnVector &data) const;
 
-    virtual void UpdateAlpha(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
+    virtual void UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
-    virtual void UpdatePhi(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
+    virtual void UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
-    virtual void UpdateTheta(const NoiseParams& noise,
+    virtual void UpdateTheta(const NoiseParams &noise,
         //    const NoiseParams& noisePrior,
-        MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data,
-        MVNDist* thetaWithoutPrior = NULL, float LMalpha = 0) const;
+        MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data,
+        MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
-    virtual double CalcFreeEnergy(const NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-        const MVNDist& thetaPrior, const LinearFwdModel& model, const NEWMAT::ColumnVector& data) const;
+    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
 protected:
     std::string ar1Type;

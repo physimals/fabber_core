@@ -10,10 +10,11 @@
 #include "convergence.h"
 #include "inference.h"
 
-class PriorType {
+class PriorType
+{
 public:
     PriorType();
-    PriorType(int idx, string param_name, FabberRunData& data);
+    PriorType(int idx, string param_name, FabberRunData &data);
     std::string m_param_name;
     int m_idx;
     char m_type;
@@ -21,19 +22,20 @@ public:
     std::string m_filename;
     NEWMAT::RowVector m_image;
 
-    void SetPrior(MVNDist* dist, int voxel);
+    void SetPrior(MVNDist *dist, int voxel);
 };
 
-std::ostream& operator<<(std::ostream& out, const PriorType& value);
+std::ostream &operator<<(std::ostream &out, const PriorType &value);
 
-class VariationalBayesInferenceTechnique : public InferenceTechnique {
+class VariationalBayesInferenceTechnique : public InferenceTechnique
+{
 public:
     /**
 	 * Create a new instance of VariationalBayesInferenceTechnique
 	 */
-    static InferenceTechnique* NewInstance();
+    static InferenceTechnique *NewInstance();
 
-    virtual void GetOptions(std::vector<OptionSpec>& opts) const;
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const;
     virtual std::string GetDescription() const;
     virtual string GetVersion() const;
 
@@ -45,31 +47,32 @@ public:
         , m_coords(NULL)
         , m_suppdata(NULL)
         , continueFwdOnly(false)
-        , m_outputOnly(false)
         , m_printF(false)
         , m_needF(false)
         , initialFwdPrior(NULL)
         , initialFwdPosterior(NULL)
         , initialNoisePrior(NULL)
-        , initialNoisePosterior(
-              NULL)
+        , initialNoisePosterior(NULL)
         , Nmcstep(0)
     {
     }
 
-    virtual void Initialize(FwdModel* model, FabberRunData& args);
-    virtual void DoCalculations(FabberRunData& data);
-    virtual void SaveResults(FabberRunData& data) const;
+    virtual void Initialize(FwdModel *model, FabberRunData &args);
+    virtual void DoCalculations(FabberRunData &data);
+    virtual void SaveResults(FabberRunData &data) const;
 
     virtual ~VariationalBayesInferenceTechnique();
 
 protected:
-    void InitializeMVNFromParam(FabberRunData& args, MVNDist* dist, string param_key);
-    void InitializeNoiseFromParam(FabberRunData& args, NoiseParams* dist, string param_key);
-    void MakeInitialDistributions(FabberRunData& args);
-    void GetPriorTypes(FabberRunData& args);
-    void LoadImagePriors(FabberRunData& allData);
+    void InitializeMVNFromParam(FabberRunData &args, MVNDist *dist, string param_key);
+    void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
+    void MakeInitialDistributions(FabberRunData &args);
+    void GetPriorTypes(FabberRunData &args);
+    void LoadImagePriors(FabberRunData &allData);
     void PassModelData(int voxel);
+
+    /** Number of voxels in data */
+    int m_nvoxels;
 
     /**
 	 * Noise model in use. This is created by the inference
@@ -79,50 +82,54 @@ protected:
 
     /**
 	 * Number of noise parameters.
-	 *
-	 * This is used regularly so it's sensible to keep a
-	 * copy around
 	 */
     int m_noise_params;
 
-    ConvergenceDetector* m_conv;
+    /**
+     * Convergence detector in use
+     */
+    ConvergenceDetector *m_conv;
+
+    /** True if convergence detector requires the free energy */
+    bool m_needF;
+
+    /** True if we need to print the free energy at each iteration */
+    bool m_printF;
+
+    /** Prior types used for each model parameter */
+    std::vector<PriorType> m_prior_types;
+
+    // These are used for resuming a previous calculation
+    /** If not empty, load initial MVN from this file */
+    std::string m_continueFromFile;
+
+    std::string paramFilename;
+
+    /** If set, initial MVN only has fwd model information, not noise */
+    bool continueFwdOnly;
 
     /** Free energy for each voxel */
     std::vector<double> resultFs;
 
     // Initial priors and posteriors - not per voxel. Set up in Initialize
     std::auto_ptr<MVNDist> initialFwdPrior;
-    MVNDist* initialFwdPosterior;
-    NoiseParams* initialNoisePrior;
-    NoiseParams* initialNoisePosterior;
+    MVNDist *initialFwdPosterior;
+    NoiseParams *initialNoisePrior;
+    NoiseParams *initialNoisePosterior;
 
-    const NEWMAT::Matrix* m_origdata;
-    const NEWMAT::Matrix* m_coords;
-    const NEWMAT::Matrix* m_suppdata;
-    int m_nvoxels;
+    const NEWMAT::Matrix *m_origdata;
+    const NEWMAT::Matrix *m_coords;
+    const NEWMAT::Matrix *m_suppdata;
+
+    /** Used by Adrian's spatial priors research */
+    std::vector<MVNDist *> resultMVNsWithoutPrior;
 
     /**
-	 * Used by Adrian's spatial priors research
-	 */
-    std::vector<MVNDist*> resultMVNsWithoutPrior;
-
-    std::vector<PriorType> m_prior_types;
-
-    // These are used for resuming a previous calculation
-    std::string m_continueFromFile; // if empty, use initial posterior dists above
-    std::string paramFilename;
-    bool continueFwdOnly; // Only have fwd-model information
-    bool m_outputOnly;
-
-    // Reduce this to a linear problem, using the given
-    // voxelwise linearizations (probably loaded from an MVN)
+     * Reduce this to a linear problem, using the given
+     * voxelwise linearizations (probably loaded from an MVN)
+     */
     std::string lockedLinearFile;
 
-    bool m_printF;
-    bool m_needF;
-
-    /**
-	 * Number of motion correction steps to run
-	 */
+    /** Number of motion correction steps to run */
     int Nmcstep;
 };

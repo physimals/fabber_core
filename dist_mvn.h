@@ -26,7 +26,8 @@
  *      one for each distinct pair of parameters and
  *      irrespective of order
  */
-class MVNDist : public Loggable {
+class MVNDist : public Loggable
+{
 public:
     /**
 	 * Load a per-voxel vector of MVN distributions from existing voxel data
@@ -34,7 +35,7 @@ public:
 	 * @param mvns One MVN for each voxel
 	 * @param mvns MVN in the form of voxel data as written by MVNDist::Save
 	 */
-    static void Load(std::vector<MVNDist*>& mvns, NEWMAT::Matrix& voxel_data, EasyLog* log);
+    static void Load(std::vector<MVNDist *> &mvns, NEWMAT::Matrix &voxel_data, EasyLog *log);
 
     /**
 	 * Load a per-voxel vector of MVN distributions from run data
@@ -49,7 +50,7 @@ public:
 	 *            filename using the command line tool
 	 * @param data Options and voxel data
 	 */
-    static void Load(std::vector<MVNDist*>& mvns, const std::string& key, FabberRunData& data, EasyLog* log);
+    static void Load(std::vector<MVNDist *> &mvns, const std::string &key, FabberRunData &data, EasyLog *log);
 
     /**
 	 * Save a per-voxel vector of MVN distributions.
@@ -65,7 +66,7 @@ public:
 	 *
 	 * @param mvns One MVN for each voxel
 	 */
-    static void Save(const vector<MVNDist*>& mvns, const string& filename, FabberRunData& data);
+    static void Save(const vector<MVNDist *> &mvns, const string &filename, FabberRunData &data);
 
     /**
 	 * Default constructor
@@ -78,27 +79,27 @@ public:
     /**
 	 * Create distribution of known size
 	 */
-    MVNDist(int dim, EasyLog* log = 0);
+    MVNDist(int dim, EasyLog *log = 0);
 
     /**
 	 * Copy constructor
 	 */
-    MVNDist(const MVNDist& from);
+    MVNDist(const MVNDist &from);
 
     /**
 	 * Concatentate two MVNs
 	 */
-    MVNDist(const MVNDist& from1, const MVNDist& from2);
+    MVNDist(const MVNDist &from1, const MVNDist &from2);
 
     /**
 	 * Create from matrix file (VEST or ASCII)
 	 */
-    MVNDist(const string filename, EasyLog* log = 0);
+    MVNDist(const string filename, EasyLog *log = 0);
 
     /**
 	 * Copy using a subset of another MVN distribution's parameters
 	 */
-    void CopyFromSubmatrix(const MVNDist& from, int first, int last, bool checkIndependence = true);
+    void CopyFromSubmatrix(const MVNDist &from, int first, int last, bool checkIndependence = true);
 
     /**
 	 * Get a subset of this MVN distribution as another MVN distribution
@@ -108,7 +109,7 @@ public:
     /**
 	 * Assignment operator
 	 */
-    MVNDist& operator=(const MVNDist& from);
+    MVNDist &operator=(const MVNDist &from);
 
     /**
 	 * Set the size
@@ -148,14 +149,14 @@ public:
 	 * it could become out of date if a subsequent call
 	 * to SetXXX is made. It should not be stored for future use.
 	 */
-    const NEWMAT::SymmetricMatrix& GetPrecisions() const;
+    const NEWMAT::SymmetricMatrix &GetPrecisions() const;
 
     /**
 	 * Get the covariances
 	 *
 	 * @see GetPrecisions
 	 */
-    const NEWMAT::SymmetricMatrix& GetCovariance() const;
+    const NEWMAT::SymmetricMatrix &GetCovariance() const;
 
     /**
 	 * Set the precisions
@@ -166,7 +167,7 @@ public:
 	 * Covariances will be updated lazily on next
 	 * call to GetCovariances
 	 */
-    void SetPrecisions(const NEWMAT::SymmetricMatrix& from);
+    void SetPrecisions(const NEWMAT::SymmetricMatrix &from);
 
     /**
 	 * Set the covariances
@@ -177,7 +178,7 @@ public:
 	 * Precisions will be updated lazily on next
 	 * call to GetPrecisions
 	 */
-    void SetCovariance(const NEWMAT::SymmetricMatrix& from);
+    void SetCovariance(const NEWMAT::SymmetricMatrix &from);
 
     /**
 	 * Load from matrix file
@@ -198,12 +199,12 @@ public:
 	 *
 	 * @param filename VEST or ASCII matrix file
 	 */
-    void LoadFromMatrix(const std::string& filename);
+    void LoadFromMatrix(const std::string &filename);
 
     /**
 	 * Dump info to output ostream
 	 */
-    void Dump(std::ostream& os) const;
+    void Dump(std::ostream &os) const;
 
 private:
     int m_size; // should only be changed explicitly
@@ -216,7 +217,7 @@ private:
     mutable bool covarianceValid;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const MVNDist& dist)
+inline std::ostream &operator<<(std::ostream &out, const MVNDist &dist)
 {
     dist.Dump(out);
     return out;

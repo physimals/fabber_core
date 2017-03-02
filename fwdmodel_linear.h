@@ -25,19 +25,20 @@
  * a timeseries for a single parameter. The number of rows must
  * therefore equal the number of timeseries samples.
  */
-class LinearFwdModel : public FwdModel {
+class LinearFwdModel : public FwdModel
+{
 public:
-    static FwdModel* NewInstance();
+    static FwdModel *NewInstance();
 
-    virtual void GetOptions(std::vector<OptionSpec>& opts) const;
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const;
     virtual std::string GetDescription() const;
     virtual std::string ModelVersion() const;
 
-    virtual void Initialize(FabberRunData& args);
+    virtual void Initialize(FabberRunData &args);
     virtual int NumParams() const;
-    virtual void NameParams(std::vector<std::string>& names) const;
+    virtual void NameParams(std::vector<std::string> &names) const;
 
-    virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
+    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
 
     /**
 	 * Evaluate the model.
@@ -59,7 +60,7 @@ public:
 	 * @param result Result vector, R in above equation. Length equal to number of time samples
 	 *               i.e. number of rows in design matrix.
 	 */
-    virtual void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const;
 
     /**
 	 * @return the Jacobian, or design matrix
@@ -86,7 +87,7 @@ public:
     }
 
 protected:
-    NEWMAT::Matrix jacobian; // J (tranposed?)
+    NEWMAT::Matrix jacobian;     // J (tranposed?)
     NEWMAT::ColumnVector centre; // m
     NEWMAT::ColumnVector offset; // g(m)
     // The amount to effectively subtract from Y is g(m)-J*m
@@ -95,7 +96,8 @@ protected:
 /**
  * Linearized wrapper interface to another nonlinear forward model
  */
-class LinearizedFwdModel : public LinearFwdModel {
+class LinearizedFwdModel : public LinearFwdModel
+{
 public:
     /**
 	 * Create a linear approximation to another (nonlinear) forward model
@@ -106,7 +108,7 @@ public:
 	 * the linear approximation which is correct at the given
 	 * centre.
 	 */
-    explicit LinearizedFwdModel(const FwdModel* model)
+    explicit LinearizedFwdModel(const FwdModel *model)
         : fcn(model)
     {
     }
@@ -117,7 +119,7 @@ public:
 	 * NOTE: This is a reference, not a pointer... and it *copies* the
 	 * given LinearizedFwdModel, rather than using it as its nonlinear model!
 	 * */
-    LinearizedFwdModel(const LinearizedFwdModel& from)
+    LinearizedFwdModel(const LinearizedFwdModel &from)
         : LinearFwdModel(from)
         , fcn(from.fcn)
     {
@@ -141,20 +143,20 @@ public:
 	 * implemented by numerical differentiation about the
 	 * new centre
 	 */
-    void ReCentre(const NEWMAT::ColumnVector& about);
+    void ReCentre(const NEWMAT::ColumnVector &about);
 
     /**
 	 * Pass on request for initial parameter distributions to the
 	 * underlying model
 	 */
-    virtual void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
+    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
     {
         assert(fcn);
         fcn->HardcodedInitialDists(prior, posterior);
     }
 
-    virtual void DumpParameters(const NEWMAT::ColumnVector& vec, const std::string& indent = "") const;
-    virtual void NameParams(std::vector<std::string>& names) const
+    virtual void DumpParameters(const NEWMAT::ColumnVector &vec, const std::string &indent = "") const;
+    virtual void NameParams(std::vector<std::string> &names) const
     {
         assert(fcn);
         fcn->NameParams(names);
@@ -168,5 +170,5 @@ public:
     }
 
 private:
-    const FwdModel* fcn;
+    const FwdModel *fcn;
 };

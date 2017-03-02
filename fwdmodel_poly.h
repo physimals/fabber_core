@@ -24,24 +24,25 @@
  * Note that this class is mostly for testing purposes and is not
  * designed to be overriden.
  */
-class PolynomialFwdModel : public FwdModel {
+class PolynomialFwdModel : public FwdModel
+{
 public:
-    static FwdModel* NewInstance();
+    static FwdModel *NewInstance();
 
     PolynomialFwdModel()
         : m_degree(0)
     {
     }
-    void GetOptions(std::vector<OptionSpec>& opts) const;
+    void GetOptions(std::vector<OptionSpec> &opts) const;
     std::string GetDescription() const;
     std::string ModelVersion() const;
 
-    void Initialize(FabberRunData& args);
+    void Initialize(FabberRunData &args);
     int NumParams() const;
-    void NameParams(std::vector<std::string>& names) const;
+    void NameParams(std::vector<std::string> &names) const;
 
-    void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-    void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
+    void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
+    void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const;
 
 private:
     int m_degree;

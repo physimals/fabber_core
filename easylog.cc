@@ -35,7 +35,9 @@ static bool is_dir(string path)
 #endif
     {
         return (s.st_mode & S_IFDIR);
-    } else {
+    }
+    else
+    {
         // Does not exist, so not a directory...
         return false;
     }
@@ -51,13 +53,14 @@ EasyLog::~EasyLog()
 {
 }
 
-void EasyLog::StartLog(const string& outDir)
+void EasyLog::StartLog(const string &outDir)
 {
     assert(stream == NULL);
     assert(outDir != "");
 
     stream = new ofstream((outDir + "/logfile").c_str());
-    if (!stream->good()) {
+    if (!stream->good())
+    {
         delete stream;
         stream = NULL;
         cerr << "Cannot open logfile in " << outDir << endl;
@@ -68,7 +71,7 @@ void EasyLog::StartLog(const string& outDir)
     *stream << templog.str() << flush;
 }
 
-void EasyLog::StartLog(ostream& s)
+void EasyLog::StartLog(ostream &s)
 {
     assert(stream == NULL);
     stream = &s;
@@ -82,8 +85,10 @@ void EasyLog::StopLog(bool gzip)
 {
     assert(stream != NULL);
 
-    if (outDir != "") {
-        if (gzip) {
+    if (outDir != "")
+    {
+        if (gzip)
+        {
 #ifdef _WIN32
             LogStream() << "EasyLog::GZIP logfile not supported under Windows" << std::endl;
 #else
@@ -107,27 +112,30 @@ bool EasyLog::LogStarted()
     return stream != NULL;
 }
 
-const string& EasyLog::GetOutputDirectory()
+const string &EasyLog::GetOutputDirectory()
 {
     return outDir;
 }
 
-std::ostream& EasyLog::LogStream()
+std::ostream &EasyLog::LogStream()
 {
-    if (stream == NULL) {
+    if (stream == NULL)
+    {
         return templog;
-    } else {
+    }
+    else
+    {
         return *stream;
     }
 }
 
-void EasyLog::WarnOnce(const string& text)
+void EasyLog::WarnOnce(const string &text)
 {
     if (++warnCount[text] == 1)
         LogStream() << "WARNING ONCE: " << text << std::endl;
 }
 
-void EasyLog::WarnAlways(const string& text)
+void EasyLog::WarnAlways(const string &text)
 {
     ++warnCount[text];
     LogStream() << "WARNING ALWAYS: " << text << std::endl;

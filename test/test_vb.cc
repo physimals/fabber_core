@@ -6,21 +6,23 @@
 
 #include "gtest/gtest.h"
 
+#include "easylog.h"
 #include "inference.h"
 #include "inference_vb.h"
-#include "easylog.h"
 #include "rundata_newimage.h"
 #include "setup.h"
 
-namespace {
-
+namespace
+{
 // Hack to allow us to get at private/protected members
-class PublicVersion : public VariationalBayesInferenceTechnique {
+class PublicVersion : public VariationalBayesInferenceTechnique
+{
 public:
     using VariationalBayesInferenceTechnique::m_prior_types;
 };
 
-class VbTest : public ::testing::TestWithParam<string> {
+class VbTest : public ::testing::TestWithParam<string>
+{
 protected:
     VbTest()
         : rundata(NULL)
@@ -37,7 +39,7 @@ protected:
 
     virtual void SetUp()
     {
-        vb = reinterpret_cast<PublicVersion*>(static_cast<VariationalBayesInferenceTechnique*>(InferenceTechnique::NewFromName(
+        vb = reinterpret_cast<PublicVersion *>(static_cast<VariationalBayesInferenceTechnique *>(InferenceTechnique::NewFromName(
             "vb")));
         model = FwdModel::NewFromName("poly");
         rundata = new FabberRunDataNewimage();
@@ -62,9 +64,9 @@ protected:
 
     EasyLog log;
     NEWMAT::Matrix voxelCoords;
-    FabberRunData* rundata;
-    FwdModel* model;
-    PublicVersion* vb;
+    FabberRunData *rundata;
+    FwdModel *model;
+    PublicVersion *vb;
 };
 
 // Test multiple image priors. Note that this just
@@ -83,13 +85,17 @@ TEST_P(VbTest, ImagePriorsMultiple)
     iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -143,13 +149,17 @@ TEST_P(VbTest, ImagePriors)
     iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -180,7 +190,8 @@ TEST_P(VbTest, ImagePriors)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
         ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
     }
@@ -199,13 +210,17 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
     iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -238,7 +253,8 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // We do not expect the parameter to be 'right' because
         // we specified an image prior with high precision
         ASSERT_NE(mean(1, i + 1), VAL * 2);
@@ -260,13 +276,17 @@ TEST_P(VbTest, ImagePriorsPrecLow)
     iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -299,7 +319,8 @@ TEST_P(VbTest, ImagePriorsPrecLow)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // We expect the parameter to be about 'right' because
         // we specified an image prior with low precision
         ASSERT_NEAR(mean(1, i + 1), VAL * 2, 0.1);
@@ -322,13 +343,17 @@ TEST_P(VbTest, ImagePriorsFile)
     iprior_data.ReSize(1, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     if (n % 2 == 0)
                         data(n + 1, v) = VAL;
                     else
@@ -368,7 +393,8 @@ TEST_P(VbTest, ImagePriorsFile)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
         ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
     }
@@ -392,13 +418,17 @@ TEST_F(VbTest, Restart)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
                 }
                 v++;
@@ -429,7 +459,8 @@ TEST_F(VbTest, Restart)
 
     // Save results and repeat. Should converge even though we
     // only do 1 iteration each time.
-    for (int repeat = 0; repeat < REPEATS; repeat++) {
+    for (int repeat = 0; repeat < REPEATS; repeat++)
+    {
         NEWMAT::Matrix mvns = rundata->GetVoxelData("finalMVN");
         //ASSERT_EQ(mvns.Nrows(), 7);
         // This was just so you could see the convergence
@@ -458,20 +489,23 @@ TEST_F(VbTest, Restart)
 
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
     }
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
     }
 }
@@ -482,7 +516,6 @@ TEST_F(VbTest, RestartOutputOnly)
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
     float VAL = 7.32;
-    int REPEATS = 50;
     int DEGREE = 2;
 
     // Create coordinates and data matrices
@@ -491,13 +524,17 @@ TEST_F(VbTest, RestartOutputOnly)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
                 }
                 v++;
@@ -537,20 +574,23 @@ TEST_F(VbTest, RestartOutputOnly)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_NEAR(VAL, mean(1, i + 1), 0.0001);
     }
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_NEAR(1, mean(1, i + 1) + 1, 0.0001);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_NEAR(VAL * 1.5, mean(1, i + 1), 0.0001);
     }
 
@@ -576,13 +616,17 @@ TEST_F(VbTest, RestartFromFile)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
                 }
                 v++;
@@ -613,7 +657,8 @@ TEST_F(VbTest, RestartFromFile)
 
     // Save results and repeat. Should converge even though we
     // only do 1 iteration each time.
-    for (int repeat = 0; repeat < REPEATS; repeat++) {
+    for (int repeat = 0; repeat < REPEATS; repeat++)
+    {
         NEWMAT::Matrix mvns = rundata->GetVoxelData("finalMVN");
         NEWIMAGE::volume4D<float> data_out(VSIZE, VSIZE, VSIZE, mvns.Nrows());
         data_out.setmatrix(mvns);
@@ -648,20 +693,23 @@ TEST_F(VbTest, RestartFromFile)
     mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
     }
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
     }
 }
@@ -682,13 +730,17 @@ TEST_P(VbTest, ArNoise)
     data.ReSize(NTIMES, n_voxels);
     voxelCoords.ReSize(3, n_voxels);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 100;
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
@@ -711,14 +763,16 @@ TEST_P(VbTest, ArNoise)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(VAL, mean(1, i + 1), 0.2);
     }
 
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         EXPECT_NEAR(0, mean(1, i + 1), 0.2);
     }
@@ -726,14 +780,16 @@ TEST_P(VbTest, ArNoise)
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(VAL * 1.5, mean(1, i + 1), 0.2);
     }
 
     mean = rundata->GetVoxelData("mean_c3");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(-VAL * 2, mean(1, i + 1), 0.2);
     }
 }
@@ -753,13 +809,17 @@ TEST_P(VbTest, WhiteNoise)
     data.ReSize(NTIMES, n_voxels);
     voxelCoords.ReSize(3, n_voxels);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 100;
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
@@ -782,14 +842,16 @@ TEST_P(VbTest, WhiteNoise)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(VAL, mean(1, i + 1), 0.2);
     }
 
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         EXPECT_NEAR(0, mean(1, i + 1), 0.2);
     }
@@ -797,14 +859,16 @@ TEST_P(VbTest, WhiteNoise)
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(VAL * 1.5, mean(1, i + 1), 0.2);
     }
 
     mean = rundata->GetVoxelData("mean_c3");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++) {
+    for (int i = 0; i < n_voxels; i++)
+    {
         EXPECT_NEAR(-VAL * 2, mean(1, i + 1), 0.2);
     }
 }
@@ -826,13 +890,17 @@ TEST_F(VbTest, MotionCorNull)
     data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
     voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
     int v = 1;
-    for (int z = 0; z < VSIZE; z++) {
-        for (int y = 0; y < VSIZE; y++) {
-            for (int x = 0; x < VSIZE; x++) {
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
                 voxelCoords(1, v) = x;
                 voxelCoords(2, v) = y;
                 voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++) {
+                for (int n = 0; n < NTIMES; n++)
+                {
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1);
                 }
                 v++;
@@ -854,20 +922,23 @@ TEST_F(VbTest, MotionCorNull)
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL, mean(1, i + 1));
     }
     mean = rundata->GetVoxelData("mean_c1");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         // GTEST has difficulty with comparing floats to 0
         ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++) {
+    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
+    {
         ASSERT_FLOAT_EQ(VAL * 1.5, mean(1, i + 1));
     }
 }

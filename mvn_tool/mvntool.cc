@@ -17,11 +17,12 @@
 using namespace std;
 
 /* Function declarations */
-void Usage(const string& errorString = "");
+void Usage(const string &errorString = "");
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    try {
+    try
+    {
         EasyLog log;
         log.StartLog(cout);
         cout << "FABBER: MVNtool" << endl;
@@ -34,7 +35,8 @@ int main(int argc, char** argv)
         // data, set the 'data' option to match
         args.Set("data", args.GetString("input"));
 
-        if ((argc == 1) || args.ReadBool("help")) {
+        if ((argc == 1) || args.ReadBool("help"))
+        {
             Usage();
             return 0;
         }
@@ -66,17 +68,20 @@ int main(int argc, char** argv)
         bool bvar = false;
         bool cvar = false;
         /* Choose what we want to do to/with the parameter - default is to read */
-        ins = args.ReadBool("new"); //insert a new parameter
+        ins = args.ReadBool("new");     //insert a new parameter
         write = args.ReadBool("write"); //overwrite an existing parameter
 
         // determine which parameter we are reading/writing etc
         string plistfile = args.ReadWithDefault("param-list", "");
-        if (plistfile == "") { //use must have specified a parameter number
+        if (plistfile == "")
+        { //use must have specified a parameter number
             param = convertTo<int>(args.Read("param"));
 
             //deal with --cvar option
             cparam = convertTo<int>(args.ReadWithDefault("cvar", "0"));
-        } else {
+        }
+        else
+        {
             string paramname = args.Read("param");
             // read in parameter names
             ifstream paramFile((plistfile).c_str());
@@ -85,7 +90,8 @@ int main(int argc, char** argv)
             //NOTE covariance parameter not setup for parameter lists
 
             string currparam;
-            while (paramFile.good()) {
+            while (paramFile.good())
+            {
                 getline(paramFile, currparam);
                 paramNames.push_back(currparam);
             }
@@ -93,36 +99,42 @@ int main(int argc, char** argv)
 
             //user will have specified a parameter name in the list
             string nplistfile = args.ReadWithDefault("new-param-list", "");
-            if (nplistfile == "") { //simply deal with the parameter list
-                for (unsigned int i = 0; i < paramNames.size(); i++) {
+            if (nplistfile == "")
+            { //simply deal with the parameter list
+                for (unsigned int i = 0; i < paramNames.size(); i++)
+                {
                     if (paramname.compare(paramNames[i]) == 0)
                         param = i + 1;
                 }
                 if (param == 0)
                     throw Exception("Cannot find specfied parameter name in list");
-
-            } else { //deal with current and new parameter lists
+            }
+            else
+            { //deal with current and new parameter lists
                 // if we are here we must be inserting a new parameter
                 ins = true;
 
                 //load new parameter list
                 ifstream newparamFile((nplistfile).c_str());
                 vector<string> newparamNames;
-                while (newparamFile.good()) {
+                while (newparamFile.good())
+                {
                     getline(newparamFile, currparam);
                     newparamNames.push_back(currparam);
                 }
                 newparamNames.pop_back(); //remove final empty line assocaited with eof
 
                 // check parameter name is not in old list
-                for (unsigned int i = 0; i < paramNames.size(); i++) {
+                for (unsigned int i = 0; i < paramNames.size(); i++)
+                {
                     if (paramname.compare(paramNames[i]) == 0)
                         throw Exception(
                             "Parameter name found in parameter list for this MVN, cannot insert an identical parameter");
                 }
                 //find parameter in new list
                 int newparam = 0;
-                for (unsigned int i = 0; i < newparamNames.size(); i++) {
+                for (unsigned int i = 0; i < newparamNames.size(); i++)
+                {
                     if (paramname.compare(newparamNames[i]) == 0)
                         newparam = i + 1;
                 }
@@ -130,14 +142,18 @@ int main(int argc, char** argv)
                     throw Exception("Cannot find specfied parameter name in new parameter name list");
                 //cout << newparam<<endl;
 
-                if (newparam == 1) {
+                if (newparam == 1)
+                {
                     param = 1;
-                } else {
+                }
+                else
+                {
                     //get name of previous parameter in list
                     string preparamname = newparamNames[newparam - 1 - 1];
                     //cout << preparamname << endl;
                     // find this in the old list
-                    for (unsigned int i = 0; i < paramNames.size(); i++) {
+                    for (unsigned int i = 0; i < paramNames.size(); i++)
+                    {
                         if (preparamname.compare(paramNames[i]) == 0)
                             param = i + 1;
                     }
@@ -151,18 +167,22 @@ int main(int argc, char** argv)
 
                 //need to write out the updated parameter list
                 vector<string> outParams;
-                for (int i = 0; i < param - 1; i++) {
+                for (int i = 0; i < param - 1; i++)
+                {
                     outParams.push_back(paramNames[i]);
                 }
                 outParams.push_back(paramname);
-                for (unsigned int i = param - 1; i < paramNames.size(); i++) {
+                for (unsigned int i = param - 1; i < paramNames.size(); i++)
+                {
                     outParams.push_back(paramNames[i]);
                 }
 
                 string paramlistout = args.ReadWithDefault("out-param-file", "");
                 ofstream outparamFile((paramlistout).c_str());
-                if (paramlistout == "") {
-                    for (unsigned int i = 0; i < outParams.size(); i++) {
+                if (paramlistout == "")
+                {
+                    for (unsigned int i = 0; i < outParams.size(); i++)
+                    {
                         outparamFile << outParams[i] << endl;
                     }
                 }
@@ -170,8 +190,10 @@ int main(int argc, char** argv)
         }
 
         // Deal with --val and --var
-        if (ins | write) {
-            if (ins & write) {
+        if (ins | write)
+        {
+            if (ins & write)
+            {
                 throw FabberRunDataError("Cannot insert and write at same time - choose either --new or --write");
             }
 
@@ -180,7 +202,9 @@ int main(int argc, char** argv)
 
             val = convertTo<double>(args.ReadWithDefault("val", "-1e-6"));
             var = convertTo<double>(args.ReadWithDefault("var", "-1e-6"));
-        } else {
+        }
+        else
+        {
             if (outfile == infile)
                 throw MandatoryOptionMissing("output");
 
@@ -189,16 +213,20 @@ int main(int argc, char** argv)
             if (cparam > 0)
                 cvar = true;
 
-            if (bval && bvar) {
+            if (bval && bvar)
+            {
                 throw FabberRunDataError("Cannot output value and variance at same time - choose either --val or --val");
             }
-            if (bval && cvar) {
+            if (bval && cvar)
+            {
                 throw FabberRunDataError("Cannot output value and covariance at same time");
             }
-            if (bvar && cvar) {
+            if (bvar && cvar)
+            {
                 throw FabberRunDataError("Cannot output variance and covariance at same time");
             }
-            if (!bval && !bvar && !cvar) {
+            if (!bval && !bvar && !cvar)
+            {
                 throw FabberRunDataError(
                     "Please select whether you want to extract the value (--val) or the variance (--var) or a covaraince (--cvar)");
             }
@@ -206,39 +234,49 @@ int main(int argc, char** argv)
 
         if (verbose)
             cout << "Read file" << endl;
-        vector<MVNDist*> vmvnin;
+        vector<MVNDist *> vmvnin;
         MVNDist::Load(vmvnin, "input", args, &log);
 
-        if (ins | write) {
+        if (ins | write)
+        {
             /* section to deal with writing to or inserting into an MVN*/
 
             // deal with the values we are going to insert
             ColumnVector inmean(vmvnin.size());
             ColumnVector invar(vmvnin.size());
-            if (valimfile == "") {
+            if (valimfile == "")
+            {
                 inmean = val;
-            } else {
+            }
+            else
+            {
                 inmean = args.GetVoxelData("valim").AsColumn();
             }
-            if (varimfile == "") {
+            if (varimfile == "")
+            {
                 invar = var;
-            } else {
+            }
+            else
+            {
                 invar = args.GetVoxelData("varim").AsColumn();
             }
 
-            vector<MVNDist*> vmvnout(vmvnin);
+            vector<MVNDist *> vmvnout(vmvnin);
 
             int oldsize;
             MVNDist mvnin;
             mvnin = *vmvnin[1];
             oldsize = mvnin.GetSize();
 
-            if (ins) {
+            if (ins)
+            {
                 if (verbose)
                     cout << "Inserting new parameter" << endl;
                 if (param > oldsize + 1)
                     throw FabberRunDataError("Cannot insert parameter here, not enough parameters in existing MVN");
-            } else {
+            }
+            else
+            {
                 if (param > oldsize)
                     throw FabberRunDataError("Cannot edit this parameter, not enough parameters in existing MVN");
             }
@@ -251,28 +289,36 @@ int main(int argc, char** argv)
             MVNDist mvnout;
 
             /* Loop over each enrty in mvnin - each voxel! */
-            for (unsigned v = 0; v < vmvnin.size(); v++) {
+            for (unsigned v = 0; v < vmvnin.size(); v++)
+            {
                 mvnin = *vmvnin[v];
 
-                if (ins) { /* insert new parameter */
+                if (ins)
+                { /* insert new parameter */
                     //cout << "Add new parameter" << endl;
 
-                    if (param - 1 >= 1) {
+                    if (param - 1 >= 1)
+                    {
                         MVNDist mvn1(param - 1);
                         mvn1.CopyFromSubmatrix(mvnin, 1, param - 1, 0);
                         mvnout = MVNDist(mvn1, mvnnew);
-                    } else {
+                    }
+                    else
+                    {
                         mvnout = mvnnew;
                     }
 
-                    if (oldsize >= param) {
+                    if (oldsize >= param)
+                    {
                         MVNDist mvn2(oldsize + 1 - param);
                         mvn2.CopyFromSubmatrix(mvnin, param, oldsize, 0);
                         mvnout = MVNDist(mvnout, mvn2);
                     }
 
                     mvncov = mvnout.GetCovariance();
-                } else {
+                }
+                else
+                {
                     mvnout = mvnin;
                     mvncov = mvnin.GetCovariance();
                 }
@@ -292,28 +338,37 @@ int main(int argc, char** argv)
             MVNDist::Save(vmvnout, outfile, args);
         }
 
-        else {
+        else
+        {
             /* Section to deal with reading a parameter out to an image */
             int nVoxels = vmvnin.size();
             Matrix image;
             image.ReSize(1, nVoxels);
 
-            if (bval) {
+            if (bval)
+            {
                 if (verbose)
                     cout << "Extracting value for parameter:" << param << endl;
-                for (int vox = 1; vox <= nVoxels; vox++) {
+                for (int vox = 1; vox <= nVoxels; vox++)
+                {
                     image(1, vox) = vmvnin[vox - 1]->means(param);
                 }
-            } else if (bvar) {
+            }
+            else if (bvar)
+            {
                 if (verbose)
                     cout << "Extracting variance for parameter:" << param << endl;
-                for (int vox = 1; vox <= nVoxels; vox++) {
+                for (int vox = 1; vox <= nVoxels; vox++)
+                {
                     image(1, vox) = vmvnin[vox - 1]->GetCovariance()(param, param);
                 }
-            } else if (cvar) {
+            }
+            else if (cvar)
+            {
                 if (verbose)
                     cout << "Extracting co-variance for parameter " << param << "with parameter" << cparam << endl;
-                for (int vox = 1; vox <= nVoxels; vox++) {
+                for (int vox = 1; vox <= nVoxels; vox++)
+                {
                     image(1, vox) = vmvnin[vox - 1]->GetCovariance()(param, cparam);
                 }
             }
@@ -328,19 +383,25 @@ int main(int argc, char** argv)
             cout << "Done." << endl;
 
         return 0;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         cout << e.what() << endl;
         Usage();
-    } catch (NEWMAT::Exception& e) {
+    }
+    catch (NEWMAT::Exception &e)
+    {
         cout << e.what() << endl;
-    } catch (...) {
+    }
+    catch (...)
+    {
         cout << "There was an error!" << endl;
     }
 
     return 1;
 }
 
-void Usage(const string& errorString)
+void Usage(const string &errorString)
 {
     cout << "\nUsage: mvntool <arguments>\n"
          << "Arguments are mandatory unless they appear in [brackets].\n\n";

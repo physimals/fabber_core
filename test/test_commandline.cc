@@ -2,15 +2,16 @@
 // Tests fabber when run from the command line
 
 #include "easylog.h"
+#include "newimage/newimageall.h"
 #include "rundata.h"
 #include "setup.h"
-#include "newimage/newimageall.h"
 #include "gtest/gtest.h"
 
-namespace {
-
+namespace
+{
 // The fixture for testing class Foo.
-class ClTestTest : public ::testing::TestWithParam<string> {
+class ClTestTest : public ::testing::TestWithParam<string>
+{
 protected:
     ClTestTest()
     {
@@ -77,9 +78,12 @@ protected:
         //		Matrix m1 = d1.matrix();
         //		Matrix m2 = d2.matrix();
 
-        for (int x = 1; x <= d1.xsize(); x++) {
-            for (int y = 1; y <= d1.ysize(); y++) {
-                for (int z = 1; z <= d1.zsize(); z++) {
+        for (int x = 1; x <= d1.xsize(); x++)
+        {
+            for (int y = 1; y <= d1.ysize(); y++)
+            {
+                for (int z = 1; z <= d1.zsize(); z++)
+                {
                     ASSERT_FLOAT_EQ(d1(x, y, z), d2(x, y, z));
                 }
             }

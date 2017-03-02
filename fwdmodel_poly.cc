@@ -24,14 +24,15 @@ static OptionSpec OPTIONS[] = {
     { "degree", OPT_INT, "Maximum power in the polynomial function", OPT_REQ, "" }
 };
 
-FwdModel* PolynomialFwdModel::NewInstance()
+FwdModel *PolynomialFwdModel::NewInstance()
 {
     return new PolynomialFwdModel();
 }
 
-void PolynomialFwdModel::GetOptions(vector<OptionSpec>& opts) const
+void PolynomialFwdModel::GetOptions(vector<OptionSpec> &opts) const
 {
-    for (int i = 0; i < NUM_OPTIONS; i++) {
+    for (int i = 0; i < NUM_OPTIONS; i++)
+    {
         opts.push_back(OPTIONS[i]);
     }
 }
@@ -46,21 +47,23 @@ string PolynomialFwdModel::ModelVersion() const
     return fabber_release_version();
 }
 
-void PolynomialFwdModel::Initialize(FabberRunData& args)
+void PolynomialFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
     m_degree = convertTo<int>(args.GetString("degree"));
 }
 
-void PolynomialFwdModel::Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const
+void PolynomialFwdModel::Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
 {
     assert(params.Nrows() == m_degree + 1);
     result.ReSize(data.Nrows());
 
-    for (int i = 1; i <= data.Nrows(); i++) {
+    for (int i = 1; i <= data.Nrows(); i++)
+    {
         double res = 0;
         int p = 1;
-        for (int n = 0; n <= m_degree; n++) {
+        for (int n = 0; n <= m_degree; n++)
+        {
             res += params(n + 1) * p;
             p *= i;
         }
@@ -73,7 +76,7 @@ int PolynomialFwdModel::NumParams() const
     return m_degree + 1;
 }
 
-void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
+void PolynomialFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
 {
     // Have to implement this
     assert(prior.means.Nrows() == m_degree + 1);
@@ -82,10 +85,11 @@ void PolynomialFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterio
     posterior = prior;
 }
 
-void PolynomialFwdModel::NameParams(vector<string>& names) const
+void PolynomialFwdModel::NameParams(vector<string> &names) const
 {
     names.clear();
-    for (int i = 0; i <= m_degree; i++) {
+    for (int i = 0; i <= m_degree; i++)
+    {
         names.push_back((string) "c" + stringify(i));
     }
 }

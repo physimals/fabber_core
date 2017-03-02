@@ -1,7 +1,7 @@
 #include "version.h"
 
-#include <string>
 #include <sstream>
+#include <string>
 
 std::string fabber_release_version()
 {

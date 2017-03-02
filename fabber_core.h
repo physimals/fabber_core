@@ -16,4 +16,4 @@
  *
  * @return 0 if all went well, !=0 otherwise.
  */
-int execute(int argc, char** argv);
+int execute(int argc, char **argv);

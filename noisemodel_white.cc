@@ -22,7 +22,7 @@ using MISCMATHS::digamma;
 using namespace NEWMAT;
 using namespace std;
 
-NoiseModel* WhiteNoiseModel::NewInstance()
+NoiseModel *WhiteNoiseModel::NewInstance()
 {
     return new WhiteNoiseModel();
 }
@@ -33,20 +33,20 @@ WhiteParams::WhiteParams(int N)
 {
 }
 
-WhiteParams::WhiteParams(const WhiteParams& from)
+WhiteParams::WhiteParams(const WhiteParams &from)
     : nPhis(from.nPhis)
     , phis(from.phis)
 {
 }
 
-WhiteParams* WhiteParams::Clone() const
+WhiteParams *WhiteParams::Clone() const
 {
     return new WhiteParams(*this);
 }
 
-const WhiteParams& WhiteParams::operator=(const NoiseParams& in)
+const WhiteParams &WhiteParams::operator=(const NoiseParams &in)
 {
-    const WhiteParams& from = dynamic_cast<const WhiteParams&>(in);
+    const WhiteParams &from = dynamic_cast<const WhiteParams &>(in);
     assert(nPhis == from.nPhis);
     phis = from.phis;
     return *this;
@@ -58,7 +58,8 @@ const MVNDist WhiteParams::OutputAsMVN() const
     MVNDist mvn(phis.size());
     SymmetricMatrix vars(phis.size());
     vars = 0;
-    for (unsigned i = 1; i <= phis.size(); i++) {
+    for (unsigned i = 1; i <= phis.size(); i++)
+    {
         mvn.means(i) = phis[i - 1].CalcMean();
         vars(i, i) = phis[i - 1].CalcVariance();
     }
@@ -66,9 +67,10 @@ const MVNDist WhiteParams::OutputAsMVN() const
     return mvn;
 }
 
-void WhiteParams::InputFromMVN(const MVNDist& mvn)
+void WhiteParams::InputFromMVN(const MVNDist &mvn)
 {
-    for (unsigned i = 1; i <= phis.size(); i++) {
+    for (unsigned i = 1; i <= phis.size(); i++)
+    {
         phis[i - 1].SetMeanVariance(mvn.means(i), mvn.GetCovariance()(i, i));
         for (int j = i + 1; j <= mvn.means.Nrows(); j++)
             if (mvn.GetCovariance()(i, j) != 0.0)
@@ -76,16 +78,17 @@ void WhiteParams::InputFromMVN(const MVNDist& mvn)
     }
 }
 
-void WhiteParams::Dump(ostream& os) const
+void WhiteParams::Dump(ostream &os) const
 {
     assert((unsigned)nPhis == phis.size());
-    for (unsigned i = 0; i < phis.size(); i++) {
+    for (unsigned i = 0; i < phis.size(); i++)
+    {
         os << "WhiteNoiseModel::Phi_" << i + 1 << ": ";
         phis[i].Dump(os);
     }
 }
 
-void WhiteNoiseModel::Initialize(FabberRunData& args)
+void WhiteNoiseModel::Initialize(FabberRunData &args)
 {
     NoiseModel::Initialize(args);
 
@@ -118,15 +121,15 @@ int WhiteNoiseModel::NumParams()
     return Qis.size();
 }
 
-WhiteParams* WhiteNoiseModel::NewParams() const
+WhiteParams *WhiteNoiseModel::NewParams() const
 {
     return new WhiteParams(Qis.size());
 }
 
-void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& posteriorIn) const
+void WhiteNoiseModel::HardcodedInitialDists(NoiseParams &priorIn, NoiseParams &posteriorIn) const
 {
-    WhiteParams& prior = dynamic_cast<WhiteParams&>(priorIn);
-    WhiteParams& posterior = dynamic_cast<WhiteParams&>(posteriorIn);
+    WhiteParams &prior = dynamic_cast<WhiteParams &>(priorIn);
+    WhiteParams &posterior = dynamic_cast<WhiteParams &>(posteriorIn);
 
     int nPhis = Qis.size();
     assert(nPhis > 0);
@@ -135,8 +138,10 @@ void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& p
     assert(nPhis == prior.nPhis);
     assert(nPhis == posterior.nPhis);
 
-    for (int i = 1; i <= nPhis; i++) {
-        if (phiprior == -1) {
+    for (int i = 1; i <= nPhis; i++)
+    {
+        if (phiprior == -1)
+        {
             // use non-informative prior on phi
             posterior.phis[i - 1].b = prior.phis[i - 1].b = 1e6;
             posterior.phis[i - 1].c = prior.phis[i - 1].c = 1e-6;
@@ -144,11 +149,13 @@ void WhiteNoiseModel::HardcodedInitialDists(NoiseParams& priorIn, NoiseParams& p
             // Bit of black magic... tiny initial noise precision seems to help
             posterior.phis[i - 1].b = 1e-8;
             posterior.phis[i - 1].c = 50;
-        } else {
+        }
+        else
+        {
             // use input nosie std dev to determine the prior (and inital values) for phi
             // this is for the case where N is small, so it make sense to use a large(ish) c_prior
             // since C ~ N (data points) and we struggle to estimate noise when N is small.
-            posterior.phis[i - 1].c = prior.phis[i - 1].c = 0.5; //assumes that a given std deviation is equivelent to N=1 measurements
+            posterior.phis[i - 1].c = prior.phis[i - 1].c = 0.5;                                             //assumes that a given std deviation is equivelent to N=1 measurements
             posterior.phis[i - 1].b = prior.phis[i - 1].b = 1 / (phiprior * phiprior * prior.phis[i - 1].c); //NB phiprior is a std dev for the noise that is read in
         }
     }
@@ -168,7 +175,8 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
     vector<int> pat;
     int nPhis = 0;
 
-    for (int i = 1; i <= patternLen; i++) {
+    for (int i = 1; i <= patternLen; i++)
+    {
         char c = phiPattern[i - 1];
         int n;
         if (c >= '1' && c <= '9') // Index from 1, so 0 is not allowed
@@ -205,7 +213,8 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
     // and set the diagonal element in the Qi matrix
     // to 1. So each Qi matrix has elements to define
     // what samples it applies to
-    for (int d = 1; d <= dataLen; d++) {
+    for (int d = 1; d <= dataLen; d++)
+    {
         //    Qis[pat[d-1]-1](d,d) = 1;
         Qis.at(pat.at(d - 1) - 1)(d, d) = 1;
     }
@@ -220,13 +229,13 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
             throw FabberInternalError("At least one Phi was unused! This is probably a bad thing.");
 }
 
-void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePrior, const MVNDist& theta,
-    const LinearFwdModel& linear, const ColumnVector& data) const
+void WhiteNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+    const LinearFwdModel &linear, const ColumnVector &data) const
 {
-    WhiteParams& posterior = dynamic_cast<WhiteParams&>(noise);
-    const WhiteParams& prior = dynamic_cast<const WhiteParams&>(noisePrior);
+    WhiteParams &posterior = dynamic_cast<WhiteParams &>(noise);
+    const WhiteParams &prior = dynamic_cast<const WhiteParams &>(noisePrior);
 
-    const Matrix& J = linear.Jacobian();
+    const Matrix &J = linear.Jacobian();
     ColumnVector k = data - linear.Offset() + J * (linear.Centre() - theta.means);
 
     // Check there are the same number of Qis in this model and in the
@@ -237,10 +246,11 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePr
     assert(nPhis == prior.nPhis);
 
     // Update each phi distribution in turn
-    for (int i = 1; i <= nPhis; i++) {
+    for (int i = 1; i <= nPhis; i++)
+    {
         // Each Phi matrix is a diagonal matrix of same size size as the
         // number of time samples in the data
-        const DiagonalMatrix& Qi = Qis[i - 1];
+        const DiagonalMatrix &Qi = Qis[i - 1];
         double tmp = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
 
         posterior.phis[i - 1].b = 1 / (tmp * 0.5 + 1 / prior.phis[i - 1].b);
@@ -252,7 +262,8 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePr
 
         posterior.phis[i - 1].c = (nTimes - 1) * 0.5 + prior.phis[i - 1].c;
 
-        if (lockedNoiseStdev > 0) {
+        if (lockedNoiseStdev > 0)
+        {
             // Ignore this update and force phi to a specified value.
             // b*c = noise precision = lockedNoiseStdev^-2
             posterior.phis[i - 1].b = 1 / posterior.phis[i - 1].c / lockedNoiseStdev / lockedNoiseStdev;
@@ -260,14 +271,14 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams& noise, const NoiseParams& noisePr
     }
 }
 
-void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, const MVNDist& thetaPrior,
-    const LinearFwdModel& linear, const ColumnVector& data, MVNDist* thetaWithoutPrior, float LMalpha) const
+void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta, const MVNDist &thetaPrior,
+    const LinearFwdModel &linear, const ColumnVector &data, MVNDist *thetaWithoutPrior, float LMalpha) const
 {
-    const WhiteParams& noise = dynamic_cast<const WhiteParams&>(noiseIn);
+    const WhiteParams &noise = dynamic_cast<const WhiteParams &>(noiseIn);
 
-    const ColumnVector& ml = linear.Centre();
-    const ColumnVector& gml = linear.Offset();
-    const Matrix& J = linear.Jacobian();
+    const ColumnVector &ml = linear.Centre();
+    const ColumnVector &gml = linear.Offset();
+    const Matrix &J = linear.Jacobian();
 
     // Make sure Qis are up-to-date
     MakeQis(data.Nrows());
@@ -293,12 +304,14 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, co
 
     // Error checking
     LogAndSign chk = theta.GetPrecisions().LogDeterminant();
-    if (chk.Sign() <= 0) {
+    if (chk.Sign() <= 0)
+    {
         LOG << "WhiteNoiseModel:: In UpdateTheta, theta precisions aren't positive-definite: " << chk.Sign() << ", "
             << chk.LogValue() << endl;
     }
 
-    if (LMalpha > 0.0) {
+    if (LMalpha > 0.0)
+    {
         //we are in LM mode so use the appropriate update
         //LOG << LMalpha << endl;
         Matrix Delta;
@@ -314,12 +327,14 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, co
         // LM update
         //theta.means = (prec + LMalpha*precdiag).i()
         // * ( mTmp + thetaPrior.GetPrecisions() * thetaPrior.means );
-
-    } else { //normal update (NB the LM update resuces to this when alpha=0 strictly)
+    }
+    else
+    { //normal update (NB the LM update resuces to this when alpha=0 strictly)
         theta.means = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
     }
 
-    if (thetaWithoutPrior != NULL) {
+    if (thetaWithoutPrior != NULL)
+    {
         thetaWithoutPrior->SetSize(theta.GetSize());
 
         thetaWithoutPrior->SetPrecisions(Ltmp);
@@ -348,17 +363,17 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams& noiseIn, MVNDist& theta, co
     //LOG << "end:" << theta.means.t() << endl;
 }
 
-double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoiseParams& noisePriorIn,
-    const MVNDist& theta, const MVNDist& thetaPrior, const LinearFwdModel& linear, const ColumnVector& data) const
+double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoiseParams &noisePriorIn,
+    const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &linear, const ColumnVector &data) const
 {
     const int nPhis = Qis.size();
-    const WhiteParams& noise = dynamic_cast<const WhiteParams&>(noiseIn);
-    const WhiteParams& noisePrior = dynamic_cast<const WhiteParams&>(noisePriorIn);
+    const WhiteParams &noise = dynamic_cast<const WhiteParams &>(noiseIn);
+    const WhiteParams &noisePrior = dynamic_cast<const WhiteParams &>(noisePriorIn);
 
     // Calculate some matrices we will need
-    const Matrix& J = linear.Jacobian();
+    const Matrix &J = linear.Jacobian();
     ColumnVector k = data - linear.Offset() + J * (linear.Centre() - theta.means);
-    const SymmetricMatrix& Linv = theta.GetCovariance();
+    const SymmetricMatrix &Linv = theta.GetCovariance();
 
     // some values we will need
     int nTimes = data.Nrows(); //*NB assume that each row is an individual time point
@@ -371,12 +386,13 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoisePa
     double expectedLogThetaDist = //bits arising from the factorised posterior for theta
         +0.5 * theta.GetPrecisions().LogDeterminant().LogValue() - 0.5 * nTheta * (log(2 * M_PI) + 1);
 
-    double expectedLogPhiDist = 0; //bits arising fromt he factorised posterior for phi
+    double expectedLogPhiDist = 0;                //bits arising fromt he factorised posterior for phi
     vector<double> expectedLogPosteriorParts(10); //bits arising from the likelihood
     for (int i = 0; i < 10; i++)
         expectedLogPosteriorParts[i] = 0;
 
-    for (int i = 0; i < nPhis; i++) {
+    for (int i = 0; i < nPhis; i++)
+    {
         double si = noise.phis[i].b;
         double ci = noise.phis[i].c;
         double siPrior = noisePrior.phis[i].b;
@@ -412,7 +428,8 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams& noiseIn, const NoisePa
         F += expectedLogPosteriorParts[i];
 
     // Error checking
-    if (!(F - F == 0)) {
+    if (!(F - F == 0))
+    {
         LOG_ERR("WhiteNoiseModel::expectedLogThetaDist == " << expectedLogThetaDist << endl);
         LOG_ERR("eWhiteNoiseModel::xpectedLogPhiDist == " << expectedLogPhiDist << endl);
         //LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << endl);

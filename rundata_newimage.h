@@ -25,13 +25,14 @@
 /**
  * Run data which uses NEWIMAGE to load NIFTII files
  */
-class FabberRunDataNewimage : public FabberRunData {
+class FabberRunDataNewimage : public FabberRunData
+{
 public:
     FabberRunDataNewimage(bool compat_options = true);
 
     void SetExtentFromData();
-    const NEWMAT::Matrix& GetVoxelData(const std::string& key);
-    virtual void SaveVoxelData(const std::string& filename, NEWMAT::Matrix& data, VoxelDataType data_type = VDT_SCALAR);
+    const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
+    virtual void SaveVoxelData(const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
 private:
     void SetCoordsFromExtent(int nx, int ny, int nz);
