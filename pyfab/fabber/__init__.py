@@ -1,7 +1,7 @@
 import os
 import sys
 import warnings
-import datetime
+import datetime, time
 import collections
 import glob
 import subprocess as sub
@@ -223,7 +223,6 @@ class FabberRunData(Model, collections.MutableMapping):
         self._change()
         self._update_views()
 
-
 class FabberRun:
     """
     Base class for a completed Fabber run, either from the executable or from the library
@@ -238,14 +237,13 @@ class FabberRun:
                 if l.lower().startswith(prefix):
                     timestamp_str = l[len(prefix):].strip()
                     try:
-                        timestamp = datetime.datetime.strptime(timestamp_str, "%c")
+                        timestamp = time.strptime(timestamp_str)
                         return timestamp, timestamp_str
                     except:
                         warnings.warn("Failed to parse timestamp: '%s'" % timestamp_str)
 
         warnings.warn("Could not find timestamp in log")
         return datetime.datetime.now(), timestamp_str
-
 
 class LibRun(FabberRun):
     """
@@ -331,30 +329,51 @@ class DirectoryRun(FabberRun):
         except:
             warnings.warn("Failed to get parameters")
             return set()
+   
+class Fabber:
+    def __init__(self, ex=None, lib=None, model_libs=[], rundata=None, auto_load_models=False):
+        def_ex, def_lib, models = find_fabber()
 
+        if ex is not None:
+            self.ex = ex
+            
+        elif rundata is not None and "fabber" in rundata:
+            self.ex = rundata["fabber"]
+        else:
+            self.ex = def_ex
+        if not os.path.isfile(self.ex):
+            raise FabberException("Invalid executable - file not found: %s" % self.ex)
 
-class FabberExec:
+        if lib is not None:
+            self.lib = lib
+        elif rundata is not None and "fabber_lib" in rundata:
+            self.lib = rundata["fabber_lib"]
+        else:
+            self.lib = def_lib
+        if not os.path.isfile(self.lib):
+            raise FabberException("Invalid core library - file not found: %s" % self.lib)
+
+        self.model_libs = set(model_libs)
+        if rundata is not None and "loadmodels" in rundata:
+            self.model_libs.add(rundata["loadmodels"])
+        for lib in self.model_libs:
+            if not os.path.isfile(lib):
+                raise FabberException("Invalid models library - file not found: %s" % lib)
+ 
+        if auto_load_models:
+            for model in models:
+                self.model_libs.add(model)
+
+class FabberExec(Fabber):
     """
     Encapsulates a Fabber executable
 
     Provides methods to query models and options and also run a file
     """
 
-    def __init__(self, ex=None, models_lib=None, rundata=None):
-        if ex is not None:
-            self.ex = ex
-        elif rundata is not None and "fabber" in rundata:
-            self.ex = rundata["fabber"]
-        else:
-            self.ex = find_fabber()[0]
-
-        if not os.path.isfile(self.ex):
-            raise FabberException("Invalid executable: %s" % self.ex)
-
-        self.models_lib = models_lib
-        if self.models_lib is not None and not os.path.isfile(self.models_lib):
-            raise FabberException("Invalid models library: %s" % self.models_lib)
-
+    def __init__(self, ex=None, model_libs=[], rundata=None, auto_load_models=False):
+        Fabber.__init__(self, ex=ex, model_libs=model_libs, rundata=rundata, auto_load_models=auto_load_models)
+            
     def get_methods(self):
         """ Get known inference methods """
         stdout = self._run_help("--listmethods")
@@ -418,6 +437,8 @@ class FabberExec:
         rundata.save()
         workdir = rundata.get_filedir()
         cmd = [self.ex, "-f", rundata.filepath]
+        for lib in self.model_libs:
+            cmd += " --loadmodels=%s" % lib
         err = ""
         p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE, cwd=workdir)
         while 1:
@@ -486,8 +507,8 @@ class FabberExec:
 	    the location of the executable first
 	    """
         cmd = [self.ex] + list(opts)
-        if self.models_lib is not None:
-            cmd += " --loadmodels=%s" % self.models_lib
+        for lib in self.model_libs:
+            cmd += " --loadmodels=%s" % lib
 
         try:
             p = sub.Popen(cmd, stdout=sub.PIPE)
@@ -501,37 +522,27 @@ class FabberExec:
             raise FabberException("Failed to run fabber: " + str(e))
 
 
-class FabberLib:
+class FabberLib(Fabber):
     """
     Interface to Fabber in library mode using simplified C-API
     """
 
-    def __init__(self, fabber_lib=None, models_lib=None, rundata=None):
-        self.fabber_lib = fabber_lib
-        if self.fabber_lib is None:
-            if rundata is not None and "fabber" in rundata:
-                self.fabber_lib = rundata["fabber"]
-            else:
-                self.fabber_lib = find_fabber()[1]
-
-        self.models_lib = models_lib
-        if self.models_lib is None and rundata is not None and "loadmodels" in rundata:
-            self.models_lib = rundata["loadmodels"]
+    def __init__(self, lib=None, model_libs=[], rundata=None, auto_load_models=False):
+        Fabber.__init__(self, lib=lib, model_libs=model_libs, rundata=rundata, auto_load_models=auto_load_models)
 
         self.errbuf = create_string_buffer(255)
         self.outbuf = create_string_buffer(10000)
         self.progress_cb_type = CFUNCTYPE(None, c_int, c_int)
-
-        self._refresh()
+        self._init_clib()
 
     def get_methods(self):
         """ Get known inference methods"""
-        self._trycall(self.lib.fabber_get_methods, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        self._trycall(self.clib.fabber_get_methods, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         return self.outbuf.value.splitlines()
 
     def get_models(self):
         """ Get known models"""
-        self._trycall(self.lib.fabber_get_models, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        self._trycall(self.clib.fabber_get_models, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         return self.outbuf.value.splitlines()
 
     def get_options(self, method=None, model=None):
@@ -556,7 +567,7 @@ class FabberLib:
         else:
             key = None
             value = None
-        self._trycall(self.lib.fabber_get_options, self.handle, key, value, len(self.outbuf), self.outbuf, self.errbuf)
+        self._trycall(self.clib.fabber_get_options, self.handle, key, value, len(self.outbuf), self.outbuf, self.errbuf)
         opt_keys = ["name", "description", "type", "optional", "default"]
         opts = []
         lines = self.outbuf.value.split("\n")
@@ -570,12 +581,12 @@ class FabberLib:
     def get_model_params(self, rundata):
         """ Get the model parameters, given the specified options"""
         for key, value in rundata.items():
-            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
+            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
 
-        self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
 
         # Reset context because we have set options and don't want them affecting a later call to run()
-        self._refresh()
+        self._init_clib()
         return self.outbuf.value.splitlines()
 
     def run(self, rundata, progress_cb=None):
@@ -623,8 +634,8 @@ class FabberLib:
         mask = np.ascontiguousarray(mask.flatten(), dtype=np.int32)
 
         for key, value in rundata.items():
-            self._trycall(self.lib.fabber_set_opt, self.handle, key, value, self.errbuf)
-        self._trycall(self.lib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
+        self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         params = self.outbuf.value.splitlines()
 
         output_items = []
@@ -648,25 +659,25 @@ class FabberLib:
             output_items.append("finalMVN")
 
         retdata, log = {}, ""
-        self._trycall(self.lib.fabber_set_extent, self.handle, s[0], s[1], s[2], mask, self.errbuf)
+        self._trycall(self.clib.fabber_set_extent, self.handle, s[0], s[1], s[2], mask, self.errbuf)
         for key, item in data.items():
             if len(item.shape) == 3:
                 size = 1
             else:
                 size = item.shape[3]
             item = np.ascontiguousarray(item.flatten(), dtype=np.float32)
-            self._trycall(self.lib.fabber_set_data, self.handle, key, size, item, self.errbuf)
+            self._trycall(self.clib.fabber_set_data, self.handle, key, size, item, self.errbuf)
 
         progress_cb_func = self.progress_cb_type(0)
         if progress_cb is not None:
             progress_cb_func = self.progress_cb_type(progress_cb)
 
-        self._trycall(self.lib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf, progress_cb_func)
+        self._trycall(self.clib.fabber_dorun, self.handle, len(self.outbuf), self.outbuf, self.errbuf, progress_cb_func)
         log = self.outbuf.value
         for key in output_items:
-            size = self._trycall(self.lib.fabber_get_data_size, self.handle, key, self.errbuf)
+            size = self._trycall(self.clib.fabber_get_data_size, self.handle, key, self.errbuf)
             arr = np.ascontiguousarray(np.empty(nv * size, dtype=np.float32))
-            self._trycall(self.lib.fabber_get_data, self.handle, key, arr, self.errbuf)
+            self._trycall(self.clib.fabber_get_data, self.handle, key, arr, self.errbuf)
             if size > 1:
                 arr = arr.reshape([s[0], s[1], s[2], size])
             else:
@@ -682,45 +693,46 @@ class FabberLib:
         if hasattr(self, "handle"):
             handle = getattr(self, "handle")
             if handle is not None:
-                self.lib.fabber_destroy(handle)
+                self.clib.fabber_destroy(handle)
                 self.handle = None
 
-    def _refresh(self):
+    def _init_clib(self):
         """
         This is required because currently there is no CAPI function to clear the rundata
         of options
         """
         try:
             self._destroy_handle()
-            self.lib = CDLL(str(self.fabber_lib))
+            self.clib = CDLL(str(self.lib))
 
             # Signatures of the C functions
             c_int_arr = npct.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
             c_float_arr = npct.ndpointer(dtype=np.float32, ndim=1, flags='CONTIGUOUS')
 
-            self.lib.fabber_new.argtypes = [c_char_p]
-            self.lib.fabber_new.restype = c_void_p
-            self.lib.fabber_load_models.argtypes = [c_void_p, c_char_p, c_char_p]
-            self.lib.fabber_set_extent.argtypes = [c_void_p, c_int, c_int, c_int, c_int_arr, c_char_p]
-            self.lib.fabber_set_opt.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
-            self.lib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
-            self.lib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
-            self.lib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
-            self.lib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p, self.progress_cb_type]
-            self.lib.fabber_destroy.argtypes = [c_void_p]
+            self.clib.fabber_new.argtypes = [c_char_p]
+            self.clib.fabber_new.restype = c_void_p
+            self.clib.fabber_load_models.argtypes = [c_void_p, c_char_p, c_char_p]
+            self.clib.fabber_set_extent.argtypes = [c_void_p, c_int, c_int, c_int, c_int_arr, c_char_p]
+            self.clib.fabber_set_opt.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
+            self.clib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
+            self.clib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
+            self.clib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
+            self.clib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p, self.progress_cb_type]
+            self.clib.fabber_destroy.argtypes = [c_void_p]
 
-            self.lib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
-            self.lib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
-            self.lib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+            self.clib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
+            self.clib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+            self.clib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
         except Exception, e:
             raise FabberException("Error initializing Fabber library: %s" % str(e))
 
-        self.handle = self.lib.fabber_new(self.errbuf)
+        self.handle = self.clib.fabber_new(self.errbuf)
         if self.handle is None:
             raise FabberException("Error creating fabber context (%s)" % self.errbuf.value)
 
-        if self.models_lib is not None:
-            self._trycall(self.lib.fabber_load_models, self.handle, self.models_lib, self.errbuf)
+        for lib in self.model_libs:
+            print(lib)
+            self._trycall(self.clib.fabber_load_models, self.handle, lib, self.errbuf)
 
     def _trycall(self, call, *args):
         ret = call(*args)
