@@ -85,12 +85,6 @@ int execute(int argc, char **argv)
         params->SetLogger(&log);
         params->Parse(argc, argv);
 
-        string load_models = params->GetStringDefault("loadmodels", "");
-        if (load_models != "")
-        {
-            FwdModel::LoadFromDynamicLibrary(load_models, &log);
-        }
-
         // Print usage information if no arguments given, or
         // if --help specified
         if (params->GetBool("help") || argc == 1)

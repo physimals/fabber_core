@@ -401,7 +401,14 @@ void FabberRunData::AddKeyEqualsValue(const string &exp, bool trim_comments)
         if (m_params.count(key) > 0)
             throw InvalidOptionValue(key, value, "Already has a value: " + m_params[key]);
 
-        m_params[key] = value;
+        if (key == "loadmodels")
+        {
+            FwdModel::LoadFromDynamicLibrary(value, m_log);
+        }
+        else
+        {
+            m_params[key] = value;
+        }
     }
     else
     {
