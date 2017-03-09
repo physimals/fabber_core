@@ -1,5 +1,6 @@
 import sys, os
 import traceback
+import re
 
 from PySide import QtCore, QtGui
 
@@ -15,7 +16,8 @@ class ModelMethodView(View):
         self.methods = None
         self.modelCombo.currentIndexChanged.connect(self.model_changed)
         self.methodCombo.currentIndexChanged.connect(self.method_changed)
-
+        self.auto_load_models = kwargs.get("auto_load_models", False)
+        
     def model_changed(self):
         self.rundata["model"] = self.modelCombo.currentText()
         
@@ -25,7 +27,7 @@ class ModelMethodView(View):
     def do_update(self):
         if self.rundata.changed("fabber", "loadmodels"):
             self.modelCombo.clear()
-            self.models = FabberLib(rundata=self.rundata).get_models()
+            self.models = FabberLib(rundata=self.rundata, auto_load_models=self.auto_load_models).get_models()
             for model in self.models:
                 self.modelCombo.addItem(model)
         
@@ -65,25 +67,27 @@ class OptionView(View):
         self.default = opt["default"]
         self.desc = opt["description"]
         self.dependents = []
-
-        if self.req:
-            self.label = get_label(opt["name"], size=10)
-        else:
-            self.label = QtGui.QCheckBox(opt["name"])
-            self.label.stateChanged.connect(self.state_changed)
-
-        self.widgets.append(self.label)
-        
+        self.desc_first = kwargs.get("desc_first", False)
+        self.label = get_label(opt["name"], size=10)
         self.desclabel = get_label(opt["description"], size=10)
+        self.desclabel.setToolTip("--%s" % self.key)
         self.desclabel.resize(400, self.desclabel.height())
-        #desclabel.setWordWrap(True)
+        self.desclabel.setWordWrap(True)
+        if self.req:
+            self.enable_cb = None
+        else:
+            self.enable_cb = QtGui.QCheckBox()
+            self.enable_cb.stateChanged.connect(self.state_changed)
+            self.widgets.append(self.enable_cb)
+        self.widgets.append(self.label)
         self.widgets.append(self.desclabel)
 
     def add_dependent(self, dep):
+        if not self.enable_cb: return
         self.dependents.append(dep)
-        checked = self.label.checkState() == QtCore.Qt.CheckState.Checked
+        checked = self.enable_cb.checkState() == QtCore.Qt.CheckState.Checked
         dep.set_visible(checked)
-        if not checked: dep.label.setChecked(False)
+        if not checked: dep.enable_cb.setChecked(False)
 
     def set_visible(self, visible=True, widgets=None):
         if widgets is None: widgets = self.widgets
@@ -91,14 +95,14 @@ class OptionView(View):
                 widget.setVisible(visible)
 
     def state_changed(self):
-        # Only called if label really is a checkbox!
-        checked = self.label.checkState() == QtCore.Qt.CheckState.Checked
+        # This function is only called if we have a checkbox
+        checked = self.enable_cb.checkState() == QtCore.Qt.CheckState.Checked
         self.set_enabled(checked)
-        self.label.setEnabled(True)
+        self.enable_cb.setEnabled(True)
         
         for dep in self.dependents:
             dep.set_visible(checked)
-            if not checked: dep.label.setChecked(False)
+            if not checked: dep.enable_cb.setChecked(False)
 
         if checked:
             self.changed()
@@ -111,16 +115,27 @@ class OptionView(View):
     def do_update(self):
         if not self.req:
             if not self.key in self.rundata:
-                self.label.setCheckState(QtCore.Qt.CheckState.Unchecked)
+                self.enable_cb.setCheckState(QtCore.Qt.CheckState.Unchecked)
             else:
-                self.label.setCheckState(QtCore.Qt.CheckState.Checked)
+                self.enable_cb.setCheckState(QtCore.Qt.CheckState.Checked)
 
-            self.set_enabled(self.label.checkState() == QtCore.Qt.CheckState.Checked)
-            self.label.setEnabled(True)
+            self.set_enabled(self.enable_cb.checkState() == QtCore.Qt.CheckState.Checked)
+            self.enable_cb.setEnabled(True)
        
     def add(self, grid, row):
-        grid.addWidget(self.label, row, 0)
-        grid.addWidget(self.desclabel, row, 2)
+        if self.desc_first:
+            label = self.desclabel
+        else:
+            label = self.label
+            grid.addWidget(self.desclabel, row, 2)
+
+        if self.req:
+            grid.addWidget(label, row, 0)
+        else:
+            hbox = QtGui.QHBoxLayout()
+            hbox.addWidget(self.enable_cb)
+            hbox.addWidget(label, row)
+            grid.addLayout(hbox, row, 0)
 
 class IntegerOptionView(OptionView):
     def __init__(self, opt, **kwargs):
@@ -337,6 +352,7 @@ class OptionsView(View):
         self.views = {}
         self.ignore_opts = set()
         self.btn.clicked.connect(self.show)
+        self.desc_first = kwargs.get("desc_first", False)
 
     def show(self):
         self.dialog.show()
@@ -370,7 +386,7 @@ class OptionsView(View):
                 for n in range(1, NUMBERED_OPTIONS_MAX+1):
                     newopt = dict(opt)
                     newopt["name"] = "%s%i%s" % (opt_base, n, opt_suffix)
-                    view = get_option_view(newopt)
+                    view = get_option_view(newopt, desc_first=self.desc_first)
                     view.mat_dialog = self.mat_dialog
                     if n > 1:
                         prev.add_dependent(view)
@@ -380,7 +396,7 @@ class OptionsView(View):
                     prev = view
                     row += 1
             else:
-                view = get_option_view(opt)
+                view = get_option_view(opt, desc_first=self.desc_first)
                 view.mat_dialog = self.mat_dialog
                 view.add(self.dialog.grid, row+startrow)
                 self.views[opt["name"]] = view
@@ -390,7 +406,7 @@ class OptionsView(View):
     def do_update(self):
         if self.rundata.changed("fabber"):
             self.clear()
-            self.opts, d = FabberLib(rundata=self.rundata).get_options()
+            self.opts, self.desc = FabberLib(rundata=self.rundata).get_options()
             self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
             if len(self.opts) == 0:
                 msgBox = QtGui.QMessageBox()
@@ -431,7 +447,8 @@ class ComponentOptionsView(OptionsView):
         self.type = otype
         self.text = text
         self.value = ""
-        
+        self.auto_load_models = kwargs.get("auto_load_models", False)
+
     def do_update(self):
         value = self.rundata.get(self.type,"")
         if self.rundata.changed("fabber") or self.value != value:
@@ -439,13 +456,35 @@ class ComponentOptionsView(OptionsView):
             self.clear()
             if self.value != "":
                 args = {self.type : self.value}
-                self.opts, self.desc = FabberLib(rundata=self.rundata).get_options(**args)
+                self.opts, self.desc = FabberLib(rundata=self.rundata, auto_load_models=self.auto_load_models).get_options(**args)
                 self.opts = [opt for opt in self.opts if opt["name"] not in self.ignore_opts]
                 self.title = "%s: %s" % (self.text, self.value)
                 self.create_views()
 
         for view in self.views.values():
             view.update(self.rundata)
+   
+class ModelOptionsView(ComponentOptionsView):
+    """
+    Options dialog for model
+    """
+    def __init__(self, **kwargs):
+        ComponentOptionsView.__init__(self, "model", "Forward Model", **kwargs)
+
+    def do_update(self):
+        ComponentOptionsView.do_update(self)
+        self.btn.setText("%s model options" % self.value.upper())
+
+class MethodOptionsView(ComponentOptionsView):
+    """
+    Options dialog for inference method
+    """
+    def __init__(self, **kwargs):
+        ComponentOptionsView.__init__(self, "method", "Inference Method", **kwargs)
+
+    def do_update(self):
+        ComponentOptionsView.do_update(self)
+        self.btn.setText("%s method options" % self.value.upper())
    
 class ChooseFileView(View):
     def __init__(self, opt, **kwargs):
@@ -473,20 +512,24 @@ class ChooseModelLib(View):
         ex, lib, model_libs = find_fabber()
         self.defaultDir = os.path.dirname(lib)
         for model_lib in model_libs:
-            self.combo.addItem(model_lib)
+            self.combo.addItem(self.model_name(model_lib), model_lib)
+        self.combo.addItem("<No additional models>", "")
         self.changeBtn.clicked.connect(self.choose_file)
         self.combo.currentIndexChanged.connect(self.lib_changed)
         self.combo.setCurrentIndex(-1)
 
-    def do_update(self):
-        if self.opt in self.rundata:
-            self.edit.setText(self.rundata[self.opt])
+    def model_name(self, model_lib):
+        match = re.match(".*fabber_models_(.+)\..+", model_lib, re.I)
+        if match:
+            return match.group(1);
+        else:
+            return model_lib
 
     def select_lib(self, lib):
-        if self.combo.findText(lib) < 0:
-            self.combo.addItem(lib)
-        if self.combo.currentText != lib:
-            self.combo.setCurrentIndex(self.combo.findText(lib))
+        if self.combo.findData(lib) < 0:
+            self.combo.addItem(self.model_name(lib), lib)
+        if self.combo.itemData(self.combo.currentIndex()) != lib:
+            self.combo.setCurrentIndex(self.combo.findData(lib))
 
     def choose_file(self):
         fname = QtGui.QFileDialog.getOpenFileName(None, "Choose model library", self.defaultDir)[0]
@@ -496,11 +539,15 @@ class ChooseModelLib(View):
 
     def lib_changed(self, idx):
         if idx >= 0:
-            self.rundata[self.opt] = self.combo.currentText()
+            lib = self.combo.itemData(self.combo.currentIndex())
+            if lib != "":
+                self.rundata[self.opt] = lib
+            else:
+                del self.rundata[self.opt]
+            self.combo.setToolTip(lib)
 
     def do_update(self):
-        if self.opt in self.rundata:
-            self.select_lib(self.rundata[self.opt])
+        self.select_lib(self.rundata.get(self.opt, ""))
 
 class FileView(View):
     def __init__(self, **kwargs):

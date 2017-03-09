@@ -731,7 +731,6 @@ class FabberLib(Fabber):
             raise FabberException("Error creating fabber context (%s)" % self.errbuf.value)
 
         for lib in self.model_libs:
-            print(lib)
             self._trycall(self.clib.fabber_load_models, self.handle, lib, self.errbuf)
 
     def _trycall(self, call, *args):
