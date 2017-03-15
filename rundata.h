@@ -249,6 +249,12 @@ public:
     void SetBool(const std::string &key, bool value = true);
 
     /**
+     * Return true if the specified key has been set to some value
+     * (possibly empty)
+     */
+    bool HaveKey(const std::string &key);
+
+    /**
 	 * Get string option.
 	 *
 	 * @param key Name of the string option
