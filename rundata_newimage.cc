@@ -68,6 +68,7 @@ void FabberRunDataNewimage::SetExtentFromData()
     {
         // Make sure the coords are loaded from the main data even if we don't
         // have a mask, and that the reference volume is initialized
+        LOG << "FabberRunDataNewimage::No mask, using data for extent" << endl;
         string data_fname = GetStringDefault("data", GetStringDefault("data1", ""));
         volume<float> main_vol;
         read_volume(main_vol, data_fname);
