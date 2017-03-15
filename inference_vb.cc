@@ -28,11 +28,10 @@ PriorType::PriorType()
 {
 }
 
-PriorType::PriorType(int idx, string param_name, FabberRunData &data)
-    : m_param_name(param_name)
+PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
+    : m_param_name(param_names[idx])
     , m_idx(idx)
     , m_prec(-1)
-    , m_type('-')
 {
     // Complexity below is due to there being two ways of specifying
     // priors. One is using the param-spatial-priors option which is
@@ -40,21 +39,23 @@ PriorType::PriorType(int idx, string param_name, FabberRunData &data)
     // parameter. A + character means 'use the previous value for all
     // remaining parameters'. An 'I' means an image prior and
     // the filename is specified separately
-    string types = data.GetStringDefault("param-spatial-priors", "");
+    string types = GetTypesString(data, param_names.size());
+    m_type = data.GetStringDefault("default-prior-type", "-")[0];
     char current_type = '-';
-    for (int i = 0; i < types.size(); i++)
+    for (size_t i = 0; i < types.size(); i++)
     {
-        if (types[i] == '+')
+        if (i == idx)
         {
-            m_type = current_type;
-        }
-        else if (i == idx)
-        {
-            m_type = types[i];
+            if (types[i] == '+')
+                m_type = current_type;
+            else
+                m_type = types[i];
             break;
         }
-        else
+        else if (types[i] != '+')
+        {
             current_type = types[i];
+        }
     }
     // Record the data key (filename) for an image prior. Note that although this uses
     // the same parameter as below, the index is conceptually different - here
@@ -80,7 +81,7 @@ PriorType::PriorType(int idx, string param_name, FabberRunData &data)
         if (name == "stop!")
             break;
 
-        if (name == param_name)
+        if (name == param_names[idx])
         {
             m_type = convertTo<char>(data.GetString("PSP_byname" + stringify(current) + "_type"));
             if (m_type == 'I')
@@ -96,6 +97,31 @@ PriorType::PriorType(int idx, string param_name, FabberRunData &data)
         //		LOG << "PriorType::Reading Image prior (" << m_param_name << "): " << m_filename << endl;
         m_image = data.GetVoxelData(m_filename).AsRow();
     }
+}
+
+string PriorType::GetTypesString(FabberRunData &rundata, int num_params)
+{
+    string priors_str = rundata.GetStringDefault("param-spatial-priors", "");
+    if (priors_str.size() > num_params)
+    {
+        // Have been given too many prior types
+        //WARN_ONCE("--param-spatial-priors=" + priors_str + ", but there are only " + stringify(m_num_params) + " parameters!\n");
+    }
+    if (priors_str.size() < num_params)
+    {
+        // Expand '+' char, if present, to give correct number of parameters
+        // If not, don't worry will just use default prior type for the missing
+        //cerr << "Expanding param-spatial-priors from " << priors_str << endl;
+        int deficit = num_params - priors_str.size();
+        size_t plus_pos = priors_str.find("+");
+        if (plus_pos != std::string::npos)
+        {
+            priors_str.insert(plus_pos, deficit, '+');
+        }
+        //cerr << "... to " << priors_str << endl;
+    }
+
+    return priors_str;
 }
 
 void PriorType::SetPrior(MVNDist *prior, int voxel)
@@ -126,23 +152,19 @@ static OptionSpec OPTIONS[] = {
     { "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
     { "continue-from-mvn", OPT_MVN, "Continue previous run from output MVN files", OPT_NONREQ, "" },
     { "output-only", OPT_BOOL,
-        "Skip entire model fitting step, simply output requested data based on supplied MVN. Can only be used with continue-from-mvn",
+        "Skip model fitting, just output requested data based on supplied MVN. Can only be used with continue-from-mvn",
         OPT_NONREQ, "" },
-    { "fwd-initial-prior", OPT_FILE,
-        "VEST or ASCII matrix file containing MVN of initial model prior. Important for spatial VB using D prior",
-        OPT_NONREQ, "" },
-    { "fwd-initial-posterior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial model posterior", OPT_NONREQ,
-        "" },
-    { "noise-initial-prior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial noise prior", OPT_NONREQ, "" },
-    { "noise-initial-posterior", OPT_FILE, "VEST or ASCII matrix file containing MVN of initial noise posterior",
-        OPT_NONREQ, "" },
+    { "fwd-initial-prior", OPT_MATRIX, "MVN of initial model prior. Important for spatial VB using D prior", OPT_NONREQ, "" },
+    { "fwd-initial-posterior", OPT_MATRIX, "MVN of initial model posterior", OPT_NONREQ, "" },
+    { "noise-initial-prior", OPT_MATRIX, "MVN of initial noise prior", OPT_NONREQ, "" },
+    { "noise-initial-posterior", OPT_MATRIX, "MVN of initial noise posterior", OPT_NONREQ, "" },
     { "noise-pattern", OPT_STR,
-        "repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different noise variances)",
+        "repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different variances)",
         OPT_NONREQ, "1" },
     { "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", OPT_NONREQ, "" },
-    { "PSP_byname<n>_type", OPT_STR, "Type of image prior to use fo parameter <n> - I=image prior",
+    { "PSP_byname<n>_type", OPT_STR, "Type of image prior to use for parameter <n> - I=image prior",
         OPT_NONREQ, "" },
-    { "PSP_byname<n>_image", OPT_IMAGE, "File containing image prior for parameter <n>", OPT_NONREQ, "" },
+    { "PSP_byname<n>_image", OPT_IMAGE, "Image prior for parameter <n>", OPT_NONREQ, "" },
     { "PSP_byname<n>_prec", OPT_FLOAT, "Precision to apply to image prior for parameter <n>", OPT_NONREQ, "" },
     { "locked-linear-from-mvn", OPT_MVN, "MVN file containing fixed centres for linearization", OPT_NONREQ,
         "" },
@@ -230,9 +252,6 @@ void VariationalBayesInferenceTechnique::MakeInitialDistributions(FabberRunData 
     InitializeNoiseFromParam(args, initialNoisePosterior, "noise-initial-posterior");
 }
 
-/**
- * There are two ways to specifiy prior types: Using
- */
 void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData &args)
 {
     vector<string> param_names;
@@ -241,7 +260,7 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData &args)
     m_prior_types.resize(0);
     for (int i = 0; i < m_num_params; i++)
     {
-        PriorType prior = PriorType(i, param_names[i], args);
+        PriorType prior = PriorType(i, param_names, args);
         LOG << prior;
         m_prior_types.push_back(prior);
     }
