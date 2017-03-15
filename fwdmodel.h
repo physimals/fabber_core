@@ -20,7 +20,7 @@
 class FwdModel : public Loggable
 {
 public:
-    static void LoadFromDynamicLibrary(std::string filename, EasyLog *log = 0);
+    static void LoadFromDynamicLibrary(const std::string &filename, EasyLog *log = 0);
 
     /**
 	 * Static member function to return the names of all known
