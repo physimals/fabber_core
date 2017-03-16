@@ -88,6 +88,12 @@ protected:
 	 */
     void SetupStSMatrix();
 
+    void UpdateAkmean(NEWMAT::DiagonalMatrix &akmean);
+    void UpdateDeltaRho(NEWMAT::DiagonalMatrix &delta, NEWMAT::DiagonalMatrix &rho,
+        const NEWMAT::DiagonalMatrix &akmean, bool first_iter);
+    void CalculateCinv(std::vector<NEWMAT::SymmetricMatrix> &Sinvs, NEWMAT::DiagonalMatrix &delta,
+        NEWMAT::DiagonalMatrix &rho, NEWMAT::DiagonalMatrix &akmean);
+
     // Per-voxel prior and posterior distributions. For Spatial VB we need to
     // keep these around during iteration as the influence the calculations on
     // neighbouring voxels

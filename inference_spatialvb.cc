@@ -90,7 +90,7 @@ static int GetSpatialDims(FabberRunData &args)
 static string GetPriorTypesStr(vector<PriorType> &priors)
 {
     string types;
-    for (int i = 0; i < priors.size(); i++)
+    for (size_t i = 0; i < priors.size(); i++)
     {
         types += priors[i].m_type;
     }
@@ -101,21 +101,12 @@ void SpatialVariationalBayes::Initialize(FwdModel *fwd_model,
     FabberRunData &args)
 {
     // In spatial VB we want to default to spatial priors so we set this parameter
-    // if not already set by the user. Note that we are doing this before
-    // initializing the VB method.
-    m_prior_types_str = args.GetStringDefault("param-spatial-priors", "S+");
-    if (m_prior_types_str == "S+")
-        args.Set("param-spatial-priors", "S+");
-
+    // if it's not already set by the user. Note that we are doing this before
+    // initializing the VB method so it acts as a default
+    args.Set("default-prior-type", "S");
     VariationalBayesInferenceTechnique::Initialize(fwd_model, args);
 
-    // Check that there are a reasonable number of spatial priors specified
     m_prior_types_str = GetPriorTypesStr(m_prior_types);
-    if ((int)m_prior_types_str.length() > m_num_params) // && !useShrinkageMethod)
-    {
-        WARN_ONCE("--param-spatial-priors=" + m_prior_types_str + ", but there are only " + stringify(m_num_params) + " parameters!\n");
-    }
-
     m_spatial_dims = GetSpatialDims(args);
     m_spatial_speed = args.GetDoubleDefault("spatial-speed", -1);
     assert(m_spatial_speed > 1 || m_spatial_speed == -1);
@@ -202,7 +193,7 @@ void SpatialVariationalBayes::Initialize(FwdModel *fwd_model,
         if (fixedDelta < 0)
             throw InvalidOptionValue(
                 "param-spatial-priors", "F",
-                "Must specify a fixed-delta value for this type of spatial prior");
+                "Must specify fixed-delta > 0 for this type of spatial prior");
     }
     else
     {
@@ -253,6 +244,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
         LOG << "SpatialVbInferenceTechnique::Continuing from file "
             << m_continueFromFile << endl;
         InitMVNFromFile(m_continueFromFile, allData, paramFilename);
+        LOG << "Loaded" << endl;
     }
 
     if (m_alsoSaveWithoutPrior)
@@ -262,8 +254,10 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
 
     for (int v = 1; v <= m_nvoxels; v++)
     {
+        LOG << "setting up v=" << v << " coords=" << m_coords->Column(v).t() << endl;
         if (m_continueFromFile != "")
         {
+            resultMVNs.at(v - 1)->Dump(LOG);
             fwdPosteriorVox[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
 
             assert(m_num_params + nNoiseParams == resultMVNs.at(v - 1)->GetSize());
@@ -284,6 +278,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
         }
         else
         {
+            LOG << fwdPosteriorVox[v - 1].means << endl;
             linearVox[v - 1].ReCentre(fwdPosteriorVox[v - 1].means);
         }
 
@@ -336,38 +331,425 @@ void SpatialVariationalBayes::SetupStSMatrix()
             }
         }
         LOG << "Done generating StS matrix (New method)" << endl;
-    } // end NEW METHOD tracer block
+    }
+}
 
-    /* OLD METHOD
-     // Slow because connect*connect is O(N^3)
-     SymmetricMatrix connect =
-     IdentityMatrix(m_nvoxels) * 1e-6;
-     WARN_ONCE("Using 'S' prior with constant diagonal weight of " +
-   stringify(connect(1,1)));
-     for (int v = 1; v <= m_nvoxels; v++)
-     {
-     for (vector<int>::iterator nidIt = neighbours[v-1].begin();
-     nidIt != neighbours[v-1].end(); nidIt++)
-     {
-     int nid = *nidIt;
-     connect(v, nid) = -1;
-     connect(v,v) += 1;
-     }
-     }
+void SpatialVariationalBayes::UpdateAkmean(DiagonalMatrix &akmean)
+{
+    assert(akmean.Nrows() == m_num_params);
+    // Update spatial normalization term
 
-     Matrix sTmp = connect*connect;
-     assert(sTmp == sTmp.t());
-     // Skip this, since we're just doing a validation check: StS << sTmp;
+    const double tiny = 0; // turns out to be no longer necessary.
 
-     // VALIDATE THAT OLD == NEW
-     for (int i = 1; i <= m_nvoxels; i++)
-     for (int j = 1; j <= m_nvoxels; j++)
-     if (sTmp(i,j) != StS(i,j))
-     LOG << "Mismatch at " << i << "," << j << ": " << sTmp(i,j) << "," <<
-   StS(i,j) << endl;
+    // Collect gk, wk, sigmak across all voxels
+    DiagonalMatrix gk(m_num_params); // gk = 0.0/0.0;
+    for (int k = 1; k <= m_num_params; k++)
+    {
+        ColumnVector wk(m_nvoxels);       // wk = 0.0/0.0;
+        DiagonalMatrix sigmak(m_nvoxels); // sigmak=0.0/0.0;
+        for (int v = 1; v <= m_nvoxels; v++)
+        {
+            wk(v) = fwdPosteriorVox.at(v - 1).means(k);
+            sigmak(v, v) = fwdPosteriorVox.at(v - 1).GetCovariance()(k, k);
+        }
+        //    wk = wk(:);
+        //    tmp1 = trace(diag(sigmak)*S'*S)
 
-     assert(sTmp == StS);
-     // END OLD METHOD */
+        // LOG << "fwdPosteriorVox[0].GetCovariance():" <<
+        // fwdPosteriorVox[0].GetCovariance();
+
+        // Update from Penny05:
+        // 1/gk = 0.5*Trace[Sigmak*S'*S] + 0.5*wk'*S'*S*wk + 1/q1
+        // hk = N/2 + q2
+        // To do the MRF, just replace S'*S with S.
+
+        switch (m_shrinkage_type)
+        {
+        case 'Z':
+        {
+            assert(m_alsoSaveWithoutPrior);
+            assert(StS.Nrows() == m_nvoxels);
+
+            // Prior used by penny:
+            //		  double q1 = 10, q2 = 1;
+            // Noninformative prior:
+            double q1 = 1e12, q2 = 1e-12;
+
+            WARN_ONCE("Hyperpriors on S prior: using q1 == " + stringify(q1) + ", q2 == " + stringify(q2));
+
+            gk(k) = 1 / (0.5 * (sigmak * StS).Trace() + (wk.t() * StS * wk).AsScalar() + 1 / q1);
+
+            akmean(k) = gk(k) * (0.5 * m_nvoxels + q2);
+        }
+        // only output is akmean(k)
+        break;
+
+        case 'p':
+        case 'P':
+        case 'm':
+        case 'M':
+        case 'S':
+
+        {
+            // The following calculates Tr[Sigmak*S'*S]
+            // using the fact that this == sum(diag(sigmak) .* diag(S'*S))
+            // (since sigmak is diagonal!)
+
+            double tmp1 = 0.0;
+            for (int v = 1; v <= m_nvoxels; v++)
+            {
+                int nn = m_neighbours.at(v - 1).size();
+                if (m_shrinkage_type == 'm') // useMRF)
+                    tmp1 += sigmak(v, v) * m_spatial_dims * 2;
+                else if (m_shrinkage_type == 'M') // useMRF2)
+                    tmp1 += sigmak(v, v) * (nn + 1e-8);
+                else if (m_shrinkage_type == 'p')
+                    tmp1 += sigmak(v, v) * (4 * m_spatial_dims * m_spatial_dims + nn);
+                else if (m_shrinkage_type == 'S')
+                    tmp1 += sigmak(v, v) * ((nn + 1e-6) * (nn + 1e-6) + nn);
+                else // P
+                    tmp1 += sigmak(v, v) * ((nn + tiny) * (nn + tiny) + nn);
+            }
+
+            ColumnVector Swk = tiny * wk;
+
+            if (m_shrinkage_type == 'S')
+                Swk = 1e-6 * wk;
+
+            for (int v = 1; v <= m_nvoxels; v++)
+            {
+                for (vector<int>::iterator v2It = m_neighbours[v - 1].begin();
+                     v2It != m_neighbours.at(v - 1).end(); ++v2It)
+                {
+                    Swk(v) += wk(v) - wk(*v2It);
+                }
+                //		if (useDirichletBC || useMRF) // but not useMRF2
+                if (m_shrinkage_type == 'p' || m_shrinkage_type == 'm')
+                    Swk(v) += wk(v) * (m_spatial_dims * 2 - m_neighbours.at(v - 1).size());
+                // Do nothing for 'S'
+            }
+            double tmp2 = Swk.SumSquare(); //(Swk.t() * Swk).AsScalar();
+
+            //	    if (useMRF || useMRF2) // overwrite this for MRF
+            if (m_shrinkage_type == 'm' || m_shrinkage_type == 'M')
+                tmp2 = DotProduct(Swk, wk);
+
+            LOG << "k=" << k << ", tmp1=" << tmp1 << ", tmp2=" << tmp2 << endl;
+            // LOG << Swk.t();
+
+            //  gk(k) = 1/(0.5*tmp1 + 0.5*tmp2 + 1/10)
+            gk(k, k) = 1 / (0.5 * tmp1 + 0.5 * tmp2 + 0.1); // prior q1 == 10 (1/q1 == 0.1)
+            //  end
+
+            akmean(k) = gk(k) * (m_nvoxels * 0.5 + 1.0); // prior q2 == 1.0
+        }
+
+        break;
+
+        default:
+            assert(false);
+            break;
+        }
+    }
+
+    DiagonalMatrix akmeanMax = akmean * m_spatial_speed;
+
+    for (int k = 1; k <= akmean.Nrows(); k++)
+    {
+        if (akmean(k, k) < 1e-50)
+        {
+            LOG << "akmean(" << k << ") was " << akmean(k, k) << endl;
+            WARN_ONCE("akmean value was tiny!");
+            akmean(k, k) = 1e-50; // prevent crashes
+        }
+
+        if (akmeanMax(k) < 0.5)
+        {
+            akmeanMax(k) = 0.5; // totally the wrong scaling.. oh well
+        }
+
+        if (m_spatial_speed > 0 && akmean(k) > akmeanMax(k))
+        {
+            LOG << "Rate-limiting the increase on akmean " << k << ": was "
+                << akmean(k) << ", now " << akmeanMax(k) << endl;
+            akmean(k) = akmeanMax(k);
+        }
+    }
+
+    LOG_ERR("New akmean: " << akmean.AsColumn().t());
+}
+
+void SpatialVariationalBayes::UpdateDeltaRho(DiagonalMatrix &delta, DiagonalMatrix &rho, const DiagonalMatrix &akmean, bool first_iter)
+{
+    for (int k = 1; k <= m_num_params; k++)
+    {
+        // if(k<6){LOG_ERR("Skipping parameter "<<k<<endl);continue;}
+        LOG_ERR("Optimizing for parameter " << k << endl);
+
+        char type = m_prior_types[k - 1].m_type;
+
+        // Each type should issue exactly one line to the logfile of the form
+        // SpatialPrior on k type ? ?? : x y z
+        // ? = single-character type
+        // ?? = any other subtype info (optional, free-form but no : character)
+        // x, y, z = numerical parameters (e.g. delta, rho, 0)
+        switch (type)
+        {
+        case '-':
+        case 'N':
+        case 'I':
+        case 'A':
+            // Nonspatial priors
+            delta(k) = 0;
+            rho(k) = 0; // no shrinkage/scaling factor either
+            LOG_ERR("\nSpatialPrior " << k << " type " << type << " : 0 0 0\n");
+            break;
+
+        //	  case 'F':
+        //	    delta(k) = fixedDelta;
+        //	    rho(k) = fixedRho;
+        //	    break;
+
+        case 'm':
+        case 'M':
+        case 'p':
+        case 'P':
+        case 'S':
+
+            assert(type == m_shrinkage_type);
+            // fill with invalid values:
+            delta(k) = -3;
+            rho(k) = 1234.5678;
+            LOG_ERR("\nSpatialPrior " << k << " type " << type << " : "
+                                      << akmean(k) << " 0 0\n");
+
+            break;
+
+        default:
+            throw InvalidOptionValue("param-spatial-priors", stringify(type),
+                "Invalid spatial prior type");
+
+        case 'R':
+        case 'D':
+        case 'F':
+            // Reorganize data by parameter (rather than by voxel)
+            DiagonalMatrix covRatio(m_nvoxels);
+            ColumnVector meanDiffRatio(m_nvoxels);
+            const double priorCov = initialFwdPrior->GetCovariance()(k, k);
+            const double priorCovSqrt = sqrt(priorCov);
+            const double priorMean = initialFwdPrior->means(k);
+
+            for (int v = 1; v <= m_nvoxels; v++)
+            {
+                // Isolate just the dimensionless quantities we need
+
+                // Penny:
+                covRatio(v, v) = fwdPosteriorVox.at(v - 1).GetCovariance()(k, k) / priorCov;
+                // Hacky:
+                // LOG_ERR("WARNING: Using hacky covRatio calculation (precision
+                // rather than covariance!\n!");
+                //		covRatio(v,v) = 1 /
+                // fwdPosteriorVox.at(v-1).GetPrecisions()(k,k) / priorCov;
+
+                meanDiffRatio(v) = (fwdPosteriorVox.at(v - 1).means(k) - priorMean) / priorCovSqrt;
+            }
+
+            //	SymmetricMatrix covRatioSupplemented(m_nvoxels);
+            // Recover the off-diagonal elements of fwdPriorVox/priorCov
+
+            /* TURN COVRATIOSUPPLEMENTED BACK INTO COVRATIO!
+
+                    if (Sinvs.at(k-1).Nrows() != 0)
+                    {
+                    // Implicitly use all zeroes for first iteration
+                    assert(Sinvs.at(k-1).Nrows() == m_nvoxels);
+                    covRatioSupplemented = Sinvs.at(k-1);
+
+                    for (int v=1; v<=m_nvoxels; v++)
+                    {
+                    //		LOG << "Should be one: " <<
+    initialFwdPrior->GetPrecisions()(k,k) * Sinvs.at(k-1)(v,v) /
+    fwdPriorVox.at(v-1).GetPrecisions()(k,k) << endl;
+                    assert(initialFwdPrior->GetPrecisions()(k,k)*Sinvs.at(k-1)(v,v)
+    == fwdPriorVox.at(v-1).GetPrecisions()(k,k));
+
+                    covRatioSupplemented(v,v) = 0;
+                    }
+                    }
+
+                    covRatioSupplemented += covRatio.i();
+                    covRatioSupplemented = covRatioSupplemented.i();
+                    */
+
+            // INSTEAD DO THIS:
+            //	covRatioSupplemented = covRatio;
+            if (first_iter && !m_update_first_iter)
+            {
+                if (type == 'F' && bruteForceDeltaSearch)
+                    LOG_ERR(
+                        "Doing calc on first iteration, just because it's F and "
+                        "bruteForceDeltaSearch is on.  Temporary hack!\n");
+                else
+                    break; // skip the updates
+            }
+
+            DiagonalMatrix deltaMax = delta * m_spatial_speed;
+
+            if (type == 'R')
+            {
+                if (alwaysInitialDeltaGuess > 0)
+                    delta(k) = alwaysInitialDeltaGuess;
+                if (m_use_evidence)
+                {
+                    WARN_ALWAYS("Using R... mistake??");
+                    delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k,
+                        initialFwdPrior.get(), delta(k), true,
+                        &rho(k));
+                    LOG_ERR("\nSpatialPrior " << k << " type R eo : " << delta(k)
+                                              << " " << rho(k) << " 0\n");
+                }
+                else
+                {
+                    WARN_ALWAYS("Using R without EO... mistake??");
+                    // Spatial priors with rho & delta
+                    delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio,
+                        delta(k), &rho(k), true);
+                    LOG_ERR("\nSpatialPrior " << k << " type R vb : " << delta(k)
+                                              << " " << rho(k) << " 0\n");
+                }
+            }
+            else if (type == 'D')
+            {
+                if (alwaysInitialDeltaGuess > 0)
+                    delta(k) = alwaysInitialDeltaGuess;
+
+                // Spatial priors with only delta
+                if (m_use_evidence)
+                {
+                    delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k,
+                        initialFwdPrior.get(), delta(k));
+                    LOG_ERR("\nSpatialPrior " << k << " type D eo : " << delta(k)
+                                              << " 0 0\n");
+                }
+                else
+                {
+                    WARN_ALWAYS("Using D without EO... mistake??");
+                    delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio,
+                        delta(k), &rho(k), false);
+                    LOG_ERR("\nSpatialPrior " << k << " type D vb : " << delta(k)
+                                              << " 0 0\n");
+                }
+            }
+            else // type == 'F'
+            {
+                delta(k) = fixedDelta;
+                rho(k) = fixedRho;
+
+                // The following does nothing BUT it's neccessary to
+                // make the bruteForceDeltaEstimates work.
+                double newDelta = OptimizeSmoothingScale(
+                    covRatio, meanDiffRatio, delta(k), &rho(k), false, false);
+                assert(newDelta == fixedDelta);
+                assert(rho(k) == fixedRho);
+                deltaMax(k) = delta(k);
+                LOG_ERR("\nSpatialPrior " << k << " type F : " << delta(k) << " "
+                                          << rho(k) << " 0\n");
+            }
+
+            // enforce maxPrecisionIncreasePerIteration
+            if (deltaMax(k) < 0.5)
+                deltaMax(k) = 0.5;
+            if (m_spatial_speed > 0 && delta(k) > deltaMax(k))
+            {
+                LOG_ERR("Rate-limiting the increase on delta " << k << ": was "
+                                                               << delta(k));
+                delta(k) = deltaMax(k);
+                LOG_ERR(", now " << delta(k) << endl);
+
+                // Re-evaluate rho, for this delta
+                double newDelta = OptimizeSmoothingScale(
+                    covRatio, meanDiffRatio, delta(k), &rho(k), type == 'R', false);
+                assert(newDelta == delta(k)); // a quick check
+            }
+            // default: dealt with earlier.
+        }
+
+        LOG_ERR("    delta(k) = " << delta(k) << ", rho(k) == " << rho(k)
+                                  << endl);
+    }
+}
+
+// CALCULATE THE C^-1 FOR THE NEW DELTAS
+void SpatialVariationalBayes::CalculateCinv(vector<SymmetricMatrix> &Sinvs, DiagonalMatrix &delta, DiagonalMatrix &rho, DiagonalMatrix &akmean)
+{
+    // Calculate the Cinv
+    for (int k = 1; k <= m_num_params; k++)
+    {
+        if (delta(k) >= 0)
+        {
+            Sinvs.at(k - 1) = covar.GetCinv(delta(k)) * exp(rho(k));
+
+            if (delta(k) == 0 && m_alsoSaveWithoutPrior)
+            {
+                assert((m_prior_types[k - 1].m_type == 'N') | (m_prior_types[k - 1].m_type == 'I') | (m_prior_types[k - 1].m_type == 'A'));
+                Sinvs.at(k - 1) = IdentityMatrix(m_nvoxels);
+            }
+
+            assert(SP(initialFwdPrior->GetPrecisions(),
+                       IdentityMatrix(m_num_params) - 1)
+                       .MaximumAbsoluteValue()
+                == 0);
+            Sinvs[k - 1] *= initialFwdPrior->GetPrecisions()(k, k);
+        }
+
+        if (delta(k) < 0 && m_alsoSaveWithoutPrior)
+        {
+            assert(m_prior_types[k - 1].m_type == m_shrinkage_type);
+
+            if (m_shrinkage_type == 'S')
+            {
+                assert(StS.Nrows() == m_nvoxels);
+                Sinvs.at(k - 1) = StS * akmean(k);
+            }
+            else
+            {
+                assert(m_shrinkage_type == 'p');
+
+                // Build up the second-order matrix directly, row-by-row
+                Matrix sTmp(m_nvoxels, m_nvoxels);
+                sTmp = 0;
+
+                for (int v = 1; v <= m_nvoxels; v++)
+                {
+                    // self = (2*Ndim)^2 + (nn)
+                    sTmp(v, v) = 4 * m_spatial_dims * m_spatial_dims; // nn added later
+
+                    // neighbours = (2*Ndim) * -2
+                    for (vector<int>::iterator nidIt = m_neighbours[v - 1].begin();
+                         nidIt != m_neighbours[v - 1].end(); ++nidIt)
+                    {
+                        int nid = *nidIt; // neighbour ID (voxel number)
+                        assert(sTmp(v, nid) == 0);
+                        sTmp(v, nid) = -2 * 2 * m_spatial_dims;
+                        sTmp(v, v) += 1;
+                    }
+
+                    // neighbours2 = 1 (for each appearance)
+                    for (vector<int>::iterator nidIt = m_neighbours2[v - 1].begin();
+                         nidIt != m_neighbours2[v - 1].end(); ++nidIt)
+                    {
+                        int nid2 = *nidIt;  // neighbour ID (voxel number)
+                        sTmp(v, nid2) += 1; // not =1, because duplicates are ok.
+                    }
+                }
+
+                // Store back into Sinvs[k-1] and apply akmean(k)
+                assert(sTmp == sTmp.t());
+                Sinvs.at(k - 1) << sTmp;
+                Sinvs[k - 1] *= akmean(k);
+            }
+        }
+    }
 }
 
 void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
@@ -381,6 +763,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     m_coords = &allData.GetVoxelCoords();
     m_suppdata = &allData.GetVoxelSuppData();
     m_nvoxels = m_origdata->Ncols();
+    int maxits = convertTo<int>(allData.GetStringDefault("max-iterations", "10"));
+    int donev = 0;
 
     // pass in some (dummy) data/coords here just in case the model relies upon it
     // use the first voxel values as our dummies FIXME this shouldn't really be
@@ -423,17 +807,18 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     // Make the spatial normalization parameters
     // akmean = 0*distsMaster.theta.means + 1e-8;
     DiagonalMatrix akmean(m_num_params);
-    akmean = 1e-8;
     DiagonalMatrix delta(m_num_params);
-    delta = fixedDelta; // Hard-coded initial value (in mm!)
-    LOG_ERR("Using initial value for all deltas: " << delta(1) << endl);
     DiagonalMatrix rho(m_num_params);
+
+    akmean = 1e-8;
+    delta = fixedDelta; // Hard-coded initial value (in mm!)
     rho = 0;
+    LOG << "Using initial value for all deltas: " << delta(1) << endl;
 
     vector<SymmetricMatrix> Sinvs(m_num_params);
 
+    // FIXME can't calculate free energy with spatial VB yet - this value never changes
     const double globalF = 1234.5678; // no sensible updates yet
-    // FIXME can't calculate free energy with spatial VB yet
 
     // Cache for StS matrix in 'S' or 'Z' mode
     if ((m_shrinkage_type == 'S') || (m_shrinkage_type == 'Z'))
@@ -445,442 +830,25 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     // MAIN ITERATION LOOP
     do
     {
-        LOG << m_conv << endl;
+        LOG << "convergence: " << m_conv << endl;
 
         // UPDATE SPATIAL SHRINKAGE PRIOR PARAMETERS
         if (m_shrinkage_type != '-' && (!isFirstIteration || m_update_first_iter))
         {
-            // Update spatial normalization term
+            UpdateAkmean(akmean);
+        }
 
-            // Collect gk, wk, sigmak across all voxels
-            DiagonalMatrix gk(m_num_params); // gk = 0.0/0.0;
-            for (int k = 1; k <= m_num_params; k++)
-            {
-                ColumnVector wk(m_nvoxels);       // wk = 0.0/0.0;
-                DiagonalMatrix sigmak(m_nvoxels); // sigmak=0.0/0.0;
-                for (int v = 1; v <= m_nvoxels; v++)
-                {
-                    wk(v) = fwdPosteriorVox.at(v - 1).means(k);
-                    sigmak(v, v) = fwdPosteriorVox.at(v - 1).GetCovariance()(k, k);
-                }
-                //    wk = wk(:);
-                //    tmp1 = trace(diag(sigmak)*S'*S)
-
-                // LOG << "fwdPosteriorVox[0].GetCovariance():" <<
-                // fwdPosteriorVox[0].GetCovariance();
-
-                // Update from Penny05:
-                // 1/gk = 0.5*Trace[Sigmak*S'*S] + 0.5*wk'*S'*S*wk + 1/q1
-                // hk = N/2 + q2
-                // To do the MRF, just replace S'*S with S.
-
-                switch (m_shrinkage_type)
-                {
-                case 'Z': // case 'S':
-
-                {
-                    assert(m_alsoSaveWithoutPrior);
-
-                    assert(StS.Nrows() == m_nvoxels);
-
-                    // Prior used by penny:
-                    //		  double q1 = 10, q2 = 1;
-                    // Noninformative prior:
-                    double q1 = 1e12, q2 = 1e-12;
-
-                    WARN_ONCE("Hyperpriors on S prior: using q1 == " + stringify(q1) + ", q2 == " + stringify(q2));
-
-                    gk(k) = 1 / (0.5 * (sigmak * StS).Trace() + (wk.t() * StS * wk).AsScalar() + 1 / q1);
-
-                    akmean(k) = gk(k) * (0.5 * m_nvoxels + q2);
-                }
-                // only output is akmean(k)
-                break;
-
-                case 'p':
-                case 'P':
-                case 'm':
-                case 'M':
-                case 'S':
-
-                {
-                    // The following calculates Tr[Sigmak*S'*S]
-                    // using the fact that this == sum(diag(sigmak) .* diag(S'*S))
-                    // (since sigmak is diagonal!)
-
-                    double tmp1 = 0.0;
-                    for (int v = 1; v <= m_nvoxels; v++)
-                    {
-                        int nn = m_neighbours.at(v - 1).size();
-                        // LOG << v << ": " << nn << "," << wk(v) << "," << sigmak(v,v) <<
-                        // endl;
-                        if (m_shrinkage_type == 'm') // useMRF)
-                            tmp1 += sigmak(v, v) * m_spatial_dims * 2;
-                        else if (m_shrinkage_type == 'M') // useMRF2)
-                            tmp1 += sigmak(v, v) * (nn + 1e-8);
-                        else if (m_shrinkage_type == 'p')
-                            tmp1 += sigmak(v, v) * (4 * m_spatial_dims * m_spatial_dims + nn);
-                        else if (m_shrinkage_type == 'S')
-                            tmp1 += sigmak(v, v) * ((nn + 1e-6) * (nn + 1e-6) + nn);
-                        else
-                            tmp1 += sigmak(v, v) * ((nn + tiny) * (nn + tiny) + nn);
-                    }
-
-                    //    tmp2 = wk'*S'*S*wk
-                    ColumnVector Swk = tiny * wk;
-
-                    if (m_shrinkage_type == 'S')
-                        Swk = 1e-6 * wk;
-
-                    for (int v = 1; v <= m_nvoxels; v++)
-                    {
-                        for (vector<int>::iterator v2It = m_neighbours[v - 1].begin();
-                             v2It != m_neighbours.at(v - 1).end(); ++v2It)
-                        {
-                            Swk(v) += wk(v) - wk(*v2It);
-                        }
-                        //		if (useDirichletBC || useMRF) // but not useMRF2
-                        if (m_shrinkage_type == 'p' || m_shrinkage_type == 'm')
-                            Swk(v) += wk(v) * (m_spatial_dims * 2 - m_neighbours.at(v - 1).size());
-                        // Do nothing for 'S'
-                    }
-                    double tmp2 = Swk.SumSquare(); //(Swk.t() * Swk).AsScalar();
-
-                    //	    if (useMRF || useMRF2) // overwrite this for MRF
-                    if (m_shrinkage_type == 'm' || m_shrinkage_type == 'M')
-                        tmp2 = DotProduct(Swk, wk);
-
-                    LOG << "k=" << k << ", tmp1=" << tmp1 << ", tmp2=" << tmp2 << endl;
-                    // LOG << Swk.t();
-
-                    //  gk(k) = 1/(0.5*tmp1 + 0.5*tmp2 + 1/10)
-                    gk(k, k) = 1 / (0.5 * tmp1 + 0.5 * tmp2 + 0.1); // prior q1 == 10 (1/q1 == 0.1)
-                    //  end
-
-                    akmean(k) = gk(k) * (m_nvoxels * 0.5 + 1.0); // prior q2 == 1.0
-                }
-
-                break;
-
-                default:
-                    assert(false);
-                    break;
-                }
-            }
-
-            DiagonalMatrix akmeanMax = akmean * m_spatial_speed;
-
-            for (int k = 1; k <= akmean.Nrows(); k++)
-            {
-                if (akmean(k, k) < 1e-50)
-                {
-                    LOG_ERR("akmean(" << k << ") was " << akmean(k, k) << endl);
-                    WARN_ONCE("akmean value was tiny!");
-                    akmean(k, k) = 1e-50; // prevent crashes
-                }
-            }
-
-            // Rate limiting section - temporary turn back on (also akmeanMax line
-            // above)
-            for (int k = 1; k <= akmean.Nrows(); k++)
-            {
-                if (akmeanMax(k) < 0.5)
-                    akmeanMax(k) = 0.5; // totally the wrong scaling.. oh well
-                if (m_spatial_speed > 0 && akmean(k) > akmeanMax(k))
-                {
-                    LOG_ERR("Rate-limiting the increase on akmean " << k << ": was "
-                                                                    << akmean(k));
-                    akmean(k) = akmeanMax(k);
-                    LOG_ERR(", now " << akmean(k) << endl);
-                }
-            }
-
-            //  LOG << "Using fixed values for akmean!!\n";
-            //  akmean << 0.0011 << 9.9704e-04 << 2.1570e-07
-            //    << 5.2722 << 0.0177 << 0.5041;
-
-            LOG_ERR("New akmean: " << akmean.AsColumn().t());
-            //	for (int asdf = 1; asdf <= akmean.Nrows(); asdf++)
-            //	  LOG_ERR(akmean(asdf) << endl);
-
-        } // tracer: spatial norm update
-
+        LOG << "update delta rho" << endl;
         // UPDATE DELTA & RHO ESTIMATES
-        for (int k = 1; k <= m_num_params; k++)
-        {
-            Tracer tr("SpatialVariationalBayes::DoCalculations - delta updates");
-
-            // if(k<6){LOG_ERR("Skipping parameter "<<k<<endl);continue;}
-            LOG_ERR("Optimizing for parameter " << k << endl);
-
-            char type = m_prior_types[k - 1].m_type;
-
-            // Each type should issue exactly one line to the logfile of the form
-            // SpatialPrior on k type ? ?? : x y z
-            // ? = single-character type
-            // ?? = any other subtype info (optional, free-form but no : character)
-            // x, y, z = numerical parameters (e.g. delta, rho, 0)
-            switch (type)
-            {
-            case '-':
-            case 'N':
-            case 'I':
-            case 'A':
-                // Nonspatial priors
-                delta(k) = 0;
-                rho(k) = 0; // no shrinkage/scaling factor either
-                LOG_ERR("\nSpatialPrior " << k << " type " << type << " : 0 0 0\n");
-                break;
-
-            //	  case 'F':
-            //	    delta(k) = fixedDelta;
-            //	    rho(k) = fixedRho;
-            //	    break;
-
-            case 'm':
-            case 'M':
-            case 'p':
-            case 'P':
-            case 'S':
-
-                assert(type == m_shrinkage_type);
-                // fill with invalid values:
-                delta(k) = -3;
-                rho(k) = 1234.5678;
-                LOG_ERR("\nSpatialPrior " << k << " type " << type << " : "
-                                          << akmean(k) << " 0 0\n");
-
-                break;
-
-            default:
-                throw InvalidOptionValue("param-spatial-priors", stringify(type),
-                    "Invalid spatial prior type");
-
-            case 'R':
-            case 'D':
-            case 'F':
-                // Reorganize data by parameter (rather than by voxel)
-                DiagonalMatrix covRatio(m_nvoxels);
-                ColumnVector meanDiffRatio(m_nvoxels);
-                const double priorCov = initialFwdPrior->GetCovariance()(k, k);
-                const double priorCovSqrt = sqrt(priorCov);
-                const double priorMean = initialFwdPrior->means(k);
-
-                for (int v = 1; v <= m_nvoxels; v++)
-                {
-                    // Isolate just the dimensionless quantities we need
-
-                    // Penny:
-                    covRatio(v, v) = fwdPosteriorVox.at(v - 1).GetCovariance()(k, k) / priorCov;
-                    // Hacky:
-                    // LOG_ERR("WARNING: Using hacky covRatio calculation (precision
-                    // rather than covariance!\n!");
-                    //		covRatio(v,v) = 1 /
-                    // fwdPosteriorVox.at(v-1).GetPrecisions()(k,k) / priorCov;
-
-                    meanDiffRatio(v) = (fwdPosteriorVox.at(v - 1).means(k) - priorMean) / priorCovSqrt;
-                }
-
-                //	SymmetricMatrix covRatioSupplemented(m_nvoxels);
-                // Recover the off-diagonal elements of fwdPriorVox/priorCov
-
-                /* TURN COVRATIOSUPPLEMENTED BACK INTO COVRATIO!
-
-                     if (Sinvs.at(k-1).Nrows() != 0)
-                     {
-                     // Implicitly use all zeroes for first iteration
-                     assert(Sinvs.at(k-1).Nrows() == m_nvoxels);
-                     covRatioSupplemented = Sinvs.at(k-1);
-
-                     for (int v=1; v<=m_nvoxels; v++)
-                     {
-                     //		LOG << "Should be one: " <<
-       initialFwdPrior->GetPrecisions()(k,k) * Sinvs.at(k-1)(v,v) /
-       fwdPriorVox.at(v-1).GetPrecisions()(k,k) << endl;
-                     assert(initialFwdPrior->GetPrecisions()(k,k)*Sinvs.at(k-1)(v,v)
-       == fwdPriorVox.at(v-1).GetPrecisions()(k,k));
-
-                     covRatioSupplemented(v,v) = 0;
-                     }
-                     }
-
-                     covRatioSupplemented += covRatio.i();
-                     covRatioSupplemented = covRatioSupplemented.i();
-                     */
-
-                // INSTEAD DO THIS:
-                //	covRatioSupplemented = covRatio;
-                if (isFirstIteration && !m_update_first_iter)
-                {
-                    if (type == 'F' && bruteForceDeltaSearch)
-                        LOG_ERR(
-                            "Doing calc on first iteration, just because it's F and "
-                            "bruteForceDeltaSearch is on.  Temporary hack!\n");
-                    else
-                        break; // skip the updates
-                }
-
-                DiagonalMatrix deltaMax = delta * m_spatial_speed;
-
-                if (type == 'R')
-                {
-                    if (alwaysInitialDeltaGuess > 0)
-                        delta(k) = alwaysInitialDeltaGuess;
-                    if (m_use_evidence)
-                    {
-                        WARN_ALWAYS("Using R... mistake??");
-                        delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k,
-                            initialFwdPrior.get(), delta(k), true,
-                            &rho(k));
-                        LOG_ERR("\nSpatialPrior " << k << " type R eo : " << delta(k)
-                                                  << " " << rho(k) << " 0\n");
-                    }
-                    else
-                    {
-                        WARN_ALWAYS("Using R without EO... mistake??");
-                        // Spatial priors with rho & delta
-                        delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio,
-                            delta(k), &rho(k), true);
-                        LOG_ERR("\nSpatialPrior " << k << " type R vb : " << delta(k)
-                                                  << " " << rho(k) << " 0\n");
-                    }
-                }
-                else if (type == 'D')
-                {
-                    if (alwaysInitialDeltaGuess > 0)
-                        delta(k) = alwaysInitialDeltaGuess;
-
-                    // Spatial priors with only delta
-                    if (m_use_evidence)
-                    {
-                        delta(k) = OptimizeEvidence(fwdPosteriorWithoutPrior, k,
-                            initialFwdPrior.get(), delta(k));
-                        LOG_ERR("\nSpatialPrior " << k << " type D eo : " << delta(k)
-                                                  << " 0 0\n");
-                    }
-                    else
-                    {
-                        WARN_ALWAYS("Using D without EO... mistake??");
-                        delta(k) = OptimizeSmoothingScale(covRatio, meanDiffRatio,
-                            delta(k), &rho(k), false);
-                        LOG_ERR("\nSpatialPrior " << k << " type D vb : " << delta(k)
-                                                  << " 0 0\n");
-                    }
-                }
-                else // type == 'F'
-                {
-                    delta(k) = fixedDelta;
-                    rho(k) = fixedRho;
-
-                    // The following does nothing BUT it's neccessary to
-                    // make the bruteForceDeltaEstimates work.
-                    double newDelta = OptimizeSmoothingScale(
-                        covRatio, meanDiffRatio, delta(k), &rho(k), false, false);
-                    assert(newDelta == fixedDelta);
-                    assert(rho(k) == fixedRho);
-                    deltaMax(k) = delta(k);
-                    LOG_ERR("\nSpatialPrior " << k << " type F : " << delta(k) << " "
-                                              << rho(k) << " 0\n");
-                }
-
-                // enforce maxPrecisionIncreasePerIteration
-                if (deltaMax(k) < 0.5)
-                    deltaMax(k) = 0.5;
-                if (m_spatial_speed > 0 && delta(k) > deltaMax(k))
-                {
-                    LOG_ERR("Rate-limiting the increase on delta " << k << ": was "
-                                                                   << delta(k));
-                    delta(k) = deltaMax(k);
-                    LOG_ERR(", now " << delta(k) << endl);
-
-                    // Re-evaluate rho, for this delta
-                    double newDelta = OptimizeSmoothingScale(
-                        covRatio, meanDiffRatio, delta(k), &rho(k), type == 'R', false);
-                    assert(newDelta == delta(k)); // a quick check
-                }
-                // default: dealt with earlier.
-            }
-
-            LOG_ERR("    delta(k) = " << delta(k) << ", rho(k) == " << rho(k)
-                                      << endl);
-        }
-
-        // CALCULATE THE C^-1 FOR THE NEW DELTAS
-        {
-            // Calculate the Cinv
-            for (int k = 1; k <= m_num_params; k++)
-            {
-                if (delta(k) >= 0)
-                {
-                    Sinvs.at(k - 1) = covar.GetCinv(delta(k)) * exp(rho(k));
-
-                    if (delta(k) == 0 && m_alsoSaveWithoutPrior)
-                    {
-                        assert((m_prior_types[k - 1].m_type == 'N') | (m_prior_types[k - 1].m_type == 'I') | (m_prior_types[k - 1].m_type == 'A'));
-                        Sinvs.at(k - 1) = IdentityMatrix(m_nvoxels);
-                    }
-
-                    assert(SP(initialFwdPrior->GetPrecisions(),
-                               IdentityMatrix(m_num_params) - 1)
-                               .MaximumAbsoluteValue()
-                        == 0);
-                    Sinvs[k - 1] *= initialFwdPrior->GetPrecisions()(k, k);
-                }
-
-                if (delta(k) < 0 && m_alsoSaveWithoutPrior)
-                {
-                    assert(m_prior_types[k - 1].m_type == m_shrinkage_type);
-
-                    if (m_shrinkage_type == 'S')
-                    {
-                        assert(StS.Nrows() == m_nvoxels);
-                        Sinvs.at(k - 1) = StS * akmean(k);
-                    }
-                    else
-                    {
-                        assert(m_shrinkage_type == 'p');
-
-                        // Build up the second-order matrix directly, row-by-row
-                        Matrix sTmp(m_nvoxels, m_nvoxels);
-                        sTmp = 0;
-
-                        for (int v = 1; v <= m_nvoxels; v++)
-                        {
-                            // self = (2*Ndim)^2 + (nn)
-                            sTmp(v, v) = 4 * m_spatial_dims * m_spatial_dims; // nn added later
-
-                            // neighbours = (2*Ndim) * -2
-                            for (vector<int>::iterator nidIt = m_neighbours[v - 1].begin();
-                                 nidIt != m_neighbours[v - 1].end(); ++nidIt)
-                            {
-                                int nid = *nidIt; // neighbour ID (voxel number)
-                                assert(sTmp(v, nid) == 0);
-                                sTmp(v, nid) = -2 * 2 * m_spatial_dims;
-                                sTmp(v, v) += 1;
-                            }
-
-                            // neighbours2 = 1 (for each appearance)
-                            for (vector<int>::iterator nidIt = m_neighbours2[v - 1].begin();
-                                 nidIt != m_neighbours2[v - 1].end(); ++nidIt)
-                            {
-                                int nid2 = *nidIt;  // neighbour ID (voxel number)
-                                sTmp(v, nid2) += 1; // not =1, because duplicates are ok.
-                            }
-                        }
-
-                        // Store back into Sinvs[k-1] and apply akmean(k)
-                        assert(sTmp == sTmp.t());
-                        Sinvs.at(k - 1) << sTmp;
-                        Sinvs[k - 1] *= akmean(k);
-                    }
-                }
-            }
-        }
+        UpdateDeltaRho(delta, rho, akmean, isFirstIteration);
+        LOG << "update cinv" << endl;
+        CalculateCinv(Sinvs, delta, rho, akmean);
 
         // ITERATE OVER VOXELS
         for (int v = 1; v <= m_nvoxels; v++)
         {
             PassModelData(v);
+            LOG << "voxel " << v << endl;
 
             double &F = resultFs.at(v - 1); // short name
 
@@ -1009,14 +977,9 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 
                 fwdPriorVox[v - 1].means = fwdPriorVox[v - 1].GetCovariance() * (spatialPrecisions * mTmp + initialFwdPrior->GetPrecisions() * initialFwdPrior->means);
 
-                //	    if (useMRF || useMRF2) // overwrite this for MRF
                 if (m_shrinkage_type == 'm' || m_shrinkage_type == 'M')
                     fwdPriorVox[v - 1].means = fwdPriorVox[v - 1].GetCovariance() * spatialPrecisions * mTmp; // = mTmp;
             }
-            // else
-
-            // LOG << "Sinvs[0] is:\n" << Sinvs[0] << endl; // Verified against matlab
-            // 2008-02-16
 
             double Fard = 0;
             if (1)
@@ -1240,21 +1203,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 // XXtr != 0 only where the row and col refer to the same voxel.
             }
 
-            {
-                SigmaInv = XXtr + Ci;
-            }
-
-            // OLD SLOW CODE
-            //       	{
-            //	  Sigma = SigmaInv.i();
-            //	}
-            //	{
-            //	  Mu = Sigma * XYtr;
-            //	}
-
-            {
-                Mu = SigmaInv.i() * XYtr;
-            }
+            SigmaInv = XXtr + Ci;
+            Mu = SigmaInv.i() * XYtr;
 
             for (int v = 1; v <= m_nvoxels; v++)
             {
@@ -1463,7 +1413,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         // Back to your regularly-scheduled voxelwise calculations
         for (int v = 1; v <= m_nvoxels; v++)
         {
+            LOG << "voxel" << v << endl;
             PassModelData(v);
+
+            // Give an indication of the progress through the voxels;
+            allData.Progress((donev + v) / maxits, m_nvoxels);
 
             double &F = resultFs.at(v - 1); // short name
 
@@ -1494,20 +1448,12 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
             // */
         }
 
-        /*
-         if (delta(7) == .5)
-         {
-         delta(7) = 1e12;
-         LOG_ERR("Testing Hack: Just before delta updates, set delta(7) = "
-   << delta(7) << endl);
-         }
-         */
-
         // Moved shrinkage updates to the beginning!!
         isFirstIteration = false;
 
         // next iteration:
     } while (!m_conv->Test(globalF));
+    donev += m_nvoxels;
 
     // Phew!
 
@@ -1530,39 +1476,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
             << k << ": " << gamma_vk.Sum() / m_nvoxels << " (vb) or "
             << gamma_vk_eo.Sum() / m_nvoxels << " (eo)\n");
     }
-
-    //  if (spatialPriorOutputCorrection)
-    //    {
-    //
-    //      // Instead of using the diagonal of the precision matrix as the prior
-    //      // precision, use 1/ the diagonal of the covariance matrix!
-    //      // All elements on this diagonal are exactly exp(-rho(k)).
-    //
-    //      DiagonalMatrix spatialCovariance(m_num_params);
-    //      for (int k = 1; k <= m_num_params; k++)
-    //	{
-    //	  spatialCovariance(k) = exp(-rho(k));
-    //	}
-    //
-    //      for (int v = 1; v <= m_nvoxels; v++)
-    //	{
-    //	  assert(
-    //		 fwdPosteriorVox[v-1].GetPrecisions()
-    //		 == fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
-    //	 + fwdPriorVox[v-1].GetPrecisions());
-    //
-    //  fwdPosteriorVox[v-1].SetPrecisions(
-    //      fwdPosteriorWithoutPrior.at(v-1).GetPrecisions()
-    //      + SP(spatialCovariance.i(), initialFwdPrior->GetPrecisions()) );
-    //
-    //  //	  LOG << "fwdPriorVox[v-1].GetPrecisions:\n"
-    //  //	       << fwdPriorVox[v-1].GetPrecisions()
-    //  //	       << "spatialCovariance.i(): \n"
-    //  //	       << spatialCovariance.i();
-    //
-    //  // Leave the mean unchanged
-    //}
-    //}
 
     for (int v = 1; v <= m_nvoxels; v++)
     {
@@ -1616,8 +1529,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 		LOG << vols.Nrows() << "," << vols.Ncols() << endl;
 
 		save_volume4D(output, outputDir + "/finalSpatialPriors");
-// FIXME not per-voxel data...
-//        m_origdata->SaveVoxelData("finalSpatialPriors", vols, NIFTI_INTENT_SYMMATRIX);
+        m_origdata->SaveVoxelData("finalSpatialPriors", vols, NIFTI_INTENT_SYMMATRIX);
 #endif
     }
 
