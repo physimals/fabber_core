@@ -11,6 +11,10 @@ if(APPLE)
   set(CMAKE_MACOSX_RPATH ON)
 endif(APPLE)
 
+if (UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long")
+endif(UNIX)
+
 # Basic objects - things that have nothing directly to do with inference
 set(BASIC_SRC tools.cc rundata.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc rundata_array.cc dist_gamma.cc version.cc)
 
