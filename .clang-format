@@ -9,3 +9,5 @@ PointerBindsToType: false
 SpacesBeforeTrailingComments: 1
 TabWidth: 4
 UseTab: Never
+Standard: Cpp03
+
