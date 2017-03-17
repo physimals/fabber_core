@@ -50,23 +50,24 @@ public:
         , m_spatial_dims(-1)
         , m_spatial_speed(0)
         , m_shrinkage_type('-')
-        , fixedDelta(0)
-        , fixedRho(0)
+        , m_fixed_delta(0)
+        , m_fixed_rho(0)
         , m_update_first_iter(false)
         , m_use_evidence(false)
-        , alwaysInitialDeltaGuess(false)
+        , m_always_inital_delta_guess(false)
         , m_use_full_evidence(false)
         , m_use_sim_evidence(false)
-        , m_alsoSaveWithoutPrior(false)
-        , m_alsoSaveSpatialPriors(false)
-        , m_lockedLinearEnabled(false)
-        , firstParameterForFullEO(0)
-        , useCovarianceMarginalsRatherThanPrecisions(false)
-        , keepInterparameterCovariances(false)
-        , newDeltaEvaluations(0)
-        , bruteForceDeltaSearch(false)
+        , m_save_without_prior(false)
+        , m_save_spatial_priors(false)
+        , m_locked_linear(false)
+        , m_full_eo_first_param(0)
+        , m_use_covar_marginals_not_precisions(false)
+        , m_keep_param_covars(false)
+        , m_new_delta_evaluations(0)
+        , m_brute_force_delta_search(false)
     {
     }
+
     virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
     //    virtual ~SpatialVariationalBayes();
@@ -93,19 +94,37 @@ protected:
         const NEWMAT::DiagonalMatrix &akmean, bool first_iter);
     void CalculateCinv(std::vector<NEWMAT::SymmetricMatrix> &Sinvs, NEWMAT::DiagonalMatrix &delta,
         NEWMAT::DiagonalMatrix &rho, NEWMAT::DiagonalMatrix &akmean);
+    void DoSimEvidence(std::vector<NEWMAT::SymmetricMatrix> &Sinvs);
+    void DoFullEvidence(std::vector<NEWMAT::SymmetricMatrix> &Sinvs);
+    void SetFwdPriorShrinkageTypeS(int voxel, const NEWMAT::DiagonalMatrix &akmean);
+    void SetFwdPriorShrinkageType(int voxel, const NEWMAT::DiagonalMatrix &akmean);
+    double SetFwdPrior(int voxel, const std::vector<NEWMAT::SymmetricMatrix> &Sinvs, bool isFirstIteration);
+
+    /**
+	 * Calculate first and second nearest neighbours of each voxel
+	*/
+    void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
+
+    double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix &covRatio,
+        const NEWMAT::ColumnVector &meanDiffRatio, double guess, double *optimizedRho = NULL, bool allowRhoToVary = true, bool allowDeltaToVary = true) const;
+
+    double OptimizeEvidence(
+        const std::vector<MVNDist *> &fwdPosteriorWithoutPrior, // used for parameter k
+        int k, const MVNDist *ifp, double guess, bool allowRhoToVary = false, double *rhoOut = NULL) const;
 
     // Per-voxel prior and posterior distributions. For Spatial VB we need to
     // keep these around during iteration as the influence the calculations on
     // neighbouring voxels
-    std::vector<NoiseParams *> noiseVox;      // these change. polymorphic type, so need to use pointers
-    std::vector<NoiseParams *> noiseVoxPrior; // these may change in future
-    std::vector<MVNDist> fwdPriorVox;
-    std::vector<MVNDist> fwdPosteriorVox;
-    std::vector<LinearizedFwdModel> linearVox;
-    std::vector<MVNDist *> fwdPosteriorWithoutPrior;
+    // NoiseParams is polymorphic type, so need to use pointers
+    std::vector<NoiseParams *> m_noise_post;
+    std::vector<NoiseParams *> m_noise_prior;
+    std::vector<MVNDist> m_fwd_prior;
+    std::vector<MVNDist> m_fwd_post;
+    std::vector<LinearizedFwdModel> m_lin_model;
+    std::vector<MVNDist *> m_fwd_post_no_prior;
 
     // StS matrix used for S and Z spatial priors
-    NEWMAT::SymmetricMatrix StS;
+    NEWMAT::SymmetricMatrix m_sts;
 
     /**
 	 * Number of spatial dimensions
@@ -116,12 +135,6 @@ protected:
 	 * 3 = Smoothing by volume
 	 */
     int m_spatial_dims; // 0 = no spatial norm; 2 = slice only; 3 = volume
-
-    //    bool useDataDrivenSmoothness;
-    //    bool useShrinkageMethod;
-    //    bool useDirichletBC;
-    //    bool useMRF;
-    //    bool useMRF2; // without the dirichlet bcs
 
     /**
 	 * Maximum precision increase per iteration
@@ -135,6 +148,11 @@ protected:
 	 */
     std::string m_prior_types_str;
 
+    /**
+     * Shrinkage prior type. 
+     *
+     * One of m, M, p, P or S. Only one of these can be specified in a given run.
+     */
     char m_shrinkage_type;
 
     /**
@@ -143,7 +161,7 @@ protected:
 	 *
 	 * FIXME Sparse matrix would be better?
 	 */
-    vector<vector<int> > m_neighbours;
+    std::vector<std::vector<int> > m_neighbours;
 
     /**
 	 * Next-nearest-neighbours of each voxel. Vector size is number of voxels,
@@ -151,15 +169,10 @@ protected:
 	 *
 	 * FIXME Sparse matrix would be better?
 	 */
-    vector<vector<int> > m_neighbours2;
-
-    /**
-	 * Calculate first and second nearest neighbours of each voxel
-	 */
-    void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
+    std::vector<std::vector<int> > m_neighbours2;
 
     // For the new (Sahani-based) smoothing method:
-    CovarianceCache covar;
+    CovarianceCache m_covar;
 
     /**
 	 * How to measure distances between voxels.
@@ -170,8 +183,8 @@ protected:
 	 */
     std::string m_dist_measure;
 
-    double fixedDelta;
-    double fixedRho;
+    double m_fixed_delta;
+    double m_fixed_rho;
 
     /**
 	 * Update spatial priors on first iteration?
@@ -182,7 +195,8 @@ protected:
 	 * Use evidence optimization
 	 */
     bool m_use_evidence;
-    double alwaysInitialDeltaGuess;
+
+    double m_always_inital_delta_guess;
 
     /**
 	 * Use full evidence optimization
@@ -194,26 +208,15 @@ protected:
 	 */
     bool m_use_sim_evidence;
 
-    bool m_alsoSaveWithoutPrior;
-    bool m_alsoSaveSpatialPriors;
-    bool m_lockedLinearEnabled;
+    bool m_save_without_prior;
+    bool m_save_spatial_priors;
+    bool m_locked_linear;
 
-    int firstParameterForFullEO;
-    bool useCovarianceMarginalsRatherThanPrecisions;
-    bool keepInterparameterCovariances;
+    int m_full_eo_first_param;
+    bool m_use_covar_marginals_not_precisions;
+    bool m_keep_param_covars;
 
-    int newDeltaEvaluations;
+    int m_new_delta_evaluations;
 
-    bool bruteForceDeltaSearch;
-
-    double OptimizeSmoothingScale(const NEWMAT::DiagonalMatrix &covRatio,
-        //const SymmetricMatrix& covRatioSupplemented,
-        const NEWMAT::ColumnVector &meanDiffRatio, double guess, double *optimizedRho = NULL, bool allowRhoToVary = true, bool allowDeltaToVary = true) const;
-
-    double
-    OptimizeEvidence(
-        // const vector<MVNDist>& fwdPriorVox, // used for parameters other than k
-        const vector<MVNDist *> &fwdPosteriorWithoutPrior, // used for parameter k
-        // const vector<SymmetricMatrix>& Si,
-        int k, const MVNDist *ifp, double guess, bool allowRhoToVary = false, double *rhoOut = NULL) const;
+    bool m_brute_force_delta_search;
 };
