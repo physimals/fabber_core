@@ -244,10 +244,8 @@ void MVNDist::SetCovariance(const SymmetricMatrix &from)
 
 void MVNDist::LoadFromMatrix(const string &filename)
 {
-    LOG << "Reading MVN from file '" << filename << "'...\n";
+    LOG << "MVNDist::Reading MVN from file '" << filename << "'...\n";
     Matrix mat = read_matrix_file(filename);
-
-    LOG << "Converting to an MVN...\n";
 
     // Format: [covariance means(:); means(:)' 1.0]
     const int N = mat.Nrows() - 1;
