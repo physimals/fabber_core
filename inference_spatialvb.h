@@ -123,9 +123,6 @@ protected:
     std::vector<LinearizedFwdModel> m_lin_model;
     std::vector<MVNDist *> m_fwd_post_no_prior;
 
-    // StS matrix used for S and Z spatial priors
-    NEWMAT::SymmetricMatrix m_sts;
-
     /**
 	 * Number of spatial dimensions
 	 *
@@ -173,6 +170,9 @@ protected:
 
     // For the new (Sahani-based) smoothing method:
     CovarianceCache m_covar;
+
+    // StS matrix used for S and Z spatial priors
+    NEWMAT::SymmetricMatrix m_sts;
 
     /**
 	 * How to measure distances between voxels.

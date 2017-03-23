@@ -332,6 +332,7 @@ void SpatialVariationalBayes::SetupStSMatrix()
 
 void SpatialVariationalBayes::UpdateAkmean(DiagonalMatrix &akmean)
 {
+    LOG << "SpatialVariationalBayes::UpdateAkmean" << endl;
     assert(akmean.Nrows() == m_num_params);
     // Update spatial normalization term
 
@@ -676,7 +677,7 @@ void SpatialVariationalBayes::UpdateDeltaRho(DiagonalMatrix &delta, DiagonalMatr
 // CALCULATE THE C^-1 FOR THE NEW DELTAS
 void SpatialVariationalBayes::CalculateCinv(vector<SymmetricMatrix> &Sinvs, DiagonalMatrix &delta, DiagonalMatrix &rho, DiagonalMatrix &akmean)
 {
-    // Calculate the Cinv
+    LOG << "SpatialVariationalBayes::CalculateCinv" << endl;
     for (int k = 1; k <= m_num_params; k++)
     {
         if (delta(k) >= 0)
@@ -748,7 +749,7 @@ void SpatialVariationalBayes::CalculateCinv(vector<SymmetricMatrix> &Sinvs, Diag
 
 void SpatialVariationalBayes::DoSimEvidence(vector<SymmetricMatrix> &Sinvs)
 {
-    LOG << "SpatialVariationalBayes::Using simultaneous evidence optimization";
+    LOG << "SpatialVariationalBayes::DoSimEvidence";
 
     // Re-estimate m_fwd_prior for all voxels simultaneously,
     // based on the full covariance matrix
@@ -872,7 +873,6 @@ void SpatialVariationalBayes::DoFullEvidence(vector<SymmetricMatrix> &Sinvs)
     //	assert(!m_use_covar_marginals_not_precisions);
     // Covariance marginals are broken below, and I think they're
     // rubbish anyway
-
     LOG << "SpatialVariationalBayes::DoFullEvidence using " + string(m_use_covar_marginals_not_precisions
                                                                       ? "covariances."
                                                                       : "precisions.");
@@ -1266,10 +1266,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     if (m_nvoxels > 0)
         PassModelData(1);
 
-    // Added to diagonal to make sure the spatial precision matrix
-    // doesn't become singular -- and isolated voxels behave sensibly.
-    const double tiny = 0; // turns out to be no longer necessary.
-
     // Only call DoCalculations once
     assert(resultMVNs.empty());
     assert(resultFs.empty());
@@ -1311,16 +1307,16 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 
     vector<SymmetricMatrix> Sinvs(m_num_params);
 
-    // FIXME can't calculate free energy with spatial VB yet - this value never changes
-    const double globalF = 1234.5678; // no sensible updates yet
+    // FIXME can't calculate free energy with spatial VB yet 
+    // This value never changes
+    const double globalF = 1234.5678;
 
     // Cache for m_sts matrix in 'S' or 'Z' mode
     if ((m_shrinkage_type == 'S') || (m_shrinkage_type == 'Z'))
         SetupStSMatrix();
 
     m_conv->Reset();
-    bool isFirstIteration = true; // slightly different behaviour in first iteratio
-
+    
     // MAIN ITERATION LOOP
     int it = 0;
     do
@@ -1329,16 +1325,12 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         allData.Progress(it, maxits);
 
         // UPDATE SPATIAL SHRINKAGE PRIOR PARAMETERS
-        if (m_shrinkage_type != '-' && (!isFirstIteration || m_update_first_iter))
+        if (m_shrinkage_type != '-' && ((it > 0) || m_update_first_iter))
         {
-            LOG << "SpatialVariationalBayes::Updating akmean" << endl;
             UpdateAkmean(akmean);
         }
-
-        LOG << "SpatialVariationalBayes::Updating delta, rho" << endl;
-        UpdateDeltaRho(delta, rho, akmean, isFirstIteration);
-
-        LOG << "SpatialVariationalBayes::Updating cinv" << endl;
+        
+        UpdateDeltaRho(delta, rho, akmean, (it == 0));
         CalculateCinv(Sinvs, delta, rho, akmean);
 
         // ITERATE OVER VOXELS
@@ -1367,8 +1359,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
             {
                 SetFwdPriorShrinkageType(v, akmean);
             }
-
-            double Fard = SetFwdPrior(v, Sinvs, isFirstIteration);
+            double Fard = SetFwdPrior(v, Sinvs, (it == 0));
 
             // The steps below are essentially the same as regular VB, although
             // the code looks different as the per-voxel dists are set up at the
@@ -1446,9 +1437,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
             if (m_printF)
                 LOG << "SpatialVbInferenceTechnique::Flin == " << F << endl;
         }
-
-        // Moved shrinkage updates to the beginning!!
-        isFirstIteration = false;
 
         // next iteration:
         ++it;
@@ -2294,10 +2282,12 @@ double DerivFdDelta::Calculate(const double delta) const
 
     assert(delta >= 0.05);
     //    const SymmetricMatrix& dist = m_covar.GetDistances();
+#ifndef NDEBUG
     const SymmetricMatrix &dist = m_covar.GetDistances();
     const int Nvoxels = dist.Nrows();
     assert(covRatio.Nrows() == Nvoxels);
     assert(meanDiffRatio.Nrows() == Nvoxels);
+#endif
 
     // SymmetricMatrix C = m_covar.GetC(delta);
     // const SymmetricMatrix& Ci = m_covar.GetCinv(delta);
@@ -2383,10 +2373,12 @@ double SpatialVariationalBayes::OptimizeEvidence(
     bool allowRhoToVary,
     double *rhoOut) const
 {
-    assert(m_fwd_post_no_prior.at(0) != NULL);
+#ifndef NDEBUG
     const int Nparams = m_fwd_post_no_prior[0]->GetSize();
+    assert(m_fwd_post_no_prior.at(0) != NULL);
     assert(Nparams >= 1);
     assert(k <= Nparams);
+#endif
 
     DerivEdDelta fcn(m_covar, m_fwd_post_no_prior, k, initialFwdPrior,
         allowRhoToVary);
