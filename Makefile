@@ -12,6 +12,7 @@ LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lfslio -lniftiio -lznz -l
 #
 
 XFILES = fabber mvntool
+SCRIPTS = fabber_var
 
 # Sets of objects separated into logical divisions
 

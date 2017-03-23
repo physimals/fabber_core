@@ -158,6 +158,7 @@ INSTALL(TARGETS fabber mvntool fabbercore fabbercore_shared fabberexec
 
 #INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include FILES_MATCHING PATTERN "*.h" )
 INSTALL_FILES(/include/fabber_core .*\\.h$)
+INSTALL(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/fabber_var DESTINATION bin)
 
 # Conditional Targets
 
