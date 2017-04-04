@@ -11,7 +11,7 @@ using namespace NEWMAT;
 
 FactoryRegistration<FwdModelFactory, SineFwdModel> SineFwdModel::registration("sine");
 
-FwdModel* SineFwdModel::NewInstance()
+FwdModel *SineFwdModel::NewInstance()
 {
     return new SineFwdModel();
 }
@@ -31,14 +31,15 @@ static OptionSpec OPTIONS[] = {
     { "" }
 };
 
-void SineFwdModel::GetOptions(vector<OptionSpec>& opts) const
+void SineFwdModel::GetOptions(vector<OptionSpec> &opts) const
 {
-    for (int i = 0; OPTIONS[i].name != ""; i++) {
+    for (int i = 0; OPTIONS[i].name != ""; i++)
+    {
         opts.push_back(OPTIONS[i]);
     }
 }
 
-void SineFwdModel::Initialize(FabberRunData& rundata)
+void SineFwdModel::Initialize(FabberRunData &rundata)
 {
     m_include_offset = rundata.GetBool("use-offset");
 }
@@ -51,7 +52,7 @@ int SineFwdModel::NumParams() const
         return 3;
 }
 
-void SineFwdModel::NameParams(vector<string>& names) const
+void SineFwdModel::NameParams(vector<string> &names) const
 {
     names.clear();
     names.push_back("a");
@@ -61,24 +62,26 @@ void SineFwdModel::NameParams(vector<string>& names) const
         names.push_back("d");
 }
 
-void SineFwdModel::HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const
+void SineFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
 {
     int num_params = NumParams();
     // Check we have been given a distribution of the right number of parameters
     assert(prior.means.Nrows() == num_params);
-    prior.means = 0;
+    prior.means = 1;
     prior.SetPrecisions(IdentityMatrix(num_params) * 1e-12);
     posterior = prior;
 }
 
-void SineFwdModel::Evaluate(const ColumnVector& params, ColumnVector& result) const
+void SineFwdModel::Evaluate(const ColumnVector &params, ColumnVector &result) const
 {
     // Check we have been given the right number of parameters
     assert(params.Nrows() == NumParams());
     result.ReSize(data.Nrows());
 
-    for (int i = 1; i <= data.Nrows(); i++) {
-        double res = params(1) * sin(params(2) * (i - params(3)));
+    for (int i = 1; i <= data.Nrows(); i++)
+    {
+        float t = float(i) / data.Nrows();
+        double res = params(1) * sin(params(2) * (t - params(3)));
         if (m_include_offset)
             res += params(4);
         result(i) = res;

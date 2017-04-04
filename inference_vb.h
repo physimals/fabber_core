@@ -14,7 +14,7 @@ class PriorType
 {
 public:
     PriorType();
-    PriorType(int idx, string param_name, FabberRunData &data);
+    PriorType(int idx, std::vector<std::string> param_names, FabberRunData &data);
     std::string m_param_name;
     int m_idx;
     char m_type;
@@ -23,6 +23,9 @@ public:
     NEWMAT::RowVector m_image;
 
     void SetPrior(MVNDist *dist, int voxel);
+
+private:
+    static std::string GetTypesString(FabberRunData &rundata, int num_params);
 };
 
 std::ostream &operator<<(std::ostream &out, const PriorType &value);
@@ -111,7 +114,9 @@ protected:
     /** Free energy for each voxel */
     std::vector<double> resultFs;
 
-    // Initial priors and posteriors - not per voxel. Set up in Initialize
+    // Default priors and posteriors - not per voxel. Set up in Initialize
+    // The fwd prior can be overridden by a per-voxel image prior
+    // The fwd and noise posteriors can be overridden by a per-voxel MVN dist (restart run)
     std::auto_ptr<MVNDist> initialFwdPrior;
     MVNDist *initialFwdPosterior;
     NoiseParams *initialNoisePrior;

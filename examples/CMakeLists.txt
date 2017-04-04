@@ -6,7 +6,7 @@ set(MODELS_NAME sine)
 # For multiple models you may need to add your model source code files below
 set(MODELS_SRC fwdmodel_${MODELS_NAME}.cc)
 
-add_library(fabber_models_${MODELS_NAME} SHARED ${MODELS_SRC})
+add_library(fabber_models_${MODELS_NAME} SHARED ${MODELS_SRC} ${MODELS_NAME}_models.cc)
 add_executable(fabber_${MODELS_NAME} ${MODELS_SRC} fabber_main.cc)
 
 if(APPLE)
@@ -57,7 +57,7 @@ else(WINDOWS)
                  HINTS $ENV{FSLDIR}/lib REQUIRED)
 endif(WINDOWS)
 
-set(LIBS ${FABBER_LIBRARY} ${FABBER_EXEC_LIBRARY}  ${NEWIMAGE_LIBRARY} ${FSLIO_LIBRARY} ${MISCMATHS_LIBRARY} ${NIFTIIO_LIBRARY}  ${ZNZ_LIBRARY} ${Z_LIBRARY} ${NEWMAT_LIBRARY} ${PROB_LIBRARY})
+set(LIBS ${FABBER_LIBRARY} ${FABBER_EXEC_LIBRARY}  ${NEWIMAGE_LIBRARY} ${MISCMATHS_LIBRARY} ${FSLIO_LIBRARY} ${NIFTIIO_LIBRARY}  ${ZNZ_LIBRARY} ${Z_LIBRARY} ${NEWMAT_LIBRARY})
 
 if (UNIX)
   set(LIBS ${LIBS} dl)
@@ -71,13 +71,12 @@ Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
 Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
 Message("-- Using newmat: ${NEWMAT_LIBRARY} ${NEWMAT_INCLUDE_DIR}")
 Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
-Message("-- Using prob: ${PROB_LIBRARY}")
 Message("-- Using zlib: ${Z_LIBRARY}")
 
 target_link_libraries(fabber_models_${MODELS_NAME} ${LIBS})
 target_link_libraries(fabber_${MODELS_NAME} ${LIBS})
 
-include_directories(SYSTEM ${FABBER_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXT_INCLUDE_DIR} ${FSL_EXT_INCLUDE_DIR}/libprob ${BOOST_INCLUDE_DIR})
+include_directories(SYSTEM ${FABBER_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXT_INCLUDE_DIR} ${BOOST_INCLUDE_DIR})
 
 # Extract GIT revision for versioning
 

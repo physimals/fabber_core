@@ -45,7 +45,7 @@ double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDis
         PriorPrec = thetaPrior.GetPrecisions();
         SymmetricMatrix PostCov = theta.GetCovariance();
 
-        for (int i = 0; i < ardindices.size(); i++)
+        for (size_t i = 0; i < ardindices.size(); i++)
         {
             PriorPrec(ardindices[i], ardindices[i]) = 1e-12; //set prior to be initally non-informative
             thetaPrior.means(ardindices[i]) = 0;
@@ -73,7 +73,7 @@ double NoiseModel::UpdateARD(vector<int> ardindices, const MVNDist &theta, MVNDi
         PriorCov = thetaPrior.GetCovariance();
         PostCov = theta.GetCovariance();
 
-        for (int i = 0; i < ardindices.size(); i++)
+        for (size_t i = 0; i < ardindices.size(); i++)
         {
             PriorCov(ardindices[i], ardindices[i]) = theta.means(ardindices[i]) * theta.means(ardindices[i]) + PostCov(
                                                                                                                    ardindices[i], ardindices[i]);

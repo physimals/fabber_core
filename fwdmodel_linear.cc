@@ -27,7 +27,7 @@ using namespace NEWMAT;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] = {
-    { "basis", OPT_MATRIX, "File containing design matrix", OPT_REQ, "" }
+    { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" }
 };
 
 FwdModel *LinearFwdModel::NewInstance()

@@ -108,14 +108,14 @@ void PercentProgressCheck::Progress(int voxel, int nVoxels)
     }
 
     int percent = (100 * voxel) / nVoxels;
-    if (percent / 10 > m_last)
+    if (percent > m_last)
     {
         cout << "\b\b\b";
-        m_last = percent / 10;
+        m_last = percent;
         if (m_last == 0)
             cout << " ";
-        cout << m_last * 10 << "%" << flush;
-        if (m_last == 10)
+        cout << m_last << "%" << flush;
+        if (m_last == 100)
             cout << endl;
     }
 }
@@ -131,7 +131,7 @@ static OptionSpec OPTIONS[] = {
         "If set will overwrite existing output. If not set, new output directories will be created by appending '+' to the directory name ",
         OPT_NONREQ, "" },
     { "link-to-latest", OPT_BOOL,
-        "If set will try to create a link to the most recent output directory with the prefix _latest",
+        "Try to create a link to the most recent output directory with the prefix _latest",
         OPT_NONREQ, "" },
     { "method", OPT_STR, "Use this inference method", OPT_REQ, "" },
     { "model", OPT_STR, "Use this forward model", OPT_REQ, "" },
@@ -147,30 +147,15 @@ static OptionSpec OPTIONS[] = {
     { "suppdata", OPT_TIMESERIES, "'Supplemental' timeseries data, required for some models", OPT_NONREQ, "" },
     { "dump-param-names", OPT_BOOL,
         "Write the file paramnames.txt containing the names of the model parameters", OPT_NONREQ, "" },
-    { "save-model-fit", OPT_BOOL, "Save the model prediction as a 4d volume", OPT_NONREQ, "" },
-    { "save-residuals", OPT_BOOL,
-        "Save the difference between the data and the model prediction as a 4d volume", OPT_NONREQ, "" },
-    { "save-mvn", OPT_BOOL,
-        "Save the final MVN distributions. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-mean", OPT_BOOL,
-        "Save the parameter means. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-std", OPT_BOOL,
-        "Save the parameter standard deviations. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-zstat", OPT_BOOL,
-        "Save the parameter Zstats. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-noise-mean", OPT_BOOL,
-        "Save the noise means. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-noise-std", OPT_BOOL,
-        "Save the noise standard deviations. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
-    { "save-free-energy", OPT_BOOL,
-        "Save the free energy, if calculated. Note this is on by default in the command line tool for backwards compatibility",
-        OPT_NONREQ, "" },
+    { "save-model-fit", OPT_BOOL, "Output the model prediction as a 4d volume", OPT_NONREQ, "" },
+    { "save-residuals", OPT_BOOL, "Output the residuals (difference between the data and the model prediction)", OPT_NONREQ, "" },
+    { "save-mvn", OPT_BOOL, "Output the final MVN distributions.", OPT_NONREQ, "" },
+    { "save-mean", OPT_BOOL, "Output the parameter means.", OPT_NONREQ, "" },
+    { "save-std", OPT_BOOL, "Output the parameter standard deviations.", OPT_NONREQ, "" },
+    { "save-zstat", OPT_BOOL, "Output the parameter Zstats.", OPT_NONREQ, "" },
+    { "save-noise-mean", OPT_BOOL, "Output the noise means.", OPT_NONREQ, "" },
+    { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
+    { "save-free-energy", OPT_BOOL, "Output the free energy, if calculated. ", OPT_NONREQ, "" },
     { "" },
 };
 
@@ -451,6 +436,11 @@ string FabberRunData::GetStringDefault(const string &key, const string &def) con
     return m_params.find(key)->second;
 }
 
+bool FabberRunData::HaveKey(const string &key)
+{
+    return m_params.count(key) > 0;
+}
+
 bool FabberRunData::GetBool(const string &key)
 {
     if (m_params.count(key) == 0)
@@ -458,7 +448,6 @@ bool FabberRunData::GetBool(const string &key)
 
     if (m_params[key] == "")
     {
-        //       m_params.erase(key);
         return true;
     }
 

@@ -56,7 +56,7 @@ string GetLastErrorAsString()
 #define GETERROR dlerror
 #endif
 
-void FwdModel::LoadFromDynamicLibrary(std::string filename, EasyLog *log)
+void FwdModel::LoadFromDynamicLibrary(const std::string &filename, EasyLog *log)
 {
     FwdModelFactory *factory = FwdModelFactory::GetInstance();
     GetNumModelsFptr get_num_models;
@@ -192,7 +192,7 @@ void FwdModel::DumpParameters(const NEWMAT::ColumnVector &params, const string &
     NameParams(names);
     assert(names.size() == params.Nrows());
 
-    for (int i = 1; i <= names.size(); i++)
+    for (size_t i = 1; i <= names.size(); i++)
         LOG << indent << "  " << names[i - 1] << " = " << params(i) << endl;
 
     LOG << indent << "Total of " << names.size() << " parameters" << endl;
