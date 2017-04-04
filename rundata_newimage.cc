@@ -156,8 +156,15 @@ void FabberRunDataNewimage::SaveVoxelData(const std::string &filename, NEWMAT::M
     output.set_intent(nifti_intent_code, 0, 0, 0);
     output.setDisplayMaximumMinimum(output.max(), output.min());
 
-    string filepath = GetOutputDir() + "/" + filename;
-    save_volume4D(output, filepath);
+    if (filename[0] == '/') {
+        // Absolute path
+        save_volume4D(output, filename);
+    }
+    else {
+        // Relative path
+        string filepath = GetOutputDir() + "/" + filename;
+        save_volume4D(output, filepath);
+    }
 }
 
 void FabberRunDataNewimage::SetCoordsFromExtent(int nx, int ny, int nz)
