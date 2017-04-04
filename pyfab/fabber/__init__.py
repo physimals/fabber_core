@@ -589,6 +589,19 @@ class FabberLib(Fabber):
         self._init_clib()
         return self.outbuf.value.splitlines()
 
+    def model_evaluate(self, rundata, params, n_ts, indata=None):
+        """ Get the model parameters, given the specified options"""
+        for key, value in rundata.items():
+            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
+
+        ret = np.zeros([n_ts,], dtype=np.float32)
+        if indata is None: indata = np.zeros([n_ts,], dtype=np.float32)
+        self._trycall(self.clib.fabber_model_evaluate, self.handle, len(params), np.array(params, dtype=np.float32), n_ts, indata, ret, self.errbuf)
+
+        # Reset context because we have set options and don't want them affecting a later call to run()
+        self._init_clib()
+        return ret
+
     def run(self, rundata, progress_cb=None):
         """
         Run fabber on the provided rundata options
@@ -723,6 +736,9 @@ class FabberLib(Fabber):
             self.clib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
             self.clib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
             self.clib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+
+            self.clib.fabber_get_model_params.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+            self.clib.fabber_model_evaluate.argtypes = [c_void_p, c_int, c_float_arr, c_int, c_float_arr, c_float_arr, c_char_p]
         except Exception, e:
             raise FabberException("Error initializing Fabber library: %s" % str(e))
 

@@ -16,6 +16,8 @@
 #include "rundata_array.h"
 #include "setup.h"
 
+#include "newmat.h"
+
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -449,4 +451,65 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
     {
         return fabber_err(FABBER_ERR_FATAL, "Error in get_model_params", err_buf);
     }
+}
+
+int fabber_model_evaluate(void *fab, int n_params, float *params, int n_ts, float *indata, float *output, char *err_buf)
+{
+    if (!fab)
+        return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
+    if (n_params < 0)
+        return fabber_err(FABBER_ERR_FATAL, "Input params size is < 0", err_buf);
+    if (!params)
+        return fabber_err(FABBER_ERR_FATAL, "Params array is NULL", err_buf);
+    if (n_ts < 0)
+        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
+    if (!output)
+        return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
+
+    EasyLog log;
+    int ret=FABBER_ERR_FATAL;
+    stringstream logstr;
+    try
+    {
+        FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
+        std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
+        
+        log.StartLog(logstr);
+        model->SetLogger(&log);
+        model->Initialize(*rundata);
+
+        NEWMAT::ColumnVector p_vec(n_params);
+        NEWMAT::ColumnVector o_vec(n_ts);
+        NEWMAT::ColumnVector data_vec(n_ts);
+        for (int i=0; i<n_params; i++) {
+            p_vec(i+1) = params[i];
+            if (indata) data_vec(i+1) = indata[i];
+            else data_vec(i+1) = 0;
+        }
+
+        model->pass_in_data(data_vec);
+        model->Evaluate(p_vec, o_vec);
+        for (int i=0; i<n_ts; i++) output[i] = o_vec(i+1);
+
+        log.ReissueWarnings();
+        ret = 0;
+    }
+    catch (exception &e)
+    {
+        log.LogStream() << e.what() << endl;
+    }
+    catch (NEWMAT::Exception &e)
+    {
+        log.LogStream() << e.what() << endl;
+    }
+    catch (...)
+    {
+        log.LogStream() << "Unexpected exception" << endl;
+    }
+    
+    log.StopLog();
+    strncpy(err_buf, logstr.str().c_str(), 253);
+    err_buf[254] = '\0';
+
+    return ret;
 }

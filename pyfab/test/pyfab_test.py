@@ -72,6 +72,15 @@ class TestFabberLib(unittest.TestCase):
         self.assertTrue("c1" in params)
         self.assertTrue("c2" in params)
 
+    def test_model_evaluate(self):
+        rundata = FabberRunData()
+        rundata["model"] = "poly"
+        rundata["degree"] = "2"
+        ret = self.fab.model_evaluate(rundata, [1, 2, 3], 5)
+        self.assertEquals(5, len(ret))
+        for t in range(5):
+            self.assertEquals(1 + 2*(t+1) + 3*(t+1)*(t+1), ret[t])
+
     def test_run_no_mask(self):
         data = np.fromfunction(self.quad_data, (3,3,3,3))
         rundata = FabberRunData()
