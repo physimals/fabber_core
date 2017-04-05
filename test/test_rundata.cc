@@ -251,6 +251,82 @@ TEST_F(RunDataTest, Unset)
     ASSERT_EQ(false, rundata.GetBool("bobble"));
 }
 
+// Tests integer option
+TEST_F(RunDataTest, IntConvert)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7");
+
+    ASSERT_EQ(7, rundata.GetInt("wibble"));
+    ASSERT_EQ(7, rundata.GetInt("wibble", 7, 8));
+    ASSERT_EQ(7, rundata.GetInt("wibble", 6, 7));
+    ASSERT_EQ(7, rundata.GetInt("wibble", 7, 7));
+}
+
+// Tests double option
+TEST_F(RunDataTest, DoubleConvert)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7.5");
+
+    ASSERT_EQ(7.5, rundata.GetDouble("wibble"));
+    ASSERT_EQ(7.5, rundata.GetDouble("wibble", 7, 8));
+}
+
+// Tests bad int option
+TEST_F(RunDataTest, IntConvertFail)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "ABC");
+
+    ASSERT_THROW(rundata.GetInt("wibble"), InvalidOptionValue);
+}
+
+// Tests bad double option
+TEST_F(RunDataTest, DoubleConvertFail)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "ABC");
+
+    ASSERT_THROW(rundata.GetDouble("wibble"), InvalidOptionValue);
+}
+
+// Tests int option that's too small
+TEST_F(RunDataTest, IntConvertFailMin)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7");
+
+    ASSERT_THROW(rundata.GetInt("wibble", 10), InvalidOptionValue);
+}
+
+// Tests int option that's too big
+TEST_F(RunDataTest, IntConvertFailMax)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7");
+
+    ASSERT_THROW(rundata.GetInt("wibble", 0, 3), InvalidOptionValue);
+}
+
+// Tests double option that's too small
+TEST_F(RunDataTest, DoubleConvertFailMin)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7.5");
+
+    ASSERT_THROW(rundata.GetDouble("wibble", 10.1), InvalidOptionValue);
+}
+
+// Tests double option that's too big
+TEST_F(RunDataTest, DoubleConvertFailMax)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble", "7.5");
+
+    ASSERT_THROW(rundata.GetDouble("wibble", 0.2, 3.3), InvalidOptionValue);
+}
+
 // Tests odd case where data name could lead to circular reference
 TEST_F(RunDataTest, CircularDataRef)
 {

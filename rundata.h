@@ -18,6 +18,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include <float.h>
+#include <limits.h>
 
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
@@ -284,7 +286,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not an integer
 	 */
-    int GetInt(const std::string &key);
+    int GetInt(const std::string &key, int min=INT_MIN, int max=INT_MAX);
 
     /**
 	 * Get an integer option, returning default if not specified
@@ -292,7 +294,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid integer
 	 */
-    int GetIntDefault(const std::string &key, int def);
+    int GetIntDefault(const std::string &key, int def, int min=INT_MIN, int max=INT_MAX);
 
     /**
 	 * Get an double option
@@ -300,7 +302,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not a double
 	 */
-    double GetDouble(const std::string &key);
+    double GetDouble(const std::string &key, double min=-DBL_MAX, double max=DBL_MAX);
 
     /**
 	 * Get an double option, returning default if not specified
@@ -308,7 +310,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid number
 	 */
-    double GetDoubleDefault(const std::string &key, double def);
+    double GetDoubleDefault(const std::string &key, double def, double min=-DBL_MAX, double max=DBL_MAX);
 
     /**
 	 * Get the output directory for this run.

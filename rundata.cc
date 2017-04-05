@@ -454,12 +454,15 @@ bool FabberRunData::GetBool(const string &key)
     throw InvalidOptionValue(key, m_params[key], "Value should not be given for boolean option");
 }
 
-int FabberRunData::GetInt(const string &key)
+int FabberRunData::GetInt(const string &key, int min, int max)
 {
     string val = GetString(key);
     try
     {
-        return convertTo<int>(val);
+        int i = convertTo<int>(val);
+        if (i < min) throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
+        if (i > max) throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
+        return i;
     }
     catch (invalid_argument &)
     {
@@ -467,12 +470,14 @@ int FabberRunData::GetInt(const string &key)
     }
 }
 
-double FabberRunData::GetDouble(const string &key)
+double FabberRunData::GetDouble(const string &key, double min, double max)
 {
     string val = GetString(key);
     try
     {
-        return convertTo<double>(val);
+        double d = convertTo<double>(val);
+        if (d < min) throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
+        if (d > max) throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
     }
     catch (invalid_argument &)
     {
@@ -480,20 +485,20 @@ double FabberRunData::GetDouble(const string &key)
     }
 }
 
-int FabberRunData::GetIntDefault(const string &key, int def)
+int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
 {
     if (m_params.count(key) == 0)
         return def;
     else
-        return GetInt(key);
+        return GetInt(key, min, max);
 }
 
-double FabberRunData::GetDoubleDefault(const string &key, double def)
+double FabberRunData::GetDoubleDefault(const string &key, double def, double min, double max)
 {
     if (m_params.count(key) == 0)
         return def;
     else
-        return GetDouble(key);
+        return GetDouble(key, min, max);
 }
 
 string FabberRunData::Read(const string &key, const string &msg)
