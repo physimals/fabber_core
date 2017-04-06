@@ -135,6 +135,7 @@ int execute(int argc, char **argv)
         cout << "----------------------" << endl;
         cout << "Welcome to FABBER v" << fabber_release_version() << endl;
         cout << "----------------------" << endl;
+        cout << "Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl;
 
         log.StartLog(params->GetOutputDir());
         cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;

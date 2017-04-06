@@ -111,7 +111,7 @@ endif(UNIX)
 
 # the commit's SHA1, and whether the building workspace was dirty or not
 execute_process(COMMAND
-  git describe --match=NeVeRmAtCh --always --abbrev=40 --dirty
+  git describe --dirty
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_SHA1
   ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
