@@ -478,6 +478,7 @@ double FabberRunData::GetDouble(const string &key, double min, double max)
         double d = convertTo<double>(val);
         if (d < min) throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
         if (d > max) throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
+        return d;
     }
     catch (invalid_argument &)
     {
