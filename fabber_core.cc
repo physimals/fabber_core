@@ -30,7 +30,8 @@ using namespace std;
  */
 static void Usage()
 {
-    cout << "\n\nUsage: fabber [--<option>|--<option>=<value> ...]" << endl
+    cout << "Fabber " << fabber_release_version() <<  " Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl
+         << "Usage: fabber [--<option>|--<option>=<value> ...]" << endl
          << endl
          << "Use -@ <file> to read additional arguments in command line form from a text file (DEPRECATED)." << endl
          << "Use -f <file> to read options in option=value form" << endl
