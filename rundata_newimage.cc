@@ -59,6 +59,10 @@ void FabberRunDataNewimage::SetExtentFromData()
     if (m_have_mask)
     {
         LOG << "FabberRunDataNewimage::Loading mask data from '" + mask_fname << "'" << endl;
+        if (!fsl_imageexists(mask_fname))
+        {
+            throw DataNotFound(mask_fname, "File is invalid or does not exist");
+        }
         read_volume(m_mask, mask_fname);
         m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
         DumpVolumeInfo(m_mask, LOG);
@@ -70,6 +74,10 @@ void FabberRunDataNewimage::SetExtentFromData()
         // have a mask, and that the reference volume is initialized
         LOG << "FabberRunDataNewimage::No mask, using data for extent" << endl;
         string data_fname = GetStringDefault("data", GetStringDefault("data1", ""));
+        if (!fsl_imageexists(data_fname))
+        {
+            throw DataNotFound(data_fname, "File is invalid or does not exist");
+        }
         volume<float> main_vol;
         read_volume(main_vol, data_fname);
         SetCoordsFromExtent(main_vol.xsize(), main_vol.ysize(), main_vol.zsize());
