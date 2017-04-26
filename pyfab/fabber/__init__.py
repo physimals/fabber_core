@@ -590,13 +590,25 @@ class FabberLib(Fabber):
         return self.outbuf.value.splitlines()
 
     def model_evaluate(self, rundata, params, n_ts, indata=None):
-        """ Get the model parameters, given the specified options"""
+        """ """
         for key, value in rundata.items():
             self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
 
+        # Get model parameter names
+        self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        model_params = self.outbuf.value.splitlines()
+        if len(params) != len(model_params):
+            raise FabberException("Incorrect number of parameters specified: expected %i (%s)" % (len(model_params), ",".join(model_params)))
+        plist = []
+        for p in model_params:
+            if p not in params:
+                raise FabberException("Model parameter %s not specified" % p)
+            else:
+                plist.append(params[p])
+        
         ret = np.zeros([n_ts,], dtype=np.float32)
         if indata is None: indata = np.zeros([n_ts,], dtype=np.float32)
-        self._trycall(self.clib.fabber_model_evaluate, self.handle, len(params), np.array(params, dtype=np.float32), n_ts, indata, ret, self.errbuf)
+        self._trycall(self.clib.fabber_model_evaluate, self.handle, len(plist), np.array(plist, dtype=np.float32), n_ts, indata, ret, self.errbuf)
 
         # Reset context because we have set options and don't want them affecting a later call to run()
         self._init_clib()
