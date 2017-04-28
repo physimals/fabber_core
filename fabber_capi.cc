@@ -489,7 +489,11 @@ int fabber_model_evaluate(void *fab, int n_params, float *params, int n_ts, floa
 
         model->pass_in_data(data_vec);
         model->Evaluate(p_vec, o_vec);
-        for (int i=0; i<n_ts; i++) output[i] = o_vec(i+1);
+        for (int i=0; i<n_ts; i++) {
+            // Model may not return the same number of timepoints as passed in!
+            if (i < o_vec.Nrows()) output[i] = o_vec(i+1);
+            else output[i] = 0;
+        }
 
         log.ReissueWarnings();
         ret = 0;
