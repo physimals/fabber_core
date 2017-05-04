@@ -76,7 +76,7 @@ class TestFabberLib(unittest.TestCase):
         rundata = FabberRunData()
         rundata["model"] = "poly"
         rundata["degree"] = "2"
-        ret = self.fab.model_evaluate(rundata, [1, 2, 3], 5)
+        ret = self.fab.model_evaluate(rundata, {"c0":1, "c1":2, "c2":3}, 5)
         self.assertEquals(5, len(ret))
         for t in range(5):
             self.assertEquals(1 + 2*(t+1) + 3*(t+1)*(t+1), ret[t])

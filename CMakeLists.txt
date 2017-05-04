@@ -196,26 +196,9 @@ else(DOXYGEN_FOUND)
   Message("-- Doxygen not found - will not build API documentation")
 endif(DOXYGEN_FOUND)
 
-find_package(PythonLibs)
-find_program(PYSIDE_UIC pyside-uic)
-if (PYSIDE_UIC)
-  Message("-- Pyside found: ${PYSIDE_UIC}")
-  configure_file(pyfab/pyfabber.py.in pyfab/pyfabber.py)
-  add_custom_target(pyfab_ui ALL
-                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_mainwin.ui >ui_qtd.py
-                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_optdialog.ui >>ui_qtd.py
-                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_logview.ui >>ui_qtd.py
-                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_chooserun.ui >>ui_qtd.py
-                   COMMAND ${PYSIDE_UIC} ${CMAKE_CURRENT_SOURCE_DIR}/pyfab/pyfab_matrix.ui >>ui_qtd.py
-                   )
+# Python API
 
-  INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pyfab/pyfabber.py DESTINATION bin)
-  INSTALL(DIRECTORY pyfab/fabber DESTINATION lib/python/)
-  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ui_qtd.py DESTINATION lib/python/fabber)
-
-else(PYSIDE_UIC)
-  Message("-- Pyside not found - will not build GUI")
-endif(PYSIDE_UIC)
+INSTALL(FILES py/fabber.py DESTINATION lib/python/)
 
 # Packaging
 include(CPackConfig.cmake)
