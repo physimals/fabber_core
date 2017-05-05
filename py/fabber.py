@@ -24,7 +24,55 @@ else:
     _lib_format = "lib/lib%s.so"
     _bin_format = "bin/%s"
 
-def generate_test_data(rundata, param_testvalues, n_ts=10, patchsize=50, **kwargs):
+def percent_progress(voxel, nvoxels):
+    complete = 100*voxel/nvoxels
+    sys.stdout.write("\b\b\b\b%3i%%" % complete)
+    sys.stdout.flush()
+    
+def self_test(model, rundata, param_testvalues, save_input=False, save_output=False, invert=True, outfile_format="test_data_%s", **kwargs):
+    print("Running self test for model %s" % model)
+    rundata["model"] = model
+    data, roidata = generate_test_data(rundata, param_testvalues, param_rois=True, auto_load_models=True, **kwargs)
+    
+    if save_input:
+        outfile=outfile_format % model
+        print("Saving test data to Nifti files: %s" % outfile)
+        data_nii = nib.Nifti1Image(data, np.identity(4))
+        data_nii.to_filename(outfile)
+        for param in param_testvalues:
+            roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
+            roi_nii.to_filename(outfile + "_roi_%s" % param)
+    
+    log = None
+    if invert:
+        sys.stdout.write("Inverting test data - running Fabber:  0%%")
+        sys.stdout.flush()
+        fab = FabberLib(auto_load_models=True)
+        if "method" not in rundata: rundata["method"] = "vb"
+        if "noise" not in rundata: rundata["noise"] = "white"
+        rundata["save-mean"] = ""
+        rundata["save-model-fit"] = ""
+        rundata["allow-bad-voxels"] = ""
+        run = fab.run_with_data(rundata, {"data" : data}, progress_cb=percent_progress)
+        print("\n")
+        log = run.log
+        if save_output:
+            data_nii = nib.Nifti1Image(run.data["modelfit"], np.identity(4))
+            data_nii.to_filename(outfile + "_modelfit")
+        for param, values in param_testvalues.items():
+            mean = run.data["mean_%s" % param]
+            if save_output:
+                data_nii = nib.Nifti1Image(mean, np.identity(4))
+                data_nii.to_filename(outfile + "_mean_%s" % param)
+            roi = roidata[param]
+            print("Parameter: %s" % param)
+            for idx, val in enumerate(values):
+                out = np.mean(mean[roi==idx+1])
+                print("Input %f -> %f Output" % (val, out))
+        sys.stdout.flush()
+    return log
+
+def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10, noise=None, patch_rois=False, param_rois=False, **kwargs):
     """ 
     Generate a test Nifti image based on model evaluations
 
@@ -49,25 +97,51 @@ def generate_test_data(rundata, param_testvalues, n_ts=10, patchsize=50, **kwarg
         raise RuntimeError("Test image can only have up to 3 dimensions, you supplied %i varying parameters" % len(dim_sizes))
     else:
         for d in range(len(dim_sizes), 3):
-            dim_params.append("")
+            dim_params.append(None)
             dim_values.append([])
             dim_sizes.append(1)
 
-    shape = [d * patchsize for d in dim_sizes] + [n_ts,]
-    data = np.zeros(shape)
-
+    shape = [d * patchsize for d in dim_sizes]
+    data = np.zeros(shape + [nt,])
+    if patch_rois: patch_roi_data = np.zeros(shape)
+    if param_rois:
+        param_roi_data = {}
+        for param in dim_params:
+            if param is not None: 
+                param_roi_data[param] = np.zeros(shape)
     fab = FabberLib(rundata=rundata, **kwargs)
 
     # I bet there's a neater way to do this!
+    patch_label = 1
     for x in range(dim_sizes[0]):
         for y in range(dim_sizes[1]):
             for z in range(dim_sizes[2]):
                 pos = [x, y, z]
                 for idx, param in enumerate(dim_params):
-                    if param != "": fixed_params[param] = dim_values[idx][pos[idx]]
-                model_curve = fab.model_evaluate(rundata, fixed_params, n_ts)
+                    if param is not None:
+                        param_value = dim_values[idx][pos[idx]]
+                        fixed_params[param] = param_value
+                        if param_rois:
+                            param_roi_data[param][x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize] = pos[idx]+1
+                model_curve = fab.model_evaluate(rundata, fixed_params, nt)
                 data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize,:] = model_curve
-    return nib.Nifti1Image(data, np.identity(4))
+                if patch_rois: 
+                    patch_roi_data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize] = patch_label
+                    patch_label += 1
+
+    if noise is not None:
+        # Add Gaussian noise
+        mean_signal = np.mean(data)
+        noise = np.random.normal(0, mean_signal*noise, shape + [nt,])
+        data += noise
+
+    if patch_rois or param_rois: 
+        ret = [data,] 
+        if patch_rois: ret.append(patch_roi_data)
+        if param_rois: 
+            ret.append(param_roi_data)
+        return tuple(ret)
+    else: return data
 
 def _find_file(f, envdir, newf):
     if f is not None:
@@ -100,8 +174,9 @@ class FabberException(RuntimeError):
     Thrown if there is an error using the Fabber executable or library
     """
 
-    def __init__(self, msg, errcode=None):
+    def __init__(self, msg, errcode=None, log=None):
         self.errcode = errcode
+        self.log = log
         if errcode is not None:
             RuntimeError.__init__(self, "%i: %s" % (errcode, msg))
         else:
@@ -670,7 +745,7 @@ class FabberLib(Fabber):
         Fabber.__init__(self, lib=lib, model_libs=model_libs, rundata=rundata, auto_load_models=auto_load_models)
 
         self.errbuf = create_string_buffer(255)
-        self.outbuf = create_string_buffer(10000)
+        self.outbuf = create_string_buffer(1000000)
         self.progress_cb_type = CFUNCTYPE(None, c_int, c_int)
         self._init_clib()
 
@@ -728,10 +803,10 @@ class FabberLib(Fabber):
         self._init_clib()
         return self.outbuf.value.splitlines()
 
-    def model_evaluate(self, rundata, params, n_ts, indata=None):
+    def model_evaluate(self, rundata, params, nt, indata=None):
         """ """
         for key, value in rundata.items():
-            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
+            self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
 
         # Get model parameter names
         self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
@@ -744,10 +819,9 @@ class FabberLib(Fabber):
                 raise FabberException("Model parameter %s not specified" % p)
             else:
                 plist.append(params[p])
-        
-        ret = np.zeros([n_ts,], dtype=np.float32)
-        if indata is None: indata = np.zeros([n_ts,], dtype=np.float32)
-        self._trycall(self.clib.fabber_model_evaluate, self.handle, len(plist), np.array(plist, dtype=np.float32), n_ts, indata, ret, self.errbuf)
+        ret = np.zeros([nt,], dtype=np.float32)
+        if indata is None: indata = np.zeros([nt,], dtype=np.float32)
+        self._trycall(self.clib.fabber_model_evaluate, self.handle, len(plist), np.array(plist, dtype=np.float32), nt, indata, ret, self.errbuf)
 
         # Reset context because we have set options and don't want them affecting a later call to run()
         self._init_clib()
@@ -798,7 +872,7 @@ class FabberLib(Fabber):
         mask = np.ascontiguousarray(mask.flatten(), dtype=np.int32)
 
         for key, value in rundata.items():
-            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
+            self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
         self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         params = self.outbuf.value.splitlines()
 
@@ -903,6 +977,6 @@ class FabberLib(Fabber):
     def _trycall(self, call, *args):
         ret = call(*args)
         if ret < 0:
-            raise FabberException(self.errbuf.value, ret)
+            raise FabberException(self.errbuf.value, ret, self.outbuf.value)
         else:
             return ret

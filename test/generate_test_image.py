@@ -25,6 +25,9 @@ generate_test_image.py --model=poly --degree=2 --param-c0=10,20,30 --param-c1=0.
 import os, sys
 import traceback
 
+import numpy as np
+import nibabel as nib
+
 sys.path.insert(0, os.environ["FSLDIR"] + "/lib/python")
 from fabber import FabberRunData, generate_test_data
 
@@ -56,7 +59,8 @@ except Exception, e:
     sys.exit(1)
 
 try:
-    img = generate_test_data(rundata, params, n_ts=nt, model_libs=model_libs)
-    img.to_filename(outfile)
+    data = generate_test_data(rundata, params, nt=nt, model_libs=model_libs)
+    nii = nib.Nifti1Image(data, np.identity(4))
+    nii.to_filename(outfile)
 except:
     traceback.print_exc(limit=0)
