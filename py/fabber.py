@@ -7,11 +7,12 @@ import glob
 import subprocess as sub
 import traceback
 import distutils.spawn
-import nibabel as nib
 
 from ctypes import *
 import numpy as np
 import numpy.ctypeslib as npct
+
+import nibabel as nib
 
 if sys.platform.startswith("win"):
     _lib_format = "bin\\%s.dll"
@@ -22,6 +23,51 @@ elif sys.platform.startswith("darwin"):
 else:
     _lib_format = "lib/lib%s.so"
     _bin_format = "bin/%s"
+
+def generate_test_data(rundata, param_testvalues, n_ts=10, patchsize=50, **kwargs):
+    """ 
+    Generate a test Nifti image based on model evaluations
+
+    Returns the image itself - this can be saved to a file using to_filename
+    """
+    dim_params = []
+    dim_values = []
+    dim_sizes = []
+    fixed_params = {}
+    for param, values in param_testvalues.items():
+        try:
+            val = float(values)
+            fixed_params[param] = val
+        except:
+            if len(values) == 1: fixed_params[param] = values[0]
+            else:
+                dim_params.append(param)
+                dim_values.append(values)
+                dim_sizes.append(len(values))
+
+    if len(dim_sizes) > 3: 
+        raise RuntimeError("Test image can only have up to 3 dimensions, you supplied %i varying parameters" % len(dim_sizes))
+    else:
+        for d in range(len(dim_sizes), 3):
+            dim_params.append("")
+            dim_values.append([])
+            dim_sizes.append(1)
+
+    shape = [d * patchsize for d in dim_sizes] + [n_ts,]
+    data = np.zeros(shape)
+
+    fab = FabberLib(rundata=rundata, **kwargs)
+
+    # I bet there's a neater way to do this!
+    for x in range(dim_sizes[0]):
+        for y in range(dim_sizes[1]):
+            for z in range(dim_sizes[2]):
+                pos = [x, y, z]
+                for idx, param in enumerate(dim_params):
+                    if param != "": fixed_params[param] = dim_values[idx][pos[idx]]
+                model_curve = fab.model_evaluate(rundata, fixed_params, n_ts)
+                data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize,:] = model_curve
+    return nib.Nifti1Image(data, np.identity(4))
 
 def _find_file(f, envdir, newf):
     if f is not None:
@@ -49,7 +95,6 @@ def find_fabber():
 
     return ex, lib, models
 
-
 class FabberException(RuntimeError):
     """
     Thrown if there is an error using the Fabber executable or library
@@ -62,7 +107,6 @@ class FabberException(RuntimeError):
         else:
             RuntimeError.__init__(self, msg)
 
-
 class RunNotFound(RuntimeWarning):
     """
     A directory looked like a Fabber output directory, but no logfile was found in it
@@ -71,8 +115,6 @@ class RunNotFound(RuntimeWarning):
     def __init__(self, dir):
         RuntimeWarning.__init__(self, "Not a Fabber run directory: %s" % dir)
         self.dir = dir
-
-import traceback
 
 class Model:
     """
@@ -135,7 +177,7 @@ class View:
     """ 
     Object which views a model
     """
-    def __init__(self, changes, *widgets, **kwidgets):
+    def __init__(self, changes=[], *widgets, **kwidgets):
         self.changes = set(changes)
         self.widgets = [w for w in widgets if self._iswidget(w)]
         for name, w in kwidgets.items():
@@ -618,7 +660,6 @@ class FabberExec(Fabber):
                 raise FabberException("Failed to run fabber: " + str(cmd), status)
         except Exception, e:
             raise FabberException("Failed to run fabber: " + str(e))
-
 
 class FabberLib(Fabber):
     """

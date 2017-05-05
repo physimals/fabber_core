@@ -1,3 +1,4 @@
+#!/bin/env python
 """
 Simple script to evaluate a model for specified parameter values
 """
