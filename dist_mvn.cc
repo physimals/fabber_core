@@ -18,8 +18,9 @@ using namespace NEWMAT;
 
 // Constructors
 
-MVNDist::MVNDist()
-    : m_size(-1)
+MVNDist::MVNDist(EasyLog *log)
+    : Loggable(log)
+    , m_size(-1)
     , precisionsValid(false)
     , covarianceValid(false)
 {
@@ -31,7 +32,6 @@ MVNDist::MVNDist(int dim, EasyLog *log)
     , precisionsValid(false)
     , covarianceValid(false)
 {
-    m_log = log;
     SetSize(dim);
 }
 
@@ -181,7 +181,18 @@ const SymmetricMatrix &MVNDist::GetPrecisions() const
         assert(covarianceValid);
         // precisions and precisionsValid are mutable,
         // so we can change them even in a const function
-        precisions = covariance.i();
+        try
+        {
+            precisions = covariance.i();
+        }
+        catch (Exception)
+        {
+            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
+            WARN_ONCE("MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
+            LOG << means.t() << endl;
+            LOG << covariance << endl;
+            precisions = (covariance + IdentityMatrix(m_size) * 1e-10).i();
+        }
         precisionsValid = true;
     }
     assert(means.Nrows() == m_size);

@@ -322,8 +322,13 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta, co
 
         // a different (but equivalent?) form for the LM update
         Delta = J.t() * X * (data - gml) + thetaPrior.GetPrecisions() * thetaPrior.means - thetaPrior.GetPrecisions() * ml;
-        theta.means = ml + (prec + LMalpha * precdiag).i() * Delta;
-
+        try {
+            theta.means = ml + (prec + LMalpha * precdiag).i() * Delta;
+        }
+        catch (Exception)
+        {
+            WARN_ONCE("WhiteNoiseMode: matrix was singular");
+        }
         // LM update
         //theta.means = (prec + LMalpha*precdiag).i()
         // * ( mTmp + thetaPrior.GetPrecisions() * thetaPrior.means );

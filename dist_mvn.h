@@ -74,9 +74,9 @@ public:
 	 * Size will be undefined -- will be fixed by first SetPrecisions/SetCovariance. Any
 	 * attempt to get data before this will throw an exception.
 	 */
-    MVNDist();
-
-    /**
+    MVNDist(EasyLog *log=NULL);
+    
+	/**
 	 * Create distribution of known size
 	 */
     MVNDist(int dim, EasyLog *log = 0);

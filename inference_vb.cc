@@ -222,7 +222,7 @@ void VariationalBayesInferenceTechnique::InitializeNoiseFromParam(FabberRunData 
     if (filename != "modeldefault")
     {
         LOG << "VbInferenceTechnique::Loading " << param_key << " distribution from " << filename << endl;
-        dist->InputFromMVN(MVNDist(filename));
+        dist->InputFromMVN(MVNDist(filename, m_log));
         // FIXME should there be checking of size here as well?
     }
 }
@@ -230,8 +230,8 @@ void VariationalBayesInferenceTechnique::InitializeNoiseFromParam(FabberRunData 
 void VariationalBayesInferenceTechnique::MakeInitialDistributions(FabberRunData &args)
 {
     // Create initial prior and posterior distributions for model parameters
-    initialFwdPrior = auto_ptr<MVNDist>(new MVNDist(m_num_params));
-    initialFwdPosterior = new MVNDist(m_num_params);
+    initialFwdPrior = auto_ptr<MVNDist>(new MVNDist(m_num_params, m_log));
+    initialFwdPosterior = new MVNDist(m_num_params, m_log);
     m_model->HardcodedInitialDists(*initialFwdPrior, *initialFwdPosterior);
 
     initialNoisePrior = noise->NewParams();
@@ -608,7 +608,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                 // Even that can fail, due to results being singular
                 LOG
                     << "VbInferenceTechnique::Can't give any sensible answer for this voxel; outputting zero +- identity\n";
-                MVNDist *tmp = new MVNDist();
+                MVNDist *tmp = new MVNDist(m_log);
                 tmp->SetSize(fwdPosterior.means.Nrows() + noisePosterior->OutputAsMVN().means.Nrows());
                 tmp->SetCovariance(IdentityMatrix(tmp->means.Nrows()));
                 resultMVNs.at(voxel - 1) = tmp;
@@ -621,6 +621,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
             delete noisePosterior;
             noisePosterior = NULL;
             delete noisePosteriorSave;
+
         } //END of voxelwise updates
 
         //MOTION CORRECTION
