@@ -26,15 +26,23 @@
 using namespace std;
 
 /**
+ * Print version information.
+ */
+static void Version()
+{
+    cout << "Fabber " << fabber_release_version() <<  " Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl;
+}
+
+/**
  * Print usage information.
  */
 static void Usage()
 {
-    cout << "Fabber " << fabber_release_version() <<  " Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl
-         << "Usage: fabber [--<option>|--<option>=<value> ...]" << endl
+    Version();
+    cout << "Usage: fabber [--<option>|--<option>=<value> ...]" << endl
          << endl
-         << "Use -@ <file> to read additional arguments in command line form from a text file (DEPRECATED)." << endl
          << "Use -f <file> to read options in option=value form" << endl
+         << "Use -@ <file> to read options in command line form (DEPRECATED)." << endl
          << endl
          << "General options " << endl
          << endl;
@@ -47,6 +55,7 @@ static void Usage()
         cout << options[i] << endl;
     }
 }
+
 
 #ifdef _WIN32
 static int setenv(const char *name, const char *value, int overwrite)
@@ -105,6 +114,11 @@ int execute(int argc, char **argv)
                 Usage();
             }
 
+            return 0;
+        }
+        if (params->GetBool("version"))
+        {
+            Version();
             return 0;
         }
         else if (params->GetBool("listmodels"))
