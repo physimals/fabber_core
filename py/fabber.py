@@ -72,7 +72,8 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
         sys.stdout.flush()
     return log
 
-def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10, noise=None, patch_rois=False, param_rois=False, **kwargs):
+def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10, 
+                       noise=None, patch_rois=False, param_rois=False, **kwargs):
     """ 
     Generate a test Nifti image based on model evaluations
 
@@ -124,15 +125,21 @@ def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10, noise=Non
                         if param_rois:
                             param_roi_data[param][x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize] = pos[idx]+1
                 model_curve = fab.model_evaluate(rundata, fixed_params, nt)
+                
                 data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize,:] = model_curve
+                #if noise is not None:
+                #    # Add Gaussian noise
+                #    signal_mean = np.mean(model_curve)
+                #    noise_data = np.random.normal(0, signal_mean*noise, [patchsize, patchsize, patchsize, nt])
+                #    data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize,:] += noise_data
                 if patch_rois: 
                     patch_roi_data[x*patchsize:(x+1)*patchsize, y*patchsize:(y+1)*patchsize, z*patchsize:(z+1)*patchsize] = patch_label
                     patch_label += 1
 
     if noise is not None:
         # Add Gaussian noise
-        mean_signal = np.mean(data)
-        noise = np.random.normal(0, mean_signal*noise, shape + [nt,])
+        #mean_signal = np.mean(data)
+        noise = np.random.normal(0, noise, shape + [nt,])
         data += noise
 
     if patch_rois or param_rois: 
