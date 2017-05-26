@@ -61,7 +61,7 @@ FABBER_DLL_API int fabber_load_models(void *fab, const char *libpath, char *err_
  * @param nz Extent in z direction
  * @param mask Array of length nx*ny*nz of 0 and 1 defining a mask region.
  *             (where mask=0, voxel is ignored, where mask!=0, voxel is included)
- *             Row-major order is used (see fabber_set_data). If NULL, data is
+ *             Column-major order is used (see fabber_set_data). If NULL, data is
  *             assumed to be unmasked.
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
@@ -99,8 +99,8 @@ FABBER_DLL_API int fabber_set_opt(void *fab, const char *key, const char *value,
  * @param data_size Data size in 4th dimension, i.e. number of t-slices for the main
  *                  timeseries, 1 for simple image data.
  * @param data Array of size nx*ny*nz*data_size. Will be masked using the mask supplied
- *             in fabber_new. Row-major order is used, i.e. 4th dimension varies fastest
- *             (default in C and Python Numpy)
+ *             in fabber_new. Column-major order is used, i.e. 1st dimension varies fastest
+ *             (default in FSL)
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return 0 on success, <0 on failure
@@ -124,7 +124,7 @@ FABBER_DLL_API int fabber_get_data_size(void *fab, const char *name, char *err_b
  * @param fab Fabber context, returned by fabber_new
  * @param name Name of data. Not null, not empty
  * @param data_buf Data buffer of size nx*ny*nz*data_size. Data size may be obtained
- *                 from fabber_get_data_size. Row-major order is used (see fabber_set_data)
+ *                 from fabber_get_data_size. Column-major order is used (see fabber_set_data)
  * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
  *
  * @return 0 on success, <0 on failure

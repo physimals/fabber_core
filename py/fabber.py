@@ -7,6 +7,7 @@ import glob
 import subprocess as sub
 import traceback
 import distutils.spawn
+import math
 
 from ctypes import *
 import numpy as np
@@ -29,32 +30,37 @@ def percent_progress(voxel, nvoxels):
     sys.stdout.write("\b\b\b\b%3i%%" % complete)
     sys.stdout.flush()
     
-def self_test(model, rundata, param_testvalues, save_input=False, save_output=False, invert=True, outfile_format="test_data_%s", **kwargs):
-    print("Running self test for model %s" % model)
+def self_test(model, rundata, param_testvalues, save_input=False, save_output=False, disp=True, invert=True, outfile_format="test_data_%s", **kwargs):
+    if disp: print("Running self test for model %s" % model)
+    ret = {}
     rundata["model"] = model
     data, roidata = generate_test_data(rundata, param_testvalues, param_rois=True, auto_load_models=True, **kwargs)
     
     if save_input:
         outfile=outfile_format % model
-        print("Saving test data to Nifti files: %s" % outfile)
+        if disp: print("Saving test data to Nifti files: %s" % outfile)
         data_nii = nib.Nifti1Image(data, np.identity(4))
         data_nii.to_filename(outfile)
-        for param in param_testvalues:
-            roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
+        for param, d in roidata.items():
+            roi_nii = nib.Nifti1Image(d, np.identity(4))
             roi_nii.to_filename(outfile + "_roi_%s" % param)
     
     log = None
     if invert:
-        sys.stdout.write("Inverting test data - running Fabber:  0%%")
+        if disp: sys.stdout.write("Inverting test data - running Fabber:  0%%")
         sys.stdout.flush()
         fab = FabberLib(auto_load_models=True)
         if "method" not in rundata: rundata["method"] = "vb"
         if "noise" not in rundata: rundata["noise"] = "white"
         rundata["save-mean"] = ""
+        rundata["save-noise-mean"] = ""
+        rundata["save-noise-std"] = ""
         rundata["save-model-fit"] = ""
         rundata["allow-bad-voxels"] = ""
-        run = fab.run_with_data(rundata, {"data" : data}, progress_cb=percent_progress)
-        print("\n")
+        if disp: progress_cb = percent_progress
+        else: progress_cb = None
+        run = fab.run_with_data(rundata, {"data" : data}, progress_cb=progress_cb)
+        if disp: print("\n")
         log = run.log
         if save_output:
             data_nii = nib.Nifti1Image(run.data["modelfit"], np.identity(4))
@@ -64,13 +70,23 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
             if save_output:
                 data_nii = nib.Nifti1Image(mean, np.identity(4))
                 data_nii.to_filename(outfile + "_mean_%s" % param)
-            roi = roidata[param]
-            print("Parameter: %s" % param)
+            roi = roidata.get(param, np.ones(mean.shape))
+            if disp: print("Parameter: %s" % param)
+            ret[param] = {}
             for idx, val in enumerate(values):
                 out = np.mean(mean[roi==idx+1])
-                print("Input %f -> %f Output" % (val, out))
+                if disp: print("Input %f -> %f Output" % (val, out))
+                ret[param][val] = out
+        noise_mean_in = kwargs.get("noise", 0)
+        noise_mean_out = np.mean(run.data["noise_means"])
+        if disp: print("Noise: Input %f -> %f Output" % (noise_mean_in, 1/math.sqrt(noise_mean_out)))
+        ret["noise"] = {}
+        ret["noise"][noise_mean_in] = 1/math.sqrt(noise_mean_out)
+        if save_output:
+            data_nii = nib.Nifti1Image(run.data["noise_means"], np.identity(4))
+            data_nii.to_filename(outfile + "_mean_noise")
         sys.stdout.flush()
-    return log
+    return ret, log
 
 def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10, 
                        noise=None, patch_rois=False, param_rois=False, **kwargs):
@@ -876,7 +892,7 @@ class FabberLib(Fabber):
 
         if mask is None: mask = np.ones(nv)
         # Make suitable for passing to int* c function
-        mask = np.ascontiguousarray(mask.flatten(), dtype=np.int32)
+        mask = np.ascontiguousarray(mask.flatten(order='F'), dtype=np.int32)
 
         for key, value in rundata.items():
             self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
@@ -891,7 +907,7 @@ class FabberLib(Fabber):
         if "save-zstat" in rundata:
             output_items += ["zstat_" + p for p in params]
         if "save-noise-mean" in rundata:
-            output_items.append("noise_mean")
+            output_items.append("noise_means")
         if "save-noise-std" in rundata:
             output_items.append("noise_stdevs")
         if "save-free-energy" in rundata:
@@ -910,7 +926,7 @@ class FabberLib(Fabber):
                 size = 1
             else:
                 size = item.shape[3]
-            item = np.ascontiguousarray(item.flatten(), dtype=np.float32)
+            item = np.ascontiguousarray(item.flatten(order='F'), dtype=np.float32)
             self._trycall(self.clib.fabber_set_data, self.handle, key, size, item, self.errbuf)
 
         progress_cb_func = self.progress_cb_type(0)
@@ -924,9 +940,9 @@ class FabberLib(Fabber):
             arr = np.ascontiguousarray(np.empty(nv * size, dtype=np.float32))
             self._trycall(self.clib.fabber_get_data, self.handle, key, arr, self.errbuf)
             if size > 1:
-                arr = arr.reshape([s[0], s[1], s[2], size])
+                arr = arr.reshape([s[0], s[1], s[2], size], order='F')
             else:
-                arr = arr.reshape([s[0], s[1], s[2]])
+                arr = arr.reshape([s[0], s[1], s[2]], order='F')
             retdata[key] = arr
 
         return LibRun(retdata, log)
