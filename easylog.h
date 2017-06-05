@@ -117,10 +117,10 @@ public:
     void ReissueWarnings();
 
 private:
-    std::ostream *stream;
-    std::stringstream templog;
-    std::string outDir;
-    std::map<std::string, int> warnCount;
+    std::ostream *m_stream;
+    std::stringstream m_templog;
+    std::string m_outdir;
+    std::map<std::string, int> m_warncount;
 };
 
 class Loggable
