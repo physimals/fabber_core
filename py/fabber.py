@@ -40,8 +40,9 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
         data_nii = nib.Nifti1Image(data, np.identity(4))
         data_nii.to_filename(outfile)
         for param in param_testvalues:
-            roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
-            roi_nii.to_filename(outfile + "_roi_%s" % param)
+            if param in roidata:
+                roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
+                roi_nii.to_filename(outfile + "_roi_%s" % param)
     
     log = None
     if invert:
@@ -64,11 +65,15 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
             if save_output:
                 data_nii = nib.Nifti1Image(mean, np.identity(4))
                 data_nii.to_filename(outfile + "_mean_%s" % param)
-            roi = roidata[param]
             print("Parameter: %s" % param)
-            for idx, val in enumerate(values):
-                out = np.mean(mean[roi==idx+1])
-                print("Input %f -> %f Output" % (val, out))
+            if param in roidata:
+                roi = roidata[param]
+                for idx, val in enumerate(values):
+                    out = np.mean(mean[roi==idx+1])
+                    print("Input %f -> %f Output" % (val, out))
+            else:
+                out = np.mean(mean)
+                print("Input %f -> %f Output" % (values, out))
         sys.stdout.flush()
     return log
 
