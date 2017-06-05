@@ -8,35 +8,7 @@
 
 #include "inference_vb.h"
 
-class CovarianceCache : public Loggable
-{
-public:
-    void CalcDistances(const NEWMAT::Matrix &voxelCoords, const string &distanceMeasure);
-    const NEWMAT::SymmetricMatrix &GetDistances() const
-    {
-        return distances;
-    }
-
-    const NEWMAT::ReturnMatrix GetC(double delta) const; // quick to calculate
-    const NEWMAT::SymmetricMatrix &GetCinv(double delta) const;
-
-    //  const Matrix& GetCiCodist(double delta) const;
-    const NEWMAT::SymmetricMatrix &GetCiCodistCi(double delta, double *CiCodistTrace = NULL) const;
-
-    bool GetCachedInRange(double *guess, double lower, double upper, bool allowEndpoints = false) const;
-    // If there's a cached value in (lower, upper), set *guess = value and
-    // return true; otherwise return false and don't change *guess.
-
-private:
-    NEWMAT::SymmetricMatrix distances;
-    typedef map<double, NEWMAT::SymmetricMatrix> Cinv_cache_type;
-    mutable Cinv_cache_type Cinv_cache;
-    mutable NEWMAT::SymmetricMatrix cinv;
-
-    typedef map<double, pair<NEWMAT::SymmetricMatrix, double> > CiCodistCi_cache_type;
-    //  mutable CiCodist_cache_type CiCodist_cache; // only really use the Trace
-    mutable CiCodistCi_cache_type CiCodistCi_cache;
-};
+#include "covariance_cache.h"
 
 class SpatialVariationalBayes : public VariationalBayesInferenceTechnique
 {
@@ -83,6 +55,17 @@ protected:
 	 * voxel is done.
 	 */
     void SetupPerVoxelDists(FabberRunData &allData);
+
+    /**
+    * Check voxels are listed in order
+    *
+    * Order must be increasing in z value, or if same
+    * increasing in y value, and if y and z are same
+    * increasing in x value.
+    *
+    * This is basically column-major (Fortran) ordering - used as default by NEWIMAGE.
+    */
+    void CheckCoordMatrixCorrectlyOrdered(const NEWMAT::Matrix &voxelCoords);
 
     /**
 	 * Set up the StS matrix used for S and Z spatial priors

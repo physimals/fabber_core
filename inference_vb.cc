@@ -28,7 +28,7 @@ PriorType::PriorType()
 {
 }
 
-PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
+PriorType::PriorType(unsigned int idx, vector<string> param_names, FabberRunData &data)
     : m_param_name(param_names[idx])
     , m_idx(idx)
     , m_prec(-1)
@@ -99,7 +99,7 @@ PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
     }
 }
 
-string PriorType::GetTypesString(FabberRunData &rundata, int num_params)
+string PriorType::GetTypesString(FabberRunData &rundata, unsigned int num_params)
 {
     string priors_str = rundata.GetStringDefault("param-spatial-priors", "");
     if (priors_str.size() > num_params)

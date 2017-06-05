@@ -14,9 +14,9 @@ class PriorType
 {
 public:
     PriorType();
-    PriorType(int idx, std::vector<std::string> param_names, FabberRunData &data);
+    PriorType(unsigned int idx, std::vector<std::string> param_names, FabberRunData &data);
     std::string m_param_name;
-    int m_idx;
+    unsigned int m_idx;
     char m_type;
     double m_prec;
     std::string m_filename;
@@ -25,7 +25,7 @@ public:
     void SetPrior(MVNDist *dist, int voxel);
 
 private:
-    static std::string GetTypesString(FabberRunData &rundata, int num_params);
+    static std::string GetTypesString(FabberRunData &rundata, unsigned int num_params);
 };
 
 std::ostream &operator<<(std::ostream &out, const PriorType &value);
@@ -43,19 +43,19 @@ public:
     virtual string GetVersion() const;
 
     VariationalBayesInferenceTechnique()
-        : m_conv(NULL)
-        , m_nvoxels(0)
+        : m_nvoxels(0)
         , m_noise_params(0)
-        , m_origdata(NULL)
-        , m_coords(NULL)
-        , m_suppdata(NULL)
-        , continueFwdOnly(false)
-        , m_printF(false)
+        , m_conv(NULL)
         , m_needF(false)
+        , m_printF(false)
+        , continueFwdOnly(false)
         , initialFwdPrior(NULL)
         , initialFwdPosterior(NULL)
         , initialNoisePrior(NULL)
         , initialNoisePosterior(NULL)
+        , m_origdata(NULL)
+        , m_coords(NULL)
+        , m_suppdata(NULL)
         , Nmcstep(0)
     {
     }

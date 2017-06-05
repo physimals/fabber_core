@@ -19,8 +19,6 @@
 
 using MISCMATHS::sign;
 
-#define NOCACHE 1
-
 static OptionSpec OPTIONS[] = {
     { "spatial-dims", OPT_INT, "Number of spatial dimensions", OPT_NONREQ, "3" },
     { "spatial-speed", OPT_STR, "Number of spatial dimensions", OPT_NONREQ,
@@ -1276,7 +1274,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     // Make the neighbours[] lists if required
     if (m_prior_types_str.find_first_of("mMpPSZ") != string::npos)
     {
-        CalcNeighbours(allData.GetVoxelCoords());
+        CalcNeighbours(*m_coords);
     }
 
     // Make distance matrix if required
@@ -1284,7 +1282,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     {
         // Note: really ought to know the voxel dimensions and multiply by those,
         // because CalcDistances expects an input in mm, not index.
-        m_covar.CalcDistances(allData.GetVoxelCoords(), m_dist_measure);
+        m_covar.CalcDistances(*m_coords, m_dist_measure);
     }
 
     SetupPerVoxelDists(allData);
@@ -1412,37 +1410,36 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         {
             PassModelData(v);
 
-            // Reference to free energy output so can be modified below
+            // Reference to free energy output so can be modified below if required
             double &F = resultFs.at(v - 1);
 
             noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                 m_fwd_post[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v));
 
-            if (m_needF)
+            if (m_needF) {
                 F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
-            if (m_printF)
-                LOG << "SpatialVbInferenceTechnique::Fnoise == " << F << endl;
+                if (m_printF)
+                    LOG << "SpatialVbInferenceTechnique::Fnoise == " << F << endl;
+            }
 
-            //* MOVED HERE on Michael's advice -- 2007-11-23
+            // MOVED HERE on Michael's advice -- 2007-11-23
             if (!m_locked_linear)
                 m_lin_model[v - 1].ReCentre(m_fwd_post[v - 1].means);
 
-            if (m_needF)
+            if (m_needF) {
                 F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
-            if (m_printF)
-                LOG << "SpatialVbInferenceTechnique::Flin == " << F << endl;
+                if (m_printF)
+                    LOG << "SpatialVbInferenceTechnique::Flin == " << F << endl;
+            }
         }
 
-        // next iteration:
         ++it;
     } while (!m_conv->Test(globalF));
-
-    // Phew!
 
     // Interesting addition: calculate "coefficient resels" from Penny et al. 2005
     for (int k = 1; k <= m_num_params; k++)
@@ -1481,12 +1478,12 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 
     if (!m_needF)
     {
+        // check we're not throwing away anything useful
         for (int v = 1; v <= m_nvoxels; v++)
             assert(resultFs.at(v - 1) == 9999);
-        // check we're not throwing away anything useful
 
-        resultFs.clear();
         // clearing resultFs here should prevent an F image from being saved.
+        resultFs.clear();
     }
 
     // Save Sinvs if possible
@@ -1495,7 +1492,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         // Copied from MVNDist::Save.  There are enough subtle differences
         // to justify duplicating the code here.
 
-        // FIXME this will not work right now as the data is not per-voxel
+        // FIXME this will not work right now as the data is not per-voxel. The resulting
+        // data is nvoxels * nvoxels so could be huge!
         LOG << "SpatialVariationalBayes::Not saving spatial priors as not implemented" << endl;
 #if 0
 		Matrix vols;
@@ -1561,67 +1559,43 @@ inline int binarySearch(const ColumnVector &data, int num)
     return -1;
 }
 
-// static int sign(double d1)
-//{
-//	return (double(0) < d1) - (d1 < double(0));
-//}
-
-/**
- * Check voxels are listed in order
- *
- * Order must be increasing in z value, or if same
- * increasing in y value, and if y and z are same
- * increasing in x value.
- */
-bool IsCoordMatrixCorrectlyOrdered(const Matrix &voxelCoords)
+void SpatialVariationalBayes::CheckCoordMatrixCorrectlyOrdered(const Matrix &coords)
 {
     // Only 3D
-    assert(voxelCoords.Nrows() == 3);
+    assert(coords.Nrows() == 3);
 
     // Voxels are stored one per column, each column is the x/y/z coords
-    const int m_nvoxels = voxelCoords.Ncols();
+    const int m_nvoxels = coords.Ncols();
 
     // Go through each voxel one at a time apart from last
     for (int v = 1; v <= m_nvoxels - 1; v++)
     {
         // Find difference between current coords and next
-        ColumnVector diff = voxelCoords.Column(v + 1) - voxelCoords.Column(v);
+        ColumnVector diff = coords.Column(v + 1) - coords.Column(v);
 
         // Check order
         // +1 = +x, +10 = +y, +100 = +z, -99 = -z+x, etc.
         int d = sign(diff(1)) + 10 * sign(diff(2)) + 100 * sign(diff(3));
         if (d <= 0)
         {
-            //			LOG << "Found mis-ordered voxels " << v << " and
-            //" << v + 1 << ": d=" << d << endl;
-            return false;
+            LOG << "Found mis-ordered voxels " << v << " and " << v + 1 << ": d=" << d << endl;
+            throw FabberInternalError("Coordinate matrix must be in correct order to use adjacency-based priors.");
         }
     }
-    return true;
 }
 
 /**
  * Calculate nearest and second-nearest neighbours for the voxels
- *
- * FIXME should use member variable for co-ords but test needs fixing in this
- * case
  */
-void SpatialVariationalBayes::CalcNeighbours(const Matrix &voxelCoords)
+void SpatialVariationalBayes::CalcNeighbours(const Matrix &coords)
 {
-    m_coords = &voxelCoords; // FIXME temp hack for testing
-    const int nVoxels = voxelCoords.Ncols();
+    const int nVoxels = coords.Ncols();
     if (nVoxels == 0)
         return;
 
-    // Voxels must be ordered by increasing z, y and x values respectively in
-    // order
-    // of priority otherwise binary search for voxel by offset will not work
-    if (!IsCoordMatrixCorrectlyOrdered(voxelCoords))
-    {
-        throw FabberInternalError(
-            "Coordinate matrix must be in correct order to "
-            "use adjacency-based priors.");
-    }
+    // Voxels must be ordered by increasing z, y and x values respectively
+    // otherwise binary search for voxel by offset will not work
+    CheckCoordMatrixCorrectlyOrdered(coords);
 
     // Create a column vector with one entry per voxel.
     ColumnVector offsets(nVoxels);
@@ -1629,13 +1603,13 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix &voxelCoords)
     // Populate offsets with the offset into the
     // matrix of each voxel. We assume that co-ordinates
     // could be zero but not negative
-    int xsize = m_coords->Row(1).Maximum() + 1;
-    int ysize = m_coords->Row(2).Maximum() + 1;
+    int xsize = coords.Row(1).Maximum() + 1;
+    int ysize = coords.Row(2).Maximum() + 1;
     for (int v = 1; v <= nVoxels; v++)
     {
-        int x = (*m_coords)(1, v);
-        int y = (*m_coords)(2, v);
-        int z = (*m_coords)(3, v);
+        int x = coords(1, v);
+        int y = coords(2, v);
+        int z = coords(3, v);
         int offset = z * xsize * ysize + y * xsize + x;
         offsets(v) = offset;
     }
@@ -1750,203 +1724,6 @@ void SpatialVariationalBayes::CalcNeighbours(const Matrix &voxelCoords)
     }
 }
 
-#if 0
-/**
- * Convert a mask specifying voxels of interest into a list of xyz co-ordinates of
- * voxels of interest
- *
- * @param mask Input mask volume whose entries are 1 for voxels of interest, 0 otherwise
- * @param voxelCoords Return matrix in which every column is a the xyz vector or a
- *                    voxel's co-ordinates
- */
-void ConvertMaskToVoxelCoordinates(const volume<float>& mask, Matrix& voxelCoords)
-{
-// Mask has previously been binarized to 0 or 1 to identify
-// voxels of interest, so sum is count of these voxels
-	ColumnVector preThresh((int) mask.sum());
-	const int nVoxels = preThresh.Nrows();
-
-// Populate preThresh with offset of voxel into matrix
-// starting at 0 FIXME repeated from calculateNeigbours
-	int offset(0);
-	int count(1);
-	for (int z = 0; z < mask.zsize(); z++)
-	{
-		for (int y = 0; y < mask.ysize(); y++)
-		{
-			for (int x = 0; x < mask.xsize(); x++)
-			{
-				if (mask(x, y, z) != 0)
-				{
-					preThresh(count++) = offset;
-				}
-				offset++;
-			}
-		}
-	}
-
-// Dimensions of mask matrix
-	const int dims[3] =
-	{	mask.xsize(), mask.ysize(), mask.zsize()};
-
-// Basic sanity checks. Note that xdim/ydim/zdim are the physical
-// dimensions of the voxels
-	assert(mask.xsize()*mask.ysize()*mask.zsize() > 0);
-	assert(mask.xdim()*mask.ydim()*mask.zdim() > 0);
-
-	LOG_SAFE_ELSE_DISCARD("Calculating distance matrix, using voxel dimensions: "
-			<< mask.xdim() << " by " << mask.ydim() << " by " << mask.zdim() << " mm\n" );
-
-	ColumnVector positions[3];// indices
-	positions[0].ReSize(nVoxels);
-	positions[1].ReSize(nVoxels);
-	positions[2].ReSize(nVoxels);
-
-// Go through each voxel. Note that preThresh is a ColumnVector and indexes from 1 not 0
-	for (int vox = 1; vox <= nVoxels; vox++)
-	{
-		int pos = (int) preThresh(vox) - 1; // preThresh appears to be 1-indexed. FIXME not sure, from above looks like 0 offset is possible for first voxel
-		assert(pos>=0);
-
-		positions[0](vox) = pos % dims[0];// X co-ordinate of offset from preThresh
-		pos = pos / dims[0];
-		positions[1](vox) = pos % dims[1];// Y co-ordinate of offset from preThresh
-		pos = pos / dims[1];
-		positions[2](vox) = pos % dims[2];// Z co-ordinate of offset from preThresh
-		pos = pos / dims[2];
-//LOG << vox << ' ' << (int)preThresh(vox)<< ' ' << dims[0] << ' ' << dims[1] << ' ' << dims[2] << ' ' << pos << endl;
-		assert(pos == 0);// fails if preThresh >= product of dims[0,1,2]
-
-// FIXME looks like old code below - remove?
-
-//double pos = preThresh(vox);
-//positions[2](vox) = floor(pos/dims[0]/dims[1]);
-//pos -= positions[2](vox)*dims[0]*dims[1];
-//positions[1](vox) = floor(pos/dims[0]);
-//pos -= positions[1](vox)*dims[0];
-//positions[0](vox) = pos;
-//assert(positions[2](vox) < dims[2]);
-//assert(positions[1](vox) < dims[1]);
-//assert(positions[0](vox) < dims[0]);
-		assert(preThresh(vox)-1 == positions[0](vox) + positions[1](vox)*dims[0] + positions[2](vox)*dims[0]*dims[1] );
-	}
-
-// Turn 3 column vectors into a matrix where each column is a voxel. note that
-// need to transpose to do this
-	voxelCoords = (positions[0] | positions[1] | positions[2]).t();
-}
-#endif
-
-/**
- * Calculate a distance matrix
- *
- * FIXME voxelCoords should really be in MM, not indices; only really matters if
- * it's aniostropic or you're using the
- * smoothness values directly.
- *
- * @param voxelCoords List of voxel co-ordinates as a matrix: each column = 1
- * voxel
- * @param distanceMeasure How to measure distance: dist1 = Euclidian distance,
- * dist2 = squared Euclidian distance,
- *                        mdist = Manhattan distance (|dx| + |dy|)
- */
-void CovarianceCache::CalcDistances(const NEWMAT::Matrix &voxelCoords,
-    const string &distanceMeasure)
-{
-    // Create 3 column vectors, one to hold X co-ordinates, one Y and one Z
-    ColumnVector positions[3];
-    positions[0] = voxelCoords.Row(1).t();
-    positions[1] = voxelCoords.Row(2).t();
-    positions[2] = voxelCoords.Row(3).t();
-
-    const int nVoxels = positions[0].Nrows();
-
-    // dimSize is already included in voxelCoords
-    // FIXME not obvious that it is, if not this should
-    // be the dimensions of a voxel in mm
-    const double dimSize[3] = { 1.0, 1.0, 1.0 };
-
-    if (nVoxels > 7500)
-    {
-        LOG << "SpatialVariationalBayes::CalcDistances Over " << int(2.5 * nVoxels * nVoxels * 8 / 1e9)
-            << " GB of memory will be used just to calculate "
-            << "the distance matrix.  Hope you're not trying to invert this "
-               "sucker!\n"
-            << endl;
-    }
-
-    // 3 NxN symmetric matrices where N is the number of voxels
-    // Each entry gives the absolute difference between
-    // X/Y/Z co-ordinates respectively (FIXME in millimetres
-    // supposedly but perhaps not given comments above)
-    SymmetricMatrix relativePos[3];
-
-    // Column vector with one entry per voxel, all set to 1 initially
-    ColumnVector allOnes(nVoxels);
-    allOnes = 1.0;
-
-    // FIXME do not understand why this works!
-    for (int dim = 0; dim < 3; dim++)
-    {
-        Matrix rel = dimSize[dim] * (positions[dim] * allOnes.t() - allOnes * positions[dim].t());
-        assert(rel == -rel.t());
-        assert(rel.Nrows() == nVoxels);
-        // Down-convert to symmetric matrix (lower triangle so all positive??)
-        relativePos[dim] << rel;
-    }
-
-    // Distances is an NxN symmetric matrix where N is number of voxels
-    distances.ReSize(nVoxels);
-
-    // FIXME code repetition here, distance measure should invoke a function
-    // probably
-    if (distanceMeasure == "dist1")
-    {
-        // absolute Euclidean distance
-        LOG << "SpatialVariationalBayes::Using absolute Euclidean distance\n";
-        for (int a = 1; a <= nVoxels; a++)
-        {
-            for (int b = 1; b <= a; b++)
-            {
-                distances(a, b) = sqrt(relativePos[0](a, b) * relativePos[0](a, b) + relativePos[1](a, b) * relativePos[1](a, b) + relativePos[2](a, b) * relativePos[2](a, b));
-            }
-        }
-    }
-    else if (distanceMeasure == "dist2")
-    {
-        // Euclidian distance squared
-        LOG << "SpatialVariationalBayes::Using almost-squared (^1.99) Euclidean distance\n";
-        for (int a = 1; a <= nVoxels; a++)
-        {
-            for (int b = 1; b <= a; b++)
-            {
-                distances(a, b) = pow(relativePos[0](a, b) * relativePos[0](a, b) + relativePos[1](a, b) * relativePos[1](a, b) + relativePos[2](a, b) * relativePos[2](a, b),
-                    0.995);
-            }
-        }
-    }
-    else if (distanceMeasure == "mdist")
-    {
-        // Manhattan distance (bad?)
-        LOG << "SpatialVariationalBayes::Using Manhattan distance\n";
-        LOG << "SpatialVariationalBayes::WARNING: Seems to result in numerical problems down the line (not "
-               "sure why)\n";
-        for (int a = 1; a <= nVoxels; a++)
-        {
-            for (int b = 1; b <= a; b++)
-            {
-                distances(a, b) = fabs(relativePos[0](a, b)) + fabs(relativePos[1](a, b)) + fabs(relativePos[2](a, b));
-            }
-        }
-    }
-    else
-    {
-        throw InvalidOptionValue("distance-measure", distanceMeasure,
-            "Unrecognized distance measure");
-    }
-}
-
-// /*
 class DerivFdRho : public GenericFunction1D
 {
 public:
@@ -2466,159 +2243,4 @@ double SpatialVariationalBayes::OptimizeSmoothingScale(
         *optimizedRho = fcn.OptimizeRho(delta);
 
     return delta;
-}
-
-const ReturnMatrix CovarianceCache::GetC(double delta) const
-{
-    const int Nvoxels = distances.Nrows();
-
-    SymmetricMatrix C(Nvoxels);
-    if (delta == 0)
-    {
-        C = IdentityMatrix(Nvoxels);
-    }
-    else
-    {
-        for (int a = 1; a <= Nvoxels; a++)
-            for (int b = 1; b <= a; b++)
-                C(a, b) = exp(-0.5 * distances(a, b) / delta);
-    }
-
-    // NOTE: when distances = squared distance, prior is equivalent to white
-    // noise smoothed with a Gaussian with sigma^2 = 2*delta (haven't actually
-    // double-checked this yet).
-    // BEWARE: delta is measured in millimeters!! (based on NIFTI file info).
-
-    C.Release();
-    return C;
-}
-
-bool CovarianceCache::GetCachedInRange(double *guess,
-    double lower,
-    double upper,
-    bool allowEndpoints) const
-{
-    assert(guess != NULL);
-    const double initialGuess = *guess;
-    if (!(lower < initialGuess && initialGuess < upper))
-    {
-        LOG << "SpatialVariationalBayes::Uh-oh... lower = " << lower << ", initialGuess = " << initialGuess
-            << ", upper = " << upper << endl;
-    }
-    assert(lower < initialGuess && initialGuess < upper);
-
-    Cinv_cache_type::iterator it = Cinv_cache.lower_bound(lower);
-    if (it == Cinv_cache.end())
-        return false;
-    if (it->first == lower && !allowEndpoints)
-        ++it;
-    if (it == Cinv_cache.end())
-        return false;
-    if (it->first > upper)
-        return false;
-    if (it->first == upper && !allowEndpoints)
-        return false;
-
-    // Success -- we have at least one fast guess!
-    *guess = it->first;
-
-    //  LOG << "Found a guess! " << lower << " < " << *guess << " < " << upper <<
-    //  endl;
-
-    // Can we find a better one?
-    while (++it != Cinv_cache.end() && it->first <= upper)
-    {
-        if (it->first == upper && !allowEndpoints)
-            break;
-
-        //      if ( abs(it->first - initialGuess) < abs(*guess - initialGuess) )
-        if (it->first < initialGuess || it->first - initialGuess < initialGuess - *guess)
-            *guess = it->first;
-
-        //      LOG << "Improved guess! " << lower << " < " << *guess << " < " <<
-        //      upper << endl;
-    }
-
-    assert(lower < *guess && *guess < upper);
-
-    return true;
-}
-
-const SymmetricMatrix &CovarianceCache::GetCinv(double delta) const
-{
-#ifdef NOCACHE
-    WARN_ONCE("CovarianceCache::GetCinv Cache is disabled to avoid memory problems!");
-    cinv = GetC(delta);
-    if (cinv.Nrows() > 0)
-    {
-        // Appears to be memory problem with inverting a 0x0 matrix
-        cinv = cinv.i();
-    }
-
-    return cinv;
-#else
-    if (Cinv_cache[delta].Nrows() == 0)
-    {
-        //      LOG << "[" << flush;
-        //      LOG << "GetCinv cache miss... " << flush;
-        //      const int Nvoxels = distances.Nrows();
-        //      SymmetricMatrix C(Nvoxels);
-        //      for (int a = 1; a <= Nvoxels; a++)
-        //	for (int b = 1; b <= a; b++)
-        //	  C(a,b) = exp(-0.5*distances(a,b)/delta);
-        //      Cinv_cache[delta] = C.i();
-        Cinv_cache[delta] = GetC(delta).i();
-        //      LOG << "done." << endl;
-        //      LOG << "]" << flush;
-    }
-    else
-    {
-        //      LOG << "GetCinv cache hit!\n";
-    }
-
-    return Cinv_cache[delta];
-#endif
-}
-
-const SymmetricMatrix &CovarianceCache::GetCiCodistCi(
-    double delta,
-    double *CiCodistTrace) const
-{
-    if (CiCodistCi_cache[delta].first.Nrows() == 0)
-    {
-#ifdef NOCACHE
-        CiCodistCi_cache.clear();
-#endif
-        //      LOG << "{" << flush;
-        GetCinv(delta); // for sensible messages, make sure cache hits
-        // LOG << "GetCiCodistCi cache miss... " << flush;
-        Matrix CiCodist = GetCinv(delta) * SP(GetC(delta), distances);
-        CiCodistCi_cache[delta].second = CiCodist.Trace();
-        Matrix CiCodistCi_tmp = CiCodist * GetCinv(delta);
-        CiCodistCi_cache[delta].first << CiCodistCi_tmp; // Force symmetric
-
-        { // check something
-            double maxAbsErr = (CiCodistCi_cache[delta].first - CiCodistCi_tmp)
-                                   .MaximumAbsoluteValue();
-            if (maxAbsErr > CiCodistCi_tmp.MaximumAbsoluteValue() * 1e-5)
-            // If that test fails, you're probably in trouble.
-            // Reducing it to e.g. 1e-5 (to make dist2 work)
-            //   => non-finite alpha in iteration 2
-            // Reduced it to 1e-5 to get mdist to work....
-            //   => same result.  (oops, was mdist2)
-            // Reduced it to 1e-5 to get mdist to work, again...
-            //   =>
-            {
-                LOG << "CovarianceCache::GetCiCodistCi matrix not symmetric!\nError = "
-                    << maxAbsErr << ", maxabsvalue = "
-                    << CiCodistCi_tmp.MaximumAbsoluteValue() << endl;
-                assert(false);
-            }
-        }
-        //      LOG << "}" << flush;
-    }
-
-    if (CiCodistTrace != NULL)
-        (*CiCodistTrace) = CiCodistCi_cache[delta].second;
-    return CiCodistCi_cache[delta].first;
 }
