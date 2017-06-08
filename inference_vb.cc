@@ -262,6 +262,17 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData &args)
         PriorType prior = PriorType(i, param_names, args);
         LOG << prior;
         m_prior_types.push_back(prior);
+        // FIXME HACK if a prior specifies a global precision, use it to override
+        // the model default. Otherwise this is ignored in spatial VB. Note that this
+        // only works because this method is called after MakeInitialDistributions. This
+        // indicates a severe need to understand how priors are used in VB and SVB and
+        // rationalize the whole mess.
+        if (prior.m_prec > 0)
+        {
+            SymmetricMatrix prec = initialFwdPrior->GetPrecisions();
+            prec(prior.m_idx + 1, prior.m_idx + 1) = prior.m_prec;
+            initialFwdPrior->SetPrecisions(prec);
+        }
     }
 }
 
