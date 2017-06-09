@@ -251,8 +251,11 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePr
         // Each Phi matrix is a diagonal matrix of same size size as the
         // number of time samples in the data
         const DiagonalMatrix &Qi = Qis[i - 1];
+
+        // This is calculating the 2nd and 3rd terms of RHS of Eq (22) in Chappel et al 2009
         double tmp = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
 
+        // This is Eq (22) in Chappel et al 2009
         posterior.phis[i - 1].b = 1 / (tmp * 0.5 + 1 / prior.phis[i - 1].b);
 
         // Number of data sample points which use this parameter.
@@ -260,6 +263,7 @@ void WhiteNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePr
         double nTimes = Qi.Trace();
         assert(nTimes == int(nTimes));
 
+        // This is Eq (21) in Chappel et al 2009
         posterior.phis[i - 1].c = (nTimes - 1) * 0.5 + prior.phis[i - 1].c;
 
         if (lockedNoiseStdev > 0)
@@ -285,21 +289,21 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta, co
     assert(Qis.size() == (unsigned)noise.nPhis);
 
     // Marginalize over phi distributions
+    // Qis are diagonal matrices with 1 only where that phi applies.
+    // Adding up all the Qis will give you the identity matrix.
     DiagonalMatrix X(data.Nrows());
     X = 0;
     for (unsigned i = 1; i <= Qis.size(); i++)
         X += Qis[i - 1] * noise.phis[i - 1].CalcMean();
-    // Qis are diagonal matrices with 1 only where that phi applies.
-    // Adding up all the Qis will give you the identity matrix.
 
-    // Calculate Lambda & Lambda*m (without priors)
-    SymmetricMatrix Ltmp;
-    Ltmp << J.t() * X * J;
+    // Update Lambda (model precisions)
+    //
+    // This is Eq (19) in Chappel et al (2009)
+    //
     // use << instead of = because this is considered a lossy assignment
     // (since NEWMAT isn't smart enough to know J'*X*J is always symmetric)
-    ColumnVector mTmp = J.t() * X * (data - gml + J * ml);
-
-    // Update Lambda and m (including priors)
+    SymmetricMatrix Ltmp;
+    Ltmp << J.t() * X * J;
     theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
 
     // Error checking
@@ -310,62 +314,49 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta, co
             << chk.LogValue() << endl;
     }
 
-    if (LMalpha > 0.0)
+    // Update m (model means)
+    //
+    // This is the first term of RHS of Eq (20) in Chappel et al (2009)
+    ColumnVector mTmp = J.t() * X * (data - gml + J * ml);
+    if (LMalpha <= 0.0)
     {
-        //we are in LM mode so use the appropriate update
-        //LOG << LMalpha << endl;
+        // Normal update (NB the LM update reduces to this when alpha=0 strictly)
+        // This is Eq (20) in Chappel et al (2009). Note that covariance of theta
+        // is inverse of precisions.
+        theta.means = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
+    }
+    else
+    {
+        // We are in LM mode so use the appropriate update
+        // See Appendix C in Chappel et al (2009)
         Matrix Delta;
         SymmetricMatrix prec;
         DiagonalMatrix precdiag;
         prec = theta.GetPrecisions();
         precdiag << prec;
 
-        // a different (but equivalent?) form for the LM update
+        // a different (but equivalent) form for the LM update
         Delta = J.t() * X * (data - gml) + thetaPrior.GetPrecisions() * thetaPrior.means - thetaPrior.GetPrecisions() * ml;
-        try {
+        try
+        {
             theta.means = ml + (prec + LMalpha * precdiag).i() * Delta;
         }
         catch (Exception)
         {
-            WARN_ONCE("WhiteNoiseMode: matrix was singular");
+            WARN_ONCE("WhiteNoiseMode: matrix was singular in LM update");
         }
-        // LM update
+        // LM update - old method
         //theta.means = (prec + LMalpha*precdiag).i()
         // * ( mTmp + thetaPrior.GetPrecisions() * thetaPrior.means );
     }
-    else
-    { //normal update (NB the LM update resuces to this when alpha=0 strictly)
-        theta.means = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
-    }
 
+    // Optional update of model parameters without covariance rior
     if (thetaWithoutPrior != NULL)
     {
         thetaWithoutPrior->SetSize(theta.GetSize());
-
         thetaWithoutPrior->SetPrecisions(Ltmp);
-
-        //      try
-        //	{
-        //          thetaWithoutPrior->GetCovariance(); // Cached, so not wasteful.
-        //	}
-        //      catch (Exception)
-        //	{
-        //	  Warning::IssueAlways("Ltmp was singular -- adding 1e-20 to diagonal");
-        //	  thetaWithoutPrior->SetPrecisions(Ltmp + IdentityMatrix(Ltmp.Nrows()) * 1e-20);
-        //	}
-
         thetaWithoutPrior->means = thetaWithoutPrior->GetCovariance() * mTmp;
     }
-
-    /*
-	 // Error checking
-	 LogAndSign chk = theta.GetPrecisions().LogDeterminant();
-	 if (chk.Sign() <= 0)
-	 LOG << "Note: In UpdateTheta, theta precisions aren't positive-definite: "
-	 << chk.Sign() << ", " << chk.LogValue() << endl;
-	 */
-
-    //LOG << "end:" << theta.means.t() << endl;
 }
 
 double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoiseParams &noisePriorIn,

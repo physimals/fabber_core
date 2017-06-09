@@ -120,7 +120,7 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
                         row = col = 4;
                         break;
                     default:
-                        assert(false);
+                        throw FabberInternalError("Ar1cMatrixCache::Update Invalid row/col");
                     }
 
                     if (a12pow + a34pow == 1)
