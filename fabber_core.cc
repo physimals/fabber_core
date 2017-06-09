@@ -50,7 +50,7 @@ static void Usage()
     vector<OptionSpec> options;
     FabberRunData::GetOptions(options);
 
-    for (int i = 0; i < options.size(); i++)
+    for (unsigned int i = 0; i < options.size(); i++)
     {
         cout << options[i] << endl;
     }
