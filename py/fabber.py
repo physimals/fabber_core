@@ -41,9 +41,10 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
         if disp: print("Saving test data to Nifti files: %s" % outfile)
         data_nii = nib.Nifti1Image(data, np.identity(4))
         data_nii.to_filename(outfile)
-        for param, d in roidata.items():
-            roi_nii = nib.Nifti1Image(d, np.identity(4))
-            roi_nii.to_filename(outfile + "_roi_%s" % param)
+        for param in param_testvalues:
+            if param in roidata:
+                roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
+                roi_nii.to_filename(outfile + "_roi_%s" % param)
     
     log = None
     if invert:

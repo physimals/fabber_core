@@ -9,6 +9,7 @@
 #include "easylog.h"
 #include "inference.h"
 #include "inference_vb.h"
+#include "inference_spatialvb.h"
 #include "rundata_newimage.h"
 #include "setup.h"
 
@@ -19,6 +20,11 @@ class PublicVersion : public VariationalBayesInferenceTechnique
 {
 public:
     using VariationalBayesInferenceTechnique::m_prior_types;
+};
+class PublicVersionS : public SpatialVariationalBayes
+{
+public:
+    using SpatialVariationalBayes::m_prior_types;
 };
 
 class VbTest : public ::testing::TestWithParam<string>
@@ -41,6 +47,7 @@ protected:
     {
         vb = reinterpret_cast<PublicVersion *>(static_cast<VariationalBayesInferenceTechnique *>(InferenceTechnique::NewFromName(
             "vb")));
+        svb = reinterpret_cast<PublicVersionS *>(static_cast<SpatialVariationalBayes *>(InferenceTechnique::NewFromName("spatialvb")));
         model = FwdModel::NewFromName("poly");
         rundata = new FabberRunDataNewimage();
         rundata->SetLogger(&log);
@@ -57,15 +64,24 @@ protected:
         std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata->GetString("model")));
         fwd_model->Initialize(*rundata);
 
+        // FIXME yuk
         vb->Initialize(fwd_model.get(), *rundata);
-        vb->DoCalculations(*rundata);
-        vb->SaveResults(*rundata);
+        svb->Initialize(fwd_model.get(), *rundata);     
+        if (rundata->GetString("method") == "vb") {
+            vb->DoCalculations(*rundata);
+            vb->SaveResults(*rundata);
+        }
+        else {
+            svb->DoCalculations(*rundata);
+            svb->SaveResults(*rundata);
+        }
     }
 
     EasyLog log;
     NEWMAT::Matrix voxelCoords;
     FabberRunData *rundata;
     FwdModel *model;
+    PublicVersionS *svb;
     PublicVersion *vb;
 };
 
@@ -241,12 +257,12 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
     rundata->Set("PSP_byname1", "c0");
     rundata->Set("PSP_byname1_type", "I");
     rundata->SetVoxelData("PSP_byname1_image", iprior_data);
-    rundata->Set("PSP_byname1_prec", "1234567");
+    rundata->Set("PSP_byname1_prec", "1e12");
     Run();
 
     ASSERT_EQ(1, vb->m_prior_types.size());
     ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    ASSERT_FLOAT_EQ(1234567, vb->m_prior_types[0].m_prec);
+    //ASSERT_FLOAT_EQ(1234567, vb->m_prior_types[0].m_prec);
     NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
     ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 

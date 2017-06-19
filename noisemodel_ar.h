@@ -70,25 +70,18 @@ public:
     static NoiseModel *NewInstance();
 
     virtual void Initialize(FabberRunData &args);
-    int NumParams();
     virtual Ar1cParams *NewParams() const;
+    int NumParams();
 
     virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const;
 
-    // Used to pre-evaluate the alpha matrices in the cache
+    /** Used to pre-evaluate the alpha matrices in the cache */
     virtual void Precalculate(NoiseParams &noise, const NoiseParams &noisePrior, const NEWMAT::ColumnVector &sampleData) const;
 
     virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
         const LinearFwdModel &linear, const NEWMAT::ColumnVector &data) const;
 
-    virtual void UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
-
-    virtual void UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
-
     virtual void UpdateTheta(const NoiseParams &noise,
-        //    const NoiseParams& noisePrior,
         MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data,
         MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
@@ -99,4 +92,10 @@ protected:
     std::string ar1Type;
     int NumAlphas() const; // converts the above string into a number
     int nPhis;
+
+    virtual void UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
+
+    virtual void UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 };

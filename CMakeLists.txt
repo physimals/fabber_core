@@ -20,7 +20,7 @@ set(BASIC_SRC tools.cc rundata.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc factories.cc fwdmodel_linear.cc
-	           fwdmodel_poly.cc convergence.cc motioncorr.cc)
+	           fwdmodel_poly.cc convergence.cc motioncorr.cc covariance_cache.cc)
 
 # Inference methods
 set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)

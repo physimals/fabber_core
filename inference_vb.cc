@@ -28,7 +28,7 @@ PriorType::PriorType()
 {
 }
 
-PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
+PriorType::PriorType(unsigned int idx, vector<string> param_names, FabberRunData &data)
     : m_param_name(param_names[idx])
     , m_idx(idx)
     , m_prec(-1)
@@ -38,7 +38,7 @@ PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
     // a sequence of chars in model parameter order, one for each
     // parameter. A + character means 'use the previous value for all
     // remaining parameters'. An 'I' means an image prior and
-    // the filename is specified separately
+    // the filename is specified separately using an image-prior<n> option
     string types = GetTypesString(data, param_names.size());
     m_type = data.GetStringDefault("default-prior-type", "-")[0];
     char current_type = '-';
@@ -57,15 +57,14 @@ PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
             current_type = types[i];
         }
     }
-    // Record the data key (filename) for an image prior. Note that although this uses
-    // the same parameter as below, the index is conceptually different - here
+    // Record the data key (filename) for an image prior. Note that the index is
+    // conceptually different from the PSP_byname_image method use below - here
     // it is the parameter index in the model's list (starting at 1), below it depends on
     // the order in which the names are given in the options. Also an optional precision
     // may be set, -1 means unset (since precisions must be > 0)
     if (m_type == 'I')
     {
-        m_filename = "PSP_byname" + stringify(idx + 1) + "_image";
-        m_prec = data.GetDoubleDefault("PSP_byname" + stringify(idx) + "_prec", -1);
+        m_filename = "image-prior" + stringify(idx + 1);
     }
 
     // Here is the second way of specifying priors which will override the above.
@@ -83,12 +82,12 @@ PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
 
         if (name == param_names[idx])
         {
-            m_type = convertTo<char>(data.GetString("PSP_byname" + stringify(current) + "_type"));
+            m_type = convertTo<char>(data.GetStringDefault("PSP_byname" + stringify(current) + "_type", stringify(m_type)));
             if (m_type == 'I')
             {
                 m_filename = "PSP_byname" + stringify(current) + "_image";
-                m_prec = data.GetDoubleDefault("PSP_byname" + stringify(current) + "_prec", -1);
             }
+            m_prec = data.GetDoubleDefault("PSP_byname" + stringify(current) + "_prec", -1);
         }
     }
 
@@ -99,7 +98,7 @@ PriorType::PriorType(int idx, vector<string> param_names, FabberRunData &data)
     }
 }
 
-string PriorType::GetTypesString(FabberRunData &rundata, int num_params)
+string PriorType::GetTypesString(FabberRunData &rundata, unsigned int num_params)
 {
     string priors_str = rundata.GetStringDefault("param-spatial-priors", "");
     if (priors_str.size() > num_params)
@@ -129,12 +128,12 @@ void PriorType::SetPrior(MVNDist *prior, int voxel)
     if (m_type == 'I')
     {
         prior->means(m_idx + 1) = m_image(voxel);
-        if (m_prec > 0)
-        {
-            SymmetricMatrix prec = prior->GetPrecisions();
-            prec(m_idx + 1, m_idx + 1) = m_prec;
-            prior->SetPrecisions(prec);
-        }
+    }
+    if (m_prec > 0)
+    {
+        SymmetricMatrix prec = prior->GetPrecisions();
+        prec(m_idx + 1, m_idx + 1) = m_prec;
+        prior->SetPrecisions(prec);
     }
 }
 
@@ -263,6 +262,17 @@ void VariationalBayesInferenceTechnique::GetPriorTypes(FabberRunData &args)
         PriorType prior = PriorType(i, param_names, args);
         LOG << prior;
         m_prior_types.push_back(prior);
+        // FIXME HACK if a prior specifies a global precision, use it to override
+        // the model default. Otherwise this is ignored in spatial VB. Note that this
+        // only works because this method is called after MakeInitialDistributions. This
+        // indicates a severe need to understand how priors are used in VB and SVB and
+        // rationalize the whole mess.
+        if (prior.m_prec > 0)
+        {
+            SymmetricMatrix prec = initialFwdPrior->GetPrecisions();
+            prec(prior.m_idx + 1, prior.m_idx + 1) = prior.m_prec;
+            initialFwdPrior->SetPrecisions(prec);
+        }
     }
 }
 

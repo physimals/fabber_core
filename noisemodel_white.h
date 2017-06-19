@@ -57,33 +57,37 @@ public:
     static NoiseModel *NewInstance();
 
     virtual void Initialize(FabberRunData &args);
-    int NumParams();
     virtual WhiteParams *NewParams() const;
+    int NumParams();
+
     virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const;
 
-    /**
-	 * Update the noise parameters
-	 */
     virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
         const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
-    /**
-	 * Update the model parameters?
-	 */
-    virtual void
-    UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
+    virtual void UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
         const NEWMAT::ColumnVector &data, MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
     virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
         const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
 protected:
+    /** Pattern of noise distributions as they apply to points in time series */
     std::string phiPattern;
 
-    double lockedNoiseStdev; // Allow phi to be locked externally
-    double phiprior;         //allow external setting of the prior nosie std deviation (and thence phi)
+    /** Allow phi to be locked externally */
+    double lockedNoiseStdev;
 
-    // Diagonal matrices, indicating which data points use each phi
-    mutable std::vector<NEWMAT::DiagonalMatrix> Qis; // mutable because it's used as a cache
+    /** Allow external setting of the prior noise std deviation (and thence phi) */
+    double phiprior;
+
+    /** 
+     * Diagonal matrices, indicating which data points use each phi 
+     *
+     * Mutable because it's initialized lazily by MakeQis
+     */
+    mutable std::vector<NEWMAT::DiagonalMatrix> Qis;
+
+    /** Create Qis vector */
     void MakeQis(int dataLen) const;
 };
