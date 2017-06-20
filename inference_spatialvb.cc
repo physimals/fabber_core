@@ -92,7 +92,7 @@ void SpatialVariationalBayes::Initialize(FwdModel *fwd_model,
     // In spatial VB we want to default to spatial priors so we set this parameter
     // if it's not already set by the user. Note that we are doing this before
     // initializing the VB method so it acts as a default
-    args.Set("default-prior-type", "S");
+    args.Set("default-prior-type", "N");
     VariationalBayesInferenceTechnique::Initialize(fwd_model, args);
 
     m_prior_types_str = GetPriorTypesStr(m_prior_types);
@@ -493,7 +493,7 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
 }
 
 // M = Markov random field - normally used
-// P = Alternative to M
+// P = Alternative to M (Penny prior?)
 // N = non-spatial prior (model default)
 // A = ARD prior
 // I = image prior
