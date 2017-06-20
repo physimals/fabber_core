@@ -165,8 +165,6 @@ static OptionSpec OPTIONS[] = {
         OPT_NONREQ, "" },
     { "PSP_byname<n>_image", OPT_IMAGE, "Image prior for parameter <n>", OPT_NONREQ, "" },
     { "PSP_byname<n>_prec", OPT_FLOAT, "Precision to apply to image prior for parameter <n>", OPT_NONREQ, "" },
-    { "locked-linear-from-mvn", OPT_MVN, "MVN file containing fixed centres for linearization", OPT_NONREQ,
-        "" },
     { "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping",
         OPT_NONREQ, "" },
     { "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)", OPT_NONREQ,
