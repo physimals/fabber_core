@@ -205,4 +205,11 @@ protected:
     int m_new_delta_evaluations;
 
     bool m_brute_force_delta_search;
+    
+    /**
+     * Reduce this to a linear problem, using the given
+     * voxelwise linearizations (probably loaded from an MVN)
+     */
+    std::string m_locked_linear_file;
+
 };

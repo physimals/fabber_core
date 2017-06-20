@@ -174,7 +174,8 @@ void SpatialVariationalBayesExp::Initialize(FwdModel *fwd_model,
     WARN_ONCE("SpatialVariationalBayesExp::Initialize Not saving finalSpatialPriors.nii.gz -- too huge!!");
 
     // Locked linearizations, if requested
-    m_locked_linear = (lockedLinearFile != "");
+    m_locked_linear_file = args.GetStringDefault("locked-linear-from-mvn", "");
+    m_locked_linear = (m_locked_linear_file != "");
 
     // Preferred way of using these options
     if (!m_use_full_evidence && !args.GetBool("no-eo") && m_prior_types_str.find_first_of("DR") != string::npos)
@@ -232,9 +233,9 @@ void SpatialVariationalBayesExp::SetupPerVoxelDists(FabberRunData &allData)
     if (m_locked_linear)
     {
         LOG << "SpatialVariationalBayesExp::Loading fixed linearization centres from the MVN '"
-            << lockedLinearFile << "'\nNOTE: This does not check if the correct "
+            << m_locked_linear_file << "'\nNOTE: This does not check if the correct "
                                    "number of parameters is present!\n";
-        MVNDist::Load(lockedLinearDists, lockedLinearFile, allData, m_log);
+        MVNDist::Load(lockedLinearDists, m_locked_linear_file, allData, m_log);
         lockedLinearCentres.ReSize(m_num_params, m_nvoxels);
     }
 
