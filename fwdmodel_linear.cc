@@ -158,16 +158,6 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
             fcn->Evaluate(centre2, offset2);
             fcn->Evaluate(centre3, offset3);
             jacobian.Column(i) = (offset2 - offset3) / (centre2(i) - centre3(i));
-
-            /*
-			 if (i==4)
-			 {LOG << "centre2 -centre3== \n" << 1e10*(centre2-centre3) << endl;
-			 LOG << "offset2-offset3 == \n" << offset2(33)-offset3(33) << endl;
-			 LOG << "offset2-offset3 == \n" << float(offset2(33)-offset3(33)) << endl;
-			 LOG << "offset2-offset3 == \n" << double(offset2(33)-offset3(33)) << endl;
-			 LOG << "Jac 33,4 == " << jacobian(33,4) << endl;
-			 }
-			 //*/
         }
     }
 
