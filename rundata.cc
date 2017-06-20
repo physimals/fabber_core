@@ -211,8 +211,7 @@ void FabberRunData::Run(ProgressCheck *progress)
     }
 
     m_progress = progress;
-    LOG << "FabberRunData::FABBER release v" << fabber_release_version() << endl;
-    LOG << "FabberRunData::Revision " << fabber_source_version() << endl;
+    LOG << "FabberRunData::FABBER release v" << fabber_version() << endl;
     LOG << "FabberRunData::Last commit: " << fabber_source_date() << endl;
 
     time_t startTime;

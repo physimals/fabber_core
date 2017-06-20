@@ -44,7 +44,7 @@ string PolynomialFwdModel::GetDescription() const
 
 string PolynomialFwdModel::ModelVersion() const
 {
-    return fabber_release_version();
+    return fabber_version();
 }
 
 void PolynomialFwdModel::Initialize(FabberRunData &args)

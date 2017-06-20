@@ -46,7 +46,7 @@ std::string NLLSInferenceTechnique::GetDescription() const
 
 string NLLSInferenceTechnique::GetVersion() const
 {
-    return fabber_release_version();
+    return fabber_version();
 }
 
 InferenceTechnique *NLLSInferenceTechnique::NewInstance()

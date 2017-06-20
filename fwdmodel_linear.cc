@@ -50,7 +50,7 @@ std::string LinearFwdModel::GetDescription() const
 
 string LinearFwdModel::ModelVersion() const
 {
-    return fabber_release_version();
+    return fabber_version();
 }
 
 void LinearFwdModel::Initialize(FabberRunData &args)

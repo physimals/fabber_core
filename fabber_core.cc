@@ -30,7 +30,7 @@ using namespace std;
  */
 static void Version()
 {
-    cout << "Fabber " << fabber_release_version() <<  " Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl;
+    cout << "Fabber " << fabber_version() <<  " : " << fabber_source_date() << endl;
 }
 
 /**
@@ -148,9 +148,9 @@ int execute(int argc, char **argv)
         params->SetBool("dump-param-names");
 
         cout << "----------------------" << endl;
-        cout << "Welcome to FABBER v" << fabber_release_version() << endl;
+        cout << "Welcome to FABBER v" << fabber_version() << endl;
         cout << "----------------------" << endl;
-        cout << "Source ref: " << fabber_source_version() << ", " << fabber_source_date() << endl;
+        cout << "Last commit: " << fabber_source_date() << endl;
 
         log.StartLog(params->GetOutputDir());
         cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;

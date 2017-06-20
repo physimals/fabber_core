@@ -1,16 +1,8 @@
 #include "version.h"
 
-#include <sstream>
 #include <string>
 
-std::string fabber_release_version()
-{
-    std::stringstream v;
-    v << V_MAJ << "." << V_MIN << "." << V_PAT << V_FL;
-    return v.str();
-}
-
-std::string fabber_source_version()
+std::string fabber_version()
 {
 #ifdef GIT_SHA1
     return GIT_SHA1;
