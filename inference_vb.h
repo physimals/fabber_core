@@ -129,12 +129,6 @@ protected:
     /** Used by Adrian's spatial priors research */
     std::vector<MVNDist *> resultMVNsWithoutPrior;
 
-    /**
-     * Reduce this to a linear problem, using the given
-     * voxelwise linearizations (probably loaded from an MVN)
-     */
-    std::string lockedLinearFile;
-
     /** Number of motion correction steps to run */
     int Nmcstep;
 };

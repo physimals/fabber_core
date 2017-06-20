@@ -304,14 +304,6 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel *fwd_model, FabberR
     m_conv = ConvergenceDetector::NewFromName(args.GetStringDefault("convergence", "maxits"));
     m_conv->Initialize(args);
 
-    // Fix the linearization centres? FIXME don't know what this is
-    lockedLinearFile = args.GetStringDefault("locked-linear-from-mvn", "");
-    if (lockedLinearFile != "")
-    {
-        throw InvalidOptionValue("locked-linear-from-mvn", lockedLinearFile,
-            "locked-linear-from-mvn doesn't work with method=vb");
-    }
-
     // Figure out if F needs to be calculated every iteration
     m_printF = args.GetBool("print-free-energy");
     m_needF = m_conv->UseF() || m_printF;
