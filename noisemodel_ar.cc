@@ -46,7 +46,7 @@ Ar1cMatrixCache::Ar1cMatrixCache(const Ar1cMatrixCache &from)
 // recalculated whenever alpha changes
 unsigned Ar1cMatrixCache::FlattenIndex(unsigned n, unsigned a12pow, unsigned a34pow) const
 {
-    assert(n == 1 || n == 2 && a12pow <= 2 && a34pow <= 2);
+    assert((n == 1 || n == 2) && (a12pow <= 2 && a34pow <= 2));
     return n - 1 + 2 * (a12pow + 3 * (a34pow));
 }
 
