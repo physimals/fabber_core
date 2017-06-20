@@ -1,256 +1,75 @@
-Logfile started: out.tmp++/logfile
-Start time: Wed Sep 28 12:20:09 2016
-FABBER release v2.0 
-Command line and effective options:
-/usr/share/fsl/5.0/bin/fabber
---output='out.tmp++'
---basis='test/test_linear_design.mat'
---data1='test/test_data.nii.gz'
---mask='test/test_mask_small.nii.gz'
---method='spatialvb'
---model='linear'
---noise='white'
---------------------
-    Reading design file: test/test_linear_design.mat
-      Loaded 4 basis functions of length 106
-    Forward Model version:
-      $Id: fwdmodel_linear.cc,v 1.18 2011/08/04 13:36:35 chappell Exp $
-Pattern of phis used is [ 1 ]
-Note: numerical errors in voxels will cause the program to halt.
-Use --allow-bad-voxels (with caution!) to keep on calculating.
-Expanded, --param-spatial-priors=SSSS
-    Loading mask data from 'test/test_mask_small.nii.gz'
-Dimensions: x=64, y=64, z=42, vols=1
-Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=1 sec
-Intents: 0, 0, 0, 0
-  Loading data from multiple files...
-    Loading data1 from 'test/test_data.nii.gz'
-      Dimensions: x=64, y=64, z=42, vols=106
-      Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=4.2 sec
-      Intents: 0, 0, 0, 0
-    Applying mask to all data sets...
-    Combining data into one big matrix by interleaving...
-    Done loading data, size = 106 timepoints by 147 voxels
-WARNING ONCE: Not saving finalSpatialPriors.nii.gz -- too huge!!
-Using initial value for all deltas: 0.5
-WARNING ONCE: Using 'S' prior with fast-calculation method and constant diagonal weight of 1e-06
-Starting iteration 1 of 10
-
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 1e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 1e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-WARNING ONCE: Using new S VB spatial thingy
-Pattern of phis used is [ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]
-Starting iteration 2 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.20337e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.6824e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.14952e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.68002e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 3 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.29079e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.73317e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.23178e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.73096e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 4 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.38071e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.78552e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.31796e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.78333e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 5 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.47233e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.83885e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.40615e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.83667e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 6 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.5654e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.89303e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.49584e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.89083e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 7 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.65984e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 1.94803e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.58692e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 1.94579e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 8 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.75566e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 2.00382e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.67936e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 2.00153e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 9 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.85285e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 2.06041e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.77315e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 2.05806e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Starting iteration 10 of 10
-
-New akmean: 0.000000 0.000000 0.000000 0.000000 
-Optimizing for parameter 1
-
-SpatialPrior 1 type S : 2.95143e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 2
-
-SpatialPrior 2 type S : 2.11781e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 3
-
-SpatialPrior 3 type S : 2.8683e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Optimizing for parameter 4
-
-SpatialPrior 4 type S : 2.11538e-08 0 0
-    delta(k) = -3, rho(k) == 1234.57
-Coefficient resels per voxel for param 1: 0.0197197 (vb) or -999 (eo)
-Coefficient resels per voxel for param 2: 0.0136182 (vb) or -999 (eo)
-Coefficient resels per voxel for param 3: 0.0195018 (vb) or -999 (eo)
-Coefficient resels per voxel for param 4: 0.0135511 (vb) or -999 (eo)
-    Preparing to save results...
-    Writing paramnames.txt...
-      Parameter_1
-      Parameter_2
-      Parameter_3
-      Parameter_4
-    Same information using DumpParameters:
-      Parameters mean nothing to me!  I am a mere linear model.
-        Vector: 1.000000 2.000000 3.000000 4.000000 
-
-    Writing means...
-    Writing means...
-    Writing means...
-    Writing means...
-Free energy wasn't recorded, so no freeEnergy.nii.gz created.
-    Done writing results.
-FABBER is all done.
-Start time: Wed Sep 28 12:20:09 2016
-End time: Wed Sep 28 12:20:09 2016
-Duration: 0 seconds.
-
-Summary of warnings (3 distinct warnings)
-Issued once: Not saving finalSpatialPriors.nii.gz -- too huge!!
-Issued once: Using 'S' prior with fast-calculation method and constant diagonal weight of 1e-06
-Issued 1470 times: Using new S VB spatial thingy
+FabberRunDataNewimage::Loading mask data from '../test/test_mask_small'
+FabberRunDataNewimage::Dimensions: x=64, y=64, z=42, vols=1
+FabberRunDataNewimage::Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=1 sec
+FabberRunDataNewimage::Intents: 0, 0, 0, 0
+FabberRunDataNewimage::Setting coordinates from extent
+FabberRunData::FABBER release v3.9.10
+FabberRunData::Revision v3.9.0-105-g457ca47
+FabberRunData::Last commit: Tue Jun 20 12:07:54 2017
+FabberRunData::Start time: Tue Jun 20 12:18:50 2017
+FabberRunData::Parameter =./fabber
+FabberRunData::Parameter basis=../test/test_linear_design.mat
+FabberRunData::Parameter data=../test/test_data.nii.gz
+FabberRunData::Parameter dump-param-names=
+FabberRunData::Parameter mask=../test/test_mask_small
+FabberRunData::Parameter method=spatialvb
+FabberRunData::Parameter model=linear
+FabberRunData::Parameter noise=white
+FabberRunData::Parameter output=out
+FabberRunData::Parameter save-free-energy=
+FabberRunData::Parameter save-mean=
+FabberRunData::Parameter save-mvn=
+FabberRunData::Parameter save-noise-mean=
+FabberRunData::Parameter save-noise-std=
+FabberRunData::Parameter save-std=
+FabberRunData::Parameter save-zstat=
+LinearFwdModel::Reading design file: ../test/test_linear_design.mat
+LinearFwdModel::Loaded 4 basis functions of length 106
+FabberRunData::Forward Model version 3.9.10
+InferenceTechnique::Model has 4 parameters
+InferenceTechnique::Note: numerical errors in voxels will cause the program to halt.
+InferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on calculating.
+WhiteNoiseMode::Pattern of phis used is [ 1 ]
+VariationalBayesInferenceTechnique::Noise has 1 parameters
+PriorType: Parameter Parameter_1 type: N filename:  precision: -1
+PriorType: Parameter Parameter_2 type: N filename:  precision: -1
+PriorType: Parameter Parameter_3 type: N filename:  precision: -1
+PriorType: Parameter Parameter_4 type: N filename:  precision: -1
+CountingConvergenceDetector::Max iterations=10
+FabberRunData::Num voxels 147
+FabberRunDataNewimage::Loading data from '../test/test_data.nii.gz'
+FabberRunDataNewimage::Dimensions: x=64, y=64, z=42, vols=106
+FabberRunDataNewimage::Voxel size: x=3.5mm, y=3.5mm, z=3.5mm, TR=4.2 sec
+FabberRunDataNewimage::Intents: 0, 0, 0, 0
+FabberRunDataNewimage::Applying mask to data...
+FabberRunDataNewimage::Loading data from 'suppdata'
+WhiteNoiseMode::Pattern of phis used is [ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ]
+SpatialVariationalBayes::Coefficient resels per voxel for param 1: 0.999841 (vb) or -999 (eo)
+SpatialVariationalBayes::Coefficient resels per voxel for param 2: 0.999707 (vb) or -999 (eo)
+SpatialVariationalBayes::Coefficient resels per voxel for param 3: 0.999835 (vb) or -999 (eo)
+SpatialVariationalBayes::Coefficient resels per voxel for param 4: 0.999706 (vb) or -999 (eo)
+FabberRunData::Saving results 
+VariationalBayesInferenceTechnique::Writing noise
+FabberRunDataNewimage::Saving to nifti: noise_means
+FabberRunDataNewimage::Saving to nifti: noise_stdevs
+VariationalBayesInferenceTechnique::Free energy wasn't recorded, so no freeEnergy.nii.gz created.
+InferenceTechnique::Preparing to save results...
+FabberRunDataNewimage::Saving to nifti: finalMVN
+InferenceTechnique::Writing means...
+FabberRunDataNewimage::Saving to nifti: mean_Parameter_1
+FabberRunDataNewimage::Saving to nifti: zstat_Parameter_1
+FabberRunDataNewimage::Saving to nifti: std_Parameter_1
+FabberRunDataNewimage::Saving to nifti: mean_Parameter_2
+FabberRunDataNewimage::Saving to nifti: zstat_Parameter_2
+FabberRunDataNewimage::Saving to nifti: std_Parameter_2
+FabberRunDataNewimage::Saving to nifti: mean_Parameter_3
+FabberRunDataNewimage::Saving to nifti: zstat_Parameter_3
+FabberRunDataNewimage::Saving to nifti: std_Parameter_3
+FabberRunDataNewimage::Saving to nifti: mean_Parameter_4
+FabberRunDataNewimage::Saving to nifti: zstat_Parameter_4
+FabberRunDataNewimage::Saving to nifti: std_Parameter_4
+InferenceTechnique::Done writing results.
+FabberRunData::All done.
+FabberRunData::Start time: Tue Jun 20 12:18:50 2017
+FabberRunData::End time: Tue Jun 20 12:18:50 2017
+FabberRunData::Duration: 0 seconds.

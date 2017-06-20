@@ -758,7 +758,7 @@ TEST_P(VbTest, ArNoise)
                 for (int n = 0; n < NTIMES; n++)
                 {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
-                    float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 100;
+                    float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 200;
                     data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
                 }
                 v++;
