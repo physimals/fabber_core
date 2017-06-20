@@ -1,3 +1,4 @@
+#pragma once
 /*  covariance_cache.h - Part of the spatial VB framework
 
  Adrian Groves & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
