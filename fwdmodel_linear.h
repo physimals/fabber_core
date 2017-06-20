@@ -111,6 +111,7 @@ public:
     explicit LinearizedFwdModel(const FwdModel *model)
         : fcn(model)
     {
+        SetLogger(model->GetLogger());
     }
 
     /**
@@ -123,6 +124,7 @@ public:
         : LinearFwdModel(from)
         , fcn(from.fcn)
     {
+        SetLogger(from.GetLogger());
     }
 
     /**
