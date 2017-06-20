@@ -42,11 +42,11 @@ void FabberRunDataArray::SetExtent(int nx, int ny, int nz, const int *mask)
     int *maskPtr = &m_mask[0];
     int v = 0;
     Matrix coords(3, nv);
-    for (int x = 0; x < nx; x++)
+    for (int z = 0; z < nz; z++)
     {
         for (int y = 0; y < ny; y++)
         {
-            for (int z = 0; z < nz; z++)
+            for (int x = 0; x < nx; x++)
             {
                 bool masked = (*maskPtr == 0);
                 if (!masked)
@@ -70,28 +70,28 @@ void FabberRunDataArray::GetVoxelData(string key, float *data)
     assert(data);
     Matrix mdata = FabberRunData::GetVoxelData(key);
     int nt = mdata.Nrows();
-    const int *maskPtr = &m_mask[0];
     float *dataPtr = data;
 
-    int v = 0;
-    for (int x = 0; x < m_extent[0]; x++)
+    for (int t = 0; t < nt; t++)
     {
-        for (int y = 0; y < m_extent[1]; y++)
+        int v = 0;
+        const int *maskPtr = &m_mask[0];
+        for (int z = 0; z < m_extent[2]; z++)
         {
-            for (int z = 0; z < m_extent[2]; z++)
+            for (int y = 0; y < m_extent[1]; y++)
             {
-                bool masked = (*maskPtr == 0);
-                for (int t = 0; t < nt; t++)
+                for (int x = 0; x < m_extent[0]; x++)
                 {
+                    bool masked = (*maskPtr == 0);
                     if (!masked)
                         *dataPtr = mdata(t + 1, v + 1);
                     else
                         *dataPtr = 0;
                     ++dataPtr;
+                    ++maskPtr;
+                    if (!masked)
+                        ++v;
                 }
-                if (!masked)
-                    ++v;
-                ++maskPtr;
             }
         }
     }
@@ -100,30 +100,31 @@ void FabberRunDataArray::GetVoxelData(string key, float *data)
 void FabberRunDataArray::SetVoxelData(string key, int data_size, const float *data)
 {
     assert(data);
-    const int *maskPtr = &m_mask[0];
     const float *dataPtr = data;
     int num_voxels = m_extent[0] * m_extent[1] * m_extent[2];
     Matrix matrixData(data_size, num_voxels);
 
-    int v = 0;
-    for (int x = 0; x < m_extent[0]; x++)
+    int v;
+    for (int t = 0; t < data_size; t++)
     {
-        for (int y = 0; y < m_extent[1]; y++)
+        v = 0;
+        const int *maskPtr = &m_mask[0];
+        for (int z = 0; z < m_extent[2]; z++)
         {
-            for (int z = 0; z < m_extent[2]; z++)
+            for (int y = 0; y < m_extent[1]; y++)
             {
-                bool masked = (*maskPtr == 0);
-                for (int t = 0; t < data_size; t++)
+                for (int x = 0; x < m_extent[0]; x++)
                 {
+                    bool masked = (*maskPtr == 0);
                     if (!masked)
                     {
                         matrixData(t + 1, v + 1) = *dataPtr;
                     }
                     ++dataPtr;
+                    ++maskPtr;
+                    if (!masked)
+                        ++v;
                 }
-                if (!masked)
-                    ++v;
-                ++maskPtr;
             }
         }
     }
