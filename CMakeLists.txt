@@ -23,7 +23,7 @@ set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc factories.cc fwdmodel_linear
 	           fwdmodel_poly.cc convergence.cc motioncorr.cc covariance_cache.cc)
 
 # Inference methods
-set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc)
+set(INFERENCE_SRC inference_vb.cc inference_nlls.cc inference_spatialvb.cc inference_spatialvb_exp.cc)
 
 # Noise models
 set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
