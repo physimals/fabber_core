@@ -16,32 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifdef _WIN32
-#include "direct.h"
-#else
-#include <sys/stat.h>
-#endif
-
 using namespace std;
-
-static bool is_dir(string path)
-{
-#ifdef _WIN32
-    struct _stat s;
-    if (_stat(path.c_str(), &s) == 0)
-#else
-    struct stat s;
-    if (stat(path.c_str(), &s) == 0)
-#endif
-    {
-        return (s.st_mode & S_IFDIR);
-    }
-    else
-    {
-        // Does not exist, so not a directory...
-        return false;
-    }
-}
 
 EasyLog::EasyLog()
     : m_stream(0)
