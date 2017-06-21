@@ -76,7 +76,7 @@ int fabber_load_models(void *fab, const char *libpath, char *err_buf)
     }
 }
 
-int fabber_set_extent(void *fab, int nx, int ny, int nz, const int *mask, char *err_buf)
+int fabber_set_extent(void *fab, unsigned int nx, unsigned int ny, unsigned int nz, const int *mask, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -125,7 +125,7 @@ int fabber_set_opt(void *fab, const char *key, const char *value, char *err_buf)
     }
 }
 
-int fabber_set_data(void *fab, const char *name, int data_size, const float *data, char *err_buf)
+int fabber_set_data(void *fab, const char *name, unsigned int data_size, const float *data, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -199,7 +199,7 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
     }
 }
 
-int fabber_dorun(void *fab, int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int))
+int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int))
 {
     EasyLog log;
 
@@ -277,7 +277,7 @@ void fabber_destroy(void *fab)
     }
 }
 
-int fabber_get_options(void *fab, const char *key, const char *value, int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_options(void *fab, const char *key, const char *value, unsigned int out_bufsize, char *out_buf, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -339,7 +339,7 @@ int fabber_get_options(void *fab, const char *key, const char *value, int out_bu
     }
 }
 
-int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_models(void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -375,7 +375,7 @@ int fabber_get_models(void *fab, int out_bufsize, char *out_buf, char *err_buf)
     }
 }
 
-int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_methods(void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -411,7 +411,7 @@ int fabber_get_methods(void *fab, int out_bufsize, char *out_buf, char *err_buf)
     }
 }
 
-int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_model_params(void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -453,7 +453,7 @@ int fabber_get_model_params(void *fab, int out_bufsize, char *out_buf, char *err
     }
 }
 
-int fabber_model_evaluate(void *fab, int n_params, float *params, int n_ts, float *indata, float *output, char *err_buf)
+int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsigned int n_ts, float *indata, float *output, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -481,7 +481,7 @@ int fabber_model_evaluate(void *fab, int n_params, float *params, int n_ts, floa
         NEWMAT::ColumnVector p_vec(n_params);
         NEWMAT::ColumnVector o_vec(n_ts);
         NEWMAT::ColumnVector data_vec(n_ts);
-        for (int i=0; i<n_params; i++) {
+        for (unsigned int i=0; i<n_params; i++) {
             p_vec(i+1) = params[i];
             if (indata) data_vec(i+1) = indata[i];
             else data_vec(i+1) = 0;
@@ -489,9 +489,9 @@ int fabber_model_evaluate(void *fab, int n_params, float *params, int n_ts, floa
 
         model->pass_in_data(data_vec);
         model->Evaluate(p_vec, o_vec);
-        for (int i=0; i<n_ts; i++) {
+        for (unsigned int i=0; i<n_ts; i++) {
             // Model may not return the same number of timepoints as passed in!
-            if (i < o_vec.Nrows()) output[i] = o_vec(i+1);
+            if ((int)i < o_vec.Nrows()) output[i] = o_vec(i+1);
             else output[i] = 0;
         }
 

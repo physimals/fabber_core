@@ -974,20 +974,20 @@ class FabberLib(Fabber):
             self.clib.fabber_new.argtypes = [c_char_p]
             self.clib.fabber_new.restype = c_void_p
             self.clib.fabber_load_models.argtypes = [c_void_p, c_char_p, c_char_p]
-            self.clib.fabber_set_extent.argtypes = [c_void_p, c_int, c_int, c_int, c_int_arr, c_char_p]
+            self.clib.fabber_set_extent.argtypes = [c_void_p, c_uint, c_uint, c_uint, c_int_arr, c_char_p]
             self.clib.fabber_set_opt.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
-            self.clib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_int, c_float_arr, c_char_p]
+            self.clib.fabber_set_data.argtypes = [c_void_p, c_char_p, c_uint, c_float_arr, c_char_p]
             self.clib.fabber_get_data_size.argtypes = [c_void_p, c_char_p, c_char_p]
             self.clib.fabber_get_data.argtypes = [c_void_p, c_char_p, c_float_arr, c_char_p]
-            self.clib.fabber_dorun.argtypes = [c_void_p, c_int, c_char_p, c_char_p, self.progress_cb_type]
+            self.clib.fabber_dorun.argtypes = [c_void_p, c_uint, c_char_p, c_char_p, self.progress_cb_type]
             self.clib.fabber_destroy.argtypes = [c_void_p]
 
-            self.clib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_int, c_char_p, c_char_p]
-            self.clib.fabber_get_models.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
-            self.clib.fabber_get_methods.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
+            self.clib.fabber_get_options.argtypes = [c_void_p, c_char_p, c_char_p, c_uint, c_char_p, c_char_p]
+            self.clib.fabber_get_models.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
+            self.clib.fabber_get_methods.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
 
-            self.clib.fabber_get_model_params.argtypes = [c_void_p, c_int, c_char_p, c_char_p]
-            self.clib.fabber_model_evaluate.argtypes = [c_void_p, c_int, c_float_arr, c_int, c_float_arr, c_float_arr, c_char_p]
+            self.clib.fabber_get_model_params.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
+            self.clib.fabber_model_evaluate.argtypes = [c_void_p, c_uint, c_float_arr, c_uint, c_float_arr, c_float_arr, c_char_p]
         except Exception, e:
             raise FabberException("Error initializing Fabber library: %s" % str(e))
 
