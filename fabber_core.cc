@@ -146,9 +146,11 @@ int execute(int argc, char **argv)
 
         // Make sure command line tool creates a parameter names file
         params->SetBool("dump-param-names");
+        // Link to latest run
+        params->SetBool("link-to-latest");
 
         cout << "----------------------" << endl;
-        cout << "Welcome to FABBER v" << fabber_version() << endl;
+        cout << "Welcome to FABBER " << fabber_version() << endl;
         cout << "----------------------" << endl;
         cout << "Last commit: " << fabber_source_date() << endl;
 
