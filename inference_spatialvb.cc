@@ -193,6 +193,8 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
         else
         {
             m_fwd_post[v - 1] = *initialFwdPosterior;
+            PassModelData(v); // May be required for model to initialize posterior
+            m_model->InitParams(m_fwd_post[v - 1]);
             m_noise_post[v - 1] = initialNoisePosterior->Clone();
         }
 
@@ -566,12 +568,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         {
             PassModelData(v);
 
-            if (m_continueFromFile == "")
-            {
-                // voxelwise initialisation - only if we dont have initial values from a
-                // pre loaded MVN
-                m_model->InitParams(m_fwd_post[v - 1]);
-            }
             // Spatial VB mucks around with the fwd priors. Presumably to
             // incorporate the prior assumption of spatial uniformity
 
