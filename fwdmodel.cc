@@ -190,7 +190,7 @@ void FwdModel::DumpParameters(const NEWMAT::ColumnVector &params, const string &
     LOG << indent << "Parameters:" << endl;
     vector<string> names;
     NameParams(names);
-    assert(names.size() == params.Nrows());
+    assert(int(names.size()) == params.Nrows());
 
     for (size_t i = 1; i <= names.size(); i++)
         LOG << indent << "  " << names[i - 1] << " = " << params(i) << endl;
