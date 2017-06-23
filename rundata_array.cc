@@ -104,7 +104,7 @@ void FabberRunDataArray::SetVoxelData(string key, int data_size, const float *da
     int num_voxels = m_extent[0] * m_extent[1] * m_extent[2];
     Matrix matrixData(data_size, num_voxels);
 
-    int v;
+    int v=0;
     for (int t = 0; t < data_size; t++)
     {
         v = 0;
@@ -128,6 +128,7 @@ void FabberRunDataArray::SetVoxelData(string key, int data_size, const float *da
             }
         }
     }
+    if (v==0) throw FabberInternalError("FabberRunDataArray::SetVoxelData - zero extent");
     matrixData = matrixData.Columns(1, v);
     FabberRunData::SetVoxelData(key, matrixData);
 }
