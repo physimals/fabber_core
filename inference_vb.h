@@ -67,12 +67,15 @@ public:
     virtual ~VariationalBayesInferenceTechnique();
 
 protected:
+
+    void SetupSingleVoxelDists(int v);
     void InitializeMVNFromParam(FabberRunData &args, MVNDist *dist, string param_key);
     void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
     void MakeInitialDistributions(FabberRunData &args);
     void GetPriorTypes(FabberRunData &args);
     void LoadImagePriors(FabberRunData &allData);
     void PassModelData(int voxel);
+    //double GetFreeEnergy(std::string name, double Fard=0);
 
     /** Number of voxels in data */
     int m_nvoxels;
@@ -81,7 +84,7 @@ protected:
 	 * Noise model in use. This is created by the inference
 	 * method deleted on destruction
 	 */
-    std::auto_ptr<NoiseModel> noise;
+    std::auto_ptr<NoiseModel> m_noise;
 
     /**
 	 * Number of noise parameters.

@@ -258,7 +258,7 @@ void SpatialVariationalBayesExp::SetupPerVoxelDists(FabberRunData &allData)
             m_fwd_post[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
 
             assert(m_num_params + nNoiseParams == resultMVNs.at(v - 1)->GetSize());
-            m_noise_post[v - 1] = noise->NewParams();
+            m_noise_post[v - 1] = m_noise->NewParams();
             m_noise_post[v - 1]->InputFromMVN(resultMVNs.at(v - 1)->GetSubmatrix(
                 m_num_params + 1, m_num_params + nNoiseParams));
         }
@@ -284,7 +284,7 @@ void SpatialVariationalBayesExp::SetupPerVoxelDists(FabberRunData &allData)
         }
 
         m_noise_prior[v - 1] = initialNoisePrior->Clone();
-        noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+        m_noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1],
             m_origdata->Column(v));
     }
 }
@@ -1377,7 +1377,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
             double &F = resultFs.at(v - 1);
             if (m_needF)
             {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 F += Fard;
@@ -1390,7 +1390,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
             LOG << "3. Prior means: " << m_fwd_prior[v-1].means.t() << endl;
             LOG << "3. Posterior means: " << m_fwd_post[v-1].means.t() << endl;
 
-            noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
+            m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
                 m_fwd_prior[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v),
                 m_fwd_post_no_prior.at(v - 1));
@@ -1400,7 +1400,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
 
             if (m_needF)
             {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 F += Fard;
@@ -1429,7 +1429,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
             // Reference to free energy output so can be modified below if required
             double &F = resultFs.at(v - 1);
 
-            noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+            m_noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                 m_fwd_post[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v));
 
@@ -1437,7 +1437,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
             LOG << "5. Posterior means: " << m_fwd_post[v-1].means.t() << endl;
 
             if (m_needF) {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)
@@ -1449,7 +1449,7 @@ void SpatialVariationalBayesExp::DoCalculations(FabberRunData &allData)
                 m_lin_model[v - 1].ReCentre(m_fwd_post[v - 1].means);
 
             if (m_needF) {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)
