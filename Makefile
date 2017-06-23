@@ -20,10 +20,10 @@ SCRIPTS = fabber_var
 BASICOBJS = tools.o rundata.o dist_mvn.o easylog.o fabber_capi.o version.o dist_gamma.o rundata_array.o
 
 # Core objects - things that implement the framework for inference
-COREOBJS =  noisemodel.o fwdmodel.o inference.o fwdmodel_linear.o fwdmodel_poly.o convergence.o motioncorr.o 
+COREOBJS =  noisemodel.o fwdmodel.o inference.o fwdmodel_linear.o fwdmodel_poly.o convergence.o motioncorr.o priors.o
 
 # Infernce methods
-INFERENCEOBJS = inference_vb.o inference_nlls.o inference_spatialvb.o inference_spatialvb_exp.o covariance_cache.o
+INFERENCEOBJS = inference_myvb.o inference_vb.o inference_nlls.o inference_spatialvb.o inference_spatialvb_exp.o covariance_cache.o
 
 # Noise models
 NOISEOBJS = noisemodel_white.o noisemodel_ar.o
