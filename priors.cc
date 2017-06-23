@@ -412,10 +412,19 @@ string PriorFactory::GetTypesString()
 {
     size_t num_params = m_param_names.size();
     string priors_str = m_rundata.GetStringDefault("param-spatial-priors", "");
-    if (priors_str.size() > num_params)
+    
+    // Yuk
+    size_t n_str_params = 0;
+    for (size_t i=0; i<priors_str.size(); i++) 
+    {
+        if (priors_str[i] != '+') n_str_params++;
+    }
+
+    if (n_str_params > num_params)
     {
         throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
     }
+
     if (priors_str.size() < num_params)
     {
         // Expand '+' char, if present, to give correct number of parameters
