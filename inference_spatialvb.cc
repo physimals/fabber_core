@@ -186,7 +186,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
         {
             m_fwd_post[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
             assert(m_num_params + nNoiseParams == resultMVNs.at(v - 1)->GetSize());
-            m_noise_post[v - 1] = noise->NewParams();
+            m_noise_post[v - 1] = m_noise->NewParams();
             m_noise_post[v - 1]->InputFromMVN(resultMVNs.at(v - 1)->GetSubmatrix(
                 m_num_params + 1, m_num_params + nNoiseParams));
         }
@@ -209,7 +209,7 @@ void SpatialVariationalBayes::SetupPerVoxelDists(FabberRunData &allData)
         }
 
         m_noise_prior[v - 1] = initialNoisePrior->Clone();
-        noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+        m_noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1],
             m_origdata->Column(v));
     }
 }
@@ -245,6 +245,8 @@ void SpatialVariationalBayes::UpdateAkmean(DiagonalMatrix &akmean)
             // using the fact that this == sum(diag(sigmak) .* diag(S'*S))
             // (since sigmak is diagonal!)
 
+            ColumnVector Swk = tiny * wk;
+
             double tmp1 = 0.0;
             for (int v = 1; v <= m_nvoxels; v++)
             {
@@ -257,12 +259,7 @@ void SpatialVariationalBayes::UpdateAkmean(DiagonalMatrix &akmean)
                     tmp1 += sigmak(v, v) * (4 * m_spatial_dims * m_spatial_dims + nn);
                 else // P
                     tmp1 += sigmak(v, v) * ((nn + tiny) * (nn + tiny) + nn);
-            }
-
-            ColumnVector Swk = tiny * wk;
-
-            for (int v = 1; v <= m_nvoxels; v++)
-            {
+            
                 for (vector<int>::iterator v2It = m_neighbours[v - 1].begin();
                      v2It != m_neighbours.at(v - 1).end(); ++v2It)
                 {
@@ -494,6 +491,35 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
     return Fard;
 }
 
+void SpatialVariationalBayes::IgnoreVoxel(int v) 
+{
+    m_ignore_voxels.push_back(v);
+    
+    // Remove voxel from lists of neighbours of other voxels.
+    // We identify affected voxels by looking in the neighbour
+    // lists for the bad voxel, because any voxel which has 
+    // the bad voxel as a neighbour will be a neighbour of the
+    // bad voxel
+    vector<int> nn = m_neighbours[v-1];
+    for (vector<int>::iterator i=nn.begin(); i!=nn.end(); ++i) {
+        // Reference to list of neighbours of some other voxel which
+        // has the bad voxel as a neighbour
+        vector<int> &n2 = m_neighbours[*i-1];
+
+        n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
+    }
+
+    // Same for next-nearest-neighbours
+    nn = m_neighbours2[v-1];
+    for (vector<int>::iterator i=nn.begin(); i!=nn.end(); ++i) {
+        // Reference to list of neighbours of some other voxel which
+        // has the bad voxel as a neighbour
+        vector<int> &n2 = m_neighbours2[*i-1];
+
+        n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
+    }
+}
+
 // M = Markov random field - normally used
 // P = Alternative to M (Penny prior?)
 // N = non-spatial prior (model default)
@@ -524,7 +550,6 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     // Only call DoCalculations once
     assert(resultMVNs.empty());
     assert(resultFs.empty());
-    assert(resultMVNsWithoutPrior.empty());
 
     // Make the neighbours[] lists if required
     if (m_prior_types_str.find_first_of("mMpP") != string::npos)
@@ -566,6 +591,9 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
         // ITERATE OVER VOXELS
         for (int v = 1; v <= m_nvoxels; v++)
         {
+            // Ignore voxels where numerical issues have occurred
+            if (std::find(m_ignore_voxels.begin(), m_ignore_voxels.end(), v) != m_ignore_voxels.end()) continue;
+
             PassModelData(v);
 
             // Spatial VB mucks around with the fwd priors. Presumably to
@@ -586,35 +614,61 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 
             // Reference to free energy output so can be modified below
             double &F = resultFs.at(v - 1);
-            if (m_needF)
-            {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
-                    m_fwd_post[v - 1], m_fwd_prior[v - 1],
-                    m_lin_model[v - 1], m_origdata->Column(v));
-                F += Fard;
-            }
-            if (m_printF)
-            {
-                LOG << "SpatialVbInferenceTechnique::Fbefore == " << F << endl;
-            }
 
-            noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
-                m_fwd_prior[v - 1], m_lin_model[v - 1],
-                m_origdata->Column(v), NULL, 0);
+            try {
+                if (m_needF)
+                {
+                    F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                        m_fwd_post[v - 1], m_fwd_prior[v - 1],
+                        m_lin_model[v - 1], m_origdata->Column(v));
+                    F += Fard;
+                }
+                if (m_printF)
+                {
+                    LOG << "SpatialVbInferenceTechnique::Fbefore == " << F << endl;
+                }
 
-            if (m_needF)
-            {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
-                    m_fwd_post[v - 1], m_fwd_prior[v - 1],
-                    m_lin_model[v - 1], m_origdata->Column(v));
-                F += Fard;
-                // Fard does NOT change because we haven't updated m_fwd_prior yet.
+                m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
+                    m_fwd_prior[v - 1], m_lin_model[v - 1],
+                    m_origdata->Column(v), NULL, 0);
+
+                if (m_needF)
+                {
+                    F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                        m_fwd_post[v - 1], m_fwd_prior[v - 1],
+                        m_lin_model[v - 1], m_origdata->Column(v));
+                    F += Fard;
+                    // Fard does NOT change because we haven't updated m_fwd_prior yet.
+                }
+
+                if (m_printF)
+                    LOG << "SpatialVbInferenceTechnique::Ftheta == " << F << endl;
             }
+            catch (FabberInternalError &e) {
 
-            if (m_printF)
-                LOG << "SpatialVbInferenceTechnique::Ftheta == " << F << endl;
+                LOG << "SpatialVbInferenceTechnique::Internal error for voxel " <<  v 
+                    << " at " << m_coords->Column(v).t() << " : " << e.what() << endl;
+                
+                if (m_halt_bad_voxel)
+                    throw;
+                else {
+                    IgnoreVoxel(v);
+                    LOG << "This voxel will be ignored in further updates" << endl;
+                }
+            }
+            catch (NEWMAT::Exception &e) {
+
+                LOG << "SpatialVbInferenceTechnique::NEWMAT exception for voxel " <<  v 
+                    << " at " << m_coords->Column(v).t() << " : " << e.what() << endl;
+                
+                if (m_halt_bad_voxel)
+                    throw;
+                else {
+                    IgnoreVoxel(v);
+                    LOG << "This voxel will be ignored in further updates" << endl;
+                }
+            }
         }
-
 
         // ITERATE OVER VOXELS
         for (int v = 1; v <= m_nvoxels; v++) {
@@ -622,12 +676,12 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
 
             PassModelData(v);
 
-            noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+            m_noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                 m_fwd_post[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v));
 
             if (m_needF) {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)
@@ -639,7 +693,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 m_lin_model[v - 1].ReCentre(m_fwd_post[v - 1].means);
 
             if (m_needF) {
-                F = noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+                F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)

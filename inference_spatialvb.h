@@ -68,6 +68,15 @@ protected:
 	*/
     void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
 
+    /**
+     * Ignore this voxel in future updates.
+     *
+     * No calculation of priors or posteriors will occur for this voxel
+     * and it will be removed from the lists of neighbours for other voxels.
+     * The effect should be as if it were masked
+     */
+    void IgnoreVoxel(int v);
+
     // Per-voxel prior and posterior distributions. For Spatial VB we need to
     // keep these around during iteration as the influence the calculations on
     // neighbouring voxels. In particular the priors change as they reflect
@@ -80,6 +89,11 @@ protected:
     std::vector<MVNDist> m_fwd_post;
     std::vector<LinearizedFwdModel> m_lin_model;
 
+    /**
+     * Voxels to ignore, indexed from 1 as per NEWMAT
+     */
+    std::vector<int> m_ignore_voxels;
+    
     /**
 	 * Number of spatial dimensions
 	 *
