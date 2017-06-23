@@ -155,12 +155,12 @@ void MVNDist::SetSize(int dim)
     {
         m_size = dim;
         means.ReSize(dim);
-        precisions.ReSize(dim);
-        covariance.ReSize(dim);
+        means = 0;
+        precisions = IdentityMatrix(dim);
+        covariance = IdentityMatrix(dim);
     }
-    precisionsValid = false;
-    covarianceValid = false;
-    // means is also now undefined (or at least out-of-date)
+    precisionsValid = true;
+    covarianceValid = true;
 
     assert(means.Nrows() == m_size);
     assert(precisions.Nrows() == m_size);
