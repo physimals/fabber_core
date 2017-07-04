@@ -10,6 +10,7 @@
 
 #include "easylog.h"
 #include "rundata.h"
+#include "transforms.h"
 
 #include <newmat.h>
 
@@ -168,9 +169,13 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
     }
 }
 
+string FwdModel::GetDescription() const 
+{ 
+    return "No description available"; 
+}
+
 string FwdModel::ModelVersion() const
 {
-    // You should overload this function in your FwdModel class
     return "No version info available.";
 }
 
@@ -179,10 +184,154 @@ void FwdModel::Usage(std::ostream &stream) const
     stream << "No usage information available" << endl;
 }
 
-bool FwdModel::Gradient(const NEWMAT::ColumnVector &params, NEWMAT::Matrix &grad) const
+void FwdModel::PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxcoords, const NEWMAT::ColumnVector &voxsuppdata)
 {
-    // By default return false -> no gradient is supplied by this model
-    return false;
+    data = voxdata;
+    suppdata = voxsuppdata;
+    coords = voxcoords;
+    coord_x = coords(1);
+    coord_y = coords(2);
+    coord_z = coords(3);
+}
+
+void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params) 
+{
+    GetParameterDefaults(params);
+    m_params.clear();
+
+    for (vector<Parameter>::iterator p=params.begin(); p<params.end(); ++p)
+    {
+        // Complexity below is due to there being two ways of specifying
+        // priors. One is using the param-spatial-priors option which is
+        // a sequence of chars in model parameter order, one for each
+        // parameter. A + character means 'use the previous value for all
+        // remaining parameters'. An 'I' means an image prior and
+        // the filename is specified separately using an image-prior<n> option
+        string types = rundata.GetString("param-spatial-priors");
+        assert(types.size()==params.size());
+        if (types[p->idx] != '-') {
+            p->prior_type = types[p->idx];
+        }
+
+        // Record the data key (filename) for an image prior. Note that the index is
+        // conceptually different from the PSP_byname_image method use below - here
+        // it is the parameter index in the model's list (starting at 1), below it depends on
+        // the order in which the names are given in the options.
+        p->options["image"] = "image-prior" + stringify(p->idx + 1);
+        
+        // Determine if we have any PSP_byname options for this parameter. These override the
+        // options above
+        int psp_idx = 1;
+        while (true)
+        {
+            string name = rundata.GetStringDefault("PSP_byname" + stringify(psp_idx), "stop!");
+            if (name == "stop!")
+                break;
+            else if (name == p->name) 
+            {
+                string psp_idx_str = stringify(psp_idx);
+                string transform_code = rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_transform", "");
+                if (transform_code != "") p->transform = GetTransform(transform_code);
+
+                p->prior_type = convertTo<char>(rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
+                double mean = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_mean", p->prior.mean());
+                double prec = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_prec", p->prior.prec());
+                p->prior = DistParams(mean, 1/prec);
+                p->options["image"] = "PSP_byname" + psp_idx_str + "_image";
+            }
+            psp_idx++;
+        }
+
+        // FIXME do this here, or let the priors do it?
+        //
+        // Need to transform mean/precision as specified in the model into Fabber-space
+        p->prior = p->transform->ToFabber(p->prior);
+
+        // Keep our own list of parameters
+        m_params.push_back(*p);
+    }
+}
+
+void FwdModel::GetInitialPosterior(MVNDist &posterior) const
+{
+    posterior.SetSize(m_params.size());
+
+    // Set model defaults
+    NEWMAT::SymmetricMatrix cov = posterior.GetCovariance();
+    for (size_t p=0; p<m_params.size(); p++) {
+        posterior.means(p+1) = m_params[p].post.mean();
+        cov(p+1, p+1) = m_params[p].post.var();
+    }
+    posterior.SetCovariance(cov);
+
+    // Do voxelwise initialization
+    InitParams(posterior);
+
+    // Finally, apply transforms
+    ToFabber(posterior);
+}
+
+void FwdModel::ToFabber(MVNDist &mvn) const
+{
+    NEWMAT::SymmetricMatrix cov = mvn.GetCovariance();
+    for (size_t p=0; p<m_params.size(); p++) {
+        DistParams dp(mvn.means(p+1), cov(p+1, p+1));
+        dp = m_params[p].transform->ToFabber(dp);
+        mvn.means(p+1) = dp.mean();
+        cov(p+1, p+1) = dp.var();
+    }
+    mvn.SetCovariance(cov);
+}
+
+void FwdModel::ToModel(MVNDist &mvn) const
+{
+    NEWMAT::SymmetricMatrix cov = mvn.GetCovariance();
+    for (size_t p=0; p<m_params.size(); p++) {
+        DistParams dp(mvn.means(p+1), cov(p+1, p+1));
+        dp = m_params[p].transform->ToModel(dp);
+        mvn.means(p+1) = dp.mean();
+        cov(p+1, p+1) = dp.var();
+    }
+    mvn.SetCovariance(cov);
+}
+
+void FwdModel::GetParameterDefaults(vector<Parameter> &params) const
+{
+    params.clear();
+    vector<string> names;
+    // Old method of naming parameters
+    NameParams(names);
+
+    // Old method of specifying default prior and posterior
+    MVNDist priors(names.size()), posts(names.size());
+    HardcodedInitialDists(priors, posts);
+
+    for (unsigned int i=0; i<names.size(); i++) {
+        DistParams prior(priors.means(i+1), priors.GetCovariance()(i+1, i+1));
+        DistParams post(posts.means(i+1), posts.GetCovariance()(i+1, i+1));
+        Parameter p(i, names[i], prior, post, PRIOR_CODE_NORMAL, TRANSFORM_IDENTITY());
+        
+        // Old method of specifying ARD priors
+        if (find(ardindices.begin(), ardindices.end(), i+1) != ardindices.end()) {
+            p.prior_type = PRIOR_CODE_ARD;
+        }
+        params.push_back(p);
+    }
+}
+	
+void FwdModel::EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
+{
+    assert((m_params.size() == 0) || (int(m_params.size()) == params.Nrows()));
+    if (m_params.size() == 0) {
+        Evaluate(params, result);
+    }
+    else {
+        NEWMAT::ColumnVector tparams(params.Nrows());
+        for (int i=1; i<=params.Nrows(); i++) {
+            tparams(i) = m_params[i-1].transform->ToModel(params(i));
+        }
+        Evaluate(tparams, result);
+    }
 }
 
 void FwdModel::DumpParameters(const NEWMAT::ColumnVector &params, const string &indent) const
@@ -196,11 +345,4 @@ void FwdModel::DumpParameters(const NEWMAT::ColumnVector &params, const string &
         LOG << indent << "  " << names[i - 1] << " = " << params(i) << endl;
 
     LOG << indent << "Total of " << names.size() << " parameters" << endl;
-}
-
-void FwdModel::pass_in_coords(const NEWMAT::ColumnVector &coords)
-{
-    coord_x = coords(1);
-    coord_y = coords(2);
-    coord_z = coords(3);
 }

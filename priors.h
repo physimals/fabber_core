@@ -7,6 +7,7 @@
  */
 
 #include "rundata.h"
+#include "run_context.h"
 #include "dist_mvn.h"
 #include "fwdmodel.h"
 
@@ -15,21 +16,6 @@
 #include <vector>
 #include <string>
 #include <ostream>
-
-// Temp structure for info required by ApplyToMVN.
-//
-// Should go into inference method as a kind of generic run context.
-struct PriorContext 
-{
-    PriorContext(int nvoxels, std::vector<MVNDist> &fwd_post, std::vector<std::vector<int> > &neighbours, std::vector<std::vector<int> > &neighbours2)
-    : it(0), v(1), nvoxels(nvoxels), fwd_post(fwd_post), neighbours(neighbours), neighbours2(neighbours2) {}
-    int it;
-    int v;
-    int nvoxels;
-    std::vector<MVNDist> &fwd_post;
-    std::vector<std::vector<int> > &neighbours;
-    std::vector<std::vector<int> > &neighbours2;
-};
 
 /**
  * Abstract interface for a parameter prior
@@ -47,7 +33,7 @@ public:
      *
      * Returns any additional free energy contribution (e.g. for ARD priors)
      */
-    virtual double ApplyToMVN(MVNDist *prior, const PriorContext &ctx) = 0;
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx) = 0;
 };
 
 /**
@@ -56,8 +42,7 @@ public:
 class DefaultPrior : public Prior
 {
 public:
-    DefaultPrior();
-    DefaultPrior(char type, unsigned int idx, std::string param_name, double mean=-1, double prec=-1);
+    DefaultPrior(const Parameter &param);
     virtual ~DefaultPrior() {}
 
     /** Parameter name this prior applies to */
@@ -66,17 +51,14 @@ public:
     /** Parameter index number */
     unsigned int m_idx;
 
-    /** DefaultPrior type code */
+    /** Prior type code */
     char m_type_code;
 
-    /** DefaultPrior mean */
-    double m_mean;
-
-    /** DefaultPrior precision */
-    double m_prec;
+    /** Prior mean and variance*/
+    DistParams m_params;
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const PriorContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
 };
 
 /**
@@ -85,10 +67,10 @@ public:
 class ImagePrior : public DefaultPrior
 {
 public:
-    ImagePrior(unsigned int idx, std::string param_name, std::string filename, double prec, FabberRunData &rundata);
+    ImagePrior(const Parameter &param, FabberRunData &rundata);
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const PriorContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
 protected:
     /** Filename containing image data if required */
     std::string m_filename;
@@ -103,10 +85,11 @@ protected:
 class ARDPrior : public DefaultPrior
 {
 public:
-    ARDPrior(unsigned int idx, std::string param_name) : DefaultPrior('A', idx, param_name) {}
+    ARDPrior(const Parameter &param, FabberRunData &rundata) : DefaultPrior(param) 
+    { m_log = rundata.GetLogger();}
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const PriorContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
 };
 
 /**
@@ -118,12 +101,12 @@ public:
 class SpatialPrior : public DefaultPrior
 {
 public:
-    SpatialPrior(char type, unsigned int idx, std::string param_name, double mean, double prec, FabberRunData &rundata);
+    SpatialPrior(const Parameter &param, FabberRunData &rundata);
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const PriorContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
 protected:
-    double CalculateAkmean(const PriorContext &ctx);
+    double CalculateAkmean(const RunContext &ctx);
     double m_akmean;
     int m_spatial_dims;
     double m_spatial_speed;
@@ -136,20 +119,16 @@ protected:
 class PriorFactory : public Loggable
 {
 public:
-    PriorFactory(const FwdModel &model, FabberRunData &rundata);
+    PriorFactory(FabberRunData &rundata);
 
     /** Create priors for all model parameters */
-    std::vector<Prior *> CreatePriors();
+    std::vector<Prior *> CreatePriors(const std::vector<Parameter> &params);
 
 private:
-    const FwdModel &m_model;
     FabberRunData &m_rundata;
-    std::vector<std::string> m_param_names;
 
-    /** Create a prior for the parameter at the specified index */
-    Prior *CreatePrior(unsigned int idx, double mean, double prec);
-
-    std::string GetTypesString();
+    /** Create a prior for a parameter */
+    Prior *CreatePrior(Parameter p);
 };
 
 std::ostream &operator<<(std::ostream &out, const Prior &value);

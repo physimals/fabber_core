@@ -11,6 +11,7 @@
 #include "easylog.h"
 #include "noisemodel.h"
 #include "rundata.h"
+#include "tools.h"
 
 #include <miscmaths/miscmaths.h>
 #include <newmat.h>
@@ -19,6 +20,7 @@
 #include <string>
 
 using MISCMATHS::digamma;
+using fabber::gammaln;
 using namespace NEWMAT;
 using namespace std;
 
@@ -302,6 +304,7 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta, co
     //
     // use << instead of = because this is considered a lossy assignment
     // (since NEWMAT isn't smart enough to know J'*X*J is always symmetric)
+    
     SymmetricMatrix Ltmp;
     Ltmp << J.t() * X * J;
     theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);

@@ -484,6 +484,29 @@ public:
 	 */
     void SetVoxelCoords(const NEWMAT::Matrix &coords);
 
+	/**
+ 	 * Get list of nearest neighbours for each voxel
+	 *
+	 * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
+	 *               although this is unusual!
+	 *
+	 * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+ 	 */
+	std::vector<std::vector<int> > &GetNeighbours(int n_dims=3);
+
+	/**
+      * Get list of second nearest neighbours for each voxel
+	  * 
+ 	  * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
+	  *               although this is unusual!
+	  *
+	  * The list for each voxel will exclude itself, but include duplicates
+	  * if there are two routes to get there (diagonally connected) 
+      *
+      * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+      */
+	std::vector<std::vector<int> > &GetSecondNeighbours(int n_dims=3);
+
     /**
 	 * Report progress
 	 *
@@ -558,6 +581,12 @@ protected:
 	 * Options as key/value pairs
 	 */
     std::map<std::string, std::string> m_params;
+
+	/** Nearest neighbour lists, calculated lazily in GetNeighbours() */
+	std::vector<std::vector<int> > m_neighbours;
+
+	/** Second nearest neighbour lists, calculated lazily in GetSecondNeighbours() */
+    std::vector<std::vector<int> > m_neighbours2;
 
     std::string m_outdir;
 
@@ -651,13 +680,13 @@ public:
 // Convert a string into almost anything, using operator>>. See the C++ FAQ-Lite:
 // http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.3
 template <typename T>
-inline T convertTo(const std::string &s)
+inline T convertTo(const std::string &s, const std::string &key="")
 {
     T x;
     istringstream i(s);
     char c;
     if (!(i >> x) || (i.get(c)))
-        throw InvalidOptionValue("", s, "Failed to convert to required type");
+        throw InvalidOptionValue(key, s, "Failed to convert to required type");
     return x;
 }
 

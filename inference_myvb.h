@@ -28,9 +28,15 @@ public:
     virtual void DoCalculations(FabberRunData &data);
     //    virtual ~Vb();
 
+    void SaveResults(FabberRunData &rundata) const;
 protected:
 
-    void CalculateF(int v, std::string label, double Fprior);
+    virtual void DoCalculationsVoxelwise(FabberRunData &data);
+    virtual void DoCalculationsSpatial(FabberRunData &data);
+
+    std::string GetPriorTypesString(FabberRunData &rundata);
+
+    double CalculateF(int v, std::string label, double Fprior);
 
     /**
 	 * Setup per-voxel data for Spatial VB
@@ -68,18 +74,14 @@ protected:
      */
     void IgnoreVoxel(int v);
 
-    // Per-voxel prior and posterior distributions. For Spatial VB we need to
-    // keep these around during iteration as the influence the calculations on
-    // neighbouring voxels. In particular the priors change as they reflect
-    // the assumption on spatial smoothness
-    //
-    // NoiseParams is polymorphic type, so need to use pointers
     std::vector<NoiseParams *> m_noise_post;
     std::vector<NoiseParams *> m_noise_prior;
     std::vector<MVNDist> m_fwd_prior;
     std::vector<MVNDist> m_fwd_post;
     std::vector<LinearizedFwdModel> m_lin_model;
-
+    std::vector<std::vector<int> > m_neighbours;
+    std::vector<std::vector<int> > m_neighbours2;
+    
     /**
      * Voxels to ignore, indexed from 1 as per NEWMAT
      */
@@ -101,22 +103,6 @@ protected:
 	 * the last character is repeated for remaining parameters
 	 */
     std::string m_prior_types_str;
-
-    /**
-	 * Nearest-neighbours of each voxel. Vector size is number of voxels,
-	 * each entry is vector of indices of nearest neighbours, starting at 1.
-	 *
-	 * FIXME Sparse matrix would be better?
-	 */
-    std::vector<std::vector<int> > m_neighbours;
-
-    /**
-	 * Next-nearest-neighbours of each voxel. Vector size is number of voxels,
-	 * each entry is vector of indices of second nearest neighbours, starting at 1.
-	 *
-	 * FIXME Sparse matrix would be better?
-	 */
-    std::vector<std::vector<int> > m_neighbours2;
 
     /**
      * Reduce this to a linear problem, using the given

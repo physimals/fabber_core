@@ -58,17 +58,17 @@ void LinearFwdModel::Initialize(FabberRunData &args)
     FwdModel::Initialize(args);
     string designFile = args.GetString("basis");
     LOG << "LinearFwdModel::Reading design file: " << designFile << endl;
-    jacobian = read_matrix_file(designFile);
+    m_jacobian = read_matrix_file(designFile);
 
-    const int Ntimes = jacobian.Nrows();
-    const int Nbasis = jacobian.Ncols();
+    const int Ntimes = m_jacobian.Nrows();
+    const int Nbasis = m_jacobian.Ncols();
 
-    LOG << "LinearFwdModel::Loaded " << jacobian.Ncols() << " basis functions of length " << Ntimes << endl;
+    LOG << "LinearFwdModel::Loaded " << m_jacobian.Ncols() << " basis functions of length " << Ntimes << endl;
 
-    centre.ReSize(Nbasis);
-    centre = 0;
-    offset.ReSize(Ntimes);
-    offset = 0;
+    m_centre.ReSize(Nbasis);
+    m_centre = 0;
+    m_offset.ReSize(Ntimes);
+    m_offset = 0;
 
     if (args.GetBool("add-ones-regressor"))
     {
@@ -76,8 +76,8 @@ void LinearFwdModel::Initialize(FabberRunData &args)
         LOG << "LinearFwdModel::Plus an additional regressor of all ones\n";
         ColumnVector ones(Ntimes);
         ones = 1.0;
-        jacobian = jacobian | ones;
-        centre.ReSize(Nbasis + 1);
+        m_jacobian = m_jacobian | ones;
+        m_centre.ReSize(Nbasis + 1);
     }
 
     //
@@ -96,12 +96,12 @@ void LinearFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) c
 
 void LinearFwdModel::Evaluate(const ColumnVector &params, ColumnVector &result) const
 {
-    result = jacobian * (params - centre) + offset;
+    result = m_jacobian * (params - m_centre) + m_offset;
 }
 
 int LinearFwdModel::NumParams() const
 {
-    return centre.Nrows();
+    return m_centre.Nrows();
 }
 
 void LinearFwdModel::NameParams(vector<string> &names) const
@@ -113,62 +113,95 @@ void LinearFwdModel::NameParams(vector<string> &names) const
         names.push_back("Parameter_" + stringify(i));
 }
 
+LinearizedFwdModel::LinearizedFwdModel(const FwdModel *model)
+    : m_model(model)
+{
+    SetLogger(model->GetLogger());
+}
+
+LinearizedFwdModel::LinearizedFwdModel(const LinearizedFwdModel &from)
+    : LinearFwdModel(from), m_model(from.m_model)
+{
+    SetLogger(from.GetLogger());
+}
+
+void LinearizedFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
+{
+    assert(m_model);
+    m_model->HardcodedInitialDists(prior, posterior);
+}
+
+void LinearizedFwdModel::NameParams(std::vector<std::string> &names) const
+{
+    assert(m_model);
+    m_model->NameParams(names);
+}
+
+std::string LinearizedFwdModel::ModelVersion()
+{
+    assert(m_model != NULL);
+    return m_model->ModelVersion();
+}
+
 void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 {
     assert(about == about); // isfinite
 
     // Store new centre & offset
-    centre = about;
-    fcn->Evaluate(centre, offset);
-    if (0 * offset != 0 * offset)
+    m_centre = about;
+
+    m_model->EvaluateFabber(m_centre, m_offset);
+    if (0 * m_offset != 0 * m_offset)
     {
         LOG_ERR("LinearizedFwdModel::about:\n"
             << about);
-        LOG_ERR("LinearizedFwdModel::offset:\n"
-            << offset.t());
+        LOG_ERR("LinearizedFwdModel::m_offset:\n"
+            << m_offset.t());
         throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in offset");
     }
 
     // Calculate the Jacobian numerically.  jacobian is len(y)-by-len(m)
-    jacobian.ReSize(offset.Nrows(), centre.Nrows());
-    // jacobian = 0.0/0.0; // fill with NaNs to check
+    m_jacobian.ReSize(m_offset.Nrows(), m_centre.Nrows());
+    // m_jacobian = 0.0/0.0; // fill with NaNs to check
 
     // Try and get the gradient matrix (Jacobian) from the model first
-    int gradfrommodel = fcn->Gradient(centre, jacobian);
+    // FIXME this is broken when transforms are used
+    //int gradfrommodel = m_model->Gradient(m_centre, m_jacobian);
 
     // If the gradient is not supported by the model, use
     // numerical differentiation to calculate it.
-    if (!gradfrommodel)
+    if (true)
     {
         ColumnVector centre2, centre3;
         ColumnVector offset2, offset3;
-        for (int i = 1; i <= centre.Nrows(); i++)
+        for (int i = 1; i <= m_centre.Nrows(); i++)
         {
-            double delta = centre(i) * 1e-5;
+            double delta = m_centre(i) * 1e-5;
             if (delta < 0)
                 delta = -delta;
             if (delta < 1e-10)
                 delta = 1e-10;
 
             // Take derivative numerically
-            centre3 = centre;
-            centre2 = centre;
+            centre3 = m_centre;
+            centre2 = m_centre;
             centre2(i) += delta;
             centre3(i) -= delta;
-            fcn->Evaluate(centre2, offset2);
-            fcn->Evaluate(centre3, offset3);
-            jacobian.Column(i) = (offset2 - offset3) / (centre2(i) - centre3(i));
+            m_model->EvaluateFabber(centre2, offset2);
+            m_model->EvaluateFabber(centre3, offset3);
+            m_jacobian.Column(i) = (offset2 - offset3) / (centre2(i) - centre3(i));
         }
     }
 
-    if (0 * jacobian != 0 * jacobian)
+    if (0 * m_jacobian != 0 * m_jacobian)
+//    if(true)
     {
         LOG << "LinearizedFwdModel::jacobian:\n"
-            << jacobian;
+            << m_jacobian;
         LOG << "LinearizedFwdModel::about':\n"
             << about.t();
         LOG << "LinearizedFwdModel::offset':\n"
-            << offset.t();
+            << m_offset.t();
         throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in jacobian");
     }
 }
@@ -176,5 +209,5 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 void LinearizedFwdModel::DumpParameters(const ColumnVector &vec, const string &indent) const
 {
     //    LOG << indent << "This is what the nonlinear model has to say:" << endl;
-    fcn->DumpParameters(vec, indent);
+    m_model->DumpParameters(vec, indent);
 }

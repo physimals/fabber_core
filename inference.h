@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <iomanip>
 
 class InferenceTechnique : public Loggable
 {

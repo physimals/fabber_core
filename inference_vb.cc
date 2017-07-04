@@ -11,7 +11,7 @@
 #include "convergence.h"
 #include "motioncorr.h"
 
-#include <newmat.h>
+#include <newmatio.h>
 
 #include <algorithm>
 #include <math.h>
@@ -40,8 +40,8 @@ PriorType::PriorType(unsigned int idx, vector<string> param_names, FabberRunData
     // remaining parameters'. An 'I' means an image prior and
     // the filename is specified separately using an image-prior<n> option
     string types = GetTypesString(data, param_names.size());
-    m_type = data.GetStringDefault("default-prior-type", "-")[0];
-    char current_type = '-';
+    m_type = data.GetStringDefault("default-prior-type", "N")[0];
+    char current_type = 'N';
     for (size_t i = 0; i < types.size(); i++)
     {
         if (i == idx)
@@ -303,7 +303,7 @@ void VariationalBayesInferenceTechnique::Initialize(FwdModel *fwd_model, FabberR
     m_conv->Initialize(args);
 
     // Figure out if F needs to be calculated every iteration
-    m_printF = args.GetBool("print-free-energy");
+    m_printF = args.GetBool("print-free-energy") || true;
     m_needF = m_conv->UseF() || m_printF;
 
     // Motion correction related setup - by default no motion correction
@@ -318,13 +318,12 @@ void VariationalBayesInferenceTechnique::PassModelData(int v)
     if (m_suppdata->Ncols() > 0)
     {
         ColumnVector suppy = m_suppdata->Column(v);
-        m_model->pass_in_data(y, suppy);
+        m_model->PassData(y, vcoords, suppy);
     }
     else
     {
-        m_model->pass_in_data(y);
+        m_model->PassData(y, vcoords);
     }
-    m_model->pass_in_coords(vcoords);
 }
 
 #if 0
@@ -493,12 +492,18 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                 do
                 {
                     if (m_conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
-                    {
+                    {                   
                         *noisePosterior = *noisePosteriorSave;
                         fwdPosterior = fwdPosteriorSave;
                         fwdPrior = fwdPriorSave;
                         linear.ReCentre(fwdPosterior.means);
-                    }
+                        LOG << "REVERT " << fwdPosterior.means.t() 
+                                     << fwdPosterior.GetCovariance()
+                                     << fwdPrior.means.t()
+                                     << fwdPrior.GetCovariance()
+                                     << noisePosterior->OutputAsMVN().means.t()
+                                     << noisePosterior->OutputAsMVN().GetCovariance();
+                }
 
                     if (m_needF)
                     {
@@ -508,7 +513,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                     }
                     if (m_printF)
                     {
-                        LOG << "VbInferenceTechnique::Fbefore == " << F << endl;
+                        LOG << "VbInferenceTechnique::Fbefore = " << F << endl;
                     }
 
                     // Save old values if called for
@@ -529,7 +534,15 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                     // Theta update
                     m_noise->UpdateTheta(*noisePosterior, fwdPosterior, fwdPrior, linear, m_origdata->Column(v), NULL,
                         m_conv->LMalpha());
-
+                    if (v == 3) {
+                            LOG << "T1 " << fwdPosterior.means.t() 
+                                     << fwdPosterior.GetCovariance()
+                                     << fwdPrior.means.t()
+                                     << fwdPrior.GetCovariance()
+                                     << noisePosterior->OutputAsMVN().means.t()
+                                     << noisePosterior->OutputAsMVN().GetCovariance();
+                    
+                    }
                     if (m_needF)
                     {
                         F = m_noise->CalcFreeEnergy(*noisePosterior, *noisePrior, fwdPosterior, fwdPrior, linear,
@@ -538,7 +551,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                     }
                     if (m_printF)
                     {
-                        LOG << "VbInferenceTechnique::Ftheta == " << F << endl;
+                        LOG << "VbInferenceTechnique::Ftheta = " << F << endl;
                     }
 
                     // Alpha & Phi updates
@@ -552,7 +565,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                     }
                     if (m_printF)
                     {
-                        LOG << "VbInferenceTechnique::Fphi == " << F << endl;
+                        LOG << "VbInferenceTechnique::Fphi = " << F << endl;
                     }
 
                     // Linearization update
@@ -567,7 +580,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                     }
                     if (m_printF)
                     {
-                        LOG << "VbInferenceTechnique::Fnoise == " << F << endl;
+                        LOG << "VbInferenceTechnique::Fnoise = " << F << endl;
                     }
 
                     iteration++;
@@ -633,6 +646,7 @@ void VariationalBayesInferenceTechnique::DoCalculations(FabberRunData &rundata)
                 modelpred.Column(v) = linear.Offset(); // get the model prediction which is stored within the linearized forward model
             }
 
+            LOG << v << " params= " << fwdPosterior.means.t() << endl;
             delete noisePosterior;
             noisePosterior = NULL;
             delete noisePosteriorSave;

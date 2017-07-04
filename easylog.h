@@ -127,13 +127,14 @@ class Loggable
 {
 public:
     explicit Loggable(EasyLog *log = 0)
-        : m_log(log)
+        : m_log(log), m_debug(false)
     {
     }
     EasyLog *GetLogger() const { return m_log; }
     void SetLogger(EasyLog *log) { m_log = log; }
 protected:
     EasyLog *m_log;
+    bool m_debug;
 };
 
 /**

@@ -41,7 +41,7 @@ TEST_F(PriorsTest, DefaultPriors)
     PriorType prior(PARAM_IDX, m_param_names, rundata);
     ASSERT_EQ(m_param_names[PARAM_IDX], prior.m_param_name);
     ASSERT_EQ(PARAM_IDX, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
+    ASSERT_EQ('N', prior.m_type);
     ASSERT_EQ(-1, prior.m_prec);
     ASSERT_EQ("", prior.m_filename);
     ASSERT_EQ(0, prior.m_image.Ncols());
@@ -85,7 +85,7 @@ TEST_F(PriorsTest, SinglePlus)
     PriorType prior(0, m_param_names, rundata);
     ASSERT_EQ("a", prior.m_param_name);
     ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
+    ASSERT_EQ('N', prior.m_type);
     ASSERT_EQ(-1, prior.m_prec);
     ASSERT_EQ("", prior.m_filename);
 }
@@ -397,7 +397,7 @@ TEST_F(PriorsTest, ImagePriorByNameCorrectParam)
     PriorType prior(0, m_param_names, rundata);
     ASSERT_EQ("a", prior.m_param_name);
     ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
+    ASSERT_EQ('N', prior.m_type);
     ASSERT_EQ(-1, prior.m_prec);
     ASSERT_EQ("", prior.m_filename);
     ASSERT_EQ(0, prior.m_image.Ncols());
@@ -453,7 +453,7 @@ TEST_F(PriorsTest, ImagePriorByNameMultiple)
     prior = PriorType(1, m_param_names, rundata);
     ASSERT_EQ("b", prior.m_param_name);
     ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
+    ASSERT_EQ('N', prior.m_type);
     ASSERT_EQ(-1, prior.m_prec);
     ASSERT_EQ("", prior.m_filename);
     ASSERT_EQ(0, prior.m_image.Ncols());

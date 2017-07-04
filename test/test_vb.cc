@@ -140,7 +140,7 @@ TEST_P(VbTest, ImagePriorsMultiple)
 
     ASSERT_EQ(3, vb->m_prior_types.size());
     ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    ASSERT_EQ('-', vb->m_prior_types[1].m_type);
+    ASSERT_EQ('N', vb->m_prior_types[1].m_type);
     ASSERT_EQ('I', vb->m_prior_types[2].m_type);
     NEWMAT::RowVector iprior1 = vb->m_prior_types[0].m_image;
     NEWMAT::RowVector iprior2 = vb->m_prior_types[1].m_image;

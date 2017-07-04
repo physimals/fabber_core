@@ -89,10 +89,6 @@ static string GetPriorTypesStr(vector<PriorType> &priors)
 void SpatialVariationalBayes::Initialize(FwdModel *fwd_model,
     FabberRunData &args)
 {
-    // In spatial VB we want to default to spatial priors so we set this parameter
-    // if it's not already set by the user. Note that we are doing this before
-    // initializing the VB method so it acts as a default
-    args.Set("default-prior-type", "N");
     VariationalBayesInferenceTechnique::Initialize(fwd_model, args);
 
     m_prior_types_str = GetPriorTypesStr(m_prior_types);
@@ -259,7 +255,7 @@ void SpatialVariationalBayes::UpdateAkmean(DiagonalMatrix &akmean)
                     tmp1 += sigmak(v, v) * (4 * m_spatial_dims * m_spatial_dims + nn);
                 else // P
                     tmp1 += sigmak(v, v) * ((nn + tiny) * (nn + tiny) + nn);
-            
+                
                 for (vector<int>::iterator v2It = m_neighbours[v - 1].begin();
                      v2It != m_neighbours.at(v - 1).end(); ++v2It)
                 {
@@ -381,15 +377,17 @@ void SpatialVariationalBayes::SetFwdPriorShrinkageType(int v, const NEWMAT::Diag
 
     if (m_shrinkage_type == 'm') {
         // Dirichlet BCs on MRF
-        mTmp = contrib8 / (8 * m_spatial_dims * 2); 
+        mTmp = contrib8 / (8 * (nn + 1e-8));
     }               
     if (m_shrinkage_type == 'M') {
         mTmp = contrib8 / (8 * (nn + 1e-8));
     }
-
+    
     // equivalent, when non-spatial priors are very weak: m_fwd_prior[v-1].means = mTmp;
     m_fwd_prior[v - 1].means = m_fwd_prior[v - 1].GetCovariance() * (spatialPrecisions * mTmp + initialFwdPrior->GetPrecisions() * initialFwdPrior->means);
 
+    //LOG << "SpatialPrior:: " << m_fwd_prior[v - 1].GetCovariance()(1, 1) << ", " << spatialPrecisions(1, 1) << ", " << contrib8(1) << ", " << den << ", " << mTmp(1) << " : " << t1 << endl;
+    
     if (m_shrinkage_type == 'm' || m_shrinkage_type == 'M')
         m_fwd_prior[v - 1].means = m_fwd_prior[v - 1].GetCovariance() * spatialPrecisions * mTmp; // = mTmp;
 }
@@ -408,6 +406,7 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
     // this is overwritten for I priors
     // or ignored for spatial priors
     priorMeans = initialFwdPrior->means;
+    //int ard_idx = -1;
 
     for (int k = 1; k <= m_num_params; k++)
     {
@@ -418,15 +417,19 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
         }
         else if (m_prior_types[k - 1].m_type == 'A')
         {
+            //ard_idx = k;  
             if (isFirstIteration)
             {
                 spatialPrecisions(k) = initialFwdPrior->GetPrecisions()(k, k);
                 weightedMeans(k) = initialFwdPrior->means(k);
-                // Fard = 0;
+                // Fard = 0;      
             }
             else
             {
-                double ARDparam = 1 / m_fwd_post[v - 1].GetPrecisions()(k, k) + m_fwd_post[v - 1].means(k) * m_fwd_post[v - 1].means(k);
+                //LOG << "post: " << m_fwd_post[v - 1].GetCovariance()(k, k) << ", " << m_fwd_post[v-1].means(k) << endl;
+                double ARDparam = m_fwd_post[v - 1].GetCovariance()(k, k) + m_fwd_post[v - 1].means(k) * m_fwd_post[v - 1].means(k);
+                //double ARDparam = m_fwd_post[v - 1].GetCovariance()(k, k) + m_fwd_post[v - 1].means(k) * m_fwd_post[v - 1].means(k);
+                //LOG << "new cov " << ARDparam << endl;
                 spatialPrecisions(k) = 1 / ARDparam;
                 weightedMeans(k) = 0;
                 Fard -= 2.0 * log(2.0 / ARDparam);
@@ -488,6 +491,15 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
     m_fwd_prior[v - 1].SetPrecisions(finalPrecisions);
     m_fwd_prior[v - 1].means = finalMeans;
 
+    //if (ard_idx > 0) {
+    //    if (isFirstIteration) {
+    //        LOG << "first iter ARD: " << (1/finalPrecisions(ard_idx)) << ", " << finalMeans(ard_idx) << endl;
+    //    }
+    //    else {
+    //        LOG << "subs iter ARD: " << (1/finalPrecisions(ard_idx)) << ", " << finalMeans(ard_idx) << endl;
+    //    }
+    //}
+            
     return Fard;
 }
 
@@ -540,7 +552,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     m_suppdata = &allData.GetVoxelSuppData();
     m_nvoxels = m_origdata->Ncols();
     int maxits = convertTo<int>(allData.GetStringDefault("max-iterations", "10"));
-
+    
     // pass in some (dummy) data/coords here just in case the model relies upon it
     // use the first voxel values as our dummies FIXME this shouldn't really be
     // necessary, need to find way for model to know about the data beforehand.
@@ -579,6 +591,8 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
     int it = 0;
     do
     {
+        LOG << endl << "*** Spatial iteration *** " << (it+1) << endl;
+
         // Give an indication of the progress through the voxels;
         allData.Progress(it, maxits);
 
@@ -607,6 +621,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 SetFwdPriorShrinkageType(v, akmean);
             }
             double Fard = SetFwdPrior(v, (it == 0));
+            if (m_debug) {
+                LOG << "Voxel " << v << " of " << m_nvoxels << endl;
+                LOG << "Prior means: " << m_fwd_prior[v-1].means.t();
+                LOG << "Prior precisions: " << m_fwd_prior[v-1].GetPrecisions();
+            }
 
             // The steps below are essentially the same as regular VB, although
             // the code looks different as the per-voxel dists are set up at the
@@ -625,13 +644,17 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 }
                 if (m_printF)
                 {
-                    LOG << "SpatialVbInferenceTechnique::Fbefore == " << F << endl;
+                    LOG << "Vb::Fbefore = " << F << endl;
                 }
 
                 m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
                     m_fwd_prior[v - 1], m_lin_model[v - 1],
                     m_origdata->Column(v), NULL, 0);
-
+                if (m_debug) {
+                    LOG << "Post means: " << m_fwd_post[v-1].means.t();
+                    LOG << "Post precisions: " << m_fwd_post[v-1].GetPrecisions();
+                }
+            
                 if (m_needF)
                 {
                     F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
@@ -642,7 +665,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 }
 
                 if (m_printF)
-                    LOG << "SpatialVbInferenceTechnique::Ftheta == " << F << endl;
+                    LOG << "Vb::Ftheta = " << F << endl;
             }
             catch (FabberInternalError &e) {
 
@@ -685,7 +708,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)
-                    LOG << "SpatialVbInferenceTechnique::Fnoise == " << F << endl;
+                    LOG << "Vb::Fnoise = " << F << endl;
             }
 
             // MOVED HERE on Michael's advice -- 2007-11-23
@@ -697,7 +720,7 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                     m_fwd_post[v - 1], m_fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
                 if (m_printF)
-                    LOG << "SpatialVbInferenceTechnique::Flin == " << F << endl;
+                    LOG << "Vb::Flin = " << F << endl;
             }
         }
 

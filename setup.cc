@@ -28,9 +28,11 @@
 void FabberSetup::SetupDefaultInferenceTechniques()
 {
     InferenceTechniqueFactory *factory = InferenceTechniqueFactory::GetInstance();
-    factory->Add("vb", &VariationalBayesInferenceTechnique::NewInstance);
+    //factory->Add("vb", &VariationalBayesInferenceTechnique::NewInstance);
+    //factory->Add("spatialvb", &SpatialVariationalBayes::NewInstance);
+    factory->Add("vb", &Vb::NewInstance);
+    factory->Add("spatialvb", &Vb::NewInstance);
     factory->Add("myvb", &Vb::NewInstance);
-    factory->Add("spatialvb", &SpatialVariationalBayes::NewInstance);
     factory->Add("spatialvb_exp", &SpatialVariationalBayesExp::NewInstance);
 #ifndef NO_NLLS
     factory->Add("nlls", &NLLSInferenceTechnique::NewInstance);

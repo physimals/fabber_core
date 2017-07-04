@@ -171,11 +171,6 @@ private:
     }
 };
 
-/**
- * Handy mathematical function, used by some free energy calculations
- */
-double gammaln(double xx);
-
 /** 
  * \ref SingletonFactory that returns pointers to \ref NoiseModel.
  */
