@@ -426,7 +426,7 @@ double SpatialVariationalBayes::SetFwdPrior(int v, bool isFirstIteration)
             }
             else
             {
-                double ARDparam = 1 / m_fwd_post[v - 1].GetPrecisions()(k, k) + m_fwd_post[v - 1].means(k) * m_fwd_post[v - 1].means(k);
+                double ARDparam = m_fwd_post[v - 1].GetCovariance()(k, k) + m_fwd_post[v - 1].means(k) * m_fwd_post[v - 1].means(k);
                 spatialPrecisions(k) = 1 / ARDparam;
                 weightedMeans(k) = 0;
                 Fard -= 2.0 * log(2.0 / ARDparam);
