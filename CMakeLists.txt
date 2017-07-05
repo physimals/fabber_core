@@ -23,7 +23,7 @@ set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc factories.cc fwdmodel_linear
 	           fwdmodel_poly.cc convergence.cc motioncorr.cc covariance_cache.cc transforms.cc priors.cc)
 
 # Inference methods
-set(INFERENCE_SRC inference_myvb.cc inference_vb.cc inference_nlls.cc inference_spatialvb.cc inference_spatialvb_exp.cc)
+set(INFERENCE_SRC inference_myvb.cc inference_nlls.cc)
 
 # Noise models
 set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
@@ -172,8 +172,8 @@ if (GTEST_LIBRARY)
   endif(PTHREAD_LIBRARY)
   include_directories(${GTEST_INCLUDE_DIR})
 
-  set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_spatialvb.cc test/test_vb.cc
-               test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc test/test_priors.cc)
+  set(TEST_SRC test/fabbertest.cc test/test_inference.cc
+               test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc)
   add_executable(testfabber ${TEST_SRC})
   target_link_libraries(testfabber fabbercore fabberexec ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
   enable_testing()

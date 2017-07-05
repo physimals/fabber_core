@@ -19,10 +19,8 @@
  */
 struct RunContext
 {
-    RunContext(int nv, std::vector<MVNDist> &post, 
-               std::vector<std::vector<int> > &n1, 
-               std::vector<std::vector<int> > &n2) 
-      : it(0), v(1), nvoxels(nv), fwd_post(post), neighbours(n1), neighbours2(n2) {}
+    RunContext(int nv) 
+      : it(0), v(1), nvoxels(nv) {}
     
     /** Current iteration, starting at 0 */
     int it;
@@ -33,7 +31,10 @@ struct RunContext
     /** Total number of voxels to process */
     int nvoxels;
 
-    std::vector<MVNDist> &fwd_post;
-    std::vector<std::vector<int> > &neighbours;
-    std::vector<std::vector<int> > &neighbours2;
+    std::vector<MVNDist> fwd_prior;
+    std::vector<MVNDist> fwd_post;
+    std::vector<NoiseParams *> noise_prior;
+    std::vector<NoiseParams *> noise_post;
+    std::vector<std::vector<int> > neighbours;
+    std::vector<std::vector<int> > neighbours2;
 };

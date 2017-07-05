@@ -13,6 +13,7 @@
 #include "convergence.h"
 #include "easylog.h"
 #include "tools.h"
+#include "version.h"
 
 #include <miscmaths/miscmaths.h>
 #include <newmatio.h>
@@ -23,6 +24,35 @@
 using MISCMATHS::sign;
 
 static OptionSpec OPTIONS[] = {
+    { "noise", OPT_STR, "Noise model to use (white or ar1)", OPT_REQ, "" },
+    { "convergence", OPT_STR, "Name of method for detecting convergence", OPT_NONREQ, "maxits" },
+    { "max-iterations", OPT_STR, "number of iterations of VB to use with the maxits convergence detector",
+        OPT_NONREQ, "10" },
+    { "min-fchange", OPT_STR, "When using the fchange convergence detector, the change in F to stop at", OPT_NONREQ,
+        "10" },
+    { "max-trials", OPT_STR,
+        "When using the trial mode convergence detector, the maximum number of trials after an initial reduction in F",
+        OPT_NONREQ, "10" },
+    { "print-free-energy", OPT_BOOL, "Output the free energy", OPT_NONREQ, "" },
+    { "mcsteps", OPT_INT, "Number of motion correction steps", OPT_NONREQ, "0" },
+    { "continue-from-mvn", OPT_MVN, "Continue previous run from output MVN files", OPT_NONREQ, "" },
+    { "output-only", OPT_BOOL,
+        "Skip model fitting, just output requested data based on supplied MVN. Can only be used with continue-from-mvn",
+        OPT_NONREQ, "" },
+    { "noise-initial-prior", OPT_MATRIX, "MVN of initial noise prior", OPT_NONREQ, "" },
+    { "noise-initial-posterior", OPT_MATRIX, "MVN of initial noise posterior", OPT_NONREQ, "" },
+    { "noise-pattern", OPT_STR,
+        "repeating pattern of noise variances for each point (e.g. 12 gives odd and even data points different variances)",
+        OPT_NONREQ, "1" },
+    { "PSP_byname<n>", OPT_STR, "Name of model parameter to use image prior", OPT_NONREQ, "" },
+    { "PSP_byname<n>_type", OPT_STR, "Type of image prior to use for parameter <n> - I=image prior",
+        OPT_NONREQ, "" },
+    { "PSP_byname<n>_image", OPT_IMAGE, "Image prior for parameter <n>", OPT_NONREQ, "" },
+    { "PSP_byname<n>_prec", OPT_FLOAT, "Precision to apply to image prior for parameter <n>", OPT_NONREQ, "" },
+    { "allow-bad-voxels", OPT_BOOL, "Continue if numerical error found in a voxel, rather than stopping",
+        OPT_NONREQ, "" },
+    { "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)", OPT_NONREQ,
+        "dual" },
     { "spatial-dims", OPT_INT, "Number of spatial dimensions", OPT_NONREQ, "3" },
     { "spatial-speed", OPT_STR, "Restrict speed of spatial smoothing", OPT_NONREQ,
         "-1" },
@@ -30,7 +60,7 @@ static OptionSpec OPTIONS[] = {
     { "param-spatial-priors", OPT_STR,
         "Type of spatial priors for each parameter, as a sequence of characters. "
         "N=nonspatial, M=Markov random field, P=Penny, A=ARD",
-        OPT_NONREQ, "S+" },
+        OPT_NONREQ, "N+" },
     { "update-spatial-prior-on-first-iteration", OPT_BOOL, "", OPT_NONREQ, "" },
     { "locked-linear-from-mvn", OPT_MVN, "MVN file containing fixed centres for linearization", OPT_NONREQ,
         "" },
@@ -39,12 +69,22 @@ static OptionSpec OPTIONS[] = {
 
 void Vb::GetOptions(vector<OptionSpec> &opts) const
 {
-    VariationalBayesInferenceTechnique::GetOptions(opts);
+    InferenceTechnique::GetOptions(opts);
 
     for (int i = 0; OPTIONS[i].name != ""; i++)
     {
         opts.push_back(OPTIONS[i]);
     }
+}
+
+string Vb::GetDescription() const
+{
+    return "Variational Bayes inference technique";
+}
+
+string Vb::GetVersion() const
+{
+    return fabber_version();
 }
 
 InferenceTechnique *Vb::NewInstance()
@@ -98,59 +138,76 @@ string Vb::GetPriorTypesString(FabberRunData &rundata)
     assert(int(priors_str.size()) == m_num_params);
     return priors_str;
 }
-/**
- * How many spatial dimensions have been requested?
- */
-static int GetSpatialDims(FabberRunData &args)
-{
-    int dims = args.GetIntDefault("spatial-dims", 3);
-
-    if (dims < 0 || dims > 3)
-    {
-        throw InvalidOptionValue("spatial-dims", stringify(dims),
-            "Must be 0, 1, 2 or 3");
-    }
-    else if (dims == 1)
-    {
-        // WARN_ONCE("spatial-dims=1 is very weird... I hope you're just testing
-        // something!");
-    }
-    else if (dims == 2)
-    {
-        // WARN_ONCE("spatial-dims=2 doesn't decompose into slices and won't help if
-        // you're using the D prior");
-    }
-
-    return dims;
-}
 
 void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
 {
-    VariationalBayesInferenceTechnique::Initialize(fwd_model, args);
+    InferenceTechnique::Initialize(fwd_model, args);
+
+    // Get noise model.
+    m_noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(args.GetString("noise")));
+    m_noise->Initialize(args);
+    m_noise_params = m_noise->NumParams();
+    LOG << "Vb::Noise has " << m_noise_params << " parameters" << endl;
+
+    // If we are resuming from a previous run, there will be a file containing a per-voxel
+    // distribution of the model parameters, and possibly the noise as well. So we may
+    // not need the initial posterior distributions we have created. We choose not to delete
+    // them here as the memory involved is not large (they are not per voxel).
+    m_continueFromFile = args.GetStringDefault("continue-from-mvn", "");
+    paramFilename = args.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
+
+    // Create convergence-testing method:
+    m_conv = ConvergenceDetector::NewFromName(args.GetStringDefault("convergence", "maxits"));
+    m_conv->Initialize(args);
+
+    // Figure out if F needs to be calculated every iteration
+    m_printF = args.GetBool("print-free-energy");
+    m_needF = m_conv->UseF() || m_printF;
+
+    // Motion correction related setup - by default no motion correction
+    m_num_mcsteps = convertTo<int>(args.GetStringDefault("mcsteps", "0"));
 
     m_prior_types_str = GetPriorTypesString(args);
     args.Set("param-spatial-priors", m_prior_types_str);
-    m_spatial_dims = GetSpatialDims(args);
-
-    // Some unsupported options:
+    m_spatial_dims = args.GetIntDefault("spatial-dims", 3, 0, 3);
+    if (m_spatial_dims == 1)
+    {
+        WARN_ONCE("spatial-dims=1 is weird... hope you're just testing!");
+    }
+    else if (m_spatial_dims == 2)
+    {
+        WARN_ONCE("spatial-dims=2 may not work the way you expect");
+    }
 
     // Locked linearizations, if requested
     m_locked_linear_file = args.GetStringDefault("locked-linear-from-mvn", "");
     m_locked_linear = (m_locked_linear_file != "");
 }
 
+void Vb::InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist,
+    string param_key)
+{
+    string filename = args.GetStringDefault(param_key, "modeldefault");
+    if (filename != "modeldefault")
+    {
+        // FIXME should there be checking of size here
+        LOG << "VbInferenceTechnique::Loading " << param_key << " distribution from " << filename << endl;
+        dist->InputFromMVN(MVNDist(filename, m_log));
+    }
+}
+
 void Vb::SetupPerVoxelDists(FabberRunData &rundata)
 {
     // Initialized in voxel loop below (from file or default as required)
-    m_noise_post.resize(m_nvoxels, NULL);
-    m_noise_prior.resize(m_nvoxels, NULL);
-    m_fwd_post.resize(m_nvoxels);
+    m_ctx->noise_post.resize(m_nvoxels, NULL);
+    m_ctx->noise_prior.resize(m_nvoxels, NULL);
+    m_ctx->fwd_post.resize(m_nvoxels);
 
     // Re-centred in voxel loop below
     m_lin_model.resize(m_nvoxels, LinearizedFwdModel(m_model));
 
-    // Static initialization for all voxels currently
-    m_fwd_prior.resize(m_nvoxels, MVNDist(m_num_params, m_log));
+    // Model prior is updated during main voxel loop
+    m_ctx->fwd_prior.resize(m_nvoxels, MVNDist(m_num_params, m_log));
 
     // Loaded from file if required, otherwise initialized during calculation
     resultMVNs.resize(m_nvoxels, NULL);
@@ -161,7 +218,6 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
     // Whether to fix the linearization centres (default: false)
     vector<MVNDist *> lockedLinearDists;
     Matrix lockedLinearCentres;
-    const int nNoiseParams = initialNoisePrior->OutputAsMVN().GetSize();
     if (m_locked_linear)
     {
         LOG << "Vb::Loading fixed linearization centres from the MVN '"
@@ -178,24 +234,31 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         InitMVNFromFile(m_continueFromFile, rundata, paramFilename);
     }
 
+    // Initial noise distributions
+    NoiseParams *initialNoisePrior = m_noise->NewParams();
+    NoiseParams *initialNoisePosterior = m_noise->NewParams();
+    m_noise->HardcodedInitialDists(*initialNoisePrior, *initialNoisePosterior);
+    InitializeNoiseFromParam(rundata, initialNoisePrior, "noise-initial-prior");
+    InitializeNoiseFromParam(rundata, initialNoisePosterior, "noise-initial-posterior");
+
     for (int v = 1; v <= m_nvoxels; v++)
     {
         if (m_continueFromFile != "")
         {
-            m_fwd_post[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
-            assert(m_num_params + nNoiseParams == resultMVNs.at(v - 1)->GetSize());
-            m_noise_post[v - 1] = m_noise->NewParams();
-            m_noise_post[v - 1]->InputFromMVN(resultMVNs.at(v - 1)->GetSubmatrix(
-                m_num_params + 1, m_num_params + nNoiseParams));
+            m_ctx->fwd_post[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
+            assert(m_num_params + m_noise_params == resultMVNs.at(v - 1)->GetSize());
+            m_ctx->noise_post[v - 1] = m_noise->NewParams();
+            m_ctx->noise_post[v - 1]->InputFromMVN(resultMVNs.at(v - 1)->GetSubmatrix(
+                m_num_params + 1, m_num_params + m_noise_params));
         }
         else
         {
             // Set the initial posterior for model params. Model
             // may want the voxel data in order to do this
             PassModelData(v); 
-            m_model->GetInitialPosterior(m_fwd_post[v - 1]);
+            m_model->GetInitialPosterior(m_ctx->fwd_post[v - 1]);
             // Set initial noise posterior
-            m_noise_post[v - 1] = initialNoisePosterior->Clone();
+            m_ctx->noise_post[v - 1] = initialNoisePosterior->Clone();
         }
 
         if (m_locked_linear)
@@ -205,13 +268,29 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         }
         else
         {
-            //LOG  << "Initial re-centering: " << m_fwd_post[v - 1].means.t() << endl;
-            m_lin_model[v - 1].ReCentre(m_fwd_post[v - 1].means);
+            //LOG  << "Initial re-centering: " << m_ctx->fwd_post[v - 1].means.t() << endl;
+            m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
         }
 
-        m_noise_prior[v - 1] = initialNoisePrior->Clone();
-        m_noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1],
+        m_ctx->noise_prior[v - 1] = initialNoisePrior->Clone();
+        m_noise->Precalculate(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
             m_origdata->Column(v));
+    }
+}
+
+void Vb::PassModelData(int v)
+{
+    // Pass in data, coords and supplemental data for this voxel
+    ColumnVector y = m_origdata->Column(v);
+    ColumnVector vcoords = m_coords->Column(v);
+    if (m_suppdata->Ncols() > 0)
+    {
+        ColumnVector suppy = m_suppdata->Column(v);
+        m_model->PassData(y, vcoords, suppy);
+    }
+    else
+    {
+        m_model->PassData(y, vcoords);
     }
 }
 
@@ -226,21 +305,21 @@ void Vb::IgnoreVoxel(int v)
     // lists for the bad voxel, because any voxel which has 
     // the bad voxel as a neighbour will be a neighbour of the
     // bad voxel
-    vector<int> nn = m_neighbours[v-1];
+    vector<int> nn = m_ctx->neighbours[v-1];
     for (vector<int>::iterator i=nn.begin(); i!=nn.end(); ++i) {
         // Reference to list of neighbours of some other voxel which
         // has the bad voxel as a neighbour
-        vector<int> &n2 = m_neighbours[*i-1];
+        vector<int> &n2 = m_ctx->neighbours[*i-1];
 
         n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
     }
 
     // Same for next-nearest-neighbours
-    nn = m_neighbours2[v-1];
+    nn = m_ctx->neighbours2[v-1];
     for (vector<int>::iterator i=nn.begin(); i!=nn.end(); ++i) {
         // Reference to list of neighbours of some other voxel which
         // has the bad voxel as a neighbour
-        vector<int> &n2 = m_neighbours2[*i-1];
+        vector<int> &n2 = m_ctx->neighbours2[*i-1];
 
         n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
     }
@@ -254,8 +333,8 @@ double Vb::CalculateF(int v, string label, double Fprior)
     double F = 1234.5678;
     if (m_needF)
     {
-        F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
-                    m_fwd_post[v - 1], m_fwd_prior[v - 1],
+        F = m_noise->CalcFreeEnergy(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
+                    m_ctx->fwd_post[v - 1], m_ctx->fwd_prior[v - 1],
                     m_lin_model[v - 1], m_origdata->Column(v));
         F += Fprior;
         resultFs[v-1] = F;
@@ -267,13 +346,6 @@ double Vb::CalculateF(int v, string label, double Fprior)
     return F;
 }
 
-// M = Markov random field - normally used
-// P = Alternative to M (Penny prior?)
-// N = non-spatial prior (model default)
-// A = ARD prior
-// I = image prior
-//
-// m/p are variations on M/P with different edge behaviour (Dirichlet BCs)
 void Vb::DoCalculations(FabberRunData &rundata)
 {    
     // extract data (and the coords) from rundata for the (first) VB run
@@ -285,6 +357,7 @@ void Vb::DoCalculations(FabberRunData &rundata)
     m_coords = &rundata.GetVoxelCoords();
     m_suppdata = &rundata.GetVoxelSuppData();
     m_nvoxels = m_origdata->Ncols();
+    m_ctx = new RunContext(m_nvoxels);
 
     // pass in some (dummy) data/coords here just in case the model relies upon it
     // use the first voxel values as our dummies FIXME this shouldn't really be
@@ -300,7 +373,7 @@ void Vb::DoCalculations(FabberRunData &rundata)
     vector<Parameter> params;
     m_model->GetParameters(rundata, params);
     SetupPerVoxelDists(rundata);
-
+    
     if (rundata.GetBool("output-only"))
     {
         // Do no calculations - now we have set resultMVNs we can finish
@@ -322,8 +395,8 @@ void Vb::DoCalculations(FabberRunData &rundata)
     // Delete stuff (avoid memory leaks)
     for (int v = 1; v <= m_nvoxels; v++)
     {
-        delete m_noise_post[v - 1];
-        delete m_noise_prior[v - 1];
+        delete m_ctx->noise_post[v - 1];
+        delete m_ctx->noise_prior[v - 1];
     }
 }
 
@@ -333,7 +406,6 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
     m_model->GetParameters(rundata, params);
     vector<Prior *> priors = PriorFactory(rundata).CreatePriors(params);
 
-    RunContext ctx(m_nvoxels, m_fwd_post, m_neighbours, m_neighbours2);
     m_conv->Reset();
     
     // Loop over voxels
@@ -341,14 +413,14 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
     {
         PassModelData(v);
 
-        ctx.v = v;
-        ctx.it = 0; 
+        m_ctx->v = v;
+        m_ctx->it = 0; 
 
         // Save our model parameters in case we need to revert later.
         // Note need to save prior in case ARD is being used
-        NoiseParams *const noisePosteriorSave = m_noise_post[v - 1]->Clone();
-        MVNDist fwdPosteriorSave(m_fwd_post[v - 1]);
-        MVNDist fwdPriorSave(m_fwd_prior[v - 1]);
+        NoiseParams *const noisePosteriorSave = m_ctx->noise_post[v - 1]->Clone();
+        MVNDist fwdPosteriorSave(m_ctx->fwd_post[v - 1]);
+        MVNDist fwdPriorSave(m_ctx->fwd_prior[v - 1]);
 
         // Give an indication of the progress through the voxels;
         rundata.Progress(v, m_nvoxels);
@@ -356,8 +428,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
 
         try
         {
-            m_lin_model[v-1].ReCentre(m_fwd_post[v - 1].means);
-            m_noise->Precalculate(*m_noise_post[v - 1], *m_noise_prior[v - 1], m_origdata->Column(v));
+            m_lin_model[v-1].ReCentre(m_ctx->fwd_post[v - 1].means);
             m_conv->Reset();
 
             // START the VB updates and run through the relevant iterations (according to the convergence testing)
@@ -367,52 +438,52 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                 
                 if (m_conv->NeedRevert()) //revert to previous solution if the convergence detector calls for it
                 {
-                    *m_noise_post[v - 1] = *noisePosteriorSave;
-                    m_fwd_post[v - 1] = fwdPosteriorSave;
-                    m_fwd_prior[v-1] = fwdPriorSave;
-                    m_lin_model[v-1].ReCentre(m_fwd_post[v - 1].means);
+                    *m_ctx->noise_post[v - 1] = *noisePosteriorSave;
+                    m_ctx->fwd_post[v - 1] = fwdPosteriorSave;
+                    m_ctx->fwd_prior[v-1] = fwdPriorSave;
+                    m_lin_model[v-1].ReCentre(m_ctx->fwd_post[v - 1].means);
                 }
 
                 // Save old values if called for
                 if (m_conv->NeedSave())
                 {
-                    *noisePosteriorSave = *m_noise_post[v - 1]; // copy values, not pointer!
-                    fwdPosteriorSave = m_fwd_post[v - 1];
-                    fwdPriorSave = m_fwd_prior[v-1];
+                    *noisePosteriorSave = *m_ctx->noise_post[v - 1]; // copy values, not pointer!
+                    fwdPosteriorSave = m_ctx->fwd_post[v - 1];
+                    fwdPriorSave = m_ctx->fwd_prior[v-1];
                 }
                 
                 for (int k=0; k<m_num_params; k++) {
-                    Fprior += priors[k]->ApplyToMVN(&m_fwd_prior[v-1], ctx);
+                    Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v-1], *m_ctx);
                 }
 
                 F = CalculateF(v, "before", Fprior);
 
-                m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1], m_fwd_prior[v-1], m_lin_model[v-1], m_origdata->Column(v), NULL,
+                m_noise->UpdateTheta(*m_ctx->noise_post[v - 1], m_ctx->fwd_post[v - 1], m_ctx->fwd_prior[v-1], m_lin_model[v-1], m_origdata->Column(v), NULL,
                     m_conv->LMalpha());
 
                 F = CalculateF(v, "theta", Fprior);
 
-                m_noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1], m_fwd_post[v - 1], m_lin_model[v-1], m_origdata->Column(v));
+                m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1], m_ctx->fwd_post[v - 1], m_lin_model[v-1], m_origdata->Column(v));
                 
                 F = CalculateF(v, "phi", Fprior);
                 
                 // Linearization update
                 // Update the linear model before doing Free energy calculation 
                 // (and ready for next round of theta and phi updates)
-                m_lin_model[v-1].ReCentre(m_fwd_post[v - 1].means);
+                m_lin_model[v-1].ReCentre(m_ctx->fwd_post[v - 1].means);
 
                 F = CalculateF(v, "lin", Fprior);
                 
-                ++ctx.it;
+                ++m_ctx->it;
             } while (!m_conv->Test(F));
 
             // Revert to old values at last stage if required
             if (m_conv->NeedRevert())
             {
-                *m_noise_post[v - 1] = *noisePosteriorSave;
-                m_fwd_post[v - 1] = fwdPosteriorSave;
-                m_fwd_prior[v-1] = fwdPriorSave;
-                m_lin_model[v-1].ReCentre(m_fwd_post[v - 1].means);
+                *m_ctx->noise_post[v - 1] = *noisePosteriorSave;
+                m_ctx->fwd_post[v - 1] = fwdPosteriorSave;
+                m_ctx->fwd_prior[v-1] = fwdPriorSave;
+                m_lin_model[v-1].ReCentre(m_ctx->fwd_post[v - 1].means);
             }
         }
         catch (FabberInternalError &e) {
@@ -434,7 +505,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
         // now write the results to resultMVNs
         try
         {
-            resultMVNs.at(v - 1) = new MVNDist(m_fwd_post[v-1], m_noise_post[v-1]->OutputAsMVN());
+            resultMVNs.at(v - 1) = new MVNDist(m_ctx->fwd_post[v-1], m_ctx->noise_post[v-1]->OutputAsMVN());
             if (m_needF)
             {
                 resultFs.at(v - 1) = F;
@@ -446,7 +517,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
             LOG
                 << "Vb::Can't give any sensible answer for this voxel; outputting zero +- identity\n";
             MVNDist *tmp = new MVNDist(m_log);
-            tmp->SetSize(m_fwd_post[v-1].means.Nrows() + m_noise_post[v-1]->OutputAsMVN().means.Nrows());
+            tmp->SetSize(m_ctx->fwd_post[v-1].means.Nrows() + m_ctx->noise_post[v-1]->OutputAsMVN().means.Nrows());
             tmp->SetCovariance(IdentityMatrix(tmp->means.Nrows()));
             resultMVNs.at(v - 1) = tmp;
 
@@ -478,7 +549,6 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     m_model->GetParameters(rundata, params);
     vector<Prior *> priors = PriorFactory(rundata).CreatePriors(params);
     
-    RunContext ctx(m_nvoxels, m_fwd_post, m_neighbours, m_neighbours2);
     m_conv->Reset();
     
     double Fglobal=1234.5678;
@@ -486,16 +556,16 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     // MAIN ITERATION LOOP
     do
     {
-        LOG << endl << "*** Spatial iteration *** " << (ctx.it+1) << endl;
+        LOG << endl << "*** Spatial iteration *** " << (m_ctx->it+1) << endl;
 
         // Give an indication of the progress through the voxels;
-        rundata.Progress(ctx.it, maxits);
+        rundata.Progress(m_ctx->it, maxits);
         double Fprior=0;
 
         // ITERATE OVER VOXELS
         for (int v = 1; v <= m_nvoxels; v++)
         {
-            ctx.v = v;
+            m_ctx->v = v;
 
             PassModelData(v);
 
@@ -507,12 +577,12 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
 
                 // Apply prior updates for spatial or ARD priors
                 for (int k=0; k<m_num_params; k++) {
-                    Fprior += priors[k]->ApplyToMVN(&m_fwd_prior[v-1], ctx);
+                    Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v-1], *m_ctx);
                 }
                 if (m_debug) {
                     LOG << "Voxel " << v << " of " << m_nvoxels << endl;
-                    LOG << "Prior means: " << m_fwd_prior[v-1].means.t();
-                    LOG << "Prior precisions: " << m_fwd_prior[v-1].GetPrecisions();
+                    LOG << "Prior means: " << m_ctx->fwd_prior[v-1].means.t();
+                    LOG << "Prior precisions: " << m_ctx->fwd_prior[v-1].GetPrecisions();
                 }
 
                 // Ignore voxels where numerical issues have occurred
@@ -520,12 +590,12 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
 
                 CalculateF(v, "before", Fprior);
 
-                m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
-                    m_fwd_prior[v - 1], m_lin_model[v - 1],
+                m_noise->UpdateTheta(*m_ctx->noise_post[v - 1], m_ctx->fwd_post[v - 1],
+                    m_ctx->fwd_prior[v - 1], m_lin_model[v - 1],
                     m_origdata->Column(v), NULL, 0);
                 if (m_debug) {
-                    LOG << "Post means: " << m_fwd_post[v-1].means.t();
-                    LOG << "Post precisions: " << m_fwd_post[v-1].GetPrecisions();
+                    LOG << "Post means: " << m_ctx->fwd_post[v-1].means.t();
+                    LOG << "Post precisions: " << m_ctx->fwd_post[v-1].GetPrecisions();
                 }
                 CalculateF(v, "theta", Fprior);
             }
@@ -551,19 +621,19 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
         {
             PassModelData(v);
 
-            m_noise->UpdateNoise(*m_noise_post[v - 1], *m_noise_prior[v - 1],
-                m_fwd_post[v - 1], m_lin_model[v - 1],
+            m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
+                m_ctx->fwd_post[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v));
 
             CalculateF(v, "noise", Fprior);
 
             if (!m_locked_linear)
-                m_lin_model[v - 1].ReCentre(m_fwd_post[v - 1].means);
+                m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
 
             Fglobal += CalculateF(v, "lin", Fprior);
         }
 
-        ++ctx.it;
+        ++m_ctx->it;
     } while (!m_conv->Test(Fglobal));
 
     // Interesting addition: calculate "coefficient resels" from Penny et al. 2005
@@ -572,7 +642,7 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
         ColumnVector gamma_vk(m_nvoxels);
         for (int v = 1; v <= m_nvoxels; v++)
         {
-            gamma_vk(v) = 1 - m_fwd_post[v - 1].GetCovariance()(k, k) / m_fwd_prior[v - 1].GetCovariance()(k, k);
+            gamma_vk(v) = 1 - m_ctx->fwd_post[v - 1].GetCovariance()(k, k) / m_ctx->fwd_prior[v - 1].GetCovariance()(k, k);
         }
         LOG << "Vb::Coefficient resels per voxel for param "
             << k << ": " << gamma_vk.Sum() / m_nvoxels << endl;
@@ -580,7 +650,7 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
 
     for (int v = 1; v <= m_nvoxels; v++)
     {
-        resultMVNs[v - 1] = new MVNDist(m_fwd_post[v - 1], m_noise_post[v - 1]->OutputAsMVN());
+        resultMVNs[v - 1] = new MVNDist(m_ctx->fwd_post[v - 1], m_ctx->noise_post[v - 1]->OutputAsMVN());
     }
 }
 
@@ -694,7 +764,7 @@ void Vb::CalcNeighbours(const Matrix &coords)
 
     // Neighbours is a vector of vectors, so each voxel
     // will have an entry which is a vector of its neighbours
-    m_neighbours.resize(nVoxels);
+    m_ctx->neighbours.resize(nVoxels);
 
     // Go through each voxel. Note that offsets is indexed from 1 not 0
     // however the offsets themselves (potentially) start at 0.
@@ -742,30 +812,30 @@ void Vb::CalcNeighbours(const Matrix &coords)
             }
 
             // If we get this far, add it to the list
-            m_neighbours.at(vid - 1).push_back(id);
+            m_ctx->neighbours.at(vid - 1).push_back(id);
         }
     }
 
     // Similar algorithm but looking for Neighbours-of-neighbours, excluding self,
     // but including duplicates if there are two routes to get there
     // (diagonally connected) 
-    m_neighbours2.resize(nVoxels);
+    m_ctx->neighbours2.resize(nVoxels);
 
     for (int vid = 1; vid <= nVoxels; vid++)
     {
         // Go through the list of neighbours for each voxel.
-        for (unsigned n1 = 0; n1 < m_neighbours.at(vid - 1).size(); n1++)
+        for (unsigned n1 = 0; n1 < m_ctx->neighbours.at(vid - 1).size(); n1++)
         {
             // n1id is the voxel index (not the offset) of the neighbour
-            int n1id = m_neighbours[vid - 1].at(n1);
+            int n1id = m_ctx->neighbours[vid - 1].at(n1);
             int checkNofN = 0;
             // Go through each of it's neighbours. Add each, apart from original voxel
-            for (unsigned n2 = 0; n2 < m_neighbours.at(n1id - 1).size(); n2++)
+            for (unsigned n2 = 0; n2 < m_ctx->neighbours.at(n1id - 1).size(); n2++)
             {
-                int n2id = m_neighbours[n1id - 1].at(n2);
+                int n2id = m_ctx->neighbours[n1id - 1].at(n2);
                 if (n2id != vid)
                 {
-                    m_neighbours2[vid - 1].push_back(n2id);
+                    m_ctx->neighbours2[vid - 1].push_back(n2id);
                 }
                 else
                     checkNofN++;

@@ -7,10 +7,7 @@
 #include "setup.h"
 
 #include "inference.h"
-#include "inference_spatialvb.h"
-#include "inference_spatialvb_exp.h"
 #include "inference_myvb.h"
-#include "inference_vb.h"
 #ifndef NO_NLLS
 #include "inference_nlls.h"
 #endif
@@ -28,12 +25,10 @@
 void FabberSetup::SetupDefaultInferenceTechniques()
 {
     InferenceTechniqueFactory *factory = InferenceTechniqueFactory::GetInstance();
-    //factory->Add("vb", &VariationalBayesInferenceTechnique::NewInstance);
-    //factory->Add("spatialvb", &SpatialVariationalBayes::NewInstance);
     factory->Add("vb", &Vb::NewInstance);
     factory->Add("spatialvb", &Vb::NewInstance);
     factory->Add("myvb", &Vb::NewInstance);
-    factory->Add("spatialvb_exp", &SpatialVariationalBayesExp::NewInstance);
+    //factory->Add("spatialvb_exp", &SpatialVariationalBayesExp::NewInstance);
 #ifndef NO_NLLS
     factory->Add("nlls", &NLLSInferenceTechnique::NewInstance);
 #endif

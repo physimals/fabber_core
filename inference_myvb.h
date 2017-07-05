@@ -6,19 +6,33 @@
 
 /*  CCOPYRIGHT */
 
-#include "inference_vb.h"
+#include "inference.h"
+#include "convergence.h"
+#include "run_context.h"
 
-#include "covariance_cache.h"
+#include <string>
+#include <vector>
 
-class Vb : public VariationalBayesInferenceTechnique
+class Vb : public InferenceTechnique
 {
 public:
     static InferenceTechnique *NewInstance();
 
     virtual void GetOptions(vector<OptionSpec> &opts) const;
+    virtual std::string GetDescription() const;
+    virtual string GetVersion() const;
 
     Vb()
-        : VariationalBayesInferenceTechnique()
+        : m_nvoxels(0)
+        , m_noise_params(0)
+        , m_needF(false)
+        , m_printF(false)
+        , continueFwdOnly(false)
+        , m_origdata(NULL)
+        , m_coords(NULL)
+        , m_suppdata(NULL)
+        , Nmcstep(0)
+        , m_conv(NULL)
         , m_spatial_dims(-1)
         , m_locked_linear(false)
     {
@@ -31,10 +45,12 @@ public:
     void SaveResults(FabberRunData &rundata) const;
 protected:
 
+    std::string GetPriorTypesString(FabberRunData &rundata);
+    void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
+    void PassModelData(int voxel);
+
     virtual void DoCalculationsVoxelwise(FabberRunData &data);
     virtual void DoCalculationsSpatial(FabberRunData &data);
-
-    std::string GetPriorTypesString(FabberRunData &rundata);
 
     double CalculateF(int v, std::string label, double Fprior);
 
@@ -74,13 +90,52 @@ protected:
      */
     void IgnoreVoxel(int v);
 
-    std::vector<NoiseParams *> m_noise_post;
-    std::vector<NoiseParams *> m_noise_prior;
-    std::vector<MVNDist> m_fwd_prior;
-    std::vector<MVNDist> m_fwd_post;
+    /** Number of voxels in data */
+    int m_nvoxels;
+
+    /**
+	 * Noise model in use. This is created by the inference
+	 * method deleted on destruction
+	 */
+    std::auto_ptr<NoiseModel> m_noise;
+    /**
+	 * Number of noise parameters.
+	 */
+    int m_noise_params;
+
+    /** True if convergence detector requires the free energy */
+    bool m_needF;
+
+    /** True if we need to print the free energy at each iteration */
+    bool m_printF;
+
+    // These are used for resuming a previous calculation
+    /** If not empty, load initial MVN from this file */
+    std::string m_continueFromFile;
+
+    std::string paramFilename;
+
+    /** If set, initial MVN only has fwd model information, not noise */
+    bool continueFwdOnly;
+
+    /** Free energy for each voxel */
+    std::vector<double> resultFs;
+
+    const NEWMAT::Matrix *m_origdata;
+    const NEWMAT::Matrix *m_coords;
+    const NEWMAT::Matrix *m_suppdata;
+
+    /** Number of motion correction steps to run */
+    int m_num_mcsteps;
+
+    /**
+     * Convergence detector in use
+     */
+    ConvergenceDetector *m_conv;
+    
+    RunContext *m_ctx;
+    
     std::vector<LinearizedFwdModel> m_lin_model;
-    std::vector<std::vector<int> > m_neighbours;
-    std::vector<std::vector<int> > m_neighbours2;
     
     /**
      * Voxels to ignore, indexed from 1 as per NEWMAT
