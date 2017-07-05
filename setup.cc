@@ -28,7 +28,6 @@ void FabberSetup::SetupDefaultInferenceTechniques()
     factory->Add("vb", &Vb::NewInstance);
     factory->Add("spatialvb", &Vb::NewInstance);
     factory->Add("myvb", &Vb::NewInstance);
-    //factory->Add("spatialvb_exp", &SpatialVariationalBayesExp::NewInstance);
 #ifndef NO_NLLS
     factory->Add("nlls", &NLLSInferenceTechnique::NewInstance);
 #endif
