@@ -31,7 +31,7 @@ public:
         , m_origdata(NULL)
         , m_coords(NULL)
         , m_suppdata(NULL)
-        , Nmcstep(0)
+        , m_num_mcsteps(0)
         , m_conv(NULL)
         , m_spatial_dims(-1)
         , m_locked_linear(false)
