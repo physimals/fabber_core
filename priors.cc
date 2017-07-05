@@ -154,11 +154,11 @@ double SpatialPrior::CalculateAkmean(const RunContext &ctx)
     {
         double sigmak = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx+1, m_idx+1);
         int nn = ctx.neighbours.at(v - 1).size();
-        if (m_type_code == 'm') // useMRF)
+        if (m_type_code == PRIOR_SPATIAL_m) // useMRF)
             tmp1 += sigmak * m_spatial_dims * 2;
-        else if (m_type_code == 'M') // useMRF2)
+        else if (m_type_code == PRIOR_SPATIAL_M) // useMRF2)
             tmp1 += sigmak * (nn + 1e-8);
-        else if (m_type_code == 'p')
+        else if (m_type_code == PRIOR_SPATIAL_p)
             tmp1 += sigmak * (4 * m_spatial_dims * m_spatial_dims + nn);
         else // P
             tmp1 += sigmak * (nn*nn + nn);
@@ -170,10 +170,10 @@ double SpatialPrior::CalculateAkmean(const RunContext &ctx)
         {
             Swk += wk - ctx.fwd_post.at(*v2It-1).means(m_idx+1);
         }
-        if (m_type_code == 'p' || m_type_code == 'm')
+        if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
             Swk += wk * (m_spatial_dims * 2 - ctx.neighbours.at(v - 1).size());
 
-        if (m_type_code == 'm' || m_type_code == 'M')
+        if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
             tmp2 += Swk*wk;
         else 
             tmp2 += Swk*Swk;
@@ -243,7 +243,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 
     int nn = ctx.neighbours[ctx.v - 1].size();
 
-    if (m_type_code == 'p')
+    if (m_type_code == PRIOR_SPATIAL_p)
     {
         assert(nn <= m_spatial_dims * 2);
         weight8 = 8 * 2 * m_spatial_dims;
@@ -252,20 +252,20 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 
     double spatial_prec = 0;
 
-    if (m_type_code == 'P')
+    if (m_type_code == PRIOR_SPATIAL_P)
         spatial_prec = m_akmean * (nn*nn + nn);
-    else if (m_type_code == 'm')
+    else if (m_type_code == PRIOR_SPATIAL_m)
         spatial_prec = m_akmean * m_spatial_dims * 2;
-    else if (m_type_code == 'M')
+    else if (m_type_code == PRIOR_SPATIAL_M)
         spatial_prec = m_akmean * (nn + 1e-8);
-    else if (m_type_code == 'p')
+    else if (m_type_code == PRIOR_SPATIAL_p)
         spatial_prec = m_akmean * (4 * m_spatial_dims * m_spatial_dims + nn);
     else 
         assert(false);
 
     // Set the prior precision for this parameter
     SymmetricMatrix precs = prior->GetPrecisions();
-    if (m_type_code == 'p' || m_type_code == 'm')
+    if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
     {
         //	Penny-style DirichletBC priors -- ignoring initialFwdPrior completely!
         precs(m_idx+1, m_idx+1) = spatial_prec;
@@ -281,12 +281,12 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     // to maximise numerical compatibility with NEWMAT which presumably 
     // does it as an optimization when dividing a whole matrix by a constant
     double mTmp;
-    if (m_type_code == 'm') {
+    if (m_type_code == PRIOR_SPATIAL_m) {
         // Dirichlet BCs on MRF
         double rec = 1/(8 * m_spatial_dims * 2);
         mTmp = contrib8 * rec; 
     }               
-    else if (m_type_code == 'M') {
+    else if (m_type_code == PRIOR_SPATIAL_M) {
         double rec = 1/(8* (double(nn) + 1e-8));
         mTmp = contrib8 * rec;
     }
@@ -299,7 +299,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 
     //LOG << "SpatialPrior:: " << prior->GetCovariance()(m_idx+1, m_idx+1) << ", " << spatial_prec << ", " << contrib8 << ", " << den << ", " << mTmp << " : " << t1 << endl;
     
-    if (m_type_code == 'm' || m_type_code == 'M')
+    if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
         prior->means(m_idx+1) = prior->GetCovariance()(m_idx+1, m_idx+1) * spatial_prec * mTmp; // = mTmp for p or m
     else {
         // equivalent, when non-spatial priors are very weak: m_fwd_prior[v-1].means = mTmp;
@@ -329,17 +329,17 @@ PriorFactory::PriorFactory(FabberRunData &rundata) : Loggable(rundata.GetLogger(
 Prior *PriorFactory::CreatePrior(Parameter p)
 {
     switch (p.prior_type) {
-        case 'N':
-        case '-':
+        case PRIOR_NORMAL:
+        case PRIOR_DEFAULT:
             return new DefaultPrior(p);
-        case 'I':
+        case PRIOR_IMAGE:
             return new ImagePrior(p, m_rundata);
-        case 'M':
-        case 'm':
-        case 'P':
-        case 'p':
+        case PRIOR_SPATIAL_M:
+        case PRIOR_SPATIAL_m:
+        case PRIOR_SPATIAL_P:
+        case PRIOR_SPATIAL_p:
             return new SpatialPrior(p, m_rundata);
-        case 'A':
+        case PRIOR_ARD:
             return new ARDPrior(p, m_rundata);
         default:
             throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmPpAI");

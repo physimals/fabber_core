@@ -1,11 +1,11 @@
 #pragma once
-
 /** 
  * transforms.h
  *
  * Classes defining transformations on model parameters. These may be used
  * as a means of preventing model parameters from violating hard limits, 
- * such as not becoming negative.
+ * such as not becoming negative. Transformations are assumed to be
+ * stateless, hence singleton instances can be used.
  *
  * Copyright (C) 2007-2017 University of Oxford  
  */
@@ -20,14 +20,6 @@
 const std::string TRANSFORM_CODE_IDENTITY = "I";
 const std::string TRANSFORM_CODE_LOG = "L";
 const std::string TRANSFORM_CODE_SOFTPLUS = "S";
-
-const char PRIOR_CODE_NORMAL = 'N';
-const char PRIOR_CODE_IMAGE = 'I';
-const char PRIOR_CODE_ARD = 'A';
-const char PRIOR_CODE_SPATIAL_M = 'M';
-const char PRIOR_CODE_SPATIAL_m = 'm';
-const char PRIOR_CODE_SPATIAL_P = 'P';
-const char PRIOR_CODE_SPATIAL_p = 'p';
 
 /**
  * Immutable object describing distribution parameters for single model parameter

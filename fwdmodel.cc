@@ -11,6 +11,7 @@
 #include "easylog.h"
 #include "rundata.h"
 #include "transforms.h"
+#include "priors.h"
 
 #include <newmat.h>
 
@@ -209,7 +210,7 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // the filename is specified separately using an image-prior<n> option
         string types = rundata.GetString("param-spatial-priors");
         assert(types.size()==params.size());
-        if (types[p->idx] != '-') {
+        if (types[p->idx] != PRIOR_DEFAULT) {
             p->prior_type = types[p->idx];
         }
 
@@ -233,7 +234,9 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
                 string transform_code = rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_transform", "");
                 if (transform_code != "") p->transform = GetTransform(transform_code);
 
-                p->prior_type = convertTo<char>(rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
+                char prior_type = convertTo<char>(rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
+                if (prior_type != PRIOR_DEFAULT) p->prior_type = prior_type;
+
                 double mean = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_mean", p->prior.mean());
                 double prec = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_prec", p->prior.prec());
                 p->prior = DistParams(mean, 1/prec);
@@ -245,6 +248,7 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // FIXME do this here, or let the priors do it?
         //
         // Need to transform mean/precision as specified in the model into Fabber-space
+        // Note that posterior is transformed in GetInitialPosterior
         p->prior = p->transform->ToFabber(p->prior);
 
         // Keep our own list of parameters
@@ -309,11 +313,11 @@ void FwdModel::GetParameterDefaults(vector<Parameter> &params) const
     for (unsigned int i=0; i<names.size(); i++) {
         DistParams prior(priors.means(i+1), priors.GetCovariance()(i+1, i+1));
         DistParams post(posts.means(i+1), posts.GetCovariance()(i+1, i+1));
-        Parameter p(i, names[i], prior, post, PRIOR_CODE_NORMAL, TRANSFORM_IDENTITY());
+        Parameter p(i, names[i], prior, post, PRIOR_NORMAL, TRANSFORM_IDENTITY());
         
         // Old method of specifying ARD priors
         if (find(ardindices.begin(), ardindices.end(), i+1) != ardindices.end()) {
-            p.prior_type = PRIOR_CODE_ARD;
+            p.prior_type = PRIOR_ARD;
         }
         params.push_back(p);
     }

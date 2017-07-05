@@ -17,6 +17,15 @@
 #include <string>
 #include <ostream>
 
+const char PRIOR_NORMAL    = 'N';    // non-spatial prior
+const char PRIOR_IMAGE     = 'I';    // image prior
+const char PRIOR_ARD       = 'A';    // ARD prior
+const char PRIOR_SPATIAL_M = 'M';    // Markov random field - normally used
+const char PRIOR_SPATIAL_m = 'm';    // 'M' with Dirichlet BCs
+const char PRIOR_SPATIAL_P = 'P';    // Alternative to M (Penny prior?)
+const char PRIOR_SPATIAL_p = 'p';    // P with Dirichlet BCs
+const char PRIOR_DEFAULT   = '-';    // Use whatever the model specifies
+
 /**
  * Abstract interface for a parameter prior
  */
