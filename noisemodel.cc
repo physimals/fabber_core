@@ -17,7 +17,6 @@
 #include <string>
 
 using MISCMATHS::digamma;
-using fabber::gammaln;
 using namespace std;
 
 NoiseModel *NoiseModel::NewFromName(const string &name)

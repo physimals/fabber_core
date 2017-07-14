@@ -20,7 +20,6 @@
 #define AR1_BANDWIDTH 3
 
 using MISCMATHS::digamma;
-using fabber::gammaln;
 
 // Good enough for AR(1) with covariance terms
 // Reason: regular AR(1) matrix R has stuff only in -2.

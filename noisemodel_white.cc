@@ -20,7 +20,6 @@
 #include <string>
 
 using MISCMATHS::digamma;
-using fabber::gammaln;
 using namespace NEWMAT;
 using namespace std;
 

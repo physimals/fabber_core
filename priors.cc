@@ -25,7 +25,6 @@
 using namespace std;
 using namespace NEWMAT;
 using MISCMATHS::digamma;
-using fabber::gammaln;
 
 std::ostream &operator<<(std::ostream &out, const Prior &prior)
 {
