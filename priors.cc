@@ -33,6 +33,51 @@ std::ostream &operator<<(std::ostream &out, const Prior &prior)
     return out;
 }
 
+string Prior::ExpandPriorTypesString(string priors_str, unsigned int num_params)
+{
+    // Find out how many prior types are in the string, and what the + character
+    // should be interpreted as
+    unsigned int n_str_params = 0;
+    char repeat_type = '-';
+    bool no_plus=true;
+    for (size_t i=0; i<priors_str.size(); i++) 
+    {
+        if (priors_str[i] != '+') {
+            if (no_plus) repeat_type = priors_str[i];
+            n_str_params++;
+        }
+        else {
+            no_plus = false;
+        }
+    }
+
+    if (n_str_params > num_params)
+    {
+        throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
+    }
+
+    if (priors_str.size() < num_params)
+    {
+        // Expand '+' char, if present, to give correct number of parameters
+        // If there is no +, append with '-', meaning 'model default'
+        int deficit = num_params - priors_str.size();
+        size_t plus_pos = priors_str.find("+");
+        if (plus_pos != std::string::npos)
+        {
+            priors_str.insert(plus_pos, deficit, '+');
+        }
+        else {
+            priors_str.insert(priors_str.end(), deficit, '-');
+        }
+    }
+
+    // Finally, replace all + chars with identified repeat type    
+    std::replace(priors_str.begin(), priors_str.end(), '+', repeat_type);
+    assert(int(priors_str.size()) == num_params);
+
+    return priors_str;
+}
+
 DefaultPrior::DefaultPrior(const Parameter &p)
     : m_param_name(p.name)
     , m_idx(p.idx)

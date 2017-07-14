@@ -203,7 +203,7 @@ public:
 	 * @return number of parameters, i.e. size of vector to be passed
 	 * to Evaluate function
 	 */
-    virtual int NumParams() const {return 0;}
+    virtual int NumParams() const {return m_params.size();}
 
     /**
 	 * Name each of the parameters

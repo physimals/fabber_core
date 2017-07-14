@@ -92,53 +92,6 @@ InferenceTechnique *Vb::NewInstance()
     return new Vb();
 }
 
-string Vb::GetPriorTypesString(FabberRunData &rundata)
-{
-    string priors_str = rundata.GetStringDefault("param-spatial-priors", "");
-    
-    // Find out how many prior types are in the string, and what the + character
-    // should be interpreted as
-    int n_str_params = 0;
-    char repeat_type = '-';
-    bool no_plus=true;
-    for (size_t i=0; i<priors_str.size(); i++) 
-    {
-        if (priors_str[i] != '+') {
-            if (no_plus) repeat_type = priors_str[i];
-            n_str_params++;
-        }
-        else {
-            no_plus = false;
-        }
-    }
-
-    if (n_str_params > m_num_params)
-    {
-        throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
-    }
-
-    if (int(priors_str.size()) < m_num_params)
-    {
-        // Expand '+' char, if present, to give correct number of parameters
-        // If there is no +, append with '-', meaning 'model default'
-        int deficit = m_num_params - priors_str.size();
-        size_t plus_pos = priors_str.find("+");
-        if (plus_pos != std::string::npos)
-        {
-            priors_str.insert(plus_pos, deficit, '+');
-        }
-        else {
-            priors_str.insert(priors_str.end(), deficit, '-');
-        }
-    }
-
-    // Finally, replace all + chars with identified repeat type    
-    std::replace(priors_str.begin(), priors_str.end(), '+', repeat_type);
-
-    assert(int(priors_str.size()) == m_num_params);
-    return priors_str;
-}
-
 void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
 {
     InferenceTechnique::Initialize(fwd_model, args);
@@ -167,8 +120,6 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
     // Motion correction related setup - by default no motion correction
     m_num_mcsteps = convertTo<int>(args.GetStringDefault("mcsteps", "0"));
 
-    m_prior_types_str = GetPriorTypesString(args);
-    args.Set("param-spatial-priors", m_prior_types_str);
     m_spatial_dims = args.GetIntDefault("spatial-dims", 3, 0, 3);
     if (m_spatial_dims == 1)
     {
@@ -255,7 +206,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         {
             // Set the initial posterior for model params. Model
             // may want the voxel data in order to do this
-            PassModelData(v); 
+            PassModelData(v);
             m_model->GetInitialPosterior(m_ctx->fwd_post[v - 1]);
             // Set initial noise posterior
             m_ctx->noise_post[v - 1] = initialNoisePosterior->Clone();
@@ -369,9 +320,6 @@ void Vb::DoCalculations(FabberRunData &rundata)
     assert(resultMVNs.empty());
     assert(resultFs.empty());
 
-    // FIXME hack
-    vector<Parameter> params;
-    m_model->GetParameters(rundata, params);
     SetupPerVoxelDists(rundata);
     
     if (rundata.GetBool("output-only"))
@@ -863,13 +811,13 @@ void Vb::SaveResults(FabberRunData &rundata) const
     }
 
     // Create individual files for each parameter's mean and Z-stat
-    vector<string> paramNames;
-    m_model->NameParams(paramNames);
+    vector<Parameter> params;
+    m_model->GetParameters(rundata, params);
 
     if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat"))
     {
         LOG << "Vb::Writing means..." << endl;
-        for (unsigned i = 1; i <= paramNames.size(); i++)
+        for (unsigned i = 1; i <= params.size(); i++)
         {
             Matrix paramMean, paramZstat, paramStd;
             paramMean.ReSize(1, nVoxels);
@@ -887,11 +835,11 @@ void Vb::SaveResults(FabberRunData &rundata) const
             }
 
             if (rundata.GetBool("save-mean"))
-                rundata.SaveVoxelData("mean_" + paramNames.at(i - 1), paramMean);
+                rundata.SaveVoxelData("mean_" + params.at(i - 1).name, paramMean);
             if (rundata.GetBool("save-zstat"))
-                rundata.SaveVoxelData("zstat_" + paramNames.at(i - 1), paramZstat);
+                rundata.SaveVoxelData("zstat_" + params.at(i - 1).name, paramZstat);
             if (rundata.GetBool("save-std"))
-                rundata.SaveVoxelData("std_" + paramNames.at(i - 1), paramStd);
+                rundata.SaveVoxelData("std_" + params.at(i - 1).name, paramStd);
         }
     }
 

@@ -27,7 +27,6 @@ public:
         , m_noise_params(0)
         , m_needF(false)
         , m_printF(false)
-        , continueFwdOnly(false)
         , m_origdata(NULL)
         , m_coords(NULL)
         , m_suppdata(NULL)
@@ -45,7 +44,6 @@ public:
     void SaveResults(FabberRunData &rundata) const;
 protected:
 
-    std::string GetPriorTypesString(FabberRunData &rundata);
     void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
     void PassModelData(int voxel);
 

@@ -208,7 +208,7 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // parameter. A + character means 'use the previous value for all
         // remaining parameters'. An 'I' means an image prior and
         // the filename is specified separately using an image-prior<n> option
-        string types = rundata.GetString("param-spatial-priors");
+        string types = Prior::ExpandPriorTypesString(rundata.GetStringDefault("param-spatial-priors", ""), params.size());
         assert(types.size()==params.size());
         if (types[p->idx] != PRIOR_DEFAULT) {
             p->prior_type = types[p->idx];

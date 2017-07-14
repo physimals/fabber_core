@@ -69,7 +69,10 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
     if (m_debug) LOG << setprecision(17);
     
     m_model = fwd_model;
-    m_num_params = m_model->NumParams();
+    vector<Parameter> params;
+    m_model->GetParameters(rundata, params);
+
+    m_num_params = params.size();
     LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
 
     // Allow calculation to continue even with bad voxels
