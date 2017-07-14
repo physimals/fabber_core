@@ -38,6 +38,8 @@ Matrix read_matrix_file(std::string filename)
     }
 }
 
+}
+
 double gammaln(double x)
 {
     ColumnVector series(7);
@@ -49,7 +51,6 @@ double gammaln(double x)
         total += series(i) / (x + i - 1);
 
     return log(series(1) * total / x) + (x + 0.5) * log(x + 5.5) - x - 5.5;
-}
 }
 
 double DescendingZeroFinder::FindZero() const
