@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
 
-#include "inference_vb.h"
 #include "rundata.h"
 
 #include "newmat.h"
