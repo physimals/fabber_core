@@ -616,6 +616,17 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
             double &F = resultFs.at(v - 1);
 
             try {
+                if (m_debug) {
+                    LOG << "Voxel " << v << " of " << m_nvoxels << endl;
+                    LOG << "Prior means: " << m_fwd_prior[v-1].means.t();
+                    LOG << "Prior precisions: " << m_fwd_prior[v-1].GetPrecisions();
+                    LOG << "Noise prior means: " << m_noise_prior[v-1]->OutputAsMVN().means.t();
+                    LOG << "Noise prior precisions: " << m_noise_prior[v-1]->OutputAsMVN().GetPrecisions();
+                    LOG << "Centre: " << m_lin_model[v-1].Centre();
+                    LOG << "Offset: " << m_lin_model[v-1].Offset();
+                    LOG << "Jacobian: " << m_lin_model[v-1].Jacobian();
+                }
+
                 if (m_needF)
                 {
                     F = m_noise->CalcFreeEnergy(*m_noise_post[v - 1], *m_noise_prior[v - 1],
@@ -631,6 +642,11 @@ void SpatialVariationalBayes::DoCalculations(FabberRunData &allData)
                 m_noise->UpdateTheta(*m_noise_post[v - 1], m_fwd_post[v - 1],
                     m_fwd_prior[v - 1], m_lin_model[v - 1],
                     m_origdata->Column(v), NULL, 0);
+
+                if (m_debug) {  
+                    LOG << "Post means: " << m_fwd_post[v-1].means.t();
+                    LOG << "Post precisions: " << m_fwd_post[v-1].GetPrecisions();
+                }
 
                 if (m_needF)
                 {

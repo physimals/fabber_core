@@ -12,6 +12,7 @@
 #include <newmat.h>
 
 #include <fstream>
+#include <iomanip>
 #include <math.h>
 
 using namespace std;
@@ -65,6 +66,9 @@ InferenceTechnique::InferenceTechnique()
 void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 {
     m_log = rundata.GetLogger();
+    m_debug = rundata.GetBool("debug");
+    if (m_debug) LOG << setprecision(17);
+
     m_model = fwd_model;
     m_num_params = m_model->NumParams();
     LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
