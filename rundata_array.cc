@@ -128,12 +128,6 @@ void FabberRunDataArray::SetVoxelData(string key, int data_size, const float *da
             }
         }
     }
-    if (v > 0) {
-        matrixData = matrixData.Columns(1, v);
-        FabberRunData::SetVoxelData(key, matrixData);
-    }
-    else {
-        Matrix empty;
-        FabberRunData::SetVoxelData(key, empty);
-    }
+    matrixData = matrixData.Columns(1, v);
+    FabberRunData::SetVoxelData(key, matrixData);
 }
