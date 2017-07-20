@@ -70,7 +70,10 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
     if (m_debug) LOG << setprecision(17);
 
     m_model = fwd_model;
-    m_num_params = m_model->NumParams();
+    vector<Parameter> params;
+    m_model->GetParameters(rundata, params);
+
+    m_num_params = params.size();
     LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
 
     // Allow calculation to continue even with bad voxels
@@ -152,11 +155,10 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
             // pass in stuff that the model might need
             ColumnVector y = datamtx.Column(vox);
             ColumnVector vcoords = coords.Column(vox);
-            m_model->pass_in_data(y);
-            m_model->pass_in_coords(vcoords);
+            m_model->PassData(y, vcoords);
 
             // do the evaluation
-            m_model->Evaluate(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp);
+            m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp);
             modelFit.Column(vox) = tmp;
         }
 

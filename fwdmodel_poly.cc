@@ -12,7 +12,7 @@
 #include "rundata.h"
 #include "version.h"
 
-#include <newmat.h>
+#include <newmatio.h>
 
 #include <string>
 #include <vector>
@@ -58,7 +58,8 @@ void PolynomialFwdModel::Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::Co
     assert(params.Nrows() == m_degree + 1);
     result.ReSize(data.Nrows());
 
-    for (int i = 1; i <= data.Nrows(); i++)
+    //LOG << "Evaluating for : " << params.t() << endl;
+    for (int i = 1; i <= result.Nrows(); i++)
     {
         double res = 0;
         int p = 1;

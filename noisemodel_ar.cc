@@ -10,6 +10,7 @@
 
 #include "easylog.h"
 #include "rundata.h"
+#include "tools.h"
 
 #include <miscmaths/miscmaths.h>
 #include <newmatio.h>

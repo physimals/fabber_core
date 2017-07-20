@@ -47,7 +47,7 @@ static void DumpVolumeInfo(const volume<float> &info, ostream &out)
 
 FabberRunDataNewimage::FabberRunDataNewimage(bool compat_options)
     : FabberRunData(compat_options)
-    , m_have_mask(false)
+    , m_mask(1, 1, 1), m_have_mask(false)
 {
 }
 

@@ -481,14 +481,17 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         NEWMAT::ColumnVector p_vec(n_params);
         NEWMAT::ColumnVector o_vec(n_ts);
         NEWMAT::ColumnVector data_vec(n_ts);
+        NEWMAT::ColumnVector coords(3);
         for (unsigned int i=0; i<n_params; i++) {
             p_vec(i+1) = params[i];
             if (indata) data_vec(i+1) = indata[i];
             else data_vec(i+1) = 0;
         }
-
-        model->pass_in_data(data_vec);
-        model->Evaluate(p_vec, o_vec);
+        coords(1) = 1;
+        coords(2) = 1;
+        coords(3) = 1;
+        model->PassData(data_vec, coords);
+        model->EvaluateFabber(p_vec, o_vec);
         for (unsigned int i=0; i<n_ts; i++) {
             // Model may not return the same number of timepoints as passed in!
             if ((int)i < o_vec.Nrows()) output[i] = o_vec(i+1);

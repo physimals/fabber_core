@@ -67,7 +67,7 @@ public:
 	 */
     NEWMAT::ReturnMatrix Jacobian() const
     {
-        return jacobian;
+        return m_jacobian;
     }
 
     /**
@@ -75,7 +75,7 @@ public:
 	 */
     NEWMAT::ReturnMatrix Centre() const
     {
-        return centre;
+        return m_centre;
     }
 
     /**
@@ -83,13 +83,13 @@ public:
 	 */
     NEWMAT::ReturnMatrix Offset() const
     {
-        return offset;
+        return m_offset;
     }
 
 protected:
-    NEWMAT::Matrix jacobian;     // J (tranposed?)
-    NEWMAT::ColumnVector centre; // m
-    NEWMAT::ColumnVector offset; // g(m)
+    NEWMAT::Matrix m_jacobian;     // J (tranposed?)
+    NEWMAT::ColumnVector m_centre; // m
+    NEWMAT::ColumnVector m_offset; // g(m)
     // The amount to effectively subtract from Y is g(m)-J*m
 };
 
@@ -107,12 +107,10 @@ public:
 	 * Jacobian, offset and centre so that Evaluate returns
 	 * the linear approximation which is correct at the given
 	 * centre.
+     *
+     * The model pointer is not owned by this class and will not be freed
 	 */
-    explicit LinearizedFwdModel(const FwdModel *model)
-        : fcn(model)
-    {
-        SetLogger(model->GetLogger());
-    }
+    explicit LinearizedFwdModel(const FwdModel *model);
 
     /**
 	 * Copy constructor (needed for using vector<LinearizedFwdModel>)
@@ -120,12 +118,7 @@ public:
 	 * NOTE: This is a reference, not a pointer... and it *copies* the
 	 * given LinearizedFwdModel, rather than using it as its nonlinear model!
 	 * */
-    LinearizedFwdModel(const LinearizedFwdModel &from)
-        : LinearFwdModel(from)
-        , fcn(from.fcn)
-    {
-        SetLogger(from.GetLogger());
-    }
+    LinearizedFwdModel(const LinearizedFwdModel &from);
 
     /**
 	 * Re-calculate the linearized model about the given centre
@@ -147,30 +140,13 @@ public:
 	 */
     void ReCentre(const NEWMAT::ColumnVector &about);
 
-    /**
-	 * Pass on request for initial parameter distributions to the
-	 * underlying model
-	 */
-    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
-    {
-        assert(fcn);
-        fcn->HardcodedInitialDists(prior, posterior);
-    }
+    // Standard FwdModel methods - these are delegated to the underlying model
 
-    virtual void DumpParameters(const NEWMAT::ColumnVector &vec, const std::string &indent = "") const;
-    virtual void NameParams(std::vector<std::string> &names) const
-    {
-        assert(fcn);
-        fcn->NameParams(names);
-    }
-
-    using FwdModel::ModelVersion; // Tell the compiler we want both ours and the base version
-    std::string ModelVersion()
-    {
-        assert(fcn != NULL);
-        return fcn->ModelVersion();
-    }
+    void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
+    void DumpParameters(const NEWMAT::ColumnVector &vec, const std::string &indent = "") const;
+    void NameParams(std::vector<std::string> &names) const;
+    std::string ModelVersion();
 
 private:
-    const FwdModel *fcn;
+    const FwdModel *m_model;
 };

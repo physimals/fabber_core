@@ -38,8 +38,7 @@ protected:
 
     virtual void SetUp()
     {
-        svb = reinterpret_cast<PublicVersion *>(static_cast<SpatialVariationalBayes *>(InferenceTechnique::NewFromName(
-            "spatialvb")));
+        svb = reinterpret_cast<PublicVersion *>(static_cast<SpatialVariationalBayes *>(SpatialVariationalBayes::NewInstance()));
         model = FwdModel::NewFromName("poly");
         rundata = new FabberRunData();
         rundata->SetLogger(&log);

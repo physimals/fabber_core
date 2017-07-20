@@ -1,518 +1,248 @@
 #include "gtest/gtest.h"
 
-#include "inference_vb.h"
+#include "priors.h"
+
 #include "rundata.h"
 
-#include "newmat.h"
+// Tests for the base class - static ExpandPriorTypesString is the only relevant method
 
-class PriorsTest : public ::testing::Test
+class PriorTest : public ::testing::Test
 {
-protected:
-    PriorsTest()
-    {
-    }
-
-    virtual ~PriorsTest()
-    {
-    }
-
-    virtual void SetUp()
-    {
-        m_param_names.push_back("a");
-        m_param_names.push_back("b");
-        m_param_names.push_back("c");
-        m_param_names.push_back("d");
-    }
-
-    virtual void TearDown()
-    {
-        m_param_names.clear();
-    }
-
-    std::vector<std::string> m_param_names;
 };
 
-TEST_F(PriorsTest, DefaultPriors)
+TEST_F(PriorTest, NoPriorsSpecified)
 {
-    int PARAM_IDX = 2;
-
-    FabberRunData rundata(0);
-
-    PriorType prior(PARAM_IDX, m_param_names, rundata);
-    ASSERT_EQ(m_param_names[PARAM_IDX], prior.m_param_name);
-    ASSERT_EQ(PARAM_IDX, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-}
-
-TEST_F(PriorsTest, MultiplePriorsSpatialMethod)
-{
-    FabberRunData rundata(0);
-    rundata.Set("param-spatial-priors", "ABC");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('B', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('C', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-}
-
-TEST_F(PriorsTest, SinglePlus)
-{
-    FabberRunData rundata(0);
-    rundata.Set("param-spatial-priors", "+");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-}
-
-TEST_F(PriorsTest, MultiplePriorsSpatialMethodPlus)
-{
-    FabberRunData rundata(0);
-    rundata.Set("param-spatial-priors", "AB+");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('B', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('B', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(3, m_param_names, rundata);
-    ASSERT_EQ("d", prior.m_param_name);
-    ASSERT_EQ(3, prior.m_idx);
-    ASSERT_EQ('B', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-}
-
-TEST_F(PriorsTest, EmbeddedPlus)
-{
-    FabberRunData rundata(0);
-    rundata.Set("param-spatial-priors", "A+Z");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(3, m_param_names, rundata);
-    ASSERT_EQ("d", prior.m_param_name);
-    ASSERT_EQ(3, prior.m_idx);
-    ASSERT_EQ('Z', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-}
-
-TEST_F(PriorsTest, EmbeddedPlus2)
-{
-    FabberRunData rundata(0);
-    rundata.Set("param-spatial-priors", "A+YZ");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('A', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('Y', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(3, m_param_names, rundata);
-    ASSERT_EQ("d", prior.m_param_name);
-    ASSERT_EQ(3, prior.m_idx);
-    ASSERT_EQ('Z', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-}
-
-TEST_F(PriorsTest, ImagePriorSpatialMethod)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
+    unsigned int NUM_PARAMS = 4;
+    string prior_types = Prior::ExpandPriorTypesString("", NUM_PARAMS);
+    ASSERT_EQ(NUM_PARAMS, prior_types.size());
+    for (unsigned int i=0; i<NUM_PARAMS; i++) 
     {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
+        ASSERT_EQ('-', prior_types[i]);
     }
+}
+
+TEST_F(PriorTest, AllPriorsSpecified)
+{
+    string TYPES_STRING = "ABCD";
+    
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, TYPES_STRING.size());
+    ASSERT_EQ(TYPES_STRING, prior_types);
+}
+
+TEST_F(PriorTest, SomePriorsSpecified)
+{
+    string TYPES_STRING = "ABCD";
+    unsigned int NUM_EXTRA = 3;
+    
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, TYPES_STRING.size()+NUM_EXTRA);
+    for (unsigned int i=0; i<TYPES_STRING.size(); i++) 
+    {
+        ASSERT_EQ(TYPES_STRING[i], prior_types[i]);
+    }
+    // Extras should be model default
+    for (unsigned int i=0; i<NUM_EXTRA; i++) 
+    {
+        ASSERT_EQ('-', prior_types[TYPES_STRING.size()+i]);
+    }
+}
+
+TEST_F(PriorTest, TrailingPlus)
+{
+    string TYPES_STRING = "ABC+";
+    unsigned int NUM_PARAMS = 7;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    for (unsigned int i=0; i<NUM_PARAMS; i++) 
+    {
+        if (i < TYPES_STRING.size()-1) 
+            ASSERT_EQ(TYPES_STRING[i], prior_types[i]);
+        else
+            ASSERT_EQ(TYPES_STRING[TYPES_STRING.size()-2], prior_types[i]);    
+    }
+}
+
+TEST_F(PriorTest, EmbeddedPlus)
+{
+    string TYPES_STRING = "AB+C";
+    unsigned int NUM_PARAMS = 7;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    ASSERT_EQ(prior_types, "ABBBBBC");
+}
+
+TEST_F(PriorTest, PointlessTrailingPlus)
+{
+    string TYPES_STRING = "ABCDE+";
+    unsigned int NUM_PARAMS = TYPES_STRING.size()-1;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    for (unsigned int i=0; i<NUM_PARAMS; i++) 
+    {
+        ASSERT_EQ(TYPES_STRING[i], prior_types[i]);
+    }
+}
+
+TEST_F(PriorTest, LeadingPlus)
+{
+    string TYPES_STRING = "+ABCDE";
+    unsigned int NUM_PARAMS = TYPES_STRING.size()+3;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    ASSERT_EQ(prior_types, "----ABCDE");
+}
+
+TEST_F(PriorTest, PointlessLeadingPlus)
+{
+    string TYPES_STRING = "+ABCDE";
+    unsigned int NUM_PARAMS = TYPES_STRING.size()-1;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    for (unsigned int i=0; i<NUM_PARAMS; i++) 
+    {
+        ASSERT_EQ(TYPES_STRING[i+1], prior_types[i]);
+    }
+}
+
+TEST_F(PriorTest, PlusOnly)
+{
+    string TYPES_STRING = "+";
+    unsigned int NUM_PARAMS = 12;
+
+    string prior_types = Prior::ExpandPriorTypesString(TYPES_STRING, NUM_PARAMS);
+    ASSERT_EQ(prior_types.size(), NUM_PARAMS);
+    for (unsigned int i=0; i<NUM_PARAMS; i++) 
+    {
+        ASSERT_EQ('-', prior_types[i]);
+    }
+}
+
+TEST_F(PriorTest, TooManyPriorsSpecified)
+{
+    string TYPES_STRING = "ABCD";
+    ASSERT_THROW(Prior::ExpandPriorTypesString(TYPES_STRING, TYPES_STRING.size()-1), std::exception);
+}
+
+TEST_F(PriorTest, TooManyPlusses)
+{
+    string TYPES_STRING = "A+BCD+";
+    ASSERT_THROW(Prior::ExpandPriorTypesString(TYPES_STRING, TYPES_STRING.size()), std::exception);
+}
+
+TEST_F(PriorTest, TooManyPlussesEnd)
+{
+    string TYPES_STRING = "ABCD++";
+    ASSERT_THROW(Prior::ExpandPriorTypesString(TYPES_STRING, TYPES_STRING.size()), std::exception);
+}
+
+// Tests for concrete subclasses
+
+#define PARAM_NAME "SomeParameter"
+#define PARAM_IDX 3
+#define PRIOR_MEAN 3.9
+#define PRIOR_VAR 5.3
+#define POST_MEAN 6.3
+#define POST_VAR 2.3
+#define PRIOR_TYPE 'Q'
+#define NUM_VOXELS 17
+#define IMAGE_FNAME "IMAGE"
+
+class DefaultPriorTest : public ::testing::Test
+{
+};
+
+TEST_F(DefaultPriorTest, BasicProperties)
+{
+    Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR), DistParams(POST_MEAN, POST_VAR), 
+                PRIOR_TYPE);
+    DefaultPrior prior(p);
+    ASSERT_EQ(prior.m_param_name, PARAM_NAME);
+    ASSERT_EQ(prior.m_idx, PARAM_IDX);
+    ASSERT_EQ(prior.m_type_code, PRIOR_TYPE);
+    ASSERT_EQ(prior.m_params.mean(), PRIOR_MEAN);
+    ASSERT_EQ(prior.m_params.var(), PRIOR_VAR);
+}
+
+TEST_F(DefaultPriorTest, IgnoresTransform)
+{
+    Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR), DistParams(POST_MEAN, POST_VAR), 
+                PRIOR_TYPE, TRANSFORM_LOG());
+    DefaultPrior prior(p);
+    ASSERT_EQ(prior.m_param_name, PARAM_NAME);
+    ASSERT_EQ(prior.m_idx, PARAM_IDX);
+    ASSERT_EQ(prior.m_type_code, PRIOR_TYPE);
+    ASSERT_EQ(prior.m_params.mean(), PRIOR_MEAN);
+    ASSERT_EQ(prior.m_params.var(), PRIOR_VAR);
+}
+
+TEST_F(DefaultPriorTest, ApplyToMVN)
+{
+    Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR), DistParams(POST_MEAN, POST_VAR), 
+                PRIOR_TYPE);
+    DefaultPrior prior(p);
+
+    MVNDist mvn(PARAM_IDX + 7);
+    RunContext ctx(1);
+    prior.ApplyToMVN(&mvn, ctx);
+    for (int i=1; i<=NUM_VOXELS; i++) {
+        ctx.v = i;
+        prior.ApplyToMVN(&mvn, ctx);
+        ASSERT_EQ(mvn.means(PARAM_IDX+1), PRIOR_MEAN);
+        ASSERT_EQ(mvn.GetCovariance()(PARAM_IDX+1, PARAM_IDX+1), PRIOR_VAR);
+    }
+}
+
+class ImagePriorTest : public ::testing::Test
+{
+};
+
+TEST_F(ImagePriorTest, BasicProperties)
+{
+    NEWMAT::Matrix data;
+    data.ReSize(1, NUM_VOXELS);
+    for (int i=1; i<=NUM_VOXELS; i++) data(1, i) = i*2.3-7.4;
 
     FabberRunData rundata;
-    rundata.SetVoxelData("image-prior1", iprior_data1);
-    rundata.Set("param-spatial-priors", "I");
+    rundata.SetVoxelData(IMAGE_FNAME, data);
 
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("image-prior1", prior.m_filename);
-    NEWMAT::RowVector image = prior.m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, image.Ncols());
+    Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR), DistParams(POST_MEAN, POST_VAR), 
+                PRIOR_TYPE);
+    p.options["image"] = IMAGE_FNAME;
+
+    ImagePrior prior(p, rundata);
+
+    ASSERT_EQ(prior.m_param_name, PARAM_NAME);
+    ASSERT_EQ(prior.m_idx, PARAM_IDX);
+    ASSERT_EQ(prior.m_type_code, PRIOR_TYPE);
+    ASSERT_EQ(prior.m_params.mean(), PRIOR_MEAN);
+    ASSERT_EQ(prior.m_params.var(), PRIOR_VAR);
 }
 
-TEST_F(PriorsTest, ImagePriorSpatialMethodMultiple)
+TEST_F(ImagePriorTest, ApplyToMVN)
 {
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
+    NEWMAT::Matrix data;
+    data.ReSize(1, NUM_VOXELS);
+    for (int i=1; i<=NUM_VOXELS; i++) data(1, i) = i*2.3-7.4;
 
     FabberRunData rundata;
-    rundata.SetVoxelData("image-prior1", iprior_data1);
-    rundata.SetVoxelData("image-prior2", iprior_data2);
-    rundata.Set("param-spatial-priors", "II");
+    rundata.SetVoxelData(IMAGE_FNAME, data);
 
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("image-prior1", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
+    Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR), DistParams(POST_MEAN, POST_VAR), 
+                PRIOR_TYPE);
+    p.options["image"] = IMAGE_FNAME;
+    ImagePrior prior(p, rundata);
 
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("image-prior2", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-}
-
-TEST_F(PriorsTest, ImagePriorMixedMethodMultiple)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
+    MVNDist mvn(PARAM_IDX + 7);
+    RunContext ctx(NUM_VOXELS);
+    for (int i=1; i<=NUM_VOXELS; i++) {
+        ctx.v = i;
+        prior.ApplyToMVN(&mvn, ctx);
+        ASSERT_EQ(mvn.means(PARAM_IDX+1), data(1, i));
+        ASSERT_EQ(mvn.GetCovariance()(PARAM_IDX+1, PARAM_IDX+1), PRIOR_VAR);
     }
-
-    FabberRunData rundata;
-    rundata.Set("PSP_byname1", "b");
-    rundata.SetVoxelData("PSP_byname1_image", iprior_data2);
-    rundata.SetVoxelData("image-prior1", iprior_data1);
-    rundata.Set("param-spatial-priors", "II");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("image-prior1", prior.m_filename);
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("PSP_byname1_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
 }
 
-TEST_F(PriorsTest, ImagePriorByName)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
-
-    FabberRunData rundata;
-    rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
-    rundata.Set("PSP_byname1", "a");
-    rundata.Set("PSP_byname1_type", "I");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("PSP_byname1_image", prior.m_filename);
-    NEWMAT::RowVector image = prior.m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, image.Ncols());
-}
-
-TEST_F(PriorsTest, ImagePriorByNameCorrectParam)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
-
-    FabberRunData rundata;
-    rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
-    rundata.Set("PSP_byname1", "b");
-    rundata.Set("PSP_byname1_type", "I");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("PSP_byname1_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-}
-
-TEST_F(PriorsTest, ImagePriorByNameMultiple)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
-
-    FabberRunData rundata;
-    rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
-    rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
-    rundata.Set("PSP_byname1", "c");
-    rundata.Set("PSP_byname1_type", "I");
-    rundata.Set("PSP_byname2", "a");
-    rundata.Set("PSP_byname2_type", "I");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("PSP_byname2_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-
-    prior = PriorType(1, m_param_names, rundata);
-    ASSERT_EQ("b", prior.m_param_name);
-    ASSERT_EQ(1, prior.m_idx);
-    ASSERT_EQ('-', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("", prior.m_filename);
-    ASSERT_EQ(0, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_EQ(-1, prior.m_prec);
-    ASSERT_EQ("PSP_byname1_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-}
-
-TEST_F(PriorsTest, ImagePriorPrec)
-{
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix iprior_data1, iprior_data2;
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
-
-    FabberRunData rundata;
-    rundata.SetVoxelData("PSP_byname1_image", iprior_data1);
-    rundata.SetVoxelData("PSP_byname2_image", iprior_data2);
-    rundata.Set("PSP_byname1", "c");
-    rundata.Set("PSP_byname1_type", "I");
-    rundata.Set("PSP_byname1_prec", "42");
-    rundata.Set("PSP_byname2", "a");
-    rundata.Set("PSP_byname2_type", "I");
-    rundata.Set("PSP_byname2_prec", "24");
-
-    PriorType prior(0, m_param_names, rundata);
-    ASSERT_EQ("a", prior.m_param_name);
-    ASSERT_EQ(0, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_FLOAT_EQ(24, prior.m_prec);
-    ASSERT_EQ("PSP_byname2_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-
-    prior = PriorType(2, m_param_names, rundata);
-    ASSERT_EQ("c", prior.m_param_name);
-    ASSERT_EQ(2, prior.m_idx);
-    ASSERT_EQ('I', prior.m_type);
-    ASSERT_FLOAT_EQ(42, prior.m_prec);
-    ASSERT_EQ("PSP_byname1_image", prior.m_filename);
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, prior.m_image.Ncols());
-}

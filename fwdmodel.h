@@ -11,15 +11,170 @@
 #include "dist_mvn.h"
 #include "easylog.h"
 #include "factories.h"
+#include "transforms.h"
 
 #include <newmat.h>
 
 #include <string>
 #include <vector>
 
+/**
+ * Information about a model parameter
+ */
+struct Parameter
+{
+	Parameter(unsigned int idx, std::string name="", DistParams prior=DistParams(0, 1), DistParams post=DistParams(0, 1), char prior_type='N', const Transform *transform=TRANSFORM_IDENTITY())
+	  : idx(idx), name(name), prior(prior), post(post), prior_type(prior_type), transform(transform) {}
+	
+	unsigned int idx;
+	std::string name;
+	DistParams prior;
+	DistParams post;
+	char prior_type;
+	const Transform  *transform;
+
+	/** 
+	 * Additional options, e.g. filename of data for image prior
+	 *
+	 * This should generally only by initialized by Fabber run options,
+	 * not by the model itself 
+	 */
+	std::map<std::string, std::string> options; 
+};
+
 class FwdModel : public Loggable
 {
 public:
+
+	/** Required in case subclasses manage resources */
+    virtual ~FwdModel()
+    {
+    }
+
+    /**
+	 * Get option descriptions for this model. The default returns
+	 * nothing to enable compatibility with older model code
+	 */
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
+
+    /**
+	 * @return human-readable description of the model.
+	 */
+    virtual std::string GetDescription() const;
+
+    /**
+	 * Get the model version. There is no fixed format for this,
+	 * and it has no meaning other than by comparison with different
+	 * versions of the same model. 
+	 * 
+	 * See fwdmodel.cc for an example 
+	 * of how to implement this to return a CVS file version.
+	 *
+	 * @return a string indicating the model version. 
+	 */
+    virtual std::string ModelVersion() const;
+
+    /**
+	 * Initialize a new instance using configuration from the given
+	 * arguments.
+	 * 
+	 * @param rundata Configuration parameters.
+	 */
+    virtual void Initialize(FabberRunData &rundata);
+
+    /**
+	 * Voxelwise initialization of the posterior in model space
+	 *
+	 * Subclasses can override this if they want to set the initial
+	 * posterior on a per-voxel basis (e.g. an offset might be initially
+	 * set to the value of the first data point).
+	 * 
+	 * Called by InitPostVox. This should set values in terms of model parameters
+	 * and not worry about parameter transformations.
+	 *
+	 * @param posterior Initial posterior distribution for model parameters.
+	 */
+    virtual void InitParams(MVNDist &posterior) const
+    {
+    }
+	
+    /**
+	 * Get parameter descriptions for this model. 
+	 *
+	 * The output is only valid after Initialize is called, as the
+	 * parameters may well depend on options passed to the model
+	 *
+	 * For backwards compatibility, the default implementation 
+	 * uses NameParams() and HardcodedInitialDists to supply this
+	 * information, and assumes identity transforms
+	 */
+    void GetParameters(FabberRunData &rundata, std::vector<Parameter> &params);
+
+    /**
+	 * For models that need the data and supplementary data values in the voxel to calculate
+	 *
+	 * Called for each voxel so the model knows what the current data is
+	 * 
+	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
+	 *                number of values that are in this vector
+	 * @param voxsuppdata Supplementary data if provided. Default is an empty vector. If not
+	 *                    empty, must be the same length as voxdata.
+	 */
+    void PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &coords, const NEWMAT::ColumnVector &voxsuppdata=NEWMAT::ColumnVector());
+
+    /**
+	 * Initialization of the posterior.
+	 *
+	 * This is called for each voxel. The parameter defaults are used to set up 
+	 * an initial posterior, then InitParams is called to allow the model to 
+	 * do per-voxel initialization if required. Finally parameter transforms are
+	 * applied so the resulting posterior contains appropriate values for Fabber's
+	 * internal logic.
+	 *
+	 * Note that in doing the transformation, it is assumed that the initial posterior
+	 * is diagonal.
+	 * 
+	 * Initialize must be called before this method
+	 *
+	 * @param posterior Posterior distribution for model parameters. Should be passed in as
+	 *        an MVN of the correct size for the number of parameters. Model
+	 *        may set mean/variances to suggested posterior, or just do nothing to
+	 *        accept general default
+	 */
+    void GetInitialPosterior(MVNDist &posterior) const;
+
+	/**
+	 * Evaluate the forward model in Fabber internal space
+	 * 
+	 * This method calls the model-specific Evaluate method, but handles parameter transforms
+	 * transparently.
+	 *
+	 * Initialize must be called before this method
+	 * 
+	 * @param params Model parameter values in Fabber internal space. 
+	 * @param result Will be populated with the model prediction for these parameters.
+	 *               The length of this vector will be set to the same as the number of
+	 *               data points passed in via pass_in_data
+	 */
+	void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const;
+
+	/**
+	 * Transform an MVN containing model values to Fabber internal values. 
+	 *
+	 * NB: Only the diagonal elements of the covariance are affected
+	 */
+	void ToFabber(MVNDist &mvn) const;
+
+	/**
+	 * Transform an MVN containing Fabber internal values to model values. 
+	 *
+	 * NB: Only the diagonal elements of the covariance are affected
+	 */
+	void ToModel(MVNDist &mvn) const;
+
+	/**
+	 * Load models from a dynamic library, adding them to the FwdModelFactory
+	 */
     static void LoadFromDynamicLibrary(const std::string &filename, EasyLog *log = 0);
 
     /**
@@ -38,58 +193,31 @@ public:
 	 */
     static void UsageFromName(const std::string &name, std::ostream &stream);
 
-    /**
-	 * Get option descriptions for this model. The default returns
-	 * nothing to enable compatibility with older model code
-	 */
-    virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
-    /**
-	 * @return human-readable description of the model.
-	 */
-    virtual std::string GetDescription() const { return ""; }
-    /**
-	 * Get the model version. There is no fixed format for this,
-	 * and it has no meaning other than by comparison with different
-	 * versions of the same model. 
-	 * 
-	 * See fwdmodel.cc for an example 
-	 * of how to implement this to return a CVS file version.
-	 *
-	 * @return a string indicating the model version. 
-	 */
-    virtual std::string ModelVersion() const;
-
-    /**
-	 * Initialize a new instance using configuration from the given
-	 * arguments.
-	 * 
-	 * @param args Configuration parameters.
-	 */
-    virtual void Initialize(FabberRunData &args);
-
+#ifdef DEPRECATED
     /**
 	 * How many parameters in the model? 
 	 * 
-	 * Initialize must be called before this method
+	 * Initialize must be called before this method. DEPRECATED, replace with
+	 * GetParameterDefaults()
 	 * 
 	 * @return number of parameters, i.e. size of vector to be passed
 	 * to Evaluate function
 	 */
-    virtual int NumParams() const = 0;
+    virtual int NumParams() const {return m_params.size();}
 
     /**
 	 * Name each of the parameters
 	 * 
-	 * Initialize must be called before this method
-	 *
-	 * See fwdmodel_linear.h for a generic implementation
+	 * Initialize must be called before this method. DEPRECATED, replace with
+	 * GetParameterDefaults()
 	 */
-    virtual void NameParams(std::vector<std::string> &names) const = 0;
+    virtual void NameParams(std::vector<std::string> &names) const {}
 
     /**
 	 * Load up some sensible suggestions for initial prior & posterior values
 	 * 
-	 * Initialize must be called before this method
+	 * Initialize must be called before this method. DEPRECATED, replace with
+	 * GetParameterDefaults()
 	 *
 	 * @param prior Prior distribution for parameters. Should be passed in as
 	 *        an MVN of the correct size for the number of parameters. Model
@@ -98,86 +226,7 @@ public:
 	 *        
 	 * @param posterior As above for posterior distribution
 	 */
-    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const = 0;
-
-    /**
-	 * For models that need the data values in the voxel to calculate
-	 *
-	 * Called for each voxel so the model knows what the current data is
-	 *
-	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
-	 *                number of values that are in this vector
-	 */
-    virtual void pass_in_data(const NEWMAT::ColumnVector &voxdata)
-    {
-        data = voxdata;
-    }
-
-    /**
-	 * For models that need the data and supplementary data values in the voxel to calculate
-	 *
-	 * Called for each voxel so the model knows what the current data is
-	 * 
-	 * @param voxdata Vector containing current voxel data. Evaluate will return the same
-	 *                number of values that are in this vector
-	 * @param voxsuppdata Supplementary data if provided. Must be the same length as voxdata.
-	 */
-    virtual void pass_in_data(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxsuppdata)
-    {
-        data = voxdata;
-        suppdata = voxsuppdata;
-    }
-
-    /**
-	 * For models that need to know the voxel co-ordinates of the data
-	 *
-	 * Called for each voxel so the model knows what the current coords are
-	 * 
-	 * @param coords Vector of length 3 containing x, y, z coords
-	 */
-    virtual void pass_in_coords(const NEWMAT::ColumnVector &coords);
-
-    /**
-	 * Voxelwise initialization of the posterior, i.e. a parameter initialisation
-	 *
-	 * Called for each voxel, rather than HardcodedInitialDists which is called
-	 * at the very start. Does not need to do anything unless the model
-	 * wants per-voxel default posterior.
-	 * 
-	 * Initialize must be called before this method
-	 *
-	 * @param posterior Posterior distribution for model parameters. Should be passed in as
-	 *        an MVN of the correct size for the number of parameters. Model
-	 *        may set mean/variances to suggested prior, or just do nothing to
-	 *        accept general default
-	 */
-    virtual void InitParams(MVNDist &posterior) const
-    {
-    }
-
-    /**
-	 * Evaluate the forward model
-	 * 
-	 * Initialize must be called before this method
-	 * 
-	 * @param params Model parameter values. Must contain the correct number of parameters
-	 *  			 as specified by NumParams
-	 * @param result Will be populated with the model prediction for these parameters.
-	 *               The length of this vector will be set to the same as the number of
-	 *               data points passed in via pass_in_data
-	 */
-    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
-
-    /**
-	 * Evaluate the gradient
-	 * 
-	 * @param params Model parameter values. Must contain the correct number of parameters
-	 *  			 as specified by NumParams
-	 * @param grad If returning true, gradient of model as a NumParams x NumParams matrix
-	 * 
-	 * @return false if no valid gradient is returned by the model, true if it is
-	 */
-    virtual bool Gradient(const NEWMAT::ColumnVector &params, NEWMAT::Matrix &grad) const;
+    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const {};
 
     /**
 	 * An ARD update step can be specified in the model
@@ -201,11 +250,6 @@ public:
 	 */
     std::vector<int> ardindices;
 
-    virtual ~FwdModel()
-    {
-    }
-
-#ifdef DEPRECATED
     /**
 	 * Describe what a given parameter vector means (to LOG)
 	 *
@@ -224,19 +268,40 @@ public:
 #endif
 
 protected:
+
+    virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
+
+    /**
+	 * Evaluate the forward model in model space
+	 * 
+	 * Initialize must be called before this method
+	 * 
+	 * @param params Model parameter values. Must contain the correct number of parameters
+	 *  			 as specified by NumParams
+	 * @param result Will be populated with the model prediction for these parameters.
+	 *               The length of this vector will be set to the same as the number of
+	 *               data points passed in via pass_in_data
+	 */
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
+
     // Your derived classes should have storage for all constants that are
     // implicitly part of g() -- e.g. pulse sequence parameters, any parameters
     // that are assumed to take known values, and basis functions.  Given these
     // constants, NumParams() should have a fixed value.
 
-    // storage for voxel co-ordinates
-    int coord_x;
-    int coord_y;
-    int coord_z;
-
-    //storage for data
+    // storage for current voxel data
+    NEWMAT::ColumnVector coords;
     NEWMAT::ColumnVector data;
     NEWMAT::ColumnVector suppdata;
+
+#ifdef DEPRECATED
+	int coord_x;
+	int coord_y;
+	int coord_z;
+#endif
+
+private:
+	std::vector<Parameter> m_params;
 };
 
 /** 

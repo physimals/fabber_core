@@ -12,6 +12,7 @@
 
 #include "rundata.h"
 #include "dist_mvn.h"
+#include "tools.h"
 
 #include <newmat.h>
 #include <miscmaths/miscmaths.h>
@@ -31,51 +32,103 @@ std::ostream &operator<<(std::ostream &out, const Prior &prior)
     return out;
 }
 
-DefaultPrior::DefaultPrior(char type, unsigned int idx, string param_name, double mean, double prec)
-    : m_param_name(param_name)
-    , m_idx(idx)
-    , m_type_code(type)
-    , m_mean(mean)
-    , m_prec(prec)
+string Prior::ExpandPriorTypesString(string priors_str, unsigned int num_params)
+{
+    // Find out how many prior types are in the string, and what the + character
+    // should be interpreted as
+    unsigned int n_str_params = 0;
+    char repeat_type = '-';
+    bool plus_found=false;
+    for (size_t i=0; i<priors_str.size(); i++) 
+    {
+        if (priors_str[i] != '+') {
+            if (!plus_found) repeat_type = priors_str[i];
+            n_str_params++;
+        }
+        else if (plus_found) {
+            throw InvalidOptionValue("param-spatial-priors", priors_str, "Only one + character allowed");
+        }
+        else {
+            plus_found = true;
+        }
+    }
+
+    if (n_str_params > num_params)
+    {
+        throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
+    }
+    else if (n_str_params < num_params)
+    {
+        // Expand '+' char, if present, to give correct number of parameters
+        // If there is no +, append with '-', meaning 'model default'
+        int deficit = num_params - n_str_params;
+        size_t plus_pos = priors_str.find("+");
+        if (plus_pos != std::string::npos)
+        {
+            priors_str.insert(plus_pos, deficit-1, '+');
+        }
+        else {
+            priors_str.insert(priors_str.end(), deficit, '-');
+        }
+    }
+    else {
+        // We already have enough types for all the parameters so erase any
+        // pointless + char
+        priors_str.erase(std::remove(priors_str.begin(), priors_str.end(), '+'), priors_str.end());
+    }
+
+    // Finally, replace all + chars with identified repeat type    
+    std::replace(priors_str.begin(), priors_str.end(), '+', repeat_type);
+    assert(priors_str.size() == num_params);
+
+    return priors_str;
+}
+
+DefaultPrior::DefaultPrior(const Parameter &p)
+    : m_param_name(p.name)
+    , m_idx(p.idx)
+    , m_type_code(p.prior_type)
+    , m_params(p.prior)
 {
 }
 
 void DefaultPrior::DumpInfo(std::ostream &out) const
 {
     out << "DefaultPrior: Parameter " << m_idx << " '" << m_param_name << "'" << " mean: "
-        << m_mean << " precision: " << m_prec;
+        << m_params.mean() << " precision: " << m_params.prec();
 }
 
-double DefaultPrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
+double DefaultPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
-    prior->means(m_idx + 1) = m_mean;
+    prior->means(m_idx + 1) = m_params.mean();
 
     SymmetricMatrix prec = prior->GetPrecisions();
-    prec(m_idx + 1, m_idx + 1) = m_prec;
+    prec(m_idx + 1, m_idx + 1) = m_params.prec();
     prior->SetPrecisions(prec);
 
     return 0;
 }
 
-ImagePrior::ImagePrior(unsigned int idx, string param_name, string filename, double prec, FabberRunData &rundata)
-    : DefaultPrior('I', idx, param_name, -1, prec), m_filename(filename)
+ImagePrior::ImagePrior(const Parameter &p, FabberRunData &rundata)
+    : DefaultPrior(p)
 {
     m_log = rundata.GetLogger();
+    m_filename = p.options.find("image")->second;
     m_image = rundata.GetVoxelData(m_filename).AsRow();
 }
 
 void ImagePrior::DumpInfo(std::ostream &out) const
 {
     out << "ImagePrior: Parameter " << m_idx << " '" << m_param_name << "'" << " filename: "
-        << m_filename << " precision: " << m_prec;
+        << m_filename << " precision: " << m_params.prec();
 }
 
-double ImagePrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
+double ImagePrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
     prior->means(m_idx + 1) = m_image(ctx.v);
 
     SymmetricMatrix prec = prior->GetPrecisions();
-    prec(m_idx + 1, m_idx + 1) = m_prec;
+    prec(m_idx + 1, m_idx + 1) = m_params.prec();
     prior->SetPrecisions(prec);
 
     return 0;
@@ -83,51 +136,43 @@ double ImagePrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
 
 void ARDPrior::DumpInfo(std::ostream &out) const
 {
-    out << "ARDPrior: Parameter " << m_idx << " '" << m_param_name << "'";
+    out << "ARDPrior: Parameter " << m_idx << " '" << m_param_name << "'" << " initial mean: "
+        << m_params.mean() << " initial precision: " << m_params.prec();
 }
 
-// Calculate log-gamma from a Taylor expansion; good to one part in 2e-10.
-static double gammaln(double x)
-{
-    ColumnVector series(7);
-    series << 2.5066282746310005 << 76.18009172947146 << -86.50532032941677 << 24.01409824083091 << -1.231739572450155
-           << 0.1208650973866179e-2 << -0.5395239384953e-5;
-
-    double total = 1.000000000190015;
-    for (int i = 2; i <= series.Nrows(); i++)
-        total += series(i) / (x + i - 1);
-
-    return log(series(1) * total / x) + (x + 0.5) * log(x + 5.5) - x - 5.5;
-}
-
-double ARDPrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
+double ARDPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
     SymmetricMatrix cov = prior->GetCovariance();
-
+    double post_mean = ctx.fwd_post[ctx.v-1].means(m_idx+1);
+    double post_cov = ctx.fwd_post[ctx.v-1].GetCovariance()(m_idx+1, m_idx+1);
+    // (Chappel et al 2009 Eq D4)
+    double new_cov = post_mean*post_mean + post_cov;
+        
     if (ctx.it == 0) {
         // Special case for first iter
-        cov(m_idx+1, m_idx+1) = 1e12; //set prior to be initally non-informative
-        prior->means(m_idx+1) = 0;
-        return 0; //FIXME
+        // Initially set prior to model default. The other alternative is to set 
+        // it to be initially non-informative, however this can still be achieved
+        // by specifying the model prior mean/precision by options.
+        cov(m_idx+1, m_idx+1) = m_params.var();
+        prior->means(m_idx+1) = m_params.mean();
+        //LOG << "first iter ARD: " << m_params.var() << ", " << m_params.mean() << endl;
     }
     else {
+        //LOG << "post: " << post_cov << ", " << post_mean << endl;
         // Update covariance on subsequent iterations
-        // (Chappel et al 2009 Eq D4)
-        double post_mean = ctx.fwd_post[ctx.v-1].means(m_idx+1);
-        double post_cov = ctx.fwd_post[ctx.v-1].GetCovariance()(m_idx+1, m_idx+1);
-        double new_cov = post_mean*post_mean + post_cov;
         cov(m_idx+1, m_idx+1) = new_cov;
-        prior->SetCovariance(cov);
-
-        // Calculate the free energy contribution from ARD term
-        // (Chappel et al 2009, end of Appendix D)
-        double b = 2 / new_cov;
-        return -1.5 * (log(b) + digamma(0.5)) - 0.5 - gammaln(0.5) - 0.5 * log(b); 
+        //LOG << "subs iter ARD: " << new_cov << ", " << prior->means(m_idx+1) << endl;
     }
+    prior->SetCovariance(cov);
+
+    // Calculate the free energy contribution from ARD term
+    // (Chappel et al 2009, end of Appendix D)
+    double b = 2 / new_cov;
+    return -1.5 * (log(b) + digamma(0.5)) - 0.5 - gammaln(0.5) - 0.5 * log(b); 
 }
 
-SpatialPrior::SpatialPrior(char type, unsigned int idx, std::string param_name, double mean, double prec, FabberRunData &rundata) 
-    : DefaultPrior(type, idx, param_name, mean, prec), m_akmean(1e-8), m_spatial_dims(3), m_spatial_speed(-1) 
+SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata) 
+    : DefaultPrior(p), m_akmean(1e-8), m_spatial_dims(3), m_spatial_speed(-1) 
 {
     m_log = rundata.GetLogger();
     m_spatial_dims = rundata.GetIntDefault("spatial-dims", 3);
@@ -151,7 +196,7 @@ SpatialPrior::SpatialPrior(char type, unsigned int idx, std::string param_name, 
     m_update_first_iter = rundata.GetBool("update-spatial-prior-on-first-iteration");
 }
 
-double SpatialPrior::CalculateAkmean(const PriorContext &ctx)
+double SpatialPrior::CalculateAkmean(const RunContext &ctx)
 {
     // The following calculates Tr[Sigmak*S'*S]
     double tmp1 = 0.0;
@@ -160,15 +205,15 @@ double SpatialPrior::CalculateAkmean(const PriorContext &ctx)
     {
         double sigmak = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx+1, m_idx+1);
         int nn = ctx.neighbours.at(v - 1).size();
-        if (m_type_code == 'm') // useMRF)
+        if (m_type_code == PRIOR_SPATIAL_m) // useMRF)
             tmp1 += sigmak * m_spatial_dims * 2;
-        else if (m_type_code == 'M') // useMRF2)
+        else if (m_type_code == PRIOR_SPATIAL_M) // useMRF2)
             tmp1 += sigmak * (nn + 1e-8);
-        else if (m_type_code == 'p')
+        else if (m_type_code == PRIOR_SPATIAL_p)
             tmp1 += sigmak * (4 * m_spatial_dims * m_spatial_dims + nn);
         else // P
             tmp1 += sigmak * (nn*nn + nn);
-
+        
         double wk = ctx.fwd_post.at(v - 1).means(m_idx+1);
         double Swk = 0.0;
         for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
@@ -176,10 +221,10 @@ double SpatialPrior::CalculateAkmean(const PriorContext &ctx)
         {
             Swk += wk - ctx.fwd_post.at(*v2It-1).means(m_idx+1);
         }
-        if (m_type_code == 'p' || m_type_code == 'm')
+        if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
             Swk += wk * (m_spatial_dims * 2 - ctx.neighbours.at(v - 1).size());
 
-        if (m_type_code == 'm' || m_type_code == 'M')
+        if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
             tmp2 += Swk*wk;
         else 
             tmp2 += Swk*Swk;
@@ -216,10 +261,10 @@ double SpatialPrior::CalculateAkmean(const PriorContext &ctx)
 void SpatialPrior::DumpInfo(std::ostream &out) const
 {
     out << "SpatialPrior: Parameter " << m_idx << " '" << m_param_name << "'" << " type " << m_type_code << " mean: "
-        << m_mean << " precision: " << m_prec;
+        << m_params.mean() << " precision: " << m_params.prec();
 }
 
-double SpatialPrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
+double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
     if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter)) {
         m_akmean = CalculateAkmean(ctx);
@@ -249,82 +294,78 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const PriorContext &ctx)
 
     int nn = ctx.neighbours[ctx.v - 1].size();
 
-    if (m_type_code == 'p')
+    if (m_type_code == PRIOR_SPATIAL_p)
     {
         assert(nn <= m_spatial_dims * 2);
         weight8 = 8 * 2 * m_spatial_dims;
         weight12 = -1 * (4 * m_spatial_dims * m_spatial_dims - nn);
     }
 
-    
     double spatial_prec = 0;
 
-    if (m_type_code == 'P')
+    if (m_type_code == PRIOR_SPATIAL_P)
         spatial_prec = m_akmean * (nn*nn + nn);
-    else if (m_type_code == 'm')
+    else if (m_type_code == PRIOR_SPATIAL_m)
         spatial_prec = m_akmean * m_spatial_dims * 2;
-    else if (m_type_code == 'M')
+    else if (m_type_code == PRIOR_SPATIAL_M)
         spatial_prec = m_akmean * (nn + 1e-8);
-    else if (m_type_code == 'p')
+    else if (m_type_code == PRIOR_SPATIAL_p)
         spatial_prec = m_akmean * (4 * m_spatial_dims * m_spatial_dims + nn);
     else 
         assert(false);
 
+    // Set the prior precision for this parameter
     SymmetricMatrix precs = prior->GetPrecisions();
-    if (m_type_code == 'p' || m_type_code == 'm')
+    if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
     {
         //	Penny-style DirichletBC priors -- ignoring initialFwdPrior completely!
         precs(m_idx+1, m_idx+1) = spatial_prec;
     }
     else
     {
-        precs(m_idx+1, m_idx+1) = m_prec + spatial_prec;
+        precs(m_idx+1, m_idx+1) = m_params.prec() + spatial_prec;
     }
     prior->SetPrecisions(precs);
 
+    // Set the prior mean for this parameter
+    // Note that we multiply by reciprocals rather than dividing. This is
+    // to maximise numerical compatibility with NEWMAT which presumably 
+    // does it as an optimization when dividing a whole matrix by a constant
     double mTmp;
-    if (m_type_code == 'm') {
+    if (m_type_code == PRIOR_SPATIAL_m) {
         // Dirichlet BCs on MRF
-        mTmp = contrib8 / (8 * m_spatial_dims * 2); 
+        double rec = 1/(8 * m_spatial_dims * 2);
+        mTmp = contrib8 * rec; 
     }               
-    else if (m_type_code == 'M') {
-        mTmp = contrib8 / (8 * (nn + 1e-8));
+    else if (m_type_code == PRIOR_SPATIAL_M) {
+        double rec = 1/(8* (double(nn) + 1e-8));
+        mTmp = contrib8 * rec;
     }
     else if (weight8 != 0) {
-        mTmp = (contrib8 + contrib12) / (weight8 + weight12);
+        double rec = 1/(weight8 + weight12);
+        mTmp = (contrib8 + contrib12) * rec;
     }
     else
         mTmp = 0;
 
-    if (m_type_code == 'm' || m_type_code == 'M')
+    //LOG << "SpatialPrior:: " << prior->GetCovariance()(m_idx+1, m_idx+1) << ", " << spatial_prec << ", " << contrib8 << ", " << den << ", " << mTmp << " : " << t1 << endl;
+    
+    if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
         prior->means(m_idx+1) = prior->GetCovariance()(m_idx+1, m_idx+1) * spatial_prec * mTmp; // = mTmp for p or m
     else {
         // equivalent, when non-spatial priors are very weak: m_fwd_prior[v-1].means = mTmp;
-        prior->means(m_idx+1) = prior->GetCovariance()(m_idx+1, m_idx+1) * (spatial_prec * mTmp + m_prec * m_mean);
+        prior->means(m_idx+1) = prior->GetCovariance()(m_idx+1, m_idx+1) * (spatial_prec * mTmp + m_params.prec() * m_params.mean());
     }
-
+    
     return 0;
 }
 
-PriorFactory::PriorFactory(const FwdModel &model, FabberRunData &rundata) 
-    : m_model(model), m_rundata(rundata)
+std::vector<Prior *> PriorFactory::CreatePriors(const std::vector<Parameter> &params)
 {
-    m_log = rundata.GetLogger();
-    m_model.NameParams(m_param_names);
-}
-
-vector<Prior *> PriorFactory::CreatePriors()
-{
-    // Hacky way to get model default priors
-    size_t nparams = m_param_names.size();
-    MVNDist model_prior(nparams, m_log), model_post(nparams, m_log);
-    m_model.HardcodedInitialDists(model_prior, model_post);
-    SymmetricMatrix precs = model_prior.GetPrecisions();
-
     vector<Prior *> priors;
-    for (size_t i = 0; i < nparams; i++)
+    for (size_t i=0; i<params.size(); i++) 
     {
-        Prior *prior = PriorFactory::CreatePrior(i, model_prior.means(i+1), precs(i+1, i+1));
+        Prior *prior = PriorFactory::CreatePrior(params[i]);
         LOG << "PriorFactory::CreatePriors " << *prior << endl;
         priors.push_back(prior);
     }
@@ -332,110 +373,26 @@ vector<Prior *> PriorFactory::CreatePriors()
     return priors;
 }
 
-Prior *PriorFactory::CreatePrior(unsigned int idx, double mean, double prec)
+PriorFactory::PriorFactory(FabberRunData &rundata) : Loggable(rundata.GetLogger()), m_rundata(rundata)
 {
-    char type = m_rundata.GetStringDefault("default-prior-type", "-")[0];
-    string img_filename = "";
-    
-    // Complexity below is due to there being two ways of specifying
-    // priors. One is using the param-spatial-priors option which is
-    // a sequence of chars in model parameter order, one for each
-    // parameter. A + character means 'use the previous value for all
-    // remaining parameters'. An 'I' means an image prior and
-    // the filename is specified separately using an image-prior<n> option
-    string types = GetTypesString();
-    char current_type = '-';
-    for (size_t i = 0; i < types.size(); i++)
-    {
-        if (i == idx)
-        {
-            if (types[i] == '+')
-                type = current_type;
-            else
-                type = types[i];
-            break;
-        }
-        else if (types[i] != '+')
-        {
-            current_type = types[i];
-        }
-    }
-    // Record the data key (filename) for an image prior. Note that the index is
-    // conceptually different from the PSP_byname_image method use below - here
-    // it is the parameter index in the model's list (starting at 1), below it depends on
-    // the order in which the names are given in the options. Also an optional precision
-    // may be set, -1 means unset (since precisions must be > 0)
-    if (type == 'I') img_filename = "image-prior" + stringify(idx + 1);
-
-    // Here is the second way of specifying priors which will override the above.
-    // PSP_byname<n>=parameter name
-    // PSP_byname<n>_type=character indicating type
-    // PSP_byname<n>_image=image prior filename
-    // PSP_byname<n>_prec=image prior precision
-    int current = 0;
-    while (true)
-    {
-        current++;
-        string name = m_rundata.GetStringDefault("PSP_byname" + stringify(current), "stop!");
-        if (name == "stop!")
-            break;
-
-        if (name == m_param_names[idx])
-        {
-            type = convertTo<char>(m_rundata.GetStringDefault("PSP_byname" + stringify(current) + "_type", stringify(type)));
-            if (type == 'I') img_filename = "PSP_byname" + stringify(current) + "_image";
-
-            // Can override mean and precision on command line
-            mean = m_rundata.GetDoubleDefault("PSP_byname" + stringify(current) + "_mean", mean);
-            prec = m_rundata.GetDoubleDefault("PSP_byname" + stringify(current) + "_prec", prec);
-        }
-    }
-
-    switch (type) {case 'N':
-        case '-':
-            return new DefaultPrior(type, idx, m_param_names[idx], mean, prec);
-        case 'I':
-            return new ImagePrior(idx, m_param_names[idx], img_filename, prec, m_rundata);
-        case 'M':
-        case 'm':
-        case 'P':
-        case 'p':
-            return new SpatialPrior(type, idx, m_param_names[idx], mean, prec, m_rundata);
-        case 'A':
-            return new ARDPrior(idx, m_param_names[idx]);
-        default:
-            throw InvalidOptionValue("DefaultPrior type", stringify(type), "Supported types: NMmPpAI");
-    }
 }
 
-string PriorFactory::GetTypesString()
+Prior *PriorFactory::CreatePrior(Parameter p)
 {
-    size_t num_params = m_param_names.size();
-    string priors_str = m_rundata.GetStringDefault("param-spatial-priors", "");
-    
-    // Yuk
-    size_t n_str_params = 0;
-    for (size_t i=0; i<priors_str.size(); i++) 
-    {
-        if (priors_str[i] != '+') n_str_params++;
+    switch (p.prior_type) {
+        case PRIOR_NORMAL:
+        case PRIOR_DEFAULT:
+            return new DefaultPrior(p);
+        case PRIOR_IMAGE:
+            return new ImagePrior(p, m_rundata);
+        case PRIOR_SPATIAL_M:
+        case PRIOR_SPATIAL_m:
+        case PRIOR_SPATIAL_P:
+        case PRIOR_SPATIAL_p:
+            return new SpatialPrior(p, m_rundata);
+        case PRIOR_ARD:
+            return new ARDPrior(p, m_rundata);
+        default:
+            throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmPpAI");
     }
-
-    if (n_str_params > num_params)
-    {
-        throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
-    }
-
-    if (priors_str.size() < num_params)
-    {
-        // Expand '+' char, if present, to give correct number of parameters
-        // If not, don't worry will just use default prior type for the missing
-        int deficit = num_params - priors_str.size();
-        size_t plus_pos = priors_str.find("+");
-        if (plus_pos != std::string::npos)
-        {
-            priors_str.insert(plus_pos, deficit, '+');
-        }
-    }
-
-    return priors_str;
 }

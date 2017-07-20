@@ -17,6 +17,7 @@
 
 using namespace std;
 using NEWMAT::Matrix;
+using NEWMAT::ColumnVector;
 using MISCMATHS::read_vest;
 using MISCMATHS::read_ascii_matrix;
 
@@ -36,6 +37,20 @@ Matrix read_matrix_file(std::string filename)
         return read_ascii_matrix(filename);
     }
 }
+
+}
+
+double gammaln(double x)
+{
+    ColumnVector series(7);
+    series << 2.5066282746310005 << 76.18009172947146 << -86.50532032941677 << 24.01409824083091 << -1.231739572450155
+           << 0.1208650973866179e-2 << -0.5395239384953e-5;
+
+    double total = 1.000000000190015;
+    for (int i = 2; i <= series.Nrows(); i++)
+        total += series(i) / (x + i - 1);
+
+    return log(series(1) * total / x) + (x + 0.5) * log(x + 5.5) - x - 5.5;
 }
 
 double DescendingZeroFinder::FindZero() const
