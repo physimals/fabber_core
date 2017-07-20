@@ -1,5 +1,8 @@
 //
 // Tests specifically for the VB method
+//
+// Each test runs in both spatialvb and vb modes
+
 #ifndef NO_NEWIMAGE
 #include "newimage/newimageall.h"
 #endif
@@ -8,24 +11,12 @@
 
 #include "easylog.h"
 #include "inference.h"
-#include "inference_vb.h"
-#include "inference_spatialvb.h"
+#include "inference_myvb.h"
 #include "rundata_newimage.h"
 #include "setup.h"
 
 namespace
 {
-// Hack to allow us to get at private/protected members
-class PublicVersion : public VariationalBayesInferenceTechnique
-{
-public:
-    using VariationalBayesInferenceTechnique::m_prior_types;
-};
-class PublicVersionS : public SpatialVariationalBayes
-{
-public:
-    using SpatialVariationalBayes::m_prior_types;
-};
 
 class VbTest : public ::testing::TestWithParam<string>
 {
@@ -45,12 +36,9 @@ protected:
 
     virtual void SetUp()
     {
-        vb = reinterpret_cast<PublicVersion *>(static_cast<VariationalBayesInferenceTechnique *>(InferenceTechnique::NewFromName(
-            "vb")));
-        svb = reinterpret_cast<PublicVersionS *>(static_cast<SpatialVariationalBayes *>(InferenceTechnique::NewFromName("spatialvb")));
-        model = FwdModel::NewFromName("poly");
         rundata = new FabberRunDataNewimage();
         rundata->SetLogger(&log);
+        rundata->Set("method", GetParam());
     }
 
     virtual void TearDown()
@@ -63,92 +51,19 @@ protected:
     {
         std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata->GetString("model")));
         fwd_model->Initialize(*rundata);
-
-        // FIXME yuk
-        vb->Initialize(fwd_model.get(), *rundata);
-        svb->Initialize(fwd_model.get(), *rundata);     
-        if (rundata->GetString("method") == "vb") {
-            vb->DoCalculations(*rundata);
-            vb->SaveResults(*rundata);
-        }
-        else {
-            svb->DoCalculations(*rundata);
-            svb->SaveResults(*rundata);
-        }
+        std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(rundata->GetString("method")));
+        
+        infer->Initialize(fwd_model.get(), *rundata);  
+        infer->DoCalculations(*rundata);
+        infer->SaveResults(*rundata);
     }
 
     EasyLog log;
     NEWMAT::Matrix voxelCoords;
     FabberRunData *rundata;
     FwdModel *model;
-    PublicVersionS *svb;
-    PublicVersion *vb;
+    Vb *vb;
 };
-
-// Test multiple image priors. Note that this just
-// checks the code works when they are specified
-// not that they are actually having any effect!
-TEST_P(VbTest, ImagePriorsMultiple)
-{
-    int NTIMES = 10; // needs to be even
-    int VSIZE = 5;
-    float VAL = 7.32;
-
-    // Create coordinates and data matrices
-    NEWMAT::Matrix voxelCoords, data, iprior_data1, iprior_data2;
-    data.ReSize(NTIMES, VSIZE * VSIZE * VSIZE);
-    iprior_data1.ReSize(1, VSIZE * VSIZE * VSIZE);
-    iprior_data2.ReSize(1, VSIZE * VSIZE * VSIZE);
-    voxelCoords.ReSize(3, VSIZE * VSIZE * VSIZE);
-    int v = 1;
-    for (int z = 0; z < VSIZE; z++)
-    {
-        for (int y = 0; y < VSIZE; y++)
-        {
-            for (int x = 0; x < VSIZE; x++)
-            {
-                voxelCoords(1, v) = x;
-                voxelCoords(2, v) = y;
-                voxelCoords(3, v) = z;
-                for (int n = 0; n < NTIMES; n++)
-                {
-                    if (n % 2 == 0)
-                        data(n + 1, v) = VAL;
-                    else
-                        data(n + 1, v) = VAL * 3;
-                }
-                iprior_data1(1, v) = VAL * 1.5;
-                iprior_data2(1, v) = VAL * 2.5;
-                v++;
-            }
-        }
-    }
-    rundata->SetVoxelCoords(voxelCoords);
-    rundata->SetVoxelData("data", data);
-    rundata->Set("noise", "white");
-    rundata->Set("model", "poly");
-    rundata->Set("degree", "2");
-    rundata->Set("method", GetParam());
-
-    rundata->Set("PSP_byname1", "c0");
-    rundata->Set("PSP_byname1_type", "I");
-    rundata->SetVoxelData("PSP_byname1_image", iprior_data1);
-    rundata->Set("PSP_byname2", "c2");
-    rundata->Set("PSP_byname2_type", "I");
-    rundata->SetVoxelData("PSP_byname2_image", iprior_data2);
-    ASSERT_NO_THROW(Run());
-
-    ASSERT_EQ(3, vb->m_prior_types.size());
-    ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    ASSERT_EQ('N', vb->m_prior_types[1].m_type);
-    ASSERT_EQ('I', vb->m_prior_types[2].m_type);
-    NEWMAT::RowVector iprior1 = vb->m_prior_types[0].m_image;
-    NEWMAT::RowVector iprior2 = vb->m_prior_types[1].m_image;
-    NEWMAT::RowVector iprior3 = vb->m_prior_types[2].m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior1.Ncols());
-    ASSERT_EQ(0, iprior2.Ncols());
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior3.Ncols());
-}
 
 // Test image priors. Note that this just
 // checks the code works when they are specified
@@ -191,27 +106,13 @@ TEST_P(VbTest, ImagePriors)
     rundata->Set("noise", "white");
     rundata->Set("model", "poly");
     rundata->Set("degree", "0");
-    rundata->Set("method", GetParam());
 
     rundata->Set("PSP_byname1", "c0");
     rundata->Set("PSP_byname1_type", "I");
     rundata->SetVoxelData("PSP_byname1_image", iprior_data);
     Run();
-
-    ASSERT_EQ(1, vb->m_prior_types.size());
-    ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
-
-    NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
-    ASSERT_EQ(mean.Nrows(), 1);
-    ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
-    for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
-    {
-        ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
-        ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
-    }
 }
+
 // Test image priors with a precision which is to
 // high for convergence
 TEST_P(VbTest, ImagePriorsPrecTooHigh)
@@ -260,21 +161,14 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
     rundata->Set("PSP_byname1_prec", "1e12");
     Run();
 
-    ASSERT_EQ(1, vb->m_prior_types.size());
-    ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    //ASSERT_FLOAT_EQ(1234567, vb->m_prior_types[0].m_prec);
-    NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
-
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
     for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
     {
-        // We do not expect the parameter to be 'right' because
         // we specified an image prior with high precision
-        ASSERT_NE(mean(1, i + 1), VAL * 2);
-        ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
+        // so we expect the output to be close to that
+        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL*0.1);
     }
 }
 
@@ -326,12 +220,6 @@ TEST_P(VbTest, ImagePriorsPrecLow)
     rundata->Set("PSP_byname1_prec", "1e-5");
     Run();
 
-    ASSERT_EQ(1, vb->m_prior_types.size());
-    ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    ASSERT_FLOAT_EQ(1e-5, vb->m_prior_types[0].m_prec);
-    NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
-
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
@@ -339,8 +227,7 @@ TEST_P(VbTest, ImagePriorsPrecLow)
     {
         // We expect the parameter to be about 'right' because
         // we specified an image prior with low precision
-        ASSERT_NEAR(mean(1, i + 1), VAL * 2, 0.1);
-        ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
+        ASSERT_NEAR(mean(1, i + 1), VAL * 2, VAL*0.1);
     }
 }
 
@@ -398,21 +285,16 @@ TEST_P(VbTest, ImagePriorsFile)
     rundata->Set("PSP_byname1", "c0");
     rundata->Set("PSP_byname1_type", "I");
     rundata->Set("PSP_byname1_image", FILENAME);
+    rundata->Set("PSP_byname1_prec", "1e12");
 
     Run();
-
-    ASSERT_EQ(1, vb->m_prior_types.size());
-    ASSERT_EQ('I', vb->m_prior_types[0].m_type);
-    NEWMAT::RowVector iprior = vb->m_prior_types[0].m_image;
-    ASSERT_EQ(VSIZE * VSIZE * VSIZE, iprior.Ncols());
 
     NEWMAT::Matrix mean = rundata->GetVoxelData("mean_c0");
     ASSERT_EQ(mean.Nrows(), 1);
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
     for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
     {
-        ASSERT_FLOAT_EQ(mean(1, i + 1), VAL * 2);
-        ASSERT_FLOAT_EQ(VAL * 1.5, iprior(i + 1));
+        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL*0.1);
     }
 
     remove(string(FILENAME + ".nii.gz").c_str());
@@ -420,7 +302,7 @@ TEST_P(VbTest, ImagePriorsFile)
 #endif
 
 // Test restarting VB run
-TEST_F(VbTest, Restart)
+TEST_P(VbTest, Restart)
 {
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
@@ -527,7 +409,7 @@ TEST_F(VbTest, Restart)
 }
 
 // Test restarting VB run with the output-only option
-TEST_F(VbTest, RestartOutputOnly)
+TEST_P(VbTest, RestartOutputOnly)
 {
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
@@ -617,7 +499,7 @@ TEST_F(VbTest, RestartOutputOnly)
 
 #ifndef NO_NEWIMAGE
 // Test restarting VB run from a file
-TEST_F(VbTest, RestartFromFile)
+TEST_P(VbTest, RestartFromFile)
 {
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
@@ -891,7 +773,7 @@ TEST_P(VbTest, WhiteNoise)
 
 #ifdef __FABBER_MOTION
 // Turn motion correction on, but no motion to correct!
-TEST_F(VbTest, MotionCorNull)
+TEST_P(VbTest, MotionCorNull)
 {
     int NTIMES = 10; // needs to be even
     int VSIZE = 5;
@@ -960,5 +842,5 @@ TEST_F(VbTest, MotionCorNull)
 }
 #endif
 
-INSTANTIATE_TEST_CASE_P(VbSpatialTests, VbTest, ::testing::Values("vb", "spatialvb"));
+INSTANTIATE_TEST_CASE_P(VbTests, VbTest, ::testing::Values("vb", "spatialvb"));
 }

@@ -38,15 +38,18 @@ string Prior::ExpandPriorTypesString(string priors_str, unsigned int num_params)
     // should be interpreted as
     unsigned int n_str_params = 0;
     char repeat_type = '-';
-    bool no_plus=true;
+    bool plus_found=false;
     for (size_t i=0; i<priors_str.size(); i++) 
     {
         if (priors_str[i] != '+') {
-            if (no_plus) repeat_type = priors_str[i];
+            if (!plus_found) repeat_type = priors_str[i];
             n_str_params++;
         }
+        else if (plus_found) {
+            throw InvalidOptionValue("param-spatial-priors", priors_str, "Only one + character allowed");
+        }
         else {
-            no_plus = false;
+            plus_found = true;
         }
     }
 
@@ -54,25 +57,29 @@ string Prior::ExpandPriorTypesString(string priors_str, unsigned int num_params)
     {
         throw InvalidOptionValue("param-spatial-priors", priors_str, "Too many parameters");
     }
-
-    if (priors_str.size() < num_params)
+    else if (n_str_params < num_params)
     {
         // Expand '+' char, if present, to give correct number of parameters
         // If there is no +, append with '-', meaning 'model default'
-        int deficit = num_params - priors_str.size();
+        int deficit = num_params - n_str_params;
         size_t plus_pos = priors_str.find("+");
         if (plus_pos != std::string::npos)
         {
-            priors_str.insert(plus_pos, deficit, '+');
+            priors_str.insert(plus_pos, deficit-1, '+');
         }
         else {
             priors_str.insert(priors_str.end(), deficit, '-');
         }
     }
+    else {
+        // We already have enough types for all the parameters so erase any
+        // pointless + char
+        priors_str.erase(std::remove(priors_str.begin(), priors_str.end(), '+'), priors_str.end());
+    }
 
     // Finally, replace all + chars with identified repeat type    
     std::replace(priors_str.begin(), priors_str.end(), '+', repeat_type);
-    assert(int(priors_str.size()) == num_params);
+    assert(priors_str.size() == num_params);
 
     return priors_str;
 }
