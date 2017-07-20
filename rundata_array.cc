@@ -128,7 +128,6 @@ void FabberRunDataArray::SetVoxelData(string key, int data_size, const float *da
             }
         }
     }
-    if (v==0) throw FabberInternalError("FabberRunDataArray::SetVoxelData - zero extent");
     matrixData = matrixData.Columns(1, v);
     FabberRunData::SetVoxelData(key, matrixData);
 }
