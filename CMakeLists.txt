@@ -172,7 +172,7 @@ if (GTEST_LIBRARY)
   endif(PTHREAD_LIBRARY)
   include_directories(${GTEST_INCLUDE_DIR})
 
-  set(TEST_SRC test/fabbertest.cc test/test_inference.cc
+  set(TEST_SRC test/fabbertest.cc test/test_inference.cc test/test_priors.cc test/test_vb.cc
                test/test_convergence.cc test/test_commandline.cc test/test_rundata.cc)
   add_executable(testfabber ${TEST_SRC})
   target_link_libraries(testfabber fabbercore fabberexec ${LIBS} ${GTEST_LIBRARY} ${PTH_LIB})
