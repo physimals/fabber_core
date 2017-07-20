@@ -135,6 +135,11 @@ protected:
 	 */
     std::vector<MVNDist *> resultMVNs;
 
+	/**
+	 * Include very verbose debugging output
+	 */
+	bool m_debug;
+
 private:
     /**
 	 * Private to prevent assignment

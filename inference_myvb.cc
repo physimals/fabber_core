@@ -19,7 +19,6 @@
 #include <newmatio.h>
 
 #include <math.h>
-#include <iomanip>
 
 using MISCMATHS::sign;
 
@@ -478,7 +477,6 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
 void Vb::DoCalculationsSpatial(FabberRunData &rundata)
 {
    int maxits = convertTo<int>(rundata.GetStringDefault("max-iterations", "10"));
-   if (m_debug) LOG << setprecision(17);
 
     // pass in some (dummy) data/coords here just in case the model relies upon it
     // use the first voxel values as our dummies FIXME this shouldn't really be
@@ -531,6 +529,11 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                     LOG << "Voxel " << v << " of " << m_nvoxels << endl;
                     LOG << "Prior means: " << m_ctx->fwd_prior[v-1].means.t();
                     LOG << "Prior precisions: " << m_ctx->fwd_prior[v-1].GetPrecisions();
+                    LOG << "Noise prior means: " << m_ctx->noise_prior[v-1]->OutputAsMVN().means.t();
+                    LOG << "Noise prior precisions: " << m_ctx->noise_prior[v-1]->OutputAsMVN().GetPrecisions();
+                    LOG << "Centre: " << m_lin_model[v-1].Centre();
+                    LOG << "Offset: " << m_lin_model[v-1].Offset();
+                    LOG << "Jacobian: " << m_lin_model[v-1].Jacobian();
                 }
 
                 // Ignore voxels where numerical issues have occurred
