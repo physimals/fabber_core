@@ -158,6 +158,19 @@ public:
 	 */
 	void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const;
 
+    /**
+	 * Evaluate the forward model in model space
+	 * 
+	 * Initialize must be called before this method
+	 * 
+	 * @param params Model parameter values. Must contain the correct number of parameters
+	 *  			 as specified by NumParams
+	 * @param result Will be populated with the model prediction for these parameters.
+	 *               The length of this vector will be set to the same as the number of
+	 *               data points passed in via pass_in_data
+	 */
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
+
 	/**
 	 * Transform an MVN containing model values to Fabber internal values. 
 	 *
@@ -270,19 +283,6 @@ public:
 protected:
 
     virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
-
-    /**
-	 * Evaluate the forward model in model space
-	 * 
-	 * Initialize must be called before this method
-	 * 
-	 * @param params Model parameter values. Must contain the correct number of parameters
-	 *  			 as specified by NumParams
-	 * @param result Will be populated with the model prediction for these parameters.
-	 *               The length of this vector will be set to the same as the number of
-	 *               data points passed in via pass_in_data
-	 */
-    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
 
     // Your derived classes should have storage for all constants that are
     // implicitly part of g() -- e.g. pulse sequence parameters, any parameters

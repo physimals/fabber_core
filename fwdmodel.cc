@@ -13,7 +13,7 @@
 #include "transforms.h"
 #include "priors.h"
 
-#include <newmat.h>
+#include <newmatio.h>
 
 #include <memory>
 #include <sstream>
