@@ -804,82 +804,51 @@ void Vb::CalcNeighbours(const Matrix &coords)
 
 void Vb::SaveResults(FabberRunData &rundata) const
 {
+    InferenceTechnique::SaveResults(rundata);
+
     LOG << "Vb::Preparing to save results..." << endl;
     int nVoxels = resultMVNs.size();
 
-    // Save the resultMVNs
-    if (rundata.GetBool("save-mvn"))
+    if (rundata.GetBool("save-noise-mean") | rundata.GetBool("save-noise-std"))
     {
-        MVNDist::Save(resultMVNs, "finalMVN", rundata);
-    }
-
-    // Create individual files for each parameter's mean and Z-stat
-    vector<Parameter> params;
-    m_model->GetParameters(rundata, params);
-
-    if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat"))
-    {
-        LOG << "Vb::Writing means..." << endl;
-        for (unsigned i = 1; i <= params.size(); i++)
+        if (m_noise_params > 0)
         {
-            Matrix paramMean, paramZstat, paramStd;
-            paramMean.ReSize(1, nVoxels);
-            paramZstat.ReSize(1, nVoxels);
-            paramStd.ReSize(1, nVoxels);
-            
+            LOG << "Vb::Writing noise" << endl;
+            Matrix noiseMean, noiseStd;
+            noiseMean.ReSize(m_noise_params, nVoxels);
+            noiseStd.ReSize(m_noise_params, nVoxels);
             for (int vox = 1; vox <= nVoxels; vox++)
             {
-                MVNDist result = *resultMVNs[vox - 1];
-                m_model->ToModel(result);
-                paramMean(1, vox) = result.means(i);
-                double std = sqrt(result.GetCovariance()(i, i));
-                paramZstat(1, vox) = paramMean(1, vox) / std;
-                paramStd(1, vox) = std;
+                for (int i = 1; i <= m_noise_params; i++)
+                {
+                    noiseStd(i, vox) = sqrt(resultMVNs[vox - 1]->GetCovariance()(i + m_num_params, i + m_num_params));
+                    noiseMean(i, vox) = resultMVNs[vox - 1]->means(i + m_num_params);
+                }
             }
-
-            if (rundata.GetBool("save-mean"))
-                rundata.SaveVoxelData("mean_" + params.at(i - 1).name, paramMean);
-            if (rundata.GetBool("save-zstat"))
-                rundata.SaveVoxelData("zstat_" + params.at(i - 1).name, paramZstat);
-            if (rundata.GetBool("save-std"))
-                rundata.SaveVoxelData("std_" + params.at(i - 1).name, paramStd);
+            // FIXME was this being saved before? Should it be?
+            if (rundata.GetBool("save-noise-mean"))
+                rundata.SaveVoxelData("noise_means", noiseMean);
+            if (rundata.GetBool("save-noise-std"))
+                rundata.SaveVoxelData("noise_stdevs", noiseStd);
         }
     }
 
-    // Produce the model fit and residual volume series
-    bool saveModelFit = rundata.GetBool("save-model-fit");
-    bool saveResiduals = rundata.GetBool("save-residuals");
-    if (saveModelFit || saveResiduals)
+    // Save the Free Energy estimates
+    if (rundata.GetBool("save-free-energy") && !resultFs.empty())
     {
-        LOG << "Vb::Writing model fit/residuals..." << endl;
-
-        Matrix modelFit, residuals, datamtx, coords;
-        datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data in its calculations
-        coords = rundata.GetVoxelCoords();
-        modelFit.ReSize(datamtx.Nrows(), nVoxels);
-        ColumnVector tmp;
+        LOG << "Vb::Writing free energy" << endl;
+        assert((int)resultFs.size() == nVoxels);
+        Matrix freeEnergy;
+        freeEnergy.ReSize(1, nVoxels);
         for (int vox = 1; vox <= nVoxels; vox++)
         {
-            // pass in stuff that the model might need
-            ColumnVector y = datamtx.Column(vox);
-            ColumnVector vcoords = coords.Column(vox);
-            m_model->PassData(y, vcoords);
-
-            // do the evaluation
-            m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp);
-            modelFit.Column(vox) = tmp;
+            freeEnergy(1, vox) = resultFs.at(vox - 1);
         }
-
-        if (saveResiduals)
-        {
-            residuals = datamtx - modelFit;
-            rundata.SaveVoxelData("residuals", residuals);
-        }
-        if (saveModelFit)
-        {
-            rundata.SaveVoxelData("modelfit", modelFit);
-        }
+        rundata.SaveVoxelData("freeEnergy", freeEnergy);
     }
-
+    else
+    {
+        LOG << "Vb::Free energy wasn't recorded, so no freeEnergy data saved" << endl;
+    }
     LOG << "Vb::Done writing results." << endl;
 }

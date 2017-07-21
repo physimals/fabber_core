@@ -109,12 +109,12 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     }
 
     // Create individual files for each parameter's mean and Z-stat
-    vector<string> paramNames;
-    m_model->NameParams(paramNames);
+    vector<Parameter> params;
+    m_model->GetParameters(rundata, params);
     if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat"))
     {
         LOG << "InferenceTechnique::Writing means..." << endl;
-        for (unsigned i = 1; i <= paramNames.size(); i++)
+        for (unsigned i = 1; i <= params.size(); i++)
         {
             Matrix paramMean, paramZstat, paramStd;
             paramMean.ReSize(1, nVoxels);
@@ -123,18 +123,20 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
 
             for (int vox = 1; vox <= nVoxels; vox++)
             {
-                paramMean(1, vox) = resultMVNs[vox - 1]->means(i);
-                double std = sqrt(resultMVNs[vox - 1]->GetCovariance()(i, i));
+                MVNDist result = *resultMVNs[vox - 1];
+                m_model->ToModel(result);
+                paramMean(1, vox) = result.means(i);
+                double std = sqrt(result.GetCovariance()(i, i));
                 paramZstat(1, vox) = paramMean(1, vox) / std;
                 paramStd(1, vox) = std;
             }
 
             if (rundata.GetBool("save-mean"))
-                rundata.SaveVoxelData("mean_" + paramNames.at(i - 1), paramMean);
+                rundata.SaveVoxelData("mean_" + params.at(i - 1).name, paramMean);
             if (rundata.GetBool("save-zstat"))
-                rundata.SaveVoxelData("zstat_" + paramNames.at(i - 1), paramZstat);
+                rundata.SaveVoxelData("zstat_" + params.at(i - 1).name, paramZstat);
             if (rundata.GetBool("save-std"))
-                rundata.SaveVoxelData("std_" + paramNames.at(i - 1), paramStd);
+                rundata.SaveVoxelData("std_" + params.at(i - 1).name, paramStd);
         }
     }
 
@@ -145,9 +147,10 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     {
         LOG << "InferenceTechnique::Writing model fit/residuals..." << endl;
 
-        Matrix modelFit, residuals, datamtx, coords;
+        Matrix modelFit, residuals, datamtx, coords, suppdata;
         datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data in its calculations
         coords = rundata.GetVoxelCoords();
+        suppdata = rundata.GetVoxelSuppData();
         modelFit.ReSize(datamtx.Nrows(), nVoxels);
         ColumnVector tmp;
         for (int vox = 1; vox <= nVoxels; vox++)
@@ -155,8 +158,13 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
             // pass in stuff that the model might need
             ColumnVector y = datamtx.Column(vox);
             ColumnVector vcoords = coords.Column(vox);
-            m_model->PassData(y, vcoords);
-
+            if (suppdata.Ncols() > 0) {
+                m_model->PassData(y, vcoords, suppdata.Column(vox));
+            }
+            else {
+                m_model->PassData(y, vcoords);
+            }
+            
             // do the evaluation
             m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp);
             modelFit.Column(vox) = tmp;
