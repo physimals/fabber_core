@@ -29,7 +29,17 @@ def percent_progress(voxel, nvoxels):
     complete = 100*voxel/nvoxels
     sys.stdout.write("\b\b\b\b%3i%%" % complete)
     sys.stdout.flush()
-    
+
+def to_value_seq(values):
+    """ values might be a sequence or a single float value. 
+    Returns either the original sequence or a sequence whose only
+    item is the value"""
+    try:
+        val = float(values)
+        return [val,]
+    except:
+        return values
+
 def self_test(model, rundata, param_testvalues, save_input=False, save_output=False, disp=True, invert=True, outfile_format="test_data_%s", **kwargs):
     if disp: print("Running self test for model %s" % model)
     ret = {}
@@ -72,12 +82,14 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
                 data_nii = nib.Nifti1Image(mean, np.identity(4))
                 data_nii.to_filename(outfile + "_mean_%s" % param)
             roi = roidata.get(param, np.ones(mean.shape))
-            if disp: print("Parameter: %s" % param)
-            ret[param] = {}
-            for idx, val in enumerate(values):
-                out = np.mean(mean[roi==idx+1])
-                if disp: print("Input %f -> %f Output" % (val, out))
-                ret[param][val] = out
+            values = to_value_seq(values)
+            if len(values) > 1:
+                if disp: print("Parameter: %s" % param)
+                ret[param] = {}
+                for idx, val in enumerate(values):
+                    out = np.mean(mean[roi==idx+1])
+                    if disp: print("Input %f -> %f Output" % (val, out))
+                    ret[param][val] = out
         noise_mean_in = kwargs.get("noise", 0)
         noise_mean_out = np.mean(run.data["noise_means"])
         if disp: print("Noise: Input %f -> %f Output" % (noise_mean_in, 1/math.sqrt(noise_mean_out)))
@@ -101,15 +113,13 @@ def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10,
     dim_sizes = []
     fixed_params = {}
     for param, values in param_testvalues.items():
-        try:
-            val = float(values)
-            fixed_params[param] = val
-        except:
-            if len(values) == 1: fixed_params[param] = values[0]
-            else:
-                dim_params.append(param)
-                dim_values.append(values)
-                dim_sizes.append(len(values))
+        values = to_value_seq(values)
+        if len(values) == 1: 
+            fixed_params[param] = values[0]
+        else:
+            dim_params.append(param)
+            dim_values.append(values)
+            dim_sizes.append(len(values))
 
     if len(dim_sizes) > 3: 
         raise RuntimeError("Test image can only have up to 3 dimensions, you supplied %i varying parameters" % len(dim_sizes))
@@ -818,17 +828,17 @@ class FabberLib(Fabber):
 
     def get_model_params(self, rundata):
         """ Get the model parameters, given the specified options"""
+        self._init_clib()
         for key, value in rundata.items():
-            self._trycall(self.clib.fabber_set_opt, self.handle, key, value, self.errbuf)
+            self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
 
         self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
 
-        # Reset context because we have set options and don't want them affecting a later call to run()
-        self._init_clib()
         return self.outbuf.value.splitlines()
 
     def model_evaluate(self, rundata, params, nt, indata=None):
         """ """
+        self._init_clib()
         for key, value in rundata.items():
             self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
 
@@ -847,8 +857,6 @@ class FabberLib(Fabber):
         if indata is None: indata = np.zeros([nt,], dtype=np.float32)
         self._trycall(self.clib.fabber_model_evaluate, self.handle, len(plist), np.array(plist, dtype=np.float32), nt, indata, ret, self.errbuf)
 
-        # Reset context because we have set options and don't want them affecting a later call to run()
-        self._init_clib()
         return ret
 
     def run(self, rundata, progress_cb=None):
@@ -895,6 +903,7 @@ class FabberLib(Fabber):
         # Make suitable for passing to int* c function
         mask = np.ascontiguousarray(mask.flatten(order='F'), dtype=np.int32)
 
+        self._init_clib()
         for key, value in rundata.items():
             self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
         self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
@@ -938,6 +947,7 @@ class FabberLib(Fabber):
         log = self.outbuf.value
         for key in output_items:
             size = self._trycall(self.clib.fabber_get_data_size, self.handle, key, self.errbuf)
+
             arr = np.ascontiguousarray(np.empty(nv * size, dtype=np.float32))
             self._trycall(self.clib.fabber_get_data, self.handle, key, arr, self.errbuf)
             if size > 1:
