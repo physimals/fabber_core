@@ -209,6 +209,10 @@ int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_b
         return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
     if (!err_buf)
         return fabber_err(FABBER_ERR_FATAL, "Error buffer is NULL", err_buf);
+    if (log_bufsize < 0)
+        return fabber_err(FABBER_ERR_FATAL, "Log buffer size is < 0", err_buf);
+    if (log_bufsize > 0 && !log_buf)
+        return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
 
     int ret = 0;
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
@@ -254,11 +258,6 @@ int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_b
     }
 
     log.StopLog();
-
-    if (log_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Log buffer size is < 0", err_buf);
-    if (log_bufsize > 0 && !log_buf)
-        return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
 
     strncpy(log_buf, logstr.str().c_str(), log_bufsize - 1);
     log_buf[log_bufsize - 1] = '\0';
@@ -427,13 +426,13 @@ int fabber_get_model_params(void *fab, unsigned int out_bufsize, char *out_buf, 
         EasyLog log;
         model->SetLogger(&log); // We ignore the log but this stops it going to cerr
         model->Initialize(*rundata);
-        vector<string> params;
-        model->NameParams(params);
+        vector<Parameter> params;
+        model->GetParameters(*rundata, params);
         stringstream out;
-        vector<string>::iterator iter;
+        vector<Parameter>::iterator iter;
         for (iter = params.begin(); iter != params.end(); ++iter)
         {
-            out << *iter << endl;
+            out << iter->name << endl;
         }
         string outstr = out.str();
         if (outstr.size() >= out_bufsize)
@@ -491,7 +490,7 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         coords(2) = 1;
         coords(3) = 1;
         model->PassData(data_vec, coords);
-        model->EvaluateFabber(p_vec, o_vec);
+        model->Evaluate(p_vec, o_vec);
         for (unsigned int i=0; i<n_ts; i++) {
             // Model may not return the same number of timepoints as passed in!
             if ((int)i < o_vec.Nrows()) output[i] = o_vec(i+1);
