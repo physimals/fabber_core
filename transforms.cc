@@ -24,6 +24,20 @@ DistParams LogTransform::ToFabber(DistParams params) const
     return DistParams(mean, var);
 }
 
+DistParams FractionalTransform::ToModel(DistParams params) const
+{
+    double mean = exp(params.mean());
+    double var = exp(params.var());
+    return DistParams(mean, var);
+}
+
+DistParams FractionalTransform::ToFabber(DistParams params) const
+{
+    double mean = log(params.mean());
+    double var = log(params.var());
+    return DistParams(mean, var);
+}
+
 /** Singleton instance of identity transform */
 const Transform *TRANSFORM_IDENTITY()
 {
@@ -45,10 +59,18 @@ const Transform *TRANSFORM_SOFTPLUS()
     return &t;
 }
 
+/** Singleton instance of fractional transform */
+const Transform *TRANSFORM_FRACTIONAL()
+{
+    static FractionalTransform t;
+    return &t;
+}
+
 const Transform *GetTransform(std::string id)
 {
     if (id == TRANSFORM_CODE_IDENTITY) return TRANSFORM_IDENTITY();
     else if (id == TRANSFORM_CODE_LOG) return TRANSFORM_LOG();
     else if (id == TRANSFORM_CODE_SOFTPLUS) return TRANSFORM_SOFTPLUS();
+    else if (id == TRANSFORM_CODE_FRACTIONAL) return TRANSFORM_FRACTIONAL();
     else throw InvalidOptionValue("PSP_byname<n>_transform", id, "Supported transforms: I, L, S");
 }

@@ -20,6 +20,7 @@
 const std::string TRANSFORM_CODE_IDENTITY = "I";
 const std::string TRANSFORM_CODE_LOG = "L";
 const std::string TRANSFORM_CODE_SOFTPLUS = "S";
+const std::string TRANSFORM_CODE_FRACTIONAL = "F";
 
 /**
  * Immutable object describing distribution parameters for single model parameter
@@ -110,6 +111,20 @@ public:
     double ToFabber(double val) const {return log(exp(val) - 1);}
 };
 
+/**
+ * 'Fractional' transformation
+ *
+ * This enforces parameter values between 0 and 1, exclusive
+ */
+class FractionalTransform : public Transform
+{
+public:
+    DistParams ToModel(DistParams params) const;
+    DistParams ToFabber(DistParams params) const;
+    double ToModel(double val) const {return 1/(1+exp(val));}
+    double ToFabber(double val) const {return log(1/val - 1);}
+};
+
 /** Singleton instance of identity transform */
 const Transform *TRANSFORM_IDENTITY();
 
@@ -118,5 +133,8 @@ const Transform *TRANSFORM_LOG();
 
 /** Singleton instance of softplus transform */
 const Transform *TRANSFORM_SOFTPLUS();
+
+/** Singleton instance of fractional transform */
+const Transform *TRANSFORM_FRACTIONAL();
 
 const Transform *GetTransform(std::string id);
