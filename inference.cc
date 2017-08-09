@@ -143,44 +143,53 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     // Produce the model fit and residual volume series
     bool saveModelFit = rundata.GetBool("save-model-fit");
     bool saveResiduals = rundata.GetBool("save-residuals");
-    if (saveModelFit || saveResiduals)
+    vector<string> outputs;
+    outputs.push_back("");
+    m_model->GetOutputs(outputs);
+    if (saveModelFit || saveResiduals || (outputs.size() > 1))
     {
         LOG << "InferenceTechnique::Writing model fit/residuals..." << endl;
 
-        Matrix modelFit, residuals, datamtx, coords, suppdata;
+        Matrix result, residuals, datamtx, coords, suppdata;
         datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data in its calculations
         coords = rundata.GetVoxelCoords();
         suppdata = rundata.GetVoxelSuppData();
-        modelFit.ReSize(datamtx.Nrows(), nVoxels);
+        result.ReSize(datamtx.Nrows(), nVoxels);
         ColumnVector tmp;
-        for (int vox = 1; vox <= nVoxels; vox++)
-        {
-            // pass in stuff that the model might need
-            ColumnVector y = datamtx.Column(vox);
-            ColumnVector vcoords = coords.Column(vox);
-            if (suppdata.Ncols() > 0) {
-                m_model->PassData(y, vcoords, suppdata.Column(vox));
+        for (vector<string>::iterator iter=outputs.begin(); iter!=outputs.end(); ++iter) {
+            for (int vox = 1; vox <= nVoxels; vox++)
+            {
+                // pass in stuff that the model might need
+                ColumnVector y = datamtx.Column(vox);
+                ColumnVector vcoords = coords.Column(vox);
+                if (suppdata.Ncols() > 0) {
+                    m_model->PassData(y, vcoords, suppdata.Column(vox));
+                }
+                else {
+                    m_model->PassData(y, vcoords);
+                }
+                
+                // do the evaluation
+                m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
+                result.Column(vox) = tmp;
+            }
+            if (*iter == "") {
+                if (saveResiduals)
+                {
+                    residuals = datamtx - result;
+                    rundata.SaveVoxelData("residuals", residuals);
+                }
+                if (saveModelFit)
+                {
+                    rundata.SaveVoxelData("modelfit", result);
+                }
             }
             else {
-                m_model->PassData(y, vcoords);
+                rundata.SaveVoxelData(*iter, result);
             }
-            
-            // do the evaluation
-            m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp);
-            modelFit.Column(vox) = tmp;
-        }
-
-        if (saveResiduals)
-        {
-            residuals = datamtx - modelFit;
-            rundata.SaveVoxelData("residuals", residuals);
-        }
-        if (saveModelFit)
-        {
-            rundata.SaveVoxelData("modelfit", modelFit);
         }
     }
-
+    
 #if 0
 	{
 		LOG << "InferenceTechnique::Writing model variances..." << endl;

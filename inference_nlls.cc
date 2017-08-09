@@ -222,7 +222,7 @@ double NLLSCF::cf(const ColumnVector &p) const
     // p = parameters
     // data_pred = data predicted by model
     ColumnVector data_pred;
-    m_model->EvaluateFabber(p, data_pred);
+    m_model->EvaluateFabber(p, data_pred, "");
 
     // m_data = actual data. Find sum of squares of differences
     // between this and the model data using a scalar product.
@@ -241,7 +241,7 @@ ReturnMatrix NLLSCF::grad(const ColumnVector &p) const
 
     // Evaluate the model given the parameters
     ColumnVector data_pred;
-    m_model->EvaluateFabber(p, data_pred);
+    m_model->EvaluateFabber(p, data_pred, "");
 
     gradv = -2 * J.t() * (m_data - data_pred);
     gradv.Release();

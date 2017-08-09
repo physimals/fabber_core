@@ -228,7 +228,9 @@ void FabberRunData::Run(ProgressCheck *progress)
 
     fwd_model->Initialize(*this);
 
-    assert(fwd_model->NumParams() > 0);
+	std::vector<Parameter> params;
+	fwd_model->GetParameters(*this, params);
+    assert(params.size() > 0);
     LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
     // Write the paramnames.txt file if required

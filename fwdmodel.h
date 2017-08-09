@@ -52,12 +52,6 @@ public:
     }
 
     /**
-	 * Get option descriptions for this model. The default returns
-	 * nothing to enable compatibility with older model code
-	 */
-    virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
-
-    /**
 	 * @return human-readable description of the model.
 	 */
     virtual std::string GetDescription() const;
@@ -75,12 +69,36 @@ public:
     virtual std::string ModelVersion() const;
 
     /**
+	 * Get option descriptions for this model. 
+	 *
+	 * The default returns nothing to enable compatibility with older model code
+	 * however this should be implemented by every model
+	 */
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const 
+	{
+	}
+
+    /**
 	 * Initialize a new instance using configuration from the given
 	 * arguments.
 	 * 
 	 * @param rundata Configuration parameters.
 	 */
     virtual void Initialize(FabberRunData &rundata);
+
+    /**
+	 * List alternative outputs supported by the model.
+	 *
+	 * These may be used as arguments to the Evaluate function to return
+	 * something other than the model prediction. Most models will not need
+	 * this functionality, but some may produce intermediate non-parameter
+	 * output which is interesting to output.
+	 * 
+	 * @param outputs Vector to be populated with names of alternative outputs, if any
+	 */
+    virtual void GetOutputs(std::vector<std::string> &outputs) const 
+	{
+	}
 
     /**
 	 * Voxelwise initialization of the posterior in model space
@@ -94,10 +112,36 @@ public:
 	 *
 	 * @param posterior Initial posterior distribution for model parameters.
 	 */
-    virtual void InitParams(MVNDist &posterior) const
+    virtual void InitVoxelPosterior(MVNDist &posterior) const
     {
+		InitParams(posterior);
     }
 	
+    /**
+	 * Evaluate the forward model in model parameter space
+	 * 
+	 * Initialize must be called before this method. Note that although EvaluateFabber is 
+	 * used by the Fabber internals, this method is not protected because other systems
+	 * may want to evaluate the model in its own parameter space (e.g. the Python API for
+	 * self-testing of models). Note that the default implementation calls the deprecated
+	 * Evaluate method which is correct for models which do not define alternative outputs.
+	 * 
+	 * @param params Model parameter values. Must contain the correct number of parameters
+	 *  			 as specified by NumParams
+	 * @param result Will be populated with the model prediction for these parameters.
+	 *               The length of this vector will be set to the same as the number of
+	 *               data points passed in via pass_in_data
+	 * @param key Output data key. If empty result is populated with model
+	 *            prediction. Otherwise can specify a model-specific alternative output
+	 *            (which must be timeseries data). A list of alternative outputs is
+	 *            provided by the model in GetOutputs. Models are responsible for responding
+	 *            correctly to this parameter if they do define alternate outputs
+	 */
+    virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key="") const
+	{
+		Evaluate(params, result);
+	}
+
     /**
 	 * Get parameter descriptions for this model. 
 	 *
@@ -126,7 +170,7 @@ public:
 	 * Initialization of the posterior.
 	 *
 	 * This is called for each voxel. The parameter defaults are used to set up 
-	 * an initial posterior, then InitParams is called to allow the model to 
+	 * an initial posterior, then InitVoxelPosterior is called to allow the model to 
 	 * do per-voxel initialization if required. Finally parameter transforms are
 	 * applied so the resulting posterior contains appropriate values for Fabber's
 	 * internal logic.
@@ -144,7 +188,7 @@ public:
     void GetInitialPosterior(MVNDist &posterior) const;
 
 	/**
-	 * Evaluate the forward model in Fabber internal space
+	 * Evaluate the forward model in Fabber internal parameter space
 	 * 
 	 * This method calls the model-specific Evaluate method, but handles parameter transforms
 	 * transparently.
@@ -155,21 +199,12 @@ public:
 	 * @param result Will be populated with the model prediction for these parameters.
 	 *               The length of this vector will be set to the same as the number of
 	 *               data points passed in via pass_in_data
+	 * @param key Output data key. If empty (default) result is populated with model
+	 *            prediction. Otherwise can specify a model-specific alternative output
+	 *            (which must be timeseries data). A list of alternative outputs is
+	 *            provided by the model in GetOutputs.
 	 */
-	void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const;
-
-    /**
-	 * Evaluate the forward model in model space
-	 * 
-	 * Initialize must be called before this method
-	 * 
-	 * @param params Model parameter values. Must contain the correct number of parameters
-	 *  			 as specified by NumParams
-	 * @param result Will be populated with the model prediction for these parameters.
-	 *               The length of this vector will be set to the same as the number of
-	 *               data points passed in via pass_in_data
-	 */
-    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const = 0;
+	void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key="") const;
 
 	/**
 	 * Transform an MVN containing model values to Fabber internal values. 
@@ -207,6 +242,22 @@ public:
     static void UsageFromName(const std::string &name, std::ostream &stream);
 
 #ifdef DEPRECATED
+	/** 
+	 * Deprecated method for initializing voxelwise posterior - use 
+	 * InitVoxelPosterior instead
+	 */
+	virtual void InitParams(MVNDist &posterior) const
+	{
+	}
+    
+	/**
+	 * Use Evaluate with the key parameter instead
+	 */
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
+	{
+
+	}
+
     /**
 	 * How many parameters in the model? 
 	 * 
@@ -216,7 +267,10 @@ public:
 	 * @return number of parameters, i.e. size of vector to be passed
 	 * to Evaluate function
 	 */
-    virtual int NumParams() const {return m_params.size();}
+    virtual int NumParams() const 
+	{
+		return m_params.size();
+	}
 
     /**
 	 * Name each of the parameters
@@ -242,7 +296,8 @@ public:
     virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const {};
 
     /**
-	 * An ARD update step can be specified in the model
+	 * An ARD update step can be specified in the model. Deprecated - ARD is done
+	 * in the core now.
 	 */
     virtual void UpdateARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
     {
@@ -252,21 +307,25 @@ public:
 	 * Setup function for the ARD process
 	 *
 	 * Forces the prior on the parameter that is subject to ARD to be correct -
-	 * really a worst case scenario if people are loading in their own priors
+	 * really a worst case scenario if people are loading in their own priors.
+	 * DEPRECATED - ARD priors are handled in the core and can be defined in
+	 * GetParameterDefaults
 	 */
     virtual void SetupARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
     {
     }
 
     /**
-	 * Indicies of parameters to which ARD should be applied
+	 * Indicies of parameters to which ARD should be applied. Deprecated, define
+	 * ARD priors in GetParameterDefaults
 	 */
     std::vector<int> ardindices;
 
     /**
 	 * Describe what a given parameter vector means (to LOG)
 	 *
-	 * Default implementation uses NameParams to give reasonably meaningful output
+	 * Default implementation uses NameParams to give reasonably meaningful output.
+	 * DEPRECATED, implement GetParameterDefaults instead
 	 */
     virtual void DumpParameters(const NEWMAT::ColumnVector &params, const std::string &indent = "") const;
 
@@ -300,7 +359,6 @@ protected:
 	int coord_z;
 #endif
 
-private:
 	std::vector<Parameter> m_params;
 };
 

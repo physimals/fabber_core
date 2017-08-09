@@ -269,7 +269,7 @@ void FwdModel::GetInitialPosterior(MVNDist &posterior) const
     posterior.SetCovariance(cov);
 
     // Do voxelwise initialization
-    InitParams(posterior);
+    InitVoxelPosterior(posterior);
 
     // Finally, apply transforms
     ToFabber(posterior);
@@ -323,18 +323,18 @@ void FwdModel::GetParameterDefaults(vector<Parameter> &params) const
     }
 }
 	
-void FwdModel::EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
+void FwdModel::EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key) const
 {
     assert((m_params.size() == 0) || (int(m_params.size()) == params.Nrows()));
     if (m_params.size() == 0) {
-        Evaluate(params, result);
+        EvaluateModel(params, result, key);
     }
     else {
         NEWMAT::ColumnVector tparams(params.Nrows());
         for (int i=1; i<=params.Nrows(); i++) {
             tparams(i) = m_params[i-1].transform->ToModel(params(i));
         }
-        Evaluate(tparams, result);
+        EvaluateModel(tparams, result, key);
     }
 }
 

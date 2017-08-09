@@ -94,7 +94,7 @@ void LinearFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) c
     posterior = prior;
 }
 
-void LinearFwdModel::Evaluate(const ColumnVector &params, ColumnVector &result) const
+void LinearFwdModel::EvaluateModel(const ColumnVector &params, ColumnVector &result, const std::string &key) const
 {
     result = m_jacobian * (params - m_centre) + m_offset;
 }

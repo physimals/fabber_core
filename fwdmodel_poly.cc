@@ -53,7 +53,7 @@ void PolynomialFwdModel::Initialize(FabberRunData &args)
     m_degree = convertTo<int>(args.GetString("degree"));
 }
 
-void PolynomialFwdModel::Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
+void PolynomialFwdModel::EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key) const
 {
     assert(params.Nrows() == m_degree + 1);
     result.ReSize(data.Nrows());
