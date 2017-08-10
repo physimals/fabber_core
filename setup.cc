@@ -7,7 +7,7 @@
 #include "setup.h"
 
 #include "inference.h"
-#include "inference_myvb.h"
+#include "inference_vb.h"
 #ifndef NO_NLLS
 #include "inference_nlls.h"
 #endif
@@ -27,7 +27,6 @@ void FabberSetup::SetupDefaultInferenceTechniques()
     InferenceTechniqueFactory *factory = InferenceTechniqueFactory::GetInstance();
     factory->Add("vb", &Vb::NewInstance);
     factory->Add("spatialvb", &Vb::NewInstance);
-    factory->Add("myvb", &Vb::NewInstance);
 #ifndef NO_NLLS
     factory->Add("nlls", &NLLSInferenceTechnique::NewInstance);
 #endif

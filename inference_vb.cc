@@ -6,7 +6,7 @@
 
 /*  CCOPYRIGHT */
 
-#include "inference_myvb.h"
+#include "inference_vb.h"
 
 #include "priors.h"
 #include "run_context.h"

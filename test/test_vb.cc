@@ -11,7 +11,7 @@
 
 #include "easylog.h"
 #include "inference.h"
-#include "inference_myvb.h"
+#include "inference_vb.h"
 #include "rundata_newimage.h"
 #include "setup.h"
 
