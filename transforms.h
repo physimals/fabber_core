@@ -46,22 +46,6 @@ public:
     virtual ~Transform() {}
 
     /**
-     * Transform the Fabber internal mean/variance (of the Gaussian
-     * distribution) to the mean/variance of the model distribution
-     *
-     * The default just applies ToModel to the mean and variance
-     */
-    virtual DistParams ToModel(DistParams params) const;
-
-    /**
-     * Transform the mean of the model distribution into the
-     * mean of the corresponding Gaussian distribution.
-     *
-     * The default just applies ToFabber to the mean and variance
-     */
-    virtual DistParams ToFabber(DistParams params) const;
-
-    /**
      * Transform the Fabber internal value (which is assumed to have a Gaussian
      * distribution) to the value required by the model
      */
@@ -72,6 +56,32 @@ public:
      * (and modelled as a Gaussian random variable)
      */
      virtual double ToFabber(double val) const = 0;
+
+    /**
+     * Transform the Fabber internal mean/variance (of the Gaussian
+     * distribution) to the mean/variance of the model distribution
+     *
+     * The default just applies ToModel to the mean and performs
+     * an ad-hoc transformation to the variance by taking the square
+     * root, adding it to the mean, transforming the result, then
+     * subtracting the transformed mean and squaring. This just ensures that
+     * mean + s.d. transforms into transformed mean + transformed s.d.
+     *
+     * Particular transformations may implement this differently, e.g.
+     * the log transformation can use the known expression for the
+     * variance of the log-normal distribution in terms of the
+     * underlying normal distribution.
+     */
+    virtual DistParams ToModel(DistParams params) const;
+
+    /**
+     * Transform the mean of the model distribution into the
+     * mean of the corresponding Gaussian distribution.
+     *
+     * The default just applies ToFabber to the mean and transforms
+     * the variance in an ad-hoc manner - @see ToModel for details.
+     */
+    virtual DistParams ToFabber(DistParams params) const;
 };
 
 /**
@@ -82,6 +92,8 @@ class IdentityTransform : public Transform
 public:
     double ToModel(double val) const {return val;}
     double ToFabber(double val) const {return val;}
+    DistParams ToModel(DistParams params) const {return params;}
+    DistParams ToFabber(DistParams params) const {return params;}
 };
 
 /**
@@ -115,6 +127,10 @@ public:
  * 'Fractional' transformation
  *
  * This enforces parameter values between 0 and 1, exclusive
+ * The variance is not transformed at all. This transformation 
+ * is intended for parameters which are not biophysical and 
+ * therefore we are not interested in specifying informative
+ * priors, or analysing output variance.
  */
 class FractionalTransform : public Transform
 {
