@@ -6,8 +6,8 @@
 
 /*  CCOPYRIGHT */
 
-#include "inference.h"
 #include "convergence.h"
+#include "inference.h"
 #include "run_context.h"
 
 #include <string>
@@ -27,7 +27,6 @@ public:
         , m_coords(NULL)
         , m_suppdata(NULL)
         , m_num_mcsteps(0)
-        , m_conv(NULL)
         , m_spatial_dims(-1)
         , m_locked_linear(false)
     {
@@ -41,6 +40,7 @@ public:
     virtual void DoCalculations(FabberRunData &data);
 
     virtual void SaveResults(FabberRunData &rundata) const;
+
 protected:
     /** 
      * Initialize noise prior or posterior distribution from a file stored in the
@@ -158,22 +158,18 @@ protected:
     /** Number of motion correction steps to run */
     int m_num_mcsteps;
 
-    /**
-     * Convergence detector in use
-     *
-     * FIXME needs to be per-voxel in order to use in spatial loop
-     */
-    ConvergenceDetector *m_conv;
-    
     /** Stores current run state (parameters, MVNs, linearization centres etc */
     RunContext *m_ctx;
-    
+
     /** Linearized wrapper around the forward model */
     std::vector<LinearizedFwdModel> m_lin_model;
-    
+
+    /** Convergence detector for each voxel */
+    std::vector<ConvergenceDetector *> m_conv;
+
     /** Voxels to ignore, indexed from 1 as per NEWMAT */
     std::vector<int> m_ignore_voxels;
-    
+
     /**
 	 * Number of spatial dimensions
 	 *
