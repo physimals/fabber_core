@@ -197,7 +197,9 @@ void FabberRunData::init(bool compat_options)
     }
 }
 
-FabberRunData::~FabberRunData() {}
+FabberRunData::~FabberRunData()
+{
+}
 void FabberRunData::LogParams()
 {
     map<string, string>::iterator iter;
@@ -407,8 +409,14 @@ void FabberRunData::AddKeyEqualsValue(const string &exp, bool trim_comments)
     }
 }
 
-void FabberRunData::Set(const string &key, const string &value) { m_params[key] = value; }
-void FabberRunData::Set(const string &key, double value) { m_params[key] = stringify(value); }
+void FabberRunData::Set(const string &key, const string &value)
+{
+    m_params[key] = value;
+}
+void FabberRunData::Set(const string &key, double value)
+{
+    m_params[key] = stringify(value);
+}
 void FabberRunData::SetBool(const string &key, bool value)
 {
     if (value)
@@ -417,9 +425,18 @@ void FabberRunData::SetBool(const string &key, bool value)
         m_params.erase(key);
 }
 
-void FabberRunData::Unset(const std::string &key) { m_params.erase(key); }
-bool FabberRunData::HaveKey(const string &key) { return m_params.count(key) > 0; }
-string FabberRunData::GetString(const string &key) { return Read(key, key); }
+void FabberRunData::Unset(const std::string &key)
+{
+    m_params.erase(key);
+}
+bool FabberRunData::HaveKey(const string &key)
+{
+    return m_params.count(key) > 0;
+}
+string FabberRunData::GetString(const string &key)
+{
+    return Read(key, key);
+}
 string FabberRunData::GetStringDefault(const string &key, const string &def) const
 {
     if (m_params.count(key) == 0)
@@ -539,13 +556,19 @@ string FabberRunData::Read(const string &key, const string &msg)
     return ret;
 }
 
-std::string FabberRunData::Read(const std::string &key) { return GetString(key); }
+std::string FabberRunData::Read(const std::string &key)
+{
+    return GetString(key);
+}
 std::string FabberRunData::ReadWithDefault(const std::string &key, const std::string &def)
 {
     return GetStringDefault(key, def);
 }
 
-bool FabberRunData::ReadBool(const std::string &key) { return GetBool(key); }
+bool FabberRunData::ReadBool(const std::string &key)
+{
+    return GetBool(key);
+}
 string FabberRunData::GetOutputDir()
 {
     if (m_outdir != "")
@@ -680,7 +703,10 @@ int FabberRunData::GetVoxelDataSize(const std::string &key)
     return mat.Nrows();
 }
 
-const NEWMAT::Matrix &FabberRunData::GetVoxelCoords() { return GetVoxelData("coords"); }
+const NEWMAT::Matrix &FabberRunData::GetVoxelCoords()
+{
+    return GetVoxelData("coords");
+}
 const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
 {
     // Attempt to load data if not already present. Will

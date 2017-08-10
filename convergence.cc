@@ -27,7 +27,10 @@ ConvergenceDetector *ConvergenceDetector::NewFromName(const string &name)
     return conv;
 }
 
-void ConvergenceDetector::Initialize(FabberRunData &params) { m_log = params.GetLogger(); }
+void ConvergenceDetector::Initialize(FabberRunData &params)
+{
+    m_log = params.GetLogger();
+}
 void CountingConvergenceDetector::Initialize(FabberRunData &params)
 {
     ConvergenceDetector::Initialize(params);

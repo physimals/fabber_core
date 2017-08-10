@@ -43,7 +43,7 @@ public:
 
 protected:
     virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
-    
+
 private:
     int m_degree;
 };

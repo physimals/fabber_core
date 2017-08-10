@@ -23,7 +23,10 @@ using MISCMATHS::digamma;
 using namespace NEWMAT;
 using namespace std;
 
-NoiseModel *WhiteNoiseModel::NewInstance() { return new WhiteNoiseModel(); }
+NoiseModel *WhiteNoiseModel::NewInstance()
+{
+    return new WhiteNoiseModel();
+}
 WhiteParams::WhiteParams(int N)
     : nPhis(N)
     , phis(N)
@@ -36,7 +39,10 @@ WhiteParams::WhiteParams(const WhiteParams &from)
 {
 }
 
-WhiteParams *WhiteParams::Clone() const { return new WhiteParams(*this); }
+WhiteParams *WhiteParams::Clone() const
+{
+    return new WhiteParams(*this);
+}
 const WhiteParams &WhiteParams::operator=(const NoiseParams &in)
 {
     const WhiteParams &from = dynamic_cast<const WhiteParams &>(in);
@@ -109,8 +115,14 @@ void WhiteNoiseModel::Initialize(FabberRunData &args)
         throw InvalidOptionValue("prior-noise-stddev", stringify(phiprior), "Must be > 0");
 }
 
-int WhiteNoiseModel::NumParams() { return Qis.size(); }
-WhiteParams *WhiteNoiseModel::NewParams() const { return new WhiteParams(Qis.size()); }
+int WhiteNoiseModel::NumParams()
+{
+    return Qis.size();
+}
+WhiteParams *WhiteNoiseModel::NewParams() const
+{
+    return new WhiteParams(Qis.size());
+}
 void WhiteNoiseModel::HardcodedInitialDists(NoiseParams &priorIn, NoiseParams &posteriorIn) const
 {
     WhiteParams &prior = dynamic_cast<WhiteParams &>(priorIn);

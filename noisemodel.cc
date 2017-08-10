@@ -30,7 +30,10 @@ NoiseModel *NoiseModel::NewFromName(const string &name)
     return noise;
 }
 
-void NoiseModel::Initialize(FabberRunData &rundata) { m_log = rundata.GetLogger(); }
+void NoiseModel::Initialize(FabberRunData &rundata)
+{
+    m_log = rundata.GetLogger();
+}
 // ARD stuff
 double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const
 {

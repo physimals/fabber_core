@@ -27,7 +27,9 @@ class NoiseParams
 {
 public:
     /** Virtual destructor for subclasses */
-    virtual ~NoiseParams() {}
+    virtual ~NoiseParams()
+    {
+    }
     /**
      * Create a copy of the params
      *
@@ -80,7 +82,9 @@ public:
     static NoiseModel *NewInstance();
 
     /** Virtual destrictor for subclasses */
-    virtual ~NoiseModel() {}
+    virtual ~NoiseModel()
+    {
+    }
     /**
      * Initialize a new instance using configuration from the given
      * arguments.

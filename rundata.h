@@ -100,7 +100,9 @@ enum VoxelDataType
 class ProgressCheck
 {
 public:
-    virtual void Progress(int voxel, int nVoxels) {}
+    virtual void Progress(int voxel, int nVoxels)
+    {
+    }
 };
 
 /**
@@ -133,7 +135,11 @@ public:
         : m_cb(cb)
     {
     }
-    virtual void Progress(int voxel, int nVoxels) { m_cb(voxel, nVoxels); }
+    virtual void Progress(int voxel, int nVoxels)
+    {
+        m_cb(voxel, nVoxels);
+    }
+
 private:
     void (*m_cb)(int, int);
 };
@@ -643,7 +649,10 @@ public:
     }
 
     virtual ~FabberError() throw(){};
-    virtual const char *what() const throw() { return m_msg.c_str(); }
+    virtual const char *what() const throw()
+    {
+        return m_msg.c_str();
+    }
     std::string m_msg;
 };
 

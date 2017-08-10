@@ -145,7 +145,10 @@ FwdModel *FwdModel::NewFromName(const string &name)
     return model;
 }
 
-void FwdModel::Initialize(FabberRunData &args) { m_log = args.GetLogger(); }
+void FwdModel::Initialize(FabberRunData &args)
+{
+    m_log = args.GetLogger();
+}
 void FwdModel::UsageFromName(const string &name, std::ostream &stream)
 {
     stream << "Description: " << name << endl << endl;
@@ -166,8 +169,14 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
     }
 }
 
-string FwdModel::GetDescription() const { return "No description available"; }
-string FwdModel::ModelVersion() const { return "No version info available."; }
+string FwdModel::GetDescription() const
+{
+    return "No description available";
+}
+string FwdModel::ModelVersion() const
+{
+    return "No version info available.";
+}
 void FwdModel::Usage(std::ostream &stream) const
 {
     stream << "No usage information available" << endl;

@@ -50,7 +50,10 @@ public:
      * e.g. MyFunction myfunc;
      *      double answer = myfunc(4);
      */
-    double operator()(double x) const { return Calculate(x); }
+    double operator()(double x) const
+    {
+        return Calculate(x);
+    }
     /**
      * This is useful if your function is very slow to calculate, but you have
      * some cached partial calculations available.  If you have a suitable
@@ -63,7 +66,10 @@ public:
         return false;
     }
 
-    virtual ~GenericFunction1D() {}
+    virtual ~GenericFunction1D()
+    {
+    }
+
 private:
     // Function's constant data should go here
 };
@@ -84,7 +90,9 @@ class Guesstimator : public Loggable
 {
 public:
     virtual double GetGuess(double lower, double upper, double atLower, double atUpper) = 0;
-    virtual ~Guesstimator() {}
+    virtual ~Guesstimator()
+    {
+    }
 };
 
 /**
@@ -210,8 +218,13 @@ public:
      * e.g. ZeroFinder finder(MyFunc);
      *      root = finder();
      */
-    operator double() const { return FindZero(); }
-    virtual ~ZeroFinder() {}
+    operator double() const
+    {
+        return FindZero();
+    }
+    virtual ~ZeroFinder()
+    {
+    }
     /**
      * Set initial guess
      */

@@ -46,8 +46,14 @@ std::string NLLSInferenceTechnique::GetDescription() const
     return "Non-linear least squares inference technique.";
 }
 
-string NLLSInferenceTechnique::GetVersion() const { return fabber_version(); }
-InferenceTechnique *NLLSInferenceTechnique::NewInstance() { return new NLLSInferenceTechnique(); }
+string NLLSInferenceTechnique::GetVersion() const
+{
+    return fabber_version();
+}
+InferenceTechnique *NLLSInferenceTechnique::NewInstance()
+{
+    return new NLLSInferenceTechnique();
+}
 void NLLSInferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &args)
 {
     InferenceTechnique::Initialize(fwd_model, args);

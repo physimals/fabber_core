@@ -24,7 +24,9 @@ EasyLog::EasyLog()
 {
 }
 
-EasyLog::~EasyLog() {}
+EasyLog::~EasyLog()
+{
+}
 void EasyLog::StartLog(const string &outDir)
 {
     assert(m_stream == NULL);
@@ -80,8 +82,14 @@ void EasyLog::StopLog(bool gzip)
     m_outdir = "";
 }
 
-bool EasyLog::LogStarted() { return m_stream != NULL; }
-const string &EasyLog::GetOutputDirectory() { return m_outdir; }
+bool EasyLog::LogStarted()
+{
+    return m_stream != NULL;
+}
+const string &EasyLog::GetOutputDirectory()
+{
+    return m_outdir;
+}
 std::ostream &EasyLog::LogStream()
 {
     if (m_stream == NULL)

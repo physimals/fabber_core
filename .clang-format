@@ -10,4 +10,6 @@ SpacesBeforeTrailingComments: 1
 TabWidth: 4
 UseTab: Never
 Standard: Cpp03
+ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: Empty
 

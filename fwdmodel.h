@@ -55,7 +55,9 @@ class FwdModel : public Loggable
 {
 public:
     /** Required in case subclasses manage resources */
-    virtual ~FwdModel() {}
+    virtual ~FwdModel()
+    {
+    }
     /**
      * @return human-readable description of the model.
      */
@@ -79,7 +81,9 @@ public:
      * The default returns nothing to enable compatibility with older model code
      * however this should be implemented by every model
      */
-    virtual void GetOptions(std::vector<OptionSpec> &opts) const {}
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const
+    {
+    }
     /**
      * Initialize a new instance using configuration from the given
      * arguments.
@@ -98,7 +102,9 @@ public:
      *
      * @param outputs Vector to be populated with names of alternative outputs, if any
      */
-    virtual void GetOutputs(std::vector<std::string> &outputs) const {}
+    virtual void GetOutputs(std::vector<std::string> &outputs) const
+    {
+    }
     /**
      * Voxelwise initialization of the posterior in model space
      *
@@ -111,7 +117,10 @@ public:
      *
      * @param posterior Initial posterior distribution for model parameters.
      */
-    virtual void InitVoxelPosterior(MVNDist &posterior) const { InitParams(posterior); }
+    virtual void InitVoxelPosterior(MVNDist &posterior) const
+    {
+        InitParams(posterior);
+    }
     /**
      * Evaluate the forward model in model parameter space
      *
@@ -244,11 +253,15 @@ public:
      * Deprecated method for initializing voxelwise posterior - use
      * InitVoxelPosterior instead
      */
-    virtual void InitParams(MVNDist &posterior) const {}
+    virtual void InitParams(MVNDist &posterior) const
+    {
+    }
     /**
      * Use Evaluate with the key parameter instead
      */
-    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const {}
+    virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
+    {
+    }
     /**
      * How many parameters in the model?
      *
@@ -258,14 +271,19 @@ public:
      * @return number of parameters, i.e. size of vector to be passed
      * to Evaluate function
      */
-    virtual int NumParams() const { return m_params.size(); }
+    virtual int NumParams() const
+    {
+        return m_params.size();
+    }
     /**
      * Name each of the parameters
      *
      * Initialize must be called before this method. DEPRECATED, replace with
      * GetParameterDefaults()
      */
-    virtual void NameParams(std::vector<std::string> &names) const {}
+    virtual void NameParams(std::vector<std::string> &names) const
+    {
+    }
     /**
      * Load up some sensible suggestions for initial prior & posterior values
      *
@@ -285,7 +303,9 @@ public:
      * An ARD update step can be specified in the model. Deprecated - ARD is done
      * in the core now.
      */
-    virtual void UpdateARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const {}
+    virtual void UpdateARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
+    {
+    }
     /**
      * Setup function for the ARD process
      *
@@ -294,7 +314,9 @@ public:
      * DEPRECATED - ARD priors are handled in the core and can be defined in
      * GetParameterDefaults
      */
-    virtual void SetupARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const {}
+    virtual void SetupARD(const MVNDist &posterior, MVNDist &prior, double &Fard) const
+    {
+    }
     /**
      * Indicies of parameters to which ARD should be applied. Deprecated, define
      * ARD priors in GetParameterDefaults

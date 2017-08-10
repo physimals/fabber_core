@@ -18,8 +18,14 @@ Dispatcher::Dispatcher()
     // No-op.
 }
 
-Dispatcher::~Dispatcher() { functionMap_.clear(); }
-void Dispatcher::Add(const string &name, Function function) { functionMap_[name] = function; }
+Dispatcher::~Dispatcher()
+{
+    functionMap_.clear();
+}
+void Dispatcher::Add(const string &name, Function function)
+{
+    functionMap_[name] = function;
+}
 void Dispatcher::Dispatch(const string &name)
 {
     if (functionMap_.count(name))

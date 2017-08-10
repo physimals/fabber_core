@@ -78,9 +78,18 @@ void Vb::GetOptions(vector<OptionSpec> &opts) const
     }
 }
 
-string Vb::GetDescription() const { return "Variational Bayes inference technique"; }
-string Vb::GetVersion() const { return fabber_version(); }
-InferenceTechnique *Vb::NewInstance() { return new Vb(); }
+string Vb::GetDescription() const
+{
+    return "Variational Bayes inference technique";
+}
+string Vb::GetVersion() const
+{
+    return fabber_version();
+}
+InferenceTechnique *Vb::NewInstance()
+{
+    return new Vb();
+}
 void Vb::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 {
     InferenceTechnique::Initialize(fwd_model, rundata);

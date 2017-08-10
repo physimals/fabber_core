@@ -68,7 +68,10 @@ template <class T> TemplateFactory<T>::TemplateFactory()
     // No-op.
 }
 
-template <class T> TemplateFactory<T>::~TemplateFactory() { functionMap_.clear(); }
+template <class T> TemplateFactory<T>::~TemplateFactory()
+{
+    functionMap_.clear();
+}
 template <class T> std::vector<std::string> TemplateFactory<T>::GetNames()
 {
     std::vector<std::string> names;

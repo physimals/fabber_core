@@ -18,8 +18,14 @@ GammaDist::GammaDist(EasyLog *log)
 {
 }
 
-double GammaDist::CalcMean() const { return b * c; }
-double GammaDist::CalcVariance() const { return b * b * c; }
+double GammaDist::CalcMean() const
+{
+    return b * c;
+}
+double GammaDist::CalcVariance() const
+{
+    return b * b * c;
+}
 void GammaDist::SetMeanVariance(double m, double v)
 {
     b = v / m;

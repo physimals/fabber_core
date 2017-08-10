@@ -26,7 +26,11 @@ class MCobj
 public:
     MCobj(FabberRunData &allData, int dof);
     void run_mc(const NEWMAT::Matrix &modelpred_mat, NEWMAT::Matrix &finalimage_mat);
-    void set_num_iter(int nit) { num_iter = nit; }
+    void set_num_iter(int nit)
+    {
+        num_iter = nit;
+    }
+
 private:
     int userdof;  // anything over 13 is full nonlinear
     int num_iter; // default 10

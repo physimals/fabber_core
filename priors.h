@@ -32,7 +32,9 @@ const char PRIOR_DEFAULT = '-';   // Use whatever the model specifies
 class Prior : public Loggable
 {
 public:
-    virtual ~Prior() {}
+    virtual ~Prior()
+    {
+    }
     /** Dump info to output stream */
     virtual void DumpInfo(std::ostream &out) const = 0;
 
@@ -54,7 +56,9 @@ class DefaultPrior : public Prior
 {
 public:
     DefaultPrior(const Parameter &param);
-    virtual ~DefaultPrior() {}
+    virtual ~DefaultPrior()
+    {
+    }
     /** Parameter name this prior applies to */
     std::string m_param_name;
 

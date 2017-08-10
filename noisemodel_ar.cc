@@ -27,7 +27,10 @@ using MISCMATHS::digamma;
 // Covariance terms are at +/-1, so maximum possible offset from
 // the main diagonal is +/-3.
 
-NoiseModel *Ar1cNoiseModel::NewInstance() { return new Ar1cNoiseModel(); }
+NoiseModel *Ar1cNoiseModel::NewInstance()
+{
+    return new Ar1cNoiseModel();
+}
 Ar1cMatrixCache::Ar1cMatrixCache(int numPhis)
     : nPhis(numPhis)
 {
@@ -236,7 +239,10 @@ const Ar1cParams &Ar1cParams::operator=(const NoiseParams &in)
     return *this;
 }
 
-Ar1cParams *Ar1cParams::Clone() const { return new Ar1cParams(*this); }
+Ar1cParams *Ar1cParams::Clone() const
+{
+    return new Ar1cParams(*this);
+}
 void Ar1cParams::Dump(ostream &os) const
 {
     os << "Alpha:" << endl;
@@ -314,8 +320,14 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
         throw InvalidOptionValue("num-echoes", stringify(nPhis), "Must be 1 or 2");
 }
 
-Ar1cParams *Ar1cNoiseModel::NewParams() const { return new Ar1cParams(NumAlphas(), nPhis); }
-int Ar1cNoiseModel::NumParams() { return nPhis; }
+Ar1cParams *Ar1cNoiseModel::NewParams() const
+{
+    return new Ar1cParams(NumAlphas(), nPhis);
+}
+int Ar1cNoiseModel::NumParams()
+{
+    return nPhis;
+}
 // Just convert a string into a number
 int Ar1cNoiseModel::NumAlphas() const
 {

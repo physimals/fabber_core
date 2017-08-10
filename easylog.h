@@ -131,8 +131,15 @@ public:
         , m_debug(false)
     {
     }
-    EasyLog *GetLogger() const { return m_log; }
-    void SetLogger(EasyLog *log) { m_log = log; }
+    EasyLog *GetLogger() const
+    {
+        return m_log;
+    }
+    void SetLogger(EasyLog *log)
+    {
+        m_log = log;
+    }
+
 protected:
     EasyLog *m_log;
     bool m_debug;

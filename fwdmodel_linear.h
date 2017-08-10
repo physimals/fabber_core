@@ -68,15 +68,25 @@ public:
     /**
      * @return the Jacobian, or design matrix
      */
-    NEWMAT::ReturnMatrix Jacobian() const { return m_jacobian; }
+    NEWMAT::ReturnMatrix Jacobian() const
+    {
+        return m_jacobian;
+    }
     /**
      * @return the vector used to recentre the parameters
      */
-    NEWMAT::ReturnMatrix Centre() const { return m_centre; }
+    NEWMAT::ReturnMatrix Centre() const
+    {
+        return m_centre;
+    }
     /**
      * @return the vector used to offset the result vector
      */
-    NEWMAT::ReturnMatrix Offset() const { return m_offset; }
+    NEWMAT::ReturnMatrix Offset() const
+    {
+        return m_offset;
+    }
+
 protected:
     virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
 

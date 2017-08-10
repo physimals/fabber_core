@@ -23,7 +23,10 @@ static double dist_euclid(double dx, double dy, double dz)
 }
 
 // Manhattan distance
-static double dist_manh(double dx, double dy, double dz) { return fabs(dx) + fabs(dy) + fabs(dz); }
+static double dist_manh(double dx, double dy, double dz)
+{
+    return fabs(dx) + fabs(dy) + fabs(dz);
+}
 // Almost-squared Euclidian distance
 static double dist_sqeuclid(double dx, double dy, double dz)
 {
@@ -112,7 +115,10 @@ void CovarianceCache::CalcDistances(
     }
 }
 
-const NEWMAT::SymmetricMatrix &CovarianceCache::GetDistances() const { return m_distances; }
+const NEWMAT::SymmetricMatrix &CovarianceCache::GetDistances() const
+{
+    return m_distances;
+}
 const ReturnMatrix CovarianceCache::GetC(double delta) const
 {
     const int Nvoxels = m_distances.Nrows();

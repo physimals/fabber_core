@@ -25,7 +25,9 @@ public:
 
     static ConvergenceDetector *NewFromName(const std::string &name);
 
-    virtual ~ConvergenceDetector() {}
+    virtual ~ConvergenceDetector()
+    {
+    }
     /**
      * Initialize from run parameters
      */
@@ -46,29 +48,44 @@ public:
     /**
      * Whether detector uses the free energy
      */
-    virtual bool UseF() const { return false; }
+    virtual bool UseF() const
+    {
+        return false;
+    }
     /**
      * Do we need to save the last set of parameters?
      *
      * @return true if we do, i.e. if the last value
      *              of F tested was the best so far.
      */
-    virtual bool NeedSave() { return false; }
+    virtual bool NeedSave()
+    {
+        return false;
+    }
     /**
      * Do we need to revert to the previously saved set of parameters?
      */
-    virtual bool NeedRevert() { return false; }
+    virtual bool NeedRevert()
+    {
+        return false;
+    }
     /**
      * Used by the LM detector - all others return zero
      */
-    virtual float LMalpha() { return 0.0; }
+    virtual float LMalpha()
+    {
+        return 0.0;
+    }
     /**
      * Reason convergence reached
      *
      * If Test returns true, this should
      * contain a human readable string giving the reason
      */
-    std::string GetReason() { return m_reason; }
+    std::string GetReason()
+    {
+        return m_reason;
+    }
     /**
      * Send information on current progress to output stream
      */
@@ -85,7 +102,10 @@ protected:
 class CountingConvergenceDetector : public ConvergenceDetector
 {
 public:
-    static ConvergenceDetector *NewInstance() { return new CountingConvergenceDetector(); }
+    static ConvergenceDetector *NewInstance()
+    {
+        return new CountingConvergenceDetector();
+    }
     virtual void Initialize(FabberRunData &params);
 
     virtual bool Test(double);
@@ -109,7 +129,10 @@ protected:
 class FchangeConvergenceDetector : public CountingConvergenceDetector
 {
 public:
-    static ConvergenceDetector *NewInstance() { return new FchangeConvergenceDetector(); }
+    static ConvergenceDetector *NewInstance()
+    {
+        return new FchangeConvergenceDetector();
+    }
     virtual void Initialize(FabberRunData &params);
 
     /**
@@ -128,9 +151,18 @@ public:
      * Uses the free energy
      * @return true
      */
-    virtual bool UseF() const { return true; }
-    virtual bool NeedSave() { return m_save; }
-    virtual bool NeedRevert() { return m_revert; }
+    virtual bool UseF() const
+    {
+        return true;
+    }
+    virtual bool NeedSave()
+    {
+        return m_save;
+    }
+    virtual bool NeedRevert()
+    {
+        return m_revert;
+    }
     virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
@@ -148,7 +180,10 @@ protected:
 class FreduceConvergenceDetector : public FchangeConvergenceDetector
 {
 public:
-    static ConvergenceDetector *NewInstance() { return new FreduceConvergenceDetector(); }
+    static ConvergenceDetector *NewInstance()
+    {
+        return new FreduceConvergenceDetector();
+    }
     /**
      * Parameters:
      *   max-iterations Maximum number of iterations
@@ -181,14 +216,20 @@ protected:
 class TrialModeConvergenceDetector : public FchangeConvergenceDetector
 {
 public:
-    static ConvergenceDetector *NewInstance() { return new TrialModeConvergenceDetector(); }
+    static ConvergenceDetector *NewInstance()
+    {
+        return new TrialModeConvergenceDetector();
+    }
     virtual void Initialize(FabberRunData &params);
 
     virtual bool Test(double F);
 
     virtual void Reset(double F = -99e99);
 
-    virtual bool NeedSave() { return m_save; }
+    virtual bool NeedSave()
+    {
+        return m_save;
+    }
     virtual void Dump(std::ostream &out, const std::string &indent = "") const;
 
 protected:
@@ -208,7 +249,10 @@ protected:
 class LMConvergenceDetector : public ConvergenceDetector
 {
 public:
-    static ConvergenceDetector *NewInstance() { return new LMConvergenceDetector(); }
+    static ConvergenceDetector *NewInstance()
+    {
+        return new LMConvergenceDetector();
+    }
     virtual void Initialize(FabberRunData &params);
 
     /**
@@ -231,10 +275,23 @@ public:
     virtual void Dump(std::ostream &out, const std::string &indent = "") const;
     virtual void Reset(double F = -99e99);
 
-    virtual bool UseF() const { return true; }
-    bool NeedSave() { return m_save; }
-    bool NeedRevert() { return m_revert; }
-    float LMalpha() { return m_alpha; }
+    virtual bool UseF() const
+    {
+        return true;
+    }
+    bool NeedSave()
+    {
+        return m_save;
+    }
+    bool NeedRevert()
+    {
+        return m_revert;
+    }
+    float LMalpha()
+    {
+        return m_alpha;
+    }
+
 private:
     int m_its;
     int m_max_its;
