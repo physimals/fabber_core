@@ -273,6 +273,15 @@ public:
     std::string GetStringDefault(const std::string &key, const std::string &def) const;
 
     /**
+	 * Get a list of integers specified with a prefix and an index ,e.g. param1=a param2=b, etc
+	 *
+	 * @see GetIntList for details
+	 *
+	 * @param prefix Prefix before the index number
+	 */
+    std::vector<std::string> GetStringList(const std::string &prefix);
+
+    /**
 	 * Get boolean option
 	 *
 	 * @param key Name of the boolean option
@@ -297,6 +306,20 @@ public:
     int GetIntDefault(const std::string &key, int def, int min=INT_MIN, int max=INT_MAX);
 
     /**
+	 * Get a list of integers specified with a prefix and an index ,e.g. rpt1=2, rpt2=3, etc
+	 *
+	 * The index number starts at 1. The list stops at the first index where no option can be 
+	 * found, so e.g. if options are given as a1=3 a2=4 a4=3 then only the first two items would 
+	 * be returned
+	 *
+	 * @param prefix Prefix before the index number
+	 * @param min Minimum allowed value
+	 * @param max maximum allowed value
+	 * @throw if option specified, but not a valid integer
+	 */
+    std::vector<int> GetIntList(const std::string &prefix, int min=INT_MIN, int max=INT_MAX);
+
+    /**
 	 * Get an double option
 	 *
 	 * @param key Name of the option
@@ -311,6 +334,18 @@ public:
 	 * @throw if option specified, but not a valid number
 	 */
     double GetDoubleDefault(const std::string &key, double def, double min=-DBL_MAX, double max=DBL_MAX);
+
+    /**
+	 * Get a list of integers specified with a prefix and an index ,e.g. ti1=0.6, ti2=1.2, etc
+	 *
+	 * @see GetIntList for details
+	 *
+	 * @param prefix Prefix before the index number
+	 * @param min Minimum allowed value
+	 * @param max maximum allowed value
+	 * @throw if option specified, but not a valid number
+	 */
+    std::vector<double> GetDoubleList(const std::string &prefix, double min=-DBL_MAX, double max=DBL_MAX);
 
     /**
 	 * Get the output directory for this run.

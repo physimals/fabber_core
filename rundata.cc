@@ -425,6 +425,11 @@ void FabberRunData::Unset(const std::string &key)
     m_params.erase(key);
 }
 
+bool FabberRunData::HaveKey(const string &key)
+{
+    return m_params.count(key) > 0;
+}
+
 string FabberRunData::GetString(const string &key)
 {
     return Read(key, key);
@@ -437,9 +442,14 @@ string FabberRunData::GetStringDefault(const string &key, const string &def) con
     return m_params.find(key)->second;
 }
 
-bool FabberRunData::HaveKey(const string &key)
+std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
 {
-    return m_params.count(key) > 0;
+    std::vector<std::string> ret;
+    int n=1;
+    while(HaveKey(prefix + stringify(n))) {
+        ret.push_back(GetString(prefix + stringify(n)));
+    }
+    return ret;
 }
 
 bool FabberRunData::GetBool(const string &key)
@@ -471,6 +481,24 @@ int FabberRunData::GetInt(const string &key, int min, int max)
     }
 }
 
+int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
+{
+    if (m_params.count(key) == 0)
+        return def;
+    else
+        return GetInt(key, min, max);
+}
+
+std::vector<int> FabberRunData::GetIntList(const std::string &prefix, int min, int max)
+{
+    std::vector<int> ret;
+    int n=1;
+    while(HaveKey(prefix + stringify(n))) {
+        ret.push_back(GetInt(prefix + stringify(n), min, max));
+    }
+    return ret;
+}
+
 double FabberRunData::GetDouble(const string &key, double min, double max)
 {
     string val = GetString(key);
@@ -487,20 +515,22 @@ double FabberRunData::GetDouble(const string &key, double min, double max)
     }
 }
 
-int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
-{
-    if (m_params.count(key) == 0)
-        return def;
-    else
-        return GetInt(key, min, max);
-}
-
 double FabberRunData::GetDoubleDefault(const string &key, double def, double min, double max)
 {
     if (m_params.count(key) == 0)
         return def;
     else
         return GetDouble(key, min, max);
+}
+
+std::vector<double> FabberRunData::GetDoubleList(const std::string &prefix, double min, double max)
+{
+    std::vector<double> ret;
+    int n=1;
+    while(HaveKey(prefix + stringify(n))) {
+        ret.push_back(GetDouble(prefix + stringify(n), min, max));
+    }
+    return ret;
 }
 
 string FabberRunData::Read(const string &key, const string &msg)
