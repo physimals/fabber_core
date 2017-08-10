@@ -92,12 +92,14 @@ protected:
 
     NEWMAT::Matrix m_jacobian;     // J (tranposed?)
     NEWMAT::ColumnVector m_centre; // m
-    NEWMAT::ColumnVector m_offset; // g(m)
-                                   // The amount to effectively subtract from Y is g(m)-J*m
+    NEWMAT::ColumnVector m_offset; // g(m) - The amount to effectively subtract from Y is g(m)-J*m
 };
 
 /**
  * Linearized wrapper interface to another nonlinear forward model
+ *
+ * This is not used as a model directly so we do not need to implement
+ * parameter defaults, version numbers, options, etc.
  */
 class LinearizedFwdModel : public LinearFwdModel
 {
@@ -120,7 +122,7 @@ public:
      *
      * NOTE: This is a reference, not a pointer... and it *copies* the
      * given LinearizedFwdModel, rather than using it as its nonlinear model!
-     * */
+     */
     LinearizedFwdModel(const LinearizedFwdModel &from);
 
     /**
@@ -142,13 +144,6 @@ public:
      * new centre
      */
     void ReCentre(const NEWMAT::ColumnVector &about);
-
-    // Standard FwdModel methods - these are delegated to the underlying model
-
-    void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
-    void DumpParameters(const NEWMAT::ColumnVector &vec, const std::string &indent = "") const;
-    void NameParams(std::vector<std::string> &names) const;
-    std::string ModelVersion();
 
 private:
     const FwdModel *m_model;

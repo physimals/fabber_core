@@ -29,6 +29,7 @@ FwdModel *LinearFwdModel::NewInstance()
 {
     return new LinearFwdModel();
 }
+
 static OptionSpec OPTIONS[] = { { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" }, { "" } };
 
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
@@ -48,6 +49,7 @@ string LinearFwdModel::ModelVersion() const
 {
     return fabber_version();
 }
+
 void LinearFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
@@ -74,7 +76,7 @@ void LinearFwdModel::Initialize(FabberRunData &args)
         ColumnVector ones(Ntimes);
         ones = 1.0;
         m_jacobian = m_jacobian | ones;
-        m_centre.ReSize(Nbasis+1);
+        m_centre.ReSize(Nbasis + 1);
     }
 }
 
@@ -82,8 +84,8 @@ void LinearFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
 {
     for (int i = 0; i < m_centre.Nrows(); i++)
     {
-        params.push_back(
-            Parameter(i, "Parameter_" + stringify(i+1), DistParams(0, 1e12), DistParams(0, 1e12)));
+        params.push_back(Parameter(
+            i, "Parameter_" + stringify(i + 1), DistParams(0, 1e12), DistParams(0, 1e12)));
     }
 }
 
@@ -104,24 +106,6 @@ LinearizedFwdModel::LinearizedFwdModel(const LinearizedFwdModel &from)
     , m_model(from.m_model)
 {
     SetLogger(from.GetLogger());
-}
-
-void LinearizedFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
-{
-    assert(m_model);
-    m_model->HardcodedInitialDists(prior, posterior);
-}
-
-void LinearizedFwdModel::NameParams(std::vector<std::string> &names) const
-{
-    assert(m_model);
-    m_model->NameParams(names);
-}
-
-std::string LinearizedFwdModel::ModelVersion()
-{
-    assert(m_model != NULL);
-    return m_model->ModelVersion();
 }
 
 void LinearizedFwdModel::ReCentre(const ColumnVector &about)
@@ -180,9 +164,4 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
         throw FabberInternalError(
             "LinearizedFwdModel::ReCentre: Non-finite values found in jacobian");
     }
-}
-
-void LinearizedFwdModel::DumpParameters(const ColumnVector &vec, const string &indent) const
-{
-    m_model->DumpParameters(vec, indent);
 }
