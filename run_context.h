@@ -1,4 +1,3 @@
-#pragma once
 /**
  * run_context.h
  *
@@ -6,6 +5,7 @@
  */
 
 /*  CCOPYRIGHT */
+#pragma once
 
 #include "noisemodel.h"
 #include "fwdmodel_linear.h"
@@ -14,8 +14,11 @@
 #include <vector>
 
 /**
- * Structure containing per-voxel state information
- * for the run
+ * Structure containing per-voxel state information for the run
+ *
+ * This is currently just a convenient way to pass around the information needed. 
+ * However it could take on some of the roles of the VB inference technique, e.g.
+ * storing a reference to the main voxel data and identifying nearest neighbours
  */
 struct RunContext
 {

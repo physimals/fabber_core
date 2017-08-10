@@ -1,4 +1,4 @@
-/*  inference_spatialvb.cc - implementation of VB with spatial priors
+/*  inference_vb.cc - Variational Bayes with optional spatial smoothing
 
  Adrian Groves and Matthew Webster, FMRIB Image Analysis Group
 
@@ -91,13 +91,13 @@ InferenceTechnique *Vb::NewInstance()
     return new Vb();
 }
 
-void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
+void Vb::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 {
-    InferenceTechnique::Initialize(fwd_model, args);
+    InferenceTechnique::Initialize(fwd_model, rundata);
 
     // Get noise model.
-    m_noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(args.GetString("noise")));
-    m_noise->Initialize(args);
+    m_noise = std::auto_ptr<NoiseModel>(NoiseModel::NewFromName(rundata.GetString("noise")));
+    m_noise->Initialize(rundata);
     m_noise_params = m_noise->NumParams();
     LOG << "Vb::Noise has " << m_noise_params << " parameters" << endl;
 
@@ -105,21 +105,21 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
     // distribution of the model parameters, and possibly the noise as well. So we may
     // not need the initial posterior distributions we have created. We choose not to delete
     // them here as the memory involved is not large (they are not per voxel).
-    m_continueFromFile = args.GetStringDefault("continue-from-mvn", "");
-    paramFilename = args.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
+    m_continueFromFile = rundata.GetStringDefault("continue-from-mvn", "");
+    paramFilename = rundata.GetStringDefault("continue-from-params", ""); // optional list of parameters in MVN
 
     // Create convergence-testing method:
-    m_conv = ConvergenceDetector::NewFromName(args.GetStringDefault("convergence", "maxits"));
-    m_conv->Initialize(args);
+    m_conv = ConvergenceDetector::NewFromName(rundata.GetStringDefault("convergence", "maxits"));
+    m_conv->Initialize(rundata);
 
     // Figure out if F needs to be calculated every iteration
-    m_printF = args.GetBool("print-free-energy");
+    m_printF = rundata.GetBool("print-free-energy");
     m_needF = m_conv->UseF() || m_printF;
 
     // Motion correction related setup - by default no motion correction
-    m_num_mcsteps = convertTo<int>(args.GetStringDefault("mcsteps", "0"));
+    m_num_mcsteps = convertTo<int>(rundata.GetStringDefault("mcsteps", "0"));
 
-    m_spatial_dims = args.GetIntDefault("spatial-dims", 3, 0, 3);
+    m_spatial_dims = rundata.GetIntDefault("spatial-dims", 3, 0, 3);
     if (m_spatial_dims == 1)
     {
         WARN_ONCE("spatial-dims=1 is weird... hope you're just testing!");
@@ -130,14 +130,13 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &args)
     }
 
     // Locked linearizations, if requested
-    m_locked_linear_file = args.GetStringDefault("locked-linear-from-mvn", "");
-    m_locked_linear = (m_locked_linear_file != "");
+    m_locked_linear = rundata.GetStringDefault("locked-linear-from-mvn", "") != "";
 }
 
-void Vb::InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist,
+void Vb::InitializeNoiseFromParam(FabberRunData &rundata, NoiseParams *dist,
     string param_key)
 {
-    string filename = args.GetStringDefault(param_key, "modeldefault");
+    string filename = rundata.GetStringDefault(param_key, "modeldefault");
     if (filename != "modeldefault")
     {
         // FIXME should there be checking of size here
@@ -170,10 +169,11 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
     Matrix lockedLinearCentres;
     if (m_locked_linear)
     {
+        string file = rundata.GetString("locked-linear-from-mvn");
         LOG << "Vb::Loading fixed linearization centres from the MVN '"
-            << m_locked_linear_file << "'\nNOTE: This does not check if the correct "
-                                   "number of parameters is present!\n";
-        MVNDist::Load(lockedLinearDists, m_locked_linear_file, rundata, m_log);
+            << file << "'\nNOTE: This does not check if the correct "
+                       "number of parameters is present!\n";
+        MVNDist::Load(lockedLinearDists, file, rundata, m_log);
         lockedLinearCentres.ReSize(m_num_params, m_nvoxels);
     }
 
@@ -294,6 +294,18 @@ double Vb::CalculateF(int v, string label, double Fprior)
         }
     }
     return F;
+}
+
+void Vb::DebugVoxel(int v, const string &where) 
+{
+    LOG << where << " - voxel " << v << " of " << m_nvoxels << endl;
+    LOG << "Prior means: " << m_ctx->fwd_prior[v-1].means.t();
+    LOG << "Prior precisions: " << m_ctx->fwd_prior[v-1].GetPrecisions();
+    LOG << "Noise prior means: " << m_ctx->noise_prior[v-1]->OutputAsMVN().means.t();
+    LOG << "Noise prior precisions: " << m_ctx->noise_prior[v-1]->OutputAsMVN().GetPrecisions();
+    LOG << "Centre: " << m_lin_model[v-1].Centre();
+    LOG << "Offset: " << m_lin_model[v-1].Offset();
+    LOG << "Jacobian: " << m_lin_model[v-1].Jacobian();
 }
 
 void Vb::DoCalculations(FabberRunData &rundata)
@@ -453,23 +465,17 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
         try
         {
             resultMVNs.at(v - 1) = new MVNDist(m_ctx->fwd_post[v-1], m_ctx->noise_post[v-1]->OutputAsMVN());
-            if (m_needF)
-            {
-                resultFs.at(v - 1) = F;
-            }
+            if (m_needF) resultFs.at(v - 1) = F;
         }
         catch (...)
         {
             // Even that can fail, due to results being singular
-            LOG
-                << "Vb::Can't give any sensible answer for this voxel; outputting zero +- identity\n";
+            LOG << "Vb::Can't give any sensible answer for this voxel; outputting zero +- identity\n";
             MVNDist *tmp = new MVNDist(m_log);
             tmp->SetSize(m_ctx->fwd_post[v-1].means.Nrows() + m_ctx->noise_post[v-1]->OutputAsMVN().means.Nrows());
             tmp->SetCovariance(IdentityMatrix(tmp->means.Nrows()));
             resultMVNs.at(v - 1) = tmp;
-
-            if (m_needF)
-                resultFs.at(v - 1) = F;
+            if (m_needF) resultFs.at(v - 1) = F;
         }
     }
 }
@@ -525,16 +531,7 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                 for (int k=0; k<m_num_params; k++) {
                     Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v-1], *m_ctx);
                 }
-                if (m_debug) {
-                    LOG << "Voxel " << v << " of " << m_nvoxels << endl;
-                    LOG << "Prior means: " << m_ctx->fwd_prior[v-1].means.t();
-                    LOG << "Prior precisions: " << m_ctx->fwd_prior[v-1].GetPrecisions();
-                    LOG << "Noise prior means: " << m_ctx->noise_prior[v-1]->OutputAsMVN().means.t();
-                    LOG << "Noise prior precisions: " << m_ctx->noise_prior[v-1]->OutputAsMVN().GetPrecisions();
-                    LOG << "Centre: " << m_lin_model[v-1].Centre();
-                    LOG << "Offset: " << m_lin_model[v-1].Offset();
-                    LOG << "Jacobian: " << m_lin_model[v-1].Jacobian();
-                }
+                if (m_debug) DebugVoxel(v, "Priors set");
 
                 // Ignore voxels where numerical issues have occurred
                 if (std::find(m_ignore_voxels.begin(), m_ignore_voxels.end(), v) != m_ignore_voxels.end()) continue;
@@ -544,10 +541,8 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                 m_noise->UpdateTheta(*m_ctx->noise_post[v - 1], m_ctx->fwd_post[v - 1],
                     m_ctx->fwd_prior[v - 1], m_lin_model[v - 1],
                     m_origdata->Column(v), NULL, 0);
-                if (m_debug) {
-                    LOG << "Post means: " << m_ctx->fwd_post[v-1].means.t();
-                    LOG << "Post precisions: " << m_ctx->fwd_post[v-1].GetPrecisions();
-                }
+                if (m_debug) DebugVoxel(v, "Theta updated");
+
                 CalculateF(v, "theta", Fprior);
             }
             catch (FabberInternalError &e) {
@@ -575,11 +570,13 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
             m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
                 m_ctx->fwd_post[v - 1], m_lin_model[v - 1],
                 m_origdata->Column(v));
+            if (m_debug) DebugVoxel(v, "Noise updated");
 
             CalculateF(v, "noise", Fprior);
 
             if (!m_locked_linear)
                 m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
+            if (m_debug) DebugVoxel(v, "Re-centre");
 
             Fglobal += CalculateF(v, "lin", Fprior);
         }

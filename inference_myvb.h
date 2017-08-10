@@ -18,10 +18,6 @@ class Vb : public InferenceTechnique
 public:
     static InferenceTechnique *NewInstance();
 
-    virtual void GetOptions(vector<OptionSpec> &opts) const;
-    virtual std::string GetDescription() const;
-    virtual string GetVersion() const;
-
     Vb()
         : m_nvoxels(0)
         , m_noise_params(0)
@@ -37,20 +33,51 @@ public:
     {
     }
 
+    virtual void GetOptions(vector<OptionSpec> &opts) const;
+    virtual std::string GetDescription() const;
+    virtual string GetVersion() const;
+
     virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
-    //    virtual ~Vb();
 
-    void SaveResults(FabberRunData &rundata) const;
+    virtual void SaveResults(FabberRunData &rundata) const;
 protected:
-
+    /** 
+     * Initialize noise prior or posterior distribution from a file stored in the
+     * rundata under the given parameter key
+     */
     void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
+
+    /**
+     * Pass the model the data, coords and suppdata for a voxel.
+     * 
+     * FIXME this is not very nice and should not be necessary. Need to
+     * audit what models are using this info and find alternatives, e.g.
+     * reading suppdata in Initialize instead
+     */
     void PassModelData(int voxel);
 
+    /**
+     * Do calculations loop in voxelwise mode (i.e. all iterations for
+     * one voxel, then all iterations for the next voxel, etc)
+     */
     virtual void DoCalculationsVoxelwise(FabberRunData &data);
+
+    /**
+     * Do calculations loop in spatial mode (i.e. one iteration of all
+     * voxels, then next iteration of all voxels, etc)
+     */
     virtual void DoCalculationsSpatial(FabberRunData &data);
 
+    /**
+     * Calculate free energy if required, and display if required
+     */
     double CalculateF(int v, std::string label, double Fprior);
+
+    /** 
+     * Output detailed debugging information for a voxel
+     */
+    void DebugVoxel(int v, const string &where);
 
     /**
 	 * Setup per-voxel data for Spatial VB
@@ -119,8 +146,13 @@ protected:
     /** Free energy for each voxel */
     std::vector<double> resultFs;
 
+    /** Voxelwise input data */
     const NEWMAT::Matrix *m_origdata;
+
+    /** Voxelwise co-ordinates */
     const NEWMAT::Matrix *m_coords;
+
+    /** Voxelwise supplementary data */
     const NEWMAT::Matrix *m_suppdata;
 
     /** Number of motion correction steps to run */
@@ -128,16 +160,18 @@ protected:
 
     /**
      * Convergence detector in use
+     *
+     * FIXME needs to be per-voxel in order to use in spatial loop
      */
     ConvergenceDetector *m_conv;
     
+    /** Stores current run state (parameters, MVNs, linearization centres etc */
     RunContext *m_ctx;
     
+    /** Linearized wrapper around the forward model */
     std::vector<LinearizedFwdModel> m_lin_model;
     
-    /**
-     * Voxels to ignore, indexed from 1 as per NEWMAT
-     */
+    /** Voxels to ignore, indexed from 1 as per NEWMAT */
     std::vector<int> m_ignore_voxels;
     
     /**
@@ -150,18 +184,11 @@ protected:
 	 */
     int m_spatial_dims;
 
-    /**
-	 * Type of spatial prior to use for each parameter. Should be one
-	 * character per parameter, however if string ends with + then
-	 * the last character is repeated for remaining parameters
-	 */
-    std::string m_prior_types_str;
-
-    /**
-     * Reduce this to a linear problem, using the given
-     * voxelwise linearizations (probably loaded from an MVN)
+    /** 
+     * Fix the linearization centres of the linearized forward model.
+     * 
+     * This reduces the inference to a purely linear problem. The fixed
+     * centres are generally loaded from an MVN file
      */
-    std::string m_locked_linear_file;
-
     bool m_locked_linear;
 };

@@ -96,7 +96,7 @@ public:
     virtual void Initialize(FabberRunData &args);
 
     /**
-	 * Create a new identical copy of the noise parameters (e.g. for spatial vb)
+	 * Create a new instance of the noise parameters
 	 */
     virtual NoiseParams *NewParams() const = 0;
 
