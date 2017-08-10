@@ -27,7 +27,8 @@ using namespace NEWMAT;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] = {
-    { "vb-init", OPT_BOOL, "Whether NLLS is being run in isolation or as a pre-step for VB", OPT_NONREQ, "" },
+    { "vb-init", OPT_BOOL, "Whether NLLS is being run in isolation or as a pre-step for VB",
+        OPT_NONREQ, "" },
     { "lm", OPT_BOOL, "Whether to use LM convergence (default is L)", OPT_NONREQ, "" },
 };
 
@@ -45,16 +46,8 @@ std::string NLLSInferenceTechnique::GetDescription() const
     return "Non-linear least squares inference technique.";
 }
 
-string NLLSInferenceTechnique::GetVersion() const
-{
-    return fabber_version();
-}
-
-InferenceTechnique *NLLSInferenceTechnique::NewInstance()
-{
-    return new NLLSInferenceTechnique();
-}
-
+string NLLSInferenceTechnique::GetVersion() const { return fabber_version(); }
+InferenceTechnique *NLLSInferenceTechnique::NewInstance() { return new NLLSInferenceTechnique(); }
 void NLLSInferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &args)
 {
     InferenceTechnique::Initialize(fwd_model, args);
@@ -69,7 +62,8 @@ void NLLSInferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &args
     MVNDist *junk = new MVNDist(m_model->NumParams());
     m_model->HardcodedInitialDists(*junk, *loadPosterior);
 
-    // Option to load a 'posterior' which will allow the setting of intial parameter estimates for NLLS
+    // Option to load a 'posterior' which will allow the setting of intial parameter estimates for
+    // NLLS
     string filePosterior = args.GetStringDefault("fwd-inital-posterior", "modeldefault");
     if (filePosterior != "modeldefault")
     {
@@ -192,8 +186,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
         }
         catch (Exception &e)
         {
-            LOG << "NLLSInferenceTechnique::NEWMAT Exception in this voxel:\n"
-                << e.what() << endl;
+            LOG << "NLLSInferenceTechnique::NEWMAT Exception in this voxel:\n" << e.what() << endl;
 
             if (m_halt_bad_voxel)
                 throw;
@@ -248,7 +241,8 @@ ReturnMatrix NLLSCF::grad(const ColumnVector &p) const
     return (gradv);
 }
 
-boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector &p, boost::shared_ptr<BFMatrix> iptr) const
+boost::shared_ptr<BFMatrix> NLLSCF::hess(
+    const ColumnVector &p, boost::shared_ptr<BFMatrix> iptr) const
 {
     boost::shared_ptr<BFMatrix> hessm;
 
@@ -264,7 +258,7 @@ boost::shared_ptr<BFMatrix> NLLSCF::hess(const ColumnVector &p, boost::shared_pt
     // need to recenter the linearised model to the current parameter values
     m_linear.ReCentre(p);
     const Matrix &J = m_linear.Jacobian();
-    Matrix hesstemp = 2 * J.t() * J; //Make the G-N approximation to the hessian
+    Matrix hesstemp = 2 * J.t() * J; // Make the G-N approximation to the hessian
 
     //(*hessm) = J.t()*J;
 

@@ -5,7 +5,7 @@
 /**
  * Get string identifying the current source code revision.
  *
- * This will be of the form <tag>[-<commits>-<hash>] as returned by 
+ * This will be of the form <tag>[-<commits>-<hash>] as returned by
  * git describe. For a tagged release the commits and has are not included
  * and the version will normally be in the form 'vX.Y.Z'
  *

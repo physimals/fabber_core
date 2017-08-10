@@ -36,40 +36,34 @@ class GenericFunction1D : public Loggable
 {
 public:
     /**
-	 * Calculate the value of this function
-	 *
-	 * @param x Input value
-	 * @return output of function
-	 */
+     * Calculate the value of this function
+     *
+     * @param x Input value
+     * @return output of function
+     */
     virtual double Calculate(double x) const = 0;
 
     /**
-	 * Allow us to calculate the value of the function
-	 * using the () operator
-	 *
-	 * e.g. MyFunction myfunc;
-	 *      double answer = myfunc(4);
-	 */
-    double operator()(double x) const
-    {
-        return Calculate(x);
-    }
-
+     * Allow us to calculate the value of the function
+     * using the () operator
+     *
+     * e.g. MyFunction myfunc;
+     *      double answer = myfunc(4);
+     */
+    double operator()(double x) const { return Calculate(x); }
     /**
-	 * This is useful if your function is very slow to calculate, but you have
-	 * some cached partial calculations available.  If you have a suitable
-	 * cached value, store it into guess and return true.  Otherwise return
-	 * false (and leave guess unchanged).
-	 */
-    virtual bool PickFasterGuess(double *guess, double lower, double upper, bool allowEndpoints = false) const
+     * This is useful if your function is very slow to calculate, but you have
+     * some cached partial calculations available.  If you have a suitable
+     * cached value, store it into guess and return true.  Otherwise return
+     * false (and leave guess unchanged).
+     */
+    virtual bool PickFasterGuess(
+        double *guess, double lower, double upper, bool allowEndpoints = false) const
     {
         return false;
     }
 
-    virtual ~GenericFunction1D()
-    {
-    }
-
+    virtual ~GenericFunction1D() {}
 private:
     // Function's constant data should go here
 };
@@ -90,9 +84,7 @@ class Guesstimator : public Loggable
 {
 public:
     virtual double GetGuess(double lower, double upper, double atLower, double atUpper) = 0;
-    virtual ~Guesstimator()
-    {
-    }
+    virtual ~Guesstimator() {}
 };
 
 /**
@@ -120,7 +112,8 @@ public:
         double guess = sqrt(lower * upper);
         if (lower >= guess || guess >= upper)
         {
-            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper << endl;
+            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
+                 << endl;
         }
         return guess;
     }
@@ -171,8 +164,8 @@ public:
 
         if (lower >= guess || guess >= upper)
         {
-            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper << ", atLower = "
-                 << atLower << ", atUpper = " << atUpper << endl;
+            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
+                 << ", atLower = " << atLower << ", atUpper = " << atUpper << endl;
         }
         return guess;
     }
@@ -195,58 +188,49 @@ public:
         , searchGuess(0)
         , searchScale(REALMAX)
         , searchScaleGrowth(2)
-        , maxEvaluations(
-              1000000)
+        , maxEvaluations(1000000)
         , tolX(REALMAX)
         , tolY(REALMAX)
         , ratioTolX(REALMAX)
         , ratioTolY(REALMAX)
-        , guesstimator(
-              new BisectionGuesstimator())
+        , guesstimator(new BisectionGuesstimator())
         , verbosity(2)
     {
         m_log = f.GetLogger();
     }
     /**
-	 * Return input value at which function is zero
-	 */
+     * Return input value at which function is zero
+     */
     virtual double FindZero() const = 0;
 
     /**
-	 * Returns the input value at which the function is zero,
-	 * using the () operator
-	 *
-	 * e.g. ZeroFinder finder(MyFunc);
-	 *      root = finder();
-	 */
-    operator double() const
-    {
-        return FindZero();
-    }
-
-    virtual ~ZeroFinder()
-    {
-    }
-
+     * Returns the input value at which the function is zero,
+     * using the () operator
+     *
+     * e.g. ZeroFinder finder(MyFunc);
+     *      root = finder();
+     */
+    operator double() const { return FindZero(); }
+    virtual ~ZeroFinder() {}
     /**
-	 * Set initial guess
-	 */
+     * Set initial guess
+     */
     ZeroFinder &InitialGuess(double guess)
     {
         searchGuess = guess;
         return *this;
     }
     /**
-	 * Set the a minimum value we will not search below
-	 */
+     * Set the a minimum value we will not search below
+     */
     ZeroFinder &SearchMin(double min)
     {
         searchMin = min;
         return *this;
     }
     /**
-	 * Set the a maximum value we will not search above
-	 */
+     * Set the a maximum value we will not search above
+     */
     ZeroFinder &SearchMax(double max)
     {
         searchMax = max;
@@ -264,8 +248,8 @@ public:
         return *this;
     }
     /**
-	 * Set the a maximum number of trials before we stop
-	 */
+     * Set the a maximum number of trials before we stop
+     */
     ZeroFinder &MaxEvaluations(int evals)
     {
         assert(evals > 1);
@@ -293,8 +277,8 @@ public:
         return *this;
     }
     /**
-	 * Set a Guesstimator to use to produce the next estimate
-	 */
+     * Set a Guesstimator to use to produce the next estimate
+     */
     ZeroFinder &SetGuesstimator(Guesstimator *g)
     {
         delete guesstimator;

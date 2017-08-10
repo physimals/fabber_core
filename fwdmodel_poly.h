@@ -42,7 +42,8 @@ public:
     void NameParams(std::vector<std::string> &names) const;
 
     void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
-    void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key = "") const;
+    void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result,
+        const std::string &key = "") const;
 
 private:
     int m_degree;

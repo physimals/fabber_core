@@ -1,8 +1,8 @@
 /**
  * fabber_rundata_newimage.h
  *
- * Extends FabberRunData with loading and saving of data to 
- * NIFTI files. This is the only part of Fabber which depends 
+ * Extends FabberRunData with loading and saving of data to
+ * NIFTI files. This is the only part of Fabber which depends
  * on NEWIMAGE and can be disabled if compiling for an environment
  * which has its own image load/save facilities.
  *
@@ -32,7 +32,8 @@ public:
 
     void SetExtentFromData();
     const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
-    virtual void SaveVoxelData(const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
+    virtual void SaveVoxelData(
+        const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
 private:
     void SetCoordsFromExtent(int nx, int ny, int nz);

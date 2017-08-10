@@ -1,9 +1,9 @@
-/** 
+/**
  * prior.cc
  *
  * Class for a parameter prior
  *
- * Copyright (C) 2007-2017 University of Oxford  
+ * Copyright (C) 2007-2017 University of Oxford
  */
 
 /*  CCOPYRIGHT */
@@ -49,7 +49,8 @@ string Prior::ExpandPriorTypesString(string priors_str, unsigned int num_params)
         }
         else if (plus_found)
         {
-            throw InvalidOptionValue("param-spatial-priors", priors_str, "Only one + character allowed");
+            throw InvalidOptionValue(
+                "param-spatial-priors", priors_str, "Only one + character allowed");
         }
         else
         {
@@ -101,8 +102,7 @@ DefaultPrior::DefaultPrior(const Parameter &p)
 void DefaultPrior::DumpInfo(std::ostream &out) const
 {
     out << "DefaultPrior: Parameter " << m_idx << " '" << m_param_name << "'"
-        << " mean: "
-        << m_params.mean() << " precision: " << m_params.prec();
+        << " mean: " << m_params.mean() << " precision: " << m_params.prec();
 }
 
 double DefaultPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
@@ -127,8 +127,7 @@ ImagePrior::ImagePrior(const Parameter &p, FabberRunData &rundata)
 void ImagePrior::DumpInfo(std::ostream &out) const
 {
     out << "ImagePrior: Parameter " << m_idx << " '" << m_param_name << "'"
-        << " filename: "
-        << m_filename << " precision: " << m_params.prec();
+        << " filename: " << m_filename << " precision: " << m_params.prec();
 }
 
 double ImagePrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
@@ -145,8 +144,7 @@ double ImagePrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 void ARDPrior::DumpInfo(std::ostream &out) const
 {
     out << "ARDPrior: Parameter " << m_idx << " '" << m_param_name << "'"
-        << " initial mean: "
-        << m_params.mean() << " initial precision: " << m_params.prec();
+        << " initial mean: " << m_params.mean() << " initial precision: " << m_params.prec();
 }
 
 double ARDPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
@@ -165,14 +163,14 @@ double ARDPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         // by specifying the model prior mean/precision by options.
         cov(m_idx + 1, m_idx + 1) = m_params.var();
         prior->means(m_idx + 1) = m_params.mean();
-        //LOG << "first iter ARD: " << m_params.var() << ", " << m_params.mean() << endl;
+        // LOG << "first iter ARD: " << m_params.var() << ", " << m_params.mean() << endl;
     }
     else
     {
-        //LOG << "post: " << post_cov << ", " << post_mean << endl;
+        // LOG << "post: " << post_cov << ", " << post_mean << endl;
         // Update covariance on subsequent iterations
         cov(m_idx + 1, m_idx + 1) = new_cov;
-        //LOG << "subs iter ARD: " << new_cov << ", " << prior->means(m_idx+1) << endl;
+        // LOG << "subs iter ARD: " << new_cov << ", " << prior->means(m_idx+1) << endl;
     }
     prior->SetCovariance(cov);
 
@@ -203,7 +201,7 @@ SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
         WARN_ONCE("spatial-dims=2 doesn't decompose into slices");
     }
 
-    //FIXME check valid range
+    // FIXME check valid range
     m_spatial_speed = rundata.GetDoubleDefault("spatial-speed", -1);
 
     // FIXME still needed?
@@ -263,8 +261,9 @@ double SpatialPrior::CalculateAkmean(const RunContext &ctx)
 
     if (m_spatial_speed > 0 && akmean > akmeanMax)
     {
-        LOG << "SpatialPrior::UpdateAkmean " << m_idx << ": Rate-limiting the increase on akmean: was "
-            << akmean << ", now " << akmeanMax << endl;
+        LOG << "SpatialPrior::UpdateAkmean " << m_idx
+            << ": Rate-limiting the increase on akmean: was " << akmean << ", now " << akmeanMax
+            << endl;
         akmean = akmeanMax;
     }
 
@@ -275,8 +274,8 @@ double SpatialPrior::CalculateAkmean(const RunContext &ctx)
 void SpatialPrior::DumpInfo(std::ostream &out) const
 {
     out << "SpatialPrior: Parameter " << m_idx << " '" << m_param_name << "'"
-        << " type " << m_type_code << " mean: "
-        << m_params.mean() << " precision: " << m_params.prec();
+        << " type " << m_type_code << " mean: " << m_params.mean()
+        << " precision: " << m_params.prec();
 }
 
 double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
@@ -367,14 +366,17 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     else
         mTmp = 0;
 
-    //LOG << "SpatialPrior:: " << prior->GetCovariance()(m_idx+1, m_idx+1) << ", " << spatial_prec << ", " << contrib8 << ", " << den << ", " << mTmp << " : " << t1 << endl;
+    // LOG << "SpatialPrior:: " << prior->GetCovariance()(m_idx+1, m_idx+1) << ", " << spatial_prec
+    // << ", " << contrib8 << ", " << den << ", " << mTmp << " : " << t1 << endl;
 
     if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
-        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * spatial_prec * mTmp; // = mTmp for p or m
+        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * spatial_prec
+            * mTmp; // = mTmp for p or m
     else
     {
         // equivalent, when non-spatial priors are very weak: m_fwd_prior[v-1].means = mTmp;
-        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * (spatial_prec * mTmp + m_params.prec() * m_params.mean());
+        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1)
+            * (spatial_prec * mTmp + m_params.prec() * m_params.mean());
     }
 
     return 0;

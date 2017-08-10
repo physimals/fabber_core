@@ -1,9 +1,9 @@
-/** 
+/**
  * prior.h
  *
  * Classes for parameter priors
  *
- * Copyright (C) 2007-2017 University of Oxford  
+ * Copyright (C) 2007-2017 University of Oxford
  */
 
 #include "dist_mvn.h"
@@ -36,8 +36,8 @@ public:
     /** Dump info to output stream */
     virtual void DumpInfo(std::ostream &out) const = 0;
 
-    /** 
-     * Apply prior information to an MVN 
+    /**
+     * Apply prior information to an MVN
      *
      * Returns any additional free energy contribution (e.g. for ARD priors)
      */

@@ -1,6 +1,7 @@
 /*  factories.h - Assorted template factory, singleton factory and dispatcher class declarations.
 
-     Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
+     Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Image Analysis Group & IBME
+   QuBIc Group
 
     Copyright (C) 2015 University of Oxford  */
 
@@ -18,8 +19,7 @@
  * pointer is assumed to point to a function that returns a pointer to
  * an object of type T.
  */
-template <class T>
-class TemplateFactory
+template <class T> class TemplateFactory
 {
 public:
     /**
@@ -46,12 +46,12 @@ public:
      * not known.
      */
     T *Create(const std::string &name);
-    /** 
+    /**
      * Get the list of names.
      * @return list of names.
      */
     std::vector<std::string> GetNames();
-    /** 
+    /**
      * Is there a function pointer with the given name?
      * @param name
      * @return true if so, false otherwise.
@@ -63,43 +63,34 @@ private:
     std::map<std::string, Function> functionMap_;
 };
 
-template <class T>
-TemplateFactory<T>::TemplateFactory()
+template <class T> TemplateFactory<T>::TemplateFactory()
 {
     // No-op.
 }
 
-template <class T>
-TemplateFactory<T>::~TemplateFactory()
-{
-    functionMap_.clear();
-}
-
-template <class T>
-std::vector<std::string> TemplateFactory<T>::GetNames()
+template <class T> TemplateFactory<T>::~TemplateFactory() { functionMap_.clear(); }
+template <class T> std::vector<std::string> TemplateFactory<T>::GetNames()
 {
     std::vector<std::string> names;
-    for (typename std::map<std::string, Function>::iterator it = functionMap_.begin(); it != functionMap_.end(); ++it)
+    for (typename std::map<std::string, Function>::iterator it = functionMap_.begin();
+         it != functionMap_.end(); ++it)
     {
         names.push_back(it->first);
     }
     return names;
 }
 
-template <class T>
-bool TemplateFactory<T>::HasName(const std::string &name)
+template <class T> bool TemplateFactory<T>::HasName(const std::string &name)
 {
     return (functionMap_.find(name) != functionMap_.end());
 }
 
-template <class T>
-void TemplateFactory<T>::Add(const std::string &name, Function function)
+template <class T> void TemplateFactory<T>::Add(const std::string &name, Function function)
 {
     functionMap_[name] = function;
 }
 
-template <class T>
-T *TemplateFactory<T>::Create(const std::string &name)
+template <class T> T *TemplateFactory<T>::Create(const std::string &name)
 {
     if (functionMap_.count(name))
     {
@@ -113,8 +104,7 @@ T *TemplateFactory<T>::Create(const std::string &name)
  *
  * Maintains a singleton instance of a \ref TemplateFactory.
  */
-template <class T>
-class SingletonFactory : public TemplateFactory<T>
+template <class T> class SingletonFactory : public TemplateFactory<T>
 {
 public:
     /**
@@ -134,14 +124,12 @@ private:
     SingletonFactory();
 };
 
-template <class T>
-SingletonFactory<T>::SingletonFactory()
+template <class T> SingletonFactory<T>::SingletonFactory()
 {
     // No-op.
 }
 
-template <class T>
-void SingletonFactory<T>::Destroy()
+template <class T> void SingletonFactory<T>::Destroy()
 {
     if (singleton_ != NULL)
     {
@@ -150,11 +138,9 @@ void SingletonFactory<T>::Destroy()
     }
 }
 
-template <class T>
-SingletonFactory<T> *SingletonFactory<T>::singleton_ = NULL;
+template <class T> SingletonFactory<T> *SingletonFactory<T>::singleton_ = NULL;
 
-template <class T>
-SingletonFactory<T> *SingletonFactory<T>::GetInstance()
+template <class T> SingletonFactory<T> *SingletonFactory<T>::GetInstance()
 {
     if (singleton_ == NULL)
     {
@@ -171,8 +157,7 @@ SingletonFactory<T> *SingletonFactory<T>::GetInstance()
  * Assumes U supports a NewInstance function that conforms to the type
  * suppoorted by T's Add function.
  */
-template <class T, class U>
-class FactoryRegistration
+template <class T, class U> class FactoryRegistration
 {
 public:
     /**
@@ -187,7 +172,7 @@ public:
 
 /**
  * Simple dispatcher class.
- * 
+ *
  * Manages a map from names to function pointers. Each function
  * pointer is assumed to point to a function that carries out some
  * action.
@@ -216,12 +201,12 @@ public:
      * @param name
      */
     void Dispatch(const std::string &name);
-    /** 
+    /**
      * Get the list of names.
      * @return list of names.
      */
     std::vector<std::string> GetNames();
-    /** 
+    /**
      * Is there a function pointer with the given name?
      * @param name
      * @return true if so, false otherwise.

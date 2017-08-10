@@ -25,11 +25,11 @@
 #define LOG ((m_log == 0) ? std::cerr : m_log->LogStream())
 #define LOG_ERR(x) ((void)((LOG << x)))
 
-#define WARN_ONCE(x) \
-    if (m_log)       \
+#define WARN_ONCE(x)                                                                               \
+    if (m_log)                                                                                     \
     m_log->WarnOnce(x)
-#define WARN_ALWAYS(x) \
-    if (m_log)         \
+#define WARN_ALWAYS(x)                                                                             \
+    if (m_log)                                                                                     \
     m_log->WarnAlways(x)
 
 /**
@@ -46,74 +46,74 @@ class EasyLog
 {
 public:
     /**
-	 * Log output to an existing stream
-	 *
-	 * This might be std::cout/cerr or something else, e.g. a
-	 * stringstream.
-	 */
+     * Log output to an existing stream
+     *
+     * This might be std::cout/cerr or something else, e.g. a
+     * stringstream.
+     */
     EasyLog();
     ~EasyLog();
 
     /**
-	 * Log output to a file
-	 *
-	 * The file will be called 'logfile'
-	 *
-	 * @param outDir Name of a directory in which to put the logfile.
-	 */
+     * Log output to a file
+     *
+     * The file will be called 'logfile'
+     *
+     * @param outDir Name of a directory in which to put the logfile.
+     */
     void StartLog(const std::string &outDir);
 
     /**
-	 * Log output to an existing stream
-	 *
-	 * This might be std::cout/cerr or something else, e.g. a
-	 * stringstream.
-	 */
+     * Log output to an existing stream
+     *
+     * This might be std::cout/cerr or something else, e.g. a
+     * stringstream.
+     */
     void StartLog(std::ostream &s);
 
     /**
-	 * Get the output directory for the log file, or
-	 * an empty string if not logging to a file.
-	 */
+     * Get the output directory for the log file, or
+     * an empty string if not logging to a file.
+     */
     const std::string &GetOutputDirectory();
 
     /**
-	 * Stop logging.
-	 *
-	 * @param gzip If true and we are logging to a file, gzip the logfile
-	 */
+     * Stop logging.
+     *
+     * @param gzip If true and we are logging to a file, gzip the logfile
+     */
     void StopLog(bool gzip = false);
 
     /**
-	 * @return true if StartLog has been called
-	 */
+     * @return true if StartLog has been called
+     */
     bool LogStarted();
 
     /**
-	 * Get the logging stream. Easier to use the LOG macro defined above
-	 */
+     * Get the logging stream. Easier to use the LOG macro defined above
+     */
     std::ostream &LogStream();
 
     /**
-	 * Issue a warning
-	 *
-	 * The warning will appear once in the log.
-	 * If the same warning occurs again, it will not
-	 * be repeated, apart from if ReissueWarnings is
-	 * called
-	 */
+     * Issue a warning
+     *
+     * The warning will appear once in the log.
+     * If the same warning occurs again, it will not
+     * be repeated, apart from if ReissueWarnings is
+     * called
+     */
     void WarnOnce(const std::string &text);
 
     /**
-	 * Issue a warning
-	 *
-	 * The warning will appear in the log each time it is issued.
-	 */
+     * Issue a warning
+     *
+     * The warning will appear in the log each time it is issued.
+     */
     void WarnAlways(const std::string &text);
 
     /**
-	 * Resend all warnings recorded so far to the log
-	 */
+     * Resend all warnings recorded so far to the log
+     */
     void ReissueWarnings();
 
 private:
@@ -141,8 +141,7 @@ protected:
 /**
  * Convert almost anything to a string
  */
-template <typename type>
-inline std::string stringify(type from)
+template <typename type> inline std::string stringify(type from)
 {
     std::ostringstream s;
     if (!(s << from))

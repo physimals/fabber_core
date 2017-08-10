@@ -18,16 +18,8 @@ GammaDist::GammaDist(EasyLog *log)
 {
 }
 
-double GammaDist::CalcMean() const
-{
-    return b * c;
-}
-
-double GammaDist::CalcVariance() const
-{
-    return b * b * c;
-}
-
+double GammaDist::CalcMean() const { return b * c; }
+double GammaDist::CalcVariance() const { return b * b * c; }
 void GammaDist::SetMeanVariance(double m, double v)
 {
     b = v / m;
@@ -36,5 +28,6 @@ void GammaDist::SetMeanVariance(double m, double v)
 
 void GammaDist::Dump(std::ostream &os) const
 {
-    os << "Noise stdev == " << 1.0 / sqrt(b * c) << " (b==" << b << ", c==" << c << ")" << std::endl;
+    os << "Noise stdev == " << 1.0 / sqrt(b * c) << " (b==" << b << ", c==" << c << ")"
+       << std::endl;
 }

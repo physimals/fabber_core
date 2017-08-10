@@ -27,14 +27,11 @@ class NoiseParams
 {
 public:
     /** Virtual destructor for subclasses */
-    virtual ~NoiseParams()
-    {
-    }
-
-    /** 
+    virtual ~NoiseParams() {}
+    /**
      * Create a copy of the params
      *
-     * Polymorphic so subclasses can create copies of the correct class 
+     * Polymorphic so subclasses can create copies of the correct class
      */
     virtual NoiseParams *Clone() const = 0;
 
@@ -42,9 +39,9 @@ public:
     virtual const NoiseParams &operator=(const NoiseParams &in) = 0;
 
     /**
-	 * Output as a multivariate normal dist. Noise models need not
+     * Output as a multivariate normal dist. Noise models need not
      * be normal, but they will generally have means and precisions
-	 */
+     */
     virtual const MVNDist OutputAsMVN() const = 0;
 
     /**
@@ -53,8 +50,8 @@ public:
     virtual void InputFromMVN(const MVNDist &mvn) = 0;
 
     /**
-	 * Dump human-readable debug output to output stream
-	 */
+     * Dump human-readable debug output to output stream
+     */
     virtual void Dump(std::ostream &os) const = 0;
 };
 
@@ -70,47 +67,45 @@ class NoiseModel : public Loggable
 {
 public:
     /**
-	 * Static member function, to pick a noise model from a name
-	 */
+     * Static member function, to pick a noise model from a name
+     */
     static NoiseModel *NewFromName(const std::string &name);
 
     /**
-	 * Create a new instance of this class. Subclasses
-	 * implement this to produce an instance of themselves
-	 *
-	 * @return pointer to new instance.
-	 */
+     * Create a new instance of this class. Subclasses
+     * implement this to produce an instance of themselves
+     *
+     * @return pointer to new instance.
+     */
     static NoiseModel *NewInstance();
 
     /** Virtual destrictor for subclasses */
-    virtual ~NoiseModel()
-    {
-    }
-
+    virtual ~NoiseModel() {}
     /**
-	 * Initialize a new instance using configuration from the given
-	 * arguments.
-	 *
-	 * @param args Configuration parameters.
-	 */
+     * Initialize a new instance using configuration from the given
+     * arguments.
+     *
+     * @param args Configuration parameters.
+     */
     virtual void Initialize(FabberRunData &args);
 
     /**
-	 * Create a new instance of the noise parameters
-	 */
+     * Create a new instance of the noise parameters
+     */
     virtual NoiseParams *NewParams() const = 0;
 
     /**
-	 * Suggest some nice default values for noise parameters:
-	 */
+     * Suggest some nice default values for noise parameters:
+     */
     virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const = 0;
 
     /**
-	 * Some noise models might want to precalculate things (for efficiency
-	 * reasons), based on the length of the data... if you don't know what
-	 * this is for then just ignore it.
-	 */
-    virtual void Precalculate(NoiseParams &noise, const NoiseParams &noisePrior, const NEWMAT::ColumnVector &sampleData) const
+     * Some noise models might want to precalculate things (for efficiency
+     * reasons), based on the length of the data... if you don't know what
+     * this is for then just ignore it.
+     */
+    virtual void Precalculate(NoiseParams &noise, const NoiseParams &noisePrior,
+        const NEWMAT::ColumnVector &sampleData) const
     {
     }
 
@@ -123,16 +118,17 @@ public:
     /**
      * Update noise parameters
      */
-    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const = 0;
+    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior,
+        const MVNDist &theta, const LinearFwdModel &model,
+        const NEWMAT::ColumnVector &data) const = 0;
 
     /**
      * Update model parameters
      *
      * @param thetaWithoutPrior used for --spatial-prior-output-correction
      */
-    virtual void UpdateTheta(const NoiseParams &noise,
-        MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data,
+    virtual void UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data,
         MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const = 0;
 
     /**
@@ -140,8 +136,9 @@ public:
      *
      * This may be used to assess convergence
      */
-    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const = 0;
+    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior,
+        const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
+        const NEWMAT::ColumnVector &data) const = 0;
 
     /**
      * Initialize ARD
@@ -154,16 +151,16 @@ public:
     double UpdateARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const;
 
     /**
-	 * Return the number of noise parameters
-	 */
+     * Return the number of noise parameters
+     */
     virtual int NumParams() = 0;
 
 private:
     /**
-	 * Prevent copying using anything other than the Clone() function.
-	 * Could implement it, but not particularly useful and the default
-	 * shallow copy is not right.
-	 */
+     * Prevent copying using anything other than the Clone() function.
+     * Could implement it, but not particularly useful and the default
+     * shallow copy is not right.
+     */
     const NoiseModel &operator=(const NoiseModel &) const
     {
         assert(false);
@@ -171,7 +168,7 @@ private:
     }
 };
 
-/** 
+/**
  * \ref SingletonFactory that returns pointers to \ref NoiseModel.
  */
 typedef SingletonFactory<NoiseModel> NoiseModelFactory;

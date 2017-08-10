@@ -35,18 +35,20 @@ typedef NewInstanceFptr (*GetNewInstanceFptrFptr)(const char *);
 
 string GetLastErrorAsString()
 {
-    //Get the error message, if any.
+    // Get the error message, if any.
     DWORD errorMessageID = ::GetLastError();
     if (errorMessageID == 0)
-        return std::string(); //No error message has been recorded
+        return std::string(); // No error message has been recorded
 
     LPSTR messageBuffer = nullptr;
-    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+    size_t size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0,
+        NULL);
 
     std::string message(messageBuffer, size);
 
-    //Free the buffer.
+    // Free the buffer.
     LocalFree(messageBuffer);
 
     return message;
@@ -74,7 +76,8 @@ void FwdModel::LoadFromDynamicLibrary(const std::string &filename, EasyLog *log)
 #endif
     if (!libptr)
     {
-        throw InvalidOptionValue("loadmodels", filename, string("Failed to open library ") + GETERROR());
+        throw InvalidOptionValue(
+            "loadmodels", filename, string("Failed to open library ") + GETERROR());
     }
 
     get_num_models = (GetNumModelsFptr)GETSYMBOL(libptr, "get_num_models");
@@ -117,7 +120,8 @@ void FwdModel::LoadFromDynamicLibrary(const std::string &filename, EasyLog *log)
             if (!new_instance_fptr)
             {
                 throw InvalidOptionValue("loadmodels", filename,
-                    string("Dynamic library failed to return new instance function for model") + model_name);
+                    string("Dynamic library failed to return new instance function for model")
+                        + model_name);
             }
             factory->Add(model_name, new_instance_fptr);
         }
@@ -141,20 +145,12 @@ FwdModel *FwdModel::NewFromName(const string &name)
     return model;
 }
 
-void FwdModel::Initialize(FabberRunData &args)
-{
-    m_log = args.GetLogger();
-}
-
+void FwdModel::Initialize(FabberRunData &args) { m_log = args.GetLogger(); }
 void FwdModel::UsageFromName(const string &name, std::ostream &stream)
 {
-    stream << "Description: " << name << endl
-           << endl;
+    stream << "Description: " << name << endl << endl;
     std::auto_ptr<FwdModel> model(NewFromName(name));
-    stream << model->GetDescription() << endl
-           << endl
-           << "Options: " << endl
-           << endl;
+    stream << model->GetDescription() << endl << endl << "Options: " << endl << endl;
     vector<OptionSpec> options;
     model->GetOptions(options);
     if (options.size() > 0)
@@ -170,22 +166,15 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
     }
 }
 
-string FwdModel::GetDescription() const
-{
-    return "No description available";
-}
-
-string FwdModel::ModelVersion() const
-{
-    return "No version info available.";
-}
-
+string FwdModel::GetDescription() const { return "No description available"; }
+string FwdModel::ModelVersion() const { return "No version info available."; }
 void FwdModel::Usage(std::ostream &stream) const
 {
     stream << "No usage information available" << endl;
 }
 
-void FwdModel::PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxcoords, const NEWMAT::ColumnVector &voxsuppdata)
+void FwdModel::PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxcoords,
+    const NEWMAT::ColumnVector &voxsuppdata)
 {
     data = voxdata;
     suppdata = voxsuppdata;
@@ -208,7 +197,8 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // parameter. A + character means 'use the previous value for all
         // remaining parameters'. An 'I' means an image prior and
         // the filename is specified separately using an image-prior<n> option
-        string types = Prior::ExpandPriorTypesString(rundata.GetStringDefault("param-spatial-priors", ""), params.size());
+        string types = Prior::ExpandPriorTypesString(
+            rundata.GetStringDefault("param-spatial-priors", ""), params.size());
         assert(types.size() == params.size());
         if (types[p->idx] != PRIOR_DEFAULT)
         {
@@ -232,16 +222,20 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
             else if (name == p->name)
             {
                 string psp_idx_str = stringify(psp_idx);
-                string transform_code = rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_transform", "");
+                string transform_code
+                    = rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_transform", "");
                 if (transform_code != "")
                     p->transform = GetTransform(transform_code);
 
-                char prior_type = convertTo<char>(rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
+                char prior_type = convertTo<char>(rundata.GetStringDefault(
+                    "PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
                 if (prior_type != PRIOR_DEFAULT)
                     p->prior_type = prior_type;
 
-                double mean = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_mean", p->prior.mean());
-                double prec = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_prec", p->prior.prec());
+                double mean = rundata.GetDoubleDefault(
+                    "PSP_byname" + psp_idx_str + "_mean", p->prior.mean());
+                double prec = rundata.GetDoubleDefault(
+                    "PSP_byname" + psp_idx_str + "_prec", p->prior.prec());
                 p->prior = DistParams(mean, 1 / prec);
                 p->options["image"] = "PSP_byname" + psp_idx_str + "_image";
             }
@@ -331,7 +325,8 @@ void FwdModel::GetParameterDefaults(vector<Parameter> &params) const
     }
 }
 
-void FwdModel::EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key) const
+void FwdModel::EvaluateFabber(
+    const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key) const
 {
     assert((m_params.size() == 0) || (int(m_params.size()) == params.Nrows()));
     if (m_params.size() == 0)

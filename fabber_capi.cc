@@ -76,7 +76,8 @@ int fabber_load_models(void *fab, const char *libpath, char *err_buf)
     }
 }
 
-int fabber_set_extent(void *fab, unsigned int nx, unsigned int ny, unsigned int nz, const int *mask, char *err_buf)
+int fabber_set_extent(
+    void *fab, unsigned int nx, unsigned int ny, unsigned int nz, const int *mask, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -125,7 +126,8 @@ int fabber_set_opt(void *fab, const char *key, const char *value, char *err_buf)
     }
 }
 
-int fabber_set_data(void *fab, const char *name, unsigned int data_size, const float *data, char *err_buf)
+int fabber_set_data(
+    void *fab, const char *name, unsigned int data_size, const float *data, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -199,7 +201,8 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
     }
 }
 
-int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_buf, void (*progress_cb)(int, int))
+int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_buf,
+    void (*progress_cb)(int, int))
 {
     EasyLog log;
 
@@ -276,7 +279,8 @@ void fabber_destroy(void *fab)
     }
 }
 
-int fabber_get_options(void *fab, const char *key, const char *value, unsigned int out_bufsize, char *out_buf, char *err_buf)
+int fabber_get_options(void *fab, const char *key, const char *value, unsigned int out_bufsize,
+    char *out_buf, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -308,7 +312,8 @@ int fabber_get_options(void *fab, const char *key, const char *value, unsigned i
             method->GetOptions(options);
         }
 
-        // Remove newlines from the description so we can guarantee that the first line is the description
+        // Remove newlines from the description so we can guarantee that the first line is the
+        // description
         desc.erase(std::remove(desc.begin(), desc.end(), '\n'), desc.end());
         stringstream out;
         out << desc << endl;
@@ -316,8 +321,8 @@ int fabber_get_options(void *fab, const char *key, const char *value, unsigned i
         vector<OptionSpec>::iterator iter;
         for (iter = options.begin(); iter != options.end(); ++iter)
         {
-            out << iter->name << "\t" << iter->description << "\t" << iter->type << "\t" << iter->optional << "\t"
-                << iter->def << endl;
+            out << iter->name << "\t" << iter->description << "\t" << iter->type << "\t"
+                << iter->optional << "\t" << iter->def << endl;
         }
         string outstr = out.str();
 
@@ -452,7 +457,8 @@ int fabber_get_model_params(void *fab, unsigned int out_bufsize, char *out_buf, 
     }
 }
 
-int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsigned int n_ts, float *indata, float *output, char *err_buf)
+int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsigned int n_ts,
+    float *indata, float *output, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);

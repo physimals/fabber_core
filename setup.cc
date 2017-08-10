@@ -1,6 +1,7 @@
 /* setup.cc - FABBER default configuration setup class declarations.
 
- Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Analysis Group & IBME QuBIc group
+ Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Analysis Group & IBME QuBIc
+ group
 
  Copyright (C) 2015 University of Oxford  */
 

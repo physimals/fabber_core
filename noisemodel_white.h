@@ -50,10 +50,10 @@ class WhiteNoiseModel : public NoiseModel
 {
 public:
     /**
-	 * Create a new instance of white noise. Used by factory
-	 * to create noise models by name. Parameters are set
-	 * during initialization
-	 */
+     * Create a new instance of white noise. Used by factory
+     * to create noise models by name. Parameters are set
+     * during initialization
+     */
     static NoiseModel *NewInstance();
 
     virtual void Initialize(FabberRunData &args);
@@ -62,14 +62,16 @@ public:
 
     virtual void HardcodedInitialDists(NoiseParams &prior, NoiseParams &posterior) const;
 
-    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
+    virtual void UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior,
+        const MVNDist &theta, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
 
-    virtual void UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
-        const NEWMAT::ColumnVector &data, MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
+    virtual void UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior,
+        const LinearFwdModel &model, const NEWMAT::ColumnVector &data,
+        MVNDist *thetaWithoutPrior = NULL, float LMalpha = 0) const;
 
-    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-        const MVNDist &thetaPrior, const LinearFwdModel &model, const NEWMAT::ColumnVector &data) const;
+    virtual double CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior,
+        const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &model,
+        const NEWMAT::ColumnVector &data) const;
 
 protected:
     /** Pattern of noise distributions as they apply to points in time series */
@@ -81,8 +83,8 @@ protected:
     /** Allow external setting of the prior noise std deviation (and thence phi) */
     double phiprior;
 
-    /** 
-     * Diagonal matrices, indicating which data points use each phi 
+    /**
+     * Diagonal matrices, indicating which data points use each phi
      *
      * Mutable because it's initialized lazily by MakeQis
      */

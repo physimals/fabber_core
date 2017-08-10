@@ -1,13 +1,13 @@
 #pragma once
-/** 
+/**
  * transforms.h
  *
  * Classes defining transformations on model parameters. These may be used
- * as a means of preventing model parameters from violating hard limits, 
+ * as a means of preventing model parameters from violating hard limits,
  * such as not becoming negative. Transformations are assumed to be
  * stateless, hence singleton instances can be used.
  *
- * Copyright (C) 2007-2017 University of Oxford  
+ * Copyright (C) 2007-2017 University of Oxford
  */
 
 /*  CCOPYRIGHT */
@@ -131,8 +131,8 @@ public:
  * 'Fractional' transformation
  *
  * This enforces parameter values between 0 and 1, exclusive
- * The variance is not transformed at all. This transformation 
- * is intended for parameters which are not biophysical and 
+ * The variance is not transformed at all. This transformation
+ * is intended for parameters which are not biophysical and
  * therefore we are not interested in specifying informative
  * priors, or analysing output variance.
  */

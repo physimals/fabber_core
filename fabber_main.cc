@@ -8,7 +8,4 @@
 
 #include "fabber_core.h"
 
-int main(int argc, char **argv)
-{
-    return execute(argc, argv);
-}
+int main(int argc, char **argv) { return execute(argc, argv); }

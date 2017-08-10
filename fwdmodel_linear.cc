@@ -26,15 +26,9 @@ using namespace std;
 using namespace NEWMAT;
 
 static int NUM_OPTIONS = 1;
-static OptionSpec OPTIONS[] = {
-    { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" }
-};
+static OptionSpec OPTIONS[] = { { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" } };
 
-FwdModel *LinearFwdModel::NewInstance()
-{
-    return new LinearFwdModel();
-}
-
+FwdModel *LinearFwdModel::NewInstance() { return new LinearFwdModel(); }
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {
     for (int i = 0; i < NUM_OPTIONS; i++)
@@ -48,11 +42,7 @@ std::string LinearFwdModel::GetDescription() const
     return "Model in which output is a linear combination of input parameters";
 }
 
-string LinearFwdModel::ModelVersion() const
-{
-    return fabber_version();
-}
-
+string LinearFwdModel::ModelVersion() const { return fabber_version(); }
 void LinearFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
@@ -63,7 +53,8 @@ void LinearFwdModel::Initialize(FabberRunData &args)
     const int Ntimes = m_jacobian.Nrows();
     const int Nbasis = m_jacobian.Ncols();
 
-    LOG << "LinearFwdModel::Loaded " << m_jacobian.Ncols() << " basis functions of length " << Ntimes << endl;
+    LOG << "LinearFwdModel::Loaded " << m_jacobian.Ncols() << " basis functions of length "
+        << Ntimes << endl;
 
     m_centre.ReSize(Nbasis);
     m_centre = 0;
@@ -94,16 +85,13 @@ void LinearFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) c
     posterior = prior;
 }
 
-void LinearFwdModel::EvaluateModel(const ColumnVector &params, ColumnVector &result, const std::string &key) const
+void LinearFwdModel::EvaluateModel(
+    const ColumnVector &params, ColumnVector &result, const std::string &key) const
 {
     result = m_jacobian * (params - m_centre) + m_offset;
 }
 
-int LinearFwdModel::NumParams() const
-{
-    return m_centre.Nrows();
-}
-
+int LinearFwdModel::NumParams() const { return m_centre.Nrows(); }
 void LinearFwdModel::NameParams(vector<string> &names) const
 {
     names.clear();
@@ -154,11 +142,10 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
     m_model->EvaluateFabber(m_centre, m_offset);
     if (0 * m_offset != 0 * m_offset)
     {
-        LOG_ERR("LinearizedFwdModel::about:\n"
-            << about);
-        LOG_ERR("LinearizedFwdModel::m_offset:\n"
-            << m_offset.t());
-        throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in offset");
+        LOG_ERR("LinearizedFwdModel::about:\n" << about);
+        LOG_ERR("LinearizedFwdModel::m_offset:\n" << m_offset.t());
+        throw FabberInternalError(
+            "LinearizedFwdModel::ReCentre: Non-finite values found in offset");
     }
 
     // Calculate the Jacobian numerically.  jacobian is len(y)-by-len(m)
@@ -167,7 +154,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 
     // Try and get the gradient matrix (Jacobian) from the model first
     // FIXME this is broken when transforms are used
-    //int gradfrommodel = m_model->Gradient(m_centre, m_jacobian);
+    // int gradfrommodel = m_model->Gradient(m_centre, m_jacobian);
 
     // If the gradient is not supported by the model, use
     // numerical differentiation to calculate it.
@@ -197,13 +184,11 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
     if (0 * m_jacobian != 0 * m_jacobian)
     //    if(true)
     {
-        LOG << "LinearizedFwdModel::jacobian:\n"
-            << m_jacobian;
-        LOG << "LinearizedFwdModel::about':\n"
-            << about.t();
-        LOG << "LinearizedFwdModel::offset':\n"
-            << m_offset.t();
-        throw FabberInternalError("LinearizedFwdModel::ReCentre: Non-finite values found in jacobian");
+        LOG << "LinearizedFwdModel::jacobian:\n" << m_jacobian;
+        LOG << "LinearizedFwdModel::about':\n" << about.t();
+        LOG << "LinearizedFwdModel::offset':\n" << m_offset.t();
+        throw FabberInternalError(
+            "LinearizedFwdModel::ReCentre: Non-finite values found in jacobian");
     }
 }
 

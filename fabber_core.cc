@@ -188,7 +188,8 @@ int execute(int argc, char **argv)
     if (log.LogStarted())
     {
         cout << endl
-             << "Final logfile: " << log.GetOutputDirectory() << (gzLog ? "/logfile.gz" : "/logfile") << endl;
+             << "Final logfile: " << log.GetOutputDirectory()
+             << (gzLog ? "/logfile.gz" : "/logfile") << endl;
         log.StopLog(gzLog);
     }
     else

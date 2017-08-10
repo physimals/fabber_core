@@ -26,11 +26,7 @@ class MCobj
 public:
     MCobj(FabberRunData &allData, int dof);
     void run_mc(const NEWMAT::Matrix &modelpred_mat, NEWMAT::Matrix &finalimage_mat);
-    void set_num_iter(int nit)
-    {
-        num_iter = nit;
-    }
-
+    void set_num_iter(int nit) { num_iter = nit; }
 private:
     int userdof;  // anything over 13 is full nonlinear
     int num_iter; // default 10
@@ -49,10 +45,11 @@ private:
     NEWIMAGE::volume4D<float> wholeimage;
 };
 
-void UpdateDeformation(const NEWIMAGE::volume4D<float> &wholeimage, const NEWIMAGE::volume4D<float> &modelpred, int no_iter,
-    const NEWIMAGE::volume4D<float> &prevdefx,
-    const NEWIMAGE::volume4D<float> &prevdefy, const NEWIMAGE::volume4D<float> &prevdefz,
-    NEWIMAGE::volume4D<float> &finalimage,
-    NEWIMAGE::volume4D<float> &defx, NEWIMAGE::volume4D<float> &defy, NEWIMAGE::volume4D<float> &defz);
+void UpdateDeformation(const NEWIMAGE::volume4D<float> &wholeimage,
+    const NEWIMAGE::volume4D<float> &modelpred, int no_iter,
+    const NEWIMAGE::volume4D<float> &prevdefx, const NEWIMAGE::volume4D<float> &prevdefy,
+    const NEWIMAGE::volume4D<float> &prevdefz, NEWIMAGE::volume4D<float> &finalimage,
+    NEWIMAGE::volume4D<float> &defx, NEWIMAGE::volume4D<float> &defy,
+    NEWIMAGE::volume4D<float> &defz);
 
 #endif //__FABBER_MOTION

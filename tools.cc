@@ -42,8 +42,8 @@ Matrix read_matrix_file(std::string filename)
 double gammaln(double x)
 {
     ColumnVector series(7);
-    series << 2.5066282746310005 << 76.18009172947146 << -86.50532032941677 << 24.01409824083091 << -1.231739572450155
-           << 0.1208650973866179e-2 << -0.5395239384953e-5;
+    series << 2.5066282746310005 << 76.18009172947146 << -86.50532032941677 << 24.01409824083091
+           << -1.231739572450155 << 0.1208650973866179e-2 << -0.5395239384953e-5;
 
     double total = 1.000000000190015;
     for (int i = 2; i <= series.Nrows(); i++)
@@ -61,8 +61,7 @@ double DescendingZeroFinder::FindZero() const
     double atSearchGuess = fcn(searchGuess);
 
     if (verbosity >= 2)
-        LOG_ERR("IG: f(" << (searchGuess)
-                         << ") == " << atSearchGuess << endl);
+        LOG_ERR("IG: f(" << (searchGuess) << ") == " << atSearchGuess << endl);
 
     if (atSearchGuess < 0)
     {
@@ -91,7 +90,8 @@ double DescendingZeroFinder::FindZero() const
     //    double nonlinearity = 10; // force a bisection first time
 
     // Interpolation only
-    while ((evals > 0) && (upper - lower > tolX || atLower - atUpper > tolY || upper / lower > ratioTolX || atUpper / atLower > ratioTolY))
+    while ((evals > 0) && (upper - lower > tolX || atLower - atUpper > tolY
+                              || upper / lower > ratioTolX || atUpper / atLower > ratioTolY))
     {
         guess = guesstimator->GetGuess(lower, upper, atLower, atUpper);
 
@@ -101,17 +101,18 @@ double DescendingZeroFinder::FindZero() const
             // double precision (constant factor probably depends on
             // the guesstimator)
             assert(upper - lower <= 2 * fabs(lower) * numeric_limits<double>::epsilon());
-            LOG_ERR("DescendingZeroFinder: giving up without reaching tolerances because we're at the limits of double precision!\n");
+            LOG_ERR("DescendingZeroFinder: giving up without reaching tolerances because we're at "
+                    "the limits of double precision!\n");
             LOG_ERR("Lower: f(" << lower << ") == " << atLower << endl
                                 << "Upper: f(" << upper << ") == " << atUpper << endl);
             break;
         }
 
         assert(lower < guess && guess < upper);
-        //cout << lower << "<" << guess << "<" << upper << endl;
+        // cout << lower << "<" << guess << "<" << upper << endl;
         if (!fcn.PickFasterGuess(&guess, lower, upper))
             evals--; // only count the non-cached evaluations.
-        //cout << lower << "<" << guess << "<" << upper << endl;
+        // cout << lower << "<" << guess << "<" << upper << endl;
         assert(lower < guess && guess < upper);
 
         if (guess - prevGuess > maxJump)
@@ -161,13 +162,13 @@ double DescendingZeroFinder::FindZero() const
     }
 
     /*
-	 // One final interpolation -- not necessary, we could pick anything
-	 // between lower and upper really.
-	 guess = guesstimator->GetGuess(lower, upper, atLower, atUpper);
-	 assert( lower <= guess && guess <= upper );
-	 fcn.PickFasterGuess(&guess, lower, upper, true);
-	 assert( lower <= guess && guess <= upper );
-	 */
+     // One final interpolation -- not necessary, we could pick anything
+     // between lower and upper really.
+     guess = guesstimator->GetGuess(lower, upper, atLower, atUpper);
+     assert( lower <= guess && guess <= upper );
+     fcn.PickFasterGuess(&guess, lower, upper, true);
+     assert( lower <= guess && guess <= upper );
+     */
 
     // Pick either lower or upper bound, depending on which is closer to zero
     assert(atLower >= 0 && -atUpper >= 0);
@@ -209,7 +210,7 @@ double RiddlersGuesstimator::GetGuess(double lower, double upper, double atLower
 
         WARN_ONCE("Riddler's Method; No special cases!");
 
-        if (false) //x3 != (x1 + x2)/2)
+        if (false) // x3 != (x1 + x2)/2)
         {
             LOG_ERR("x3 == " << x3 << ", x1 == " << x1 << ", x2 = " << x2 << endl);
             LOG_ERR("x3 - (x1+x2)/2 == " << x3 - (x1 + x2) / 2 << endl);

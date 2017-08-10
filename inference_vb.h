@@ -42,7 +42,7 @@ public:
     virtual void SaveResults(FabberRunData &rundata) const;
 
 protected:
-    /** 
+    /**
      * Initialize noise prior or posterior distribution from a file stored in the
      * rundata under the given parameter key
      */
@@ -50,7 +50,7 @@ protected:
 
     /**
      * Pass the model the data, coords and suppdata for a voxel.
-     * 
+     *
      * FIXME this is not very nice and should not be necessary. Need to
      * audit what models are using this info and find alternatives, e.g.
      * reading suppdata in Initialize instead
@@ -74,20 +74,20 @@ protected:
      */
     double CalculateF(int v, std::string label, double Fprior);
 
-    /** 
+    /**
      * Output detailed debugging information for a voxel
      */
     void DebugVoxel(int v, const string &where);
 
     /**
-	 * Setup per-voxel data for Spatial VB
-	 *
-	 * Spatial VB needs each voxel's prior/posterior and other
-	 * data stored as it affects neighbouring voxels. This sets
-	 * up the vectors which store these things which are just
-	 * created on the fly for normal VB and throw away after each
-	 * voxel is done.
-	 */
+     * Setup per-voxel data for Spatial VB
+     *
+     * Spatial VB needs each voxel's prior/posterior and other
+     * data stored as it affects neighbouring voxels. This sets
+     * up the vectors which store these things which are just
+     * created on the fly for normal VB and throw away after each
+     * voxel is done.
+     */
     void SetupPerVoxelDists(FabberRunData &allData);
 
     /**
@@ -102,8 +102,8 @@ protected:
     void CheckCoordMatrixCorrectlyOrdered(const NEWMAT::Matrix &voxelCoords);
 
     /**
-	 * Calculate first and second nearest neighbours of each voxel
-	*/
+     * Calculate first and second nearest neighbours of each voxel
+    */
     void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
 
     /**
@@ -119,13 +119,13 @@ protected:
     int m_nvoxels;
 
     /**
-	 * Noise model in use. This is created by the inference
-	 * method deleted on destruction
-	 */
+     * Noise model in use. This is created by the inference
+     * method deleted on destruction
+     */
     std::auto_ptr<NoiseModel> m_noise;
     /**
-	 * Number of noise parameters.
-	 */
+     * Number of noise parameters.
+     */
     int m_noise_params;
 
     /** True if convergence detector requires the free energy */
@@ -171,18 +171,18 @@ protected:
     std::vector<int> m_ignore_voxels;
 
     /**
-	 * Number of spatial dimensions
-	 *
-	 * 0 = no spatial smoothing
-	 * 1 = Probably not sensible!
-	 * 2 = Smoothing in slices only
-	 * 3 = Smoothing by volume
-	 */
+     * Number of spatial dimensions
+     *
+     * 0 = no spatial smoothing
+     * 1 = Probably not sensible!
+     * 2 = Smoothing in slices only
+     * 3 = Smoothing by volume
+     */
     int m_spatial_dims;
 
-    /** 
+    /**
      * Fix the linearization centres of the linearized forward model.
-     * 
+     *
      * This reduces the inference to a purely linear problem. The fixed
      * centres are generally loaded from an MVN file
      */

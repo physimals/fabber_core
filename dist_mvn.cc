@@ -132,9 +132,11 @@ void MVNDist::CopyFromSubmatrix(const MVNDist &from, int first, int last, bool c
     if (checkIndependence)
     {
         Matrix deps1 = from.GetCovariance().Rows(first, last).Columns(1, first - 1);
-        Matrix deps2 = from.GetCovariance().Rows(first, last).Columns(last + 1, from.covariance.Ncols());
+        Matrix deps2
+            = from.GetCovariance().Rows(first, last).Columns(last + 1, from.covariance.Ncols());
         if (!deps1.IsZero() || !deps2.IsZero())
-            throw FabberRunDataError("Covariance found in part of MVN that should be independent from the rest!");
+            throw FabberRunDataError(
+                "Covariance found in part of MVN that should be independent from the rest!");
     }
 }
 
@@ -187,8 +189,10 @@ const SymmetricMatrix &MVNDist::GetPrecisions() const
         }
         catch (Exception)
         {
-            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
-            WARN_ONCE("MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
+            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
+            // again
+            WARN_ONCE("MVN precision (m_size==" + stringify(m_size)
+                + ") was singular, adding 1e-10 to diagonal");
             LOG << means.t() << endl;
             LOG << covariance << endl;
             precisions = (covariance + IdentityMatrix(m_size) * 1e-10).i();
@@ -220,8 +224,10 @@ const SymmetricMatrix &MVNDist::GetCovariance() const
         }
         catch (Exception)
         {
-            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries again
-            WARN_ONCE("MVN precision (m_size==" + stringify(m_size) + ") was singular, adding 1e-10 to diagonal");
+            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
+            // again
+            WARN_ONCE("MVN precision (m_size==" + stringify(m_size)
+                + ") was singular, adding 1e-10 to diagonal");
             LOG << means.t() << endl;
             LOG << precisions << endl;
             covariance = (precisions + IdentityMatrix(m_size) * 1e-10).i();
@@ -263,8 +269,7 @@ void MVNDist::LoadFromMatrix(const string &filename)
 
     if (N < 1 || mat != mat.t() || mat(N + 1, N + 1) != 1.0)
     {
-        LOG << "N == " << N << ", matrix:\n"
-            << mat;
+        LOG << "N == " << N << ", matrix:\n" << mat;
         throw InvalidOptionValue(filename, "",
             "MVNs must be symmetric matrices (format = [covariance means(:); means(:) 1.0])");
     }
@@ -278,7 +283,8 @@ void MVNDist::LoadFromMatrix(const string &filename)
     assert(means.Nrows() == m_size);
 }
 
-void MVNDist::Load(vector<MVNDist *> &mvns, const string &filename, FabberRunData &data, EasyLog *log)
+void MVNDist::Load(
+    vector<MVNDist *> &mvns, const string &filename, FabberRunData &data, EasyLog *log)
 {
     // Input matrix contains 3d voxels with the
     // 4th dimension containing the covariances
@@ -329,12 +335,13 @@ void MVNDist::Load(vector<MVNDist *> &mvns, Matrix &voxel_data, EasyLog *log)
 
         assert(index == nParams * (nParams + 1) / 2);
         mvn->SetCovariance(tmp);
-        mvn->means = voxel_data.Column(vox).Rows(nParams * (nParams + 1) / 2 + 1,
-            nParams * (nParams + 1) / 2 + nParams);
+        mvn->means = voxel_data.Column(vox).Rows(
+            nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
 
         if (voxel_data(voxel_data.Nrows(), vox) != 1)
         {
-            throw FabberRunDataError("MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
+            throw FabberRunDataError(
+                "MVNDist::Load - Voxel data does not contain a valid MVN - last value != 1");
         }
         assert(mvn->means.Nrows() == mvn->m_size);
         assert(mvns.at(vox - 1) == NULL);
@@ -384,7 +391,8 @@ void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, Fabber
         // Note that AsColumn for a SymmetricMatrix uses row ordering on the
         // lower triangular part, returning (1,1) (2,1) (2,2) (3,1).. as
         // required by NIFTI_INTENT_SYMMATRIX
-        vols.Column(vox) = mvns.at(vox - 1)->GetCovariance().AsColumn() & mvns.at(vox - 1)->means & aOne;
+        vols.Column(vox)
+            = mvns.at(vox - 1)->GetCovariance().AsColumn() & mvns.at(vox - 1)->means & aOne;
     }
 
     data.SaveVoxelData(filename, vols, VDT_MVN);
@@ -392,8 +400,8 @@ void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, Fabber
 
 void MVNDist::Dump(ostream &out) const
 {
-    out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid << ", covarianceValid == "
-        << covarianceValid << endl;
+    out << "MVNDist, with m_size == " << m_size << ", precisionsValid == " << precisionsValid
+        << ", covarianceValid == " << covarianceValid << endl;
     out << "  Means: " << means.t();
     if (precisionsValid || covarianceValid)
     {

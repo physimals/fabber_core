@@ -24,10 +24,7 @@ EasyLog::EasyLog()
 {
 }
 
-EasyLog::~EasyLog()
-{
-}
-
+EasyLog::~EasyLog() {}
 void EasyLog::StartLog(const string &outDir)
 {
     assert(m_stream == NULL);
@@ -83,16 +80,8 @@ void EasyLog::StopLog(bool gzip)
     m_outdir = "";
 }
 
-bool EasyLog::LogStarted()
-{
-    return m_stream != NULL;
-}
-
-const string &EasyLog::GetOutputDirectory()
-{
-    return m_outdir;
-}
-
+bool EasyLog::LogStarted() { return m_stream != NULL; }
+const string &EasyLog::GetOutputDirectory() { return m_outdir; }
 std::ostream &EasyLog::LogStream()
 {
     if (m_stream == NULL)
@@ -124,5 +113,7 @@ void EasyLog::ReissueWarnings()
 
     LogStream() << "\nSummary of warnings (" << m_warncount.size() << " distinct warnings)\n";
     for (map<string, int>::iterator it = m_warncount.begin(); it != m_warncount.end(); ++it)
-        LogStream() << "Issued " << ((it->second == 1) ? "once: " : stringify(it->second) + " times: ") << it->first << std::endl;
+        LogStream() << "Issued "
+                    << ((it->second == 1) ? "once: " : stringify(it->second) + " times: ")
+                    << it->first << std::endl;
 }

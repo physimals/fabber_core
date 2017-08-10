@@ -26,23 +26,23 @@ using NEWMAT::Matrix;
 
 static void DumpVolumeInfo(const volume4D<float> &info, ostream &out)
 {
-    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-        << ", vols=" << info.tsize() << endl;
-    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-        << "mm, TR=" << info.tdim() << " sec\n";
-    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-        << info.intent_param(2) << ", " << info.intent_param(3) << endl;
+    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize()
+        << ", z=" << info.zsize() << ", vols=" << info.tsize() << endl;
+    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim()
+        << "mm, z=" << info.zdim() << "mm, TR=" << info.tdim() << " sec\n";
+    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1)
+        << ", " << info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
 static void DumpVolumeInfo(const volume<float> &info, ostream &out)
 {
-    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize() << ", z=" << info.zsize()
-        << ", vols=1" << endl;
-    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim() << "mm, z=" << info.zdim()
-        << "mm, TR=1"
+    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize()
+        << ", z=" << info.zsize() << ", vols=1" << endl;
+    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim()
+        << "mm, z=" << info.zdim() << "mm, TR=1"
         << " sec\n";
-    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1) << ", "
-        << info.intent_param(2) << ", " << info.intent_param(3) << endl;
+    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1)
+        << ", " << info.intent_param(2) << ", " << info.intent_param(3) << endl;
 }
 
 FabberRunDataNewimage::FabberRunDataNewimage(bool compat_options)
@@ -138,7 +138,8 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
     return m_voxel_data[filename];
 }
 
-void FabberRunDataNewimage::SaveVoxelData(const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type)
+void FabberRunDataNewimage::SaveVoxelData(
+    const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
     LOG << "FabberRunDataNewimage::Saving to nifti: " << filename << endl;
     int nifti_intent_code;

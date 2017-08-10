@@ -32,8 +32,8 @@ MCobj::MCobj(FabberRunData &allData, int dof)
     mask = volume<float>(size[0], size[1], size[2]);
     mask = 0.0;
 
-    //cout << size[0] << ", " << size[1] << ", " << size[2] << endl;
-    //cout << coords.Ncols() << endl;
+    // cout << size[0] << ", " << size[1] << ", " << size[2] << endl;
+    // cout << coords.Ncols() << endl;
     for (int v = 1; v <= coords.Ncols(); v++)
     {
         mask(coords(1, v), coords(2, v), coords(3, v)) = 1.0;
@@ -73,7 +73,8 @@ void MCobj::run_mc(const Matrix &modelpred_mat, Matrix &finalimage_mat)
     modelpred.setmatrix(modelpred_mat, mask);
     if (userdof > 12)
     {
-        UpdateDeformation(wholeimage, modelpred, num_iter, defx, defy, defz, finalimage, tmpx, tmpy, tmpz);
+        UpdateDeformation(
+            wholeimage, modelpred, num_iter, defx, defy, defz, finalimage, tmpx, tmpy, tmpz);
         defx = tmpx;
         defy = tmpy;
         defz = tmpz;
@@ -95,19 +96,20 @@ void MCobj::run_mc(const Matrix &modelpred_mat, Matrix &finalimage_mat)
 /////////////////// Diffeomorphic code
 
 // assuming everything is in mm
-void diffeomorphic_new(const volume4D<float> &input_velocity, volume4D<float> &output_def, int steps)
+void diffeomorphic_new(
+    const volume4D<float> &input_velocity, volume4D<float> &output_def, int steps)
 {
     float coeff = 1.0f / (2 ^ steps);
-    //cerr << "DN::COEFF = " << coeff << endl;
+    // cerr << "DN::COEFF = " << coeff << endl;
     volume4D<float> prewarp;
     prewarp = input_velocity * coeff;
 
     convertwarp_rel2abs(prewarp);
     for (int i = 0; i < steps; i++)
     {
-        //print_volume_info(prewarp,"DN::prewarp");
+        // print_volume_info(prewarp,"DN::prewarp");
         concat_warps(prewarp, prewarp, output_def);
-        //print_volume_info(output_def,"DN::output_def");
+        // print_volume_info(output_def,"DN::output_def");
         prewarp = output_def;
     }
     convertwarp_abs2rel(output_def);
@@ -136,8 +138,10 @@ void calculate_gradients(volume4D<float> &gradient_imagex, volume4D<float> &grad
     }
 }
 
-void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> &modelpred, int no_iter,
-    const volume4D<float> &prevdefx, const volume4D<float> &prevdefy, const volume4D<float> &prevdefz, volume4D<float> &finalimage, volume4D<float> &defx, volume4D<float> &defy, volume4D<float> &defz)
+void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> &modelpred,
+    int no_iter, const volume4D<float> &prevdefx, const volume4D<float> &prevdefy,
+    const volume4D<float> &prevdefz, volume4D<float> &finalimage, volume4D<float> &defx,
+    volume4D<float> &defy, volume4D<float> &defz)
 {
     int steps = 4;
 
@@ -228,14 +232,14 @@ void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> 
     gradient_imagez = -gradient_imagez * diffimage;
 
     print_volume_info(gradient_imagex, "gradient_imagex");
-    //print_volume_info(gradient_imagey,"gradient_imagey");
-    //print_volume_info(gradient_imagez,"gradient_imagez");
+    // print_volume_info(gradient_imagey,"gradient_imagey");
+    // print_volume_info(gradient_imagez,"gradient_imagez");
 
     double diff_similarity = 1;
     int count = 0;
 
     while ((diff_similarity > 0) && ((count++) < no_iter))
-    //while (((count++)<no_iter))
+    // while (((count++)<no_iter))
     {
         double old_similarity = new_similarity;
 
@@ -252,26 +256,29 @@ void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> 
             input_velocity[0] = defx[t];
             input_velocity[1] = defy[t];
             input_velocity[2] = defz[t];
-            //print_volume_info(input_velocity,"dn::input_velocity");
+            // print_volume_info(input_velocity,"dn::input_velocity");
 
             diffeomorphic_new(input_velocity, output_def, steps);
 
-            //print_volume_info(output_def,"output_def");
+            // print_volume_info(output_def,"output_def");
             apply_warp(wholeimage[t], wholeimage1[t], output_def);
 
-            //gradient(wholeimage1[t],gradient_all);
+            // gradient(wholeimage1[t],gradient_all);
 
-            //gradient_imagex[t]= gradient_all[0];
-            //gradient_imagex[t]= gradient_imagex[t]/Max(gradient_imagex[t].max()-gradient_imagex[t].min(),1e-6);
-            //gradient_imagex[t]= gradient_imagex[t];
+            // gradient_imagex[t]= gradient_all[0];
+            // gradient_imagex[t]=
+            // gradient_imagex[t]/Max(gradient_imagex[t].max()-gradient_imagex[t].min(),1e-6);
+            // gradient_imagex[t]= gradient_imagex[t];
 
-            //gradient_imagey[t]= gradient_all[1];
-            //gradient_imagey[t]= gradient_imagex[t]/Max(gradient_imagey[t].max()-gradient_imagey[t].min(),1e-6);
-            //gradient_imagey[t]= gradient_imagey[t];
+            // gradient_imagey[t]= gradient_all[1];
+            // gradient_imagey[t]=
+            // gradient_imagex[t]/Max(gradient_imagey[t].max()-gradient_imagey[t].min(),1e-6);
+            // gradient_imagey[t]= gradient_imagey[t];
 
-            //gradient_imagez[t]= gradient_all[2];
-            //gradient_imagez[t]= gradient_imagez[t]/Max(gradient_imagez[t].max()-gradient_imagez[t].min(),1e-6);
-            //gradient_imagez[t]= gradient_imagez[t];
+            // gradient_imagez[t]= gradient_all[2];
+            // gradient_imagez[t]=
+            // gradient_imagez[t]/Max(gradient_imagez[t].max()-gradient_imagez[t].min(),1e-6);
+            // gradient_imagez[t]= gradient_imagez[t];
         }
 
         calculate_gradients(gradient_imagex, gradient_imagey, gradient_imagez, wholeimage1);
@@ -287,11 +294,21 @@ void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> 
         gradient_imagey = -gradient_imagey * diffimage;
         gradient_imagez = -gradient_imagez * diffimage;
 
-        //print_volume_info(gradient_imagex,"gradient_imagex");
-        //print_volume_info(gradient_imagey,"gradient_imagey");
-        //print_volume_info(gradient_imagez,"gradient_imagez");
+        // print_volume_info(gradient_imagex,"gradient_imagex");
+        // print_volume_info(gradient_imagey,"gradient_imagey");
+        // print_volume_info(gradient_imagez,"gradient_imagez");
 
-        Det = (lamda + gradient_imagex * gradient_imagex) * ((lamda + gradient_imagey * gradient_imagey) * (lamda + gradient_imagez * gradient_imagez) - gradient_imagey * gradient_imagez * gradient_imagey * gradient_imagez) - gradient_imagex * gradient_imagey * (gradient_imagex * gradient_imagey * (lamda + gradient_imagez * gradient_imagez) - gradient_imagex * gradient_imagez * gradient_imagey * gradient_imagez) + gradient_imagex * gradient_imagez * (gradient_imagex * gradient_imagey * gradient_imagey * gradient_imagez - (lamda + gradient_imagey * gradient_imagey) * gradient_imagex * gradient_imagez);
+        Det = (lamda + gradient_imagex * gradient_imagex)
+                * ((lamda + gradient_imagey * gradient_imagey)
+                          * (lamda + gradient_imagez * gradient_imagez)
+                      - gradient_imagey * gradient_imagez * gradient_imagey * gradient_imagez)
+            - gradient_imagex * gradient_imagey
+                * (gradient_imagex * gradient_imagey * (lamda + gradient_imagez * gradient_imagez)
+                      - gradient_imagex * gradient_imagez * gradient_imagey * gradient_imagez)
+            + gradient_imagex * gradient_imagez
+                * (gradient_imagex * gradient_imagey * gradient_imagey * gradient_imagez
+                      - (lamda + gradient_imagey * gradient_imagey) * gradient_imagex
+                          * gradient_imagez);
 
         print_volume_info(Det, "Det");
 
@@ -323,11 +340,12 @@ void UpdateDeformation(const volume4D<float> &wholeimage, const volume4D<float> 
     std::cout << "The update has finished" << lamda << std::endl;
 }
 
-//Concerns:
+// Concerns:
 // things to check: is the usage of 'smooth' fine? Can you have the same input and output?
 // Should the declarations be in a separate header file
 
-// Things to remember (for myself): that here, updates are being scaled, while the total deformation field is being smoothed. Change if necessary.
+// Things to remember (for myself): that here, updates are being scaled, while the total deformation
+// field is being smoothed. Change if necessary.
 // All of this in voxels- convert to mm by simply multiplying by voxel sizes.
 
 #endif //__FABBER_MOTION

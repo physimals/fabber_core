@@ -1,6 +1,7 @@
 /*  factories.cc - Assorted template factory, singleton factory and dispatcher class declarations.
 
-     Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Image Analysis Group & IBME QuBIc Group
+     Mike Jackson, The University of Edinburgh & Michael Chappell, FMRIB Image Analysis Group & IBME
+   QuBIc Group
 
     Copyright (C) 2015 University of Oxford  */
 
@@ -17,16 +18,8 @@ Dispatcher::Dispatcher()
     // No-op.
 }
 
-Dispatcher::~Dispatcher()
-{
-    functionMap_.clear();
-}
-
-void Dispatcher::Add(const string &name, Function function)
-{
-    functionMap_[name] = function;
-}
-
+Dispatcher::~Dispatcher() { functionMap_.clear(); }
+void Dispatcher::Add(const string &name, Function function) { functionMap_[name] = function; }
 void Dispatcher::Dispatch(const string &name)
 {
     if (functionMap_.count(name))
@@ -38,8 +31,7 @@ void Dispatcher::Dispatch(const string &name)
 vector<string> Dispatcher::GetNames()
 {
     vector<string> names;
-    for (map<string, Function>::iterator it = functionMap_.begin();
-         it != functionMap_.end(); ++it)
+    for (map<string, Function>::iterator it = functionMap_.begin(); it != functionMap_.end(); ++it)
     {
         names.push_back(it->first);
     }

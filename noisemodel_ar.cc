@@ -27,11 +27,7 @@ using MISCMATHS::digamma;
 // Covariance terms are at +/-1, so maximum possible offset from
 // the main diagonal is +/-3.
 
-NoiseModel *Ar1cNoiseModel::NewInstance()
-{
-    return new Ar1cNoiseModel();
-}
-
+NoiseModel *Ar1cNoiseModel::NewInstance() { return new Ar1cNoiseModel(); }
 Ar1cMatrixCache::Ar1cMatrixCache(int numPhis)
     : nPhis(numPhis)
 {
@@ -87,13 +83,13 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
                     {
                     // These are for the matlab style, where the data sets from the
                     // two echo times are concatenated rather than interleaved:
-                    //case 00: row = col = 2; break;
-                    //case 10: row = 1; col = 2; break;
-                    //case 20: row = col = 1; break;
-                    //case 01: row = nTimes+2; col = 2; break;
-                    //case 11: row = nTimes+2; col = 1; break;
-                    //case 02: row = col = nTimes+2; break;
-                    //default: assert(false);
+                    // case 00: row = col = 2; break;
+                    // case 10: row = 1; col = 2; break;
+                    // case 20: row = col = 1; break;
+                    // case 01: row = nTimes+2; col = 2; break;
+                    // case 11: row = nTimes+2; col = 1; break;
+                    // case 02: row = col = nTimes+2; break;
+                    // default: assert(false);
 
                     // For the interleaved TE1/TE2 style.
                     // 0<i<=nTimes: -> 2*i-1
@@ -180,18 +176,22 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
         {
             const int T = (nAlphas == 4) ? 2 + n : 3;
 
-            alphaMarginals.at(n - 1) = GetMatrix(n, 0, 0) + GetMatrix(n, 1, 0) * dist.alpha.means(n) + GetMatrix(n, 2, 0) * covarPlus(n, n) + GetMatrix(n, 0, 1) * dist.alpha.means(T) + GetMatrix(n, 1, 1) * covarPlus(n, T) + GetMatrix(n, 0, 2) * covarPlus(T, T);
+            alphaMarginals.at(n - 1) = GetMatrix(n, 0, 0) + GetMatrix(n, 1, 0) * dist.alpha.means(n)
+                + GetMatrix(n, 2, 0) * covarPlus(n, n) + GetMatrix(n, 0, 1) * dist.alpha.means(T)
+                + GetMatrix(n, 1, 1) * covarPlus(n, T) + GetMatrix(n, 0, 2) * covarPlus(T, T);
         }
         else
         {
             assert(nAlphas == 2);
 
-            alphaMarginals.at(n - 1) = GetMatrix(n, 0, 0) + GetMatrix(n, 1, 0) * dist.alpha.means(n) + GetMatrix(n, 2, 0) * covarPlus(n, n);
+            alphaMarginals.at(n - 1) = GetMatrix(n, 0, 0) + GetMatrix(n, 1, 0) * dist.alpha.means(n)
+                + GetMatrix(n, 2, 0) * covarPlus(n, n);
         }
     }
 }
 
-const SymmetricBandMatrix &Ar1cMatrixCache::GetMatrix(unsigned n, unsigned a12pow, unsigned a34pow) const
+const SymmetricBandMatrix &Ar1cMatrixCache::GetMatrix(
+    unsigned n, unsigned a12pow, unsigned a34pow) const
 {
     //  LOG << "Called: GetMatrix(" << n << "," << a12pow << "," << a34pow << ")" << endl;
     assert(alphaMatrices.size() > FlattenIndex(n, a12pow, a34pow));
@@ -203,10 +203,11 @@ const SymmetricBandMatrix &Ar1cMatrixCache::GetMarginal(unsigned n) const
     //  LOG << "In GetMarginal("<<n<<") const" << endl;
     //  LOG << alphaMarginals.size() << ":" << alphaMarginals[n-1].Nrows()<<endl;
     if (alphaMarginals.size() < n)
-        throw FabberInternalError(
-            ("GetMarginal(" + stringify(n) + "): not enough elements (only" + stringify(alphaMarginals.size()) + ") in alphaMarginals!\n")
-                .c_str());
-    //  LOG << "Size of alphaMarginals[n-1] is " << alphaMarginals[n-1].Nrows() << " by " << alphaMarginals[n-1].Ncols() << endl;
+        throw FabberInternalError(("GetMarginal(" + stringify(n) + "): not enough elements (only"
+                                      + stringify(alphaMarginals.size()) + ") in alphaMarginals!\n")
+                                      .c_str());
+    //  LOG << "Size of alphaMarginals[n-1] is " << alphaMarginals[n-1].Nrows() << " by " <<
+    //  alphaMarginals[n-1].Ncols() << endl;
     return alphaMarginals[n - 1];
 }
 
@@ -235,11 +236,7 @@ const Ar1cParams &Ar1cParams::operator=(const NoiseParams &in)
     return *this;
 }
 
-Ar1cParams *Ar1cParams::Clone() const
-{
-    return new Ar1cParams(*this);
-}
-
+Ar1cParams *Ar1cParams::Clone() const { return new Ar1cParams(*this); }
 void Ar1cParams::Dump(ostream &os) const
 {
     os << "Alpha:" << endl;
@@ -274,7 +271,8 @@ void Ar1cParams::InputFromMVN(const MVNDist &mvn)
     alpha.CopyFromSubmatrix(mvn, 1, nAlpha, true);
     for (unsigned i = 1; i <= phis.size(); i++)
     {
-        phis[i - 1].SetMeanVariance(mvn.means(nAlpha + i), mvn.GetCovariance()(nAlpha + i, nAlpha + i));
+        phis[i - 1].SetMeanVariance(
+            mvn.means(nAlpha + i), mvn.GetCovariance()(nAlpha + i, nAlpha + i));
         for (unsigned j = i + 1; j <= phis.size(); j++)
             if (mvn.GetCovariance()(nAlpha + i, nAlpha + j) != 0.0)
                 throw FabberRunDataError("Phis should have zero covariance!");
@@ -302,10 +300,11 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
     if (nPhis == 1)
     {
         if (ar1Type != "none")
-            throw InvalidOptionValue("ar1-cross-terms", ar1Type, "You must use ar1-cross-terms=none with num-echoes=1");
+            throw InvalidOptionValue(
+                "ar1-cross-terms", ar1Type, "You must use ar1-cross-terms=none with num-echoes=1");
         else
-            LOG_ERR(
-                "WARNING: using --num-echoes=1 is completely untested!\nIt will probably give completely the wrong answers or crash!\n");
+            LOG_ERR("WARNING: using --num-echoes=1 is completely untested!\nIt will probably give "
+                    "completely the wrong answers or crash!\n");
     }
     else if (nPhis == 2)
     {
@@ -315,16 +314,8 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
         throw InvalidOptionValue("num-echoes", stringify(nPhis), "Must be 1 or 2");
 }
 
-Ar1cParams *Ar1cNoiseModel::NewParams() const
-{
-    return new Ar1cParams(NumAlphas(), nPhis);
-}
-
-int Ar1cNoiseModel::NumParams()
-{
-    return nPhis;
-}
-
+Ar1cParams *Ar1cNoiseModel::NewParams() const { return new Ar1cParams(NumAlphas(), nPhis); }
+int Ar1cNoiseModel::NumParams() { return nPhis; }
 // Just convert a string into a number
 int Ar1cNoiseModel::NumAlphas() const
 {
@@ -358,13 +349,14 @@ void Ar1cNoiseModel::HardcodedInitialDists(NoiseParams &priorIn, NoiseParams &po
     {
         prior.phis[i - 1].b = 1e6;
         prior.phis[i - 1].c = 1e-6;
-        posterior.phis[i - 1].b = 1e-8; // Bit of black magic... tiny initial noise precision seems to help
+        posterior.phis[i - 1].b
+            = 1e-8; // Bit of black magic... tiny initial noise precision seems to help
         posterior.phis[i - 1].c = 1e-6;
     }
 }
 
-void Ar1cNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-    const LinearFwdModel &linear, const NEWMAT::ColumnVector &data) const
+void Ar1cNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior,
+    const MVNDist &theta, const LinearFwdModel &linear, const NEWMAT::ColumnVector &data) const
 {
     UpdateAlpha(noise, noisePrior, theta, linear, data);
     UpdatePhi(noise, noisePrior, theta, linear, data);
@@ -415,15 +407,15 @@ double OperatorKLJ::operator()(const SymmetricBandMatrix &input) const
     // a SymmetricMatrix into a SymmetricBandMatrix (i.e. it's lossy)
 }
 
-void Ar1cNoiseModel::UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-    const LinearFwdModel &linear, const ColumnVector &data) const
+void Ar1cNoiseModel::UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePrior,
+    const MVNDist &theta, const LinearFwdModel &linear, const ColumnVector &data) const
 {
     Ar1cParams &posterior = dynamic_cast<Ar1cParams &>(noise);
     const Ar1cParams &prior = dynamic_cast<const Ar1cParams &>(noisePrior);
     Ar1cMatrixCache &alphaMat = posterior.alphaMat;
 
     const int nNoiseModels = posterior.phis.size();
-    //unused: const int nTimes = data.Nrows() / nPhis;
+    // unused: const int nTimes = data.Nrows() / nPhis;
     const unsigned nAlphas = prior.alpha.means.Nrows();
     assert(nNoiseModels == nPhis); // the only size currently supported
 
@@ -458,7 +450,8 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePri
 
         // Check all finite and all variances are positive
         if (!(0 * alphaPrecisions == 0 * alphaPrecisions))
-            throw FabberInternalError("Ar1cNoiseModel::UpdateAlpha Non-finite values in alpha precisions!");
+            throw FabberInternalError(
+                "Ar1cNoiseModel::UpdateAlpha Non-finite values in alpha precisions!");
         DiagonalMatrix checkVars(alphaPrecisions.Nrows());
         checkVars << alphaPrecisions.i();
         if (checkVars.Minimum() < 0)
@@ -497,8 +490,8 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePri
     }
 }
 
-void Ar1cNoiseModel::UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-    const LinearFwdModel &linear, const ColumnVector &data) const
+void Ar1cNoiseModel::UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior,
+    const MVNDist &theta, const LinearFwdModel &linear, const ColumnVector &data) const
 {
     Ar1cParams &posterior = dynamic_cast<Ar1cParams &>(noise);
     const Ar1cParams &prior = dynamic_cast<const Ar1cParams &>(noisePrior);
@@ -513,7 +506,8 @@ void Ar1cNoiseModel::UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior
         {
             const SymmetricBandMatrix &Qi = alphaMat.GetMarginal(i);
 
-            double tmp = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
+            double tmp
+                = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
 
             posterior.phis[i - 1].b = 1 / (tmp * 0.5 + 1 / prior.phis[i - 1].b);
         }
@@ -524,8 +518,9 @@ void Ar1cNoiseModel::UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior
     }
 }
 
-void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta, const MVNDist &thetaPrior,
-    const LinearFwdModel &linear, const ColumnVector &data, MVNDist *thetaWithoutPrior, float LMalpha) const
+void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
+    const MVNDist &thetaPrior, const LinearFwdModel &linear, const ColumnVector &data,
+    MVNDist *thetaWithoutPrior, float LMalpha) const
 {
     const Ar1cParams &posterior = dynamic_cast<const Ar1cParams &>(noise);
     const Ar1cMatrixCache &alphaMat = posterior.alphaMat;
@@ -564,7 +559,8 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta, const
         mTmp = J.t() * X * (data - gml + J * ml);
 
         theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
-        theta.means = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
+        theta.means
+            = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
     }
 
     if (thetaWithoutPrior != NULL)
@@ -593,8 +589,8 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta, const
     {
         LogAndSign chk = theta.GetPrecisions().LogDeterminant();
         if (chk.Sign() <= 0)
-            LOG << "Note: In UpdateTheta, theta precisions aren't positive-definite: " << chk.Sign() << ", "
-                << chk.LogValue() << endl;
+            LOG << "Note: In UpdateTheta, theta precisions aren't positive-definite: " << chk.Sign()
+                << ", " << chk.LogValue() << endl;
     }
 }
 
@@ -605,8 +601,9 @@ ostream &operator<<(ostream &s, vector<double> n)
     return s;
 }
 
-double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior, const MVNDist &theta,
-    const MVNDist &thetaPrior, const LinearFwdModel &linear, const ColumnVector &data) const
+double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParams &noisePrior,
+    const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &linear,
+    const ColumnVector &data) const
 {
     const Ar1cParams &posterior = dynamic_cast<const Ar1cParams &>(noise);
     const Ar1cParams &prior = dynamic_cast<const Ar1cParams &>(noisePrior);
@@ -622,7 +619,8 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
     {
         const GammaDist &phi2 = posterior.phis.at(2 - 1);
 
-        Qsum = alphaMat.GetMarginal(1) * (phi1.b * phi1.c) + alphaMat.GetMarginal(2) * (phi2.b * phi2.c);
+        Qsum = alphaMat.GetMarginal(1) * (phi1.b * phi1.c)
+            + alphaMat.GetMarginal(2) * (phi2.b * phi2.c);
     }
     else
     {
@@ -637,10 +635,12 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
     // in vb_ar1c_freeenergy.m, as of 12-Apr-2007.
 
     double expectedLogAlphaDist = // Now match
-        +0.5 * posterior.alpha.GetPrecisions().LogDeterminant().LogValue() - 0.5 * nAlphas * (log(2 * M_PI) + 1);
+        +0.5 * posterior.alpha.GetPrecisions().LogDeterminant().LogValue()
+        - 0.5 * nAlphas * (log(2 * M_PI) + 1);
 
     double expectedLogThetaDist = // Now match
-        +0.5 * theta.GetPrecisions().LogDeterminant().LogValue() - 0.5 * nTheta * (log(2 * M_PI) + 1);
+        +0.5 * theta.GetPrecisions().LogDeterminant().LogValue()
+        - 0.5 * nTheta * (log(2 * M_PI) + 1);
 
     double expectedLogPhiDist = 0;
     vector<double> expectedLogPosteriorParts(10);
@@ -656,26 +656,36 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
 
         expectedLogPhiDist += -gammaln(ci) - ci * log(si) - ci + (ci - 1) * (digamma(ci) + log(si));
 
-        expectedLogPosteriorParts[0] += (digamma(ci) + log(si)) * ((nTimes - 1) * 0.5 + prior.phis[i].c - 1);
+        expectedLogPosteriorParts[0]
+            += (digamma(ci) + log(si)) * ((nTimes - 1) * 0.5 + prior.phis[i].c - 1);
 
-        expectedLogPosteriorParts[9] += -2 * gammaln(ciPrior) - 2 * ciPrior * log(siPrior) - si * ci / siPrior;
+        expectedLogPosteriorParts[9]
+            += -2 * gammaln(ciPrior) - 2 * ciPrior * log(siPrior) - si * ci / siPrior;
     }
 
     expectedLogPosteriorParts[1] = -log(2 * M_PI) * (nTimes - 1 + 0.5 * nAlphas + 0.5 * nTheta);
 
-    expectedLogPosteriorParts[2] = -0.5 * (k.t() * Qsum * k).AsScalar() - 0.5 * (J.t() * Qsum * J * Linv).Trace();
+    expectedLogPosteriorParts[2]
+        = -0.5 * (k.t() * Qsum * k).AsScalar() - 0.5 * (J.t() * Qsum * J * Linv).Trace();
 
     expectedLogPosteriorParts[3] = +0.5 * thetaPrior.GetPrecisions().LogDeterminant().LogValue();
 
-    expectedLogPosteriorParts[4] = -0.5 * ((theta.means - thetaPrior.means).t() * thetaPrior.GetPrecisions() * (theta.means - thetaPrior.means)).AsScalar();
+    expectedLogPosteriorParts[4] = -0.5
+        * ((theta.means - thetaPrior.means).t() * thetaPrior.GetPrecisions()
+              * (theta.means - thetaPrior.means))
+              .AsScalar();
 
     expectedLogPosteriorParts[5] = -0.5 * (Linv * thetaPrior.GetPrecisions()).Trace();
 
     expectedLogPosteriorParts[6] = +0.5 * prior.alpha.GetPrecisions().LogDeterminant().LogValue();
 
-    expectedLogPosteriorParts[7] = -0.5 * ((posterior.alpha.means - prior.alpha.means).t() * prior.alpha.GetPrecisions() * (posterior.alpha.means - prior.alpha.means)).AsScalar(); // */
+    expectedLogPosteriorParts[7] = -0.5
+        * ((posterior.alpha.means - prior.alpha.means).t() * prior.alpha.GetPrecisions()
+              * (posterior.alpha.means - prior.alpha.means))
+              .AsScalar(); // */
 
-    expectedLogPosteriorParts[8] = -0.5 * (posterior.alpha.GetCovariance() * prior.alpha.GetPrecisions()).Trace();
+    expectedLogPosteriorParts[8]
+        = -0.5 * (posterior.alpha.GetCovariance() * prior.alpha.GetPrecisions()).Trace();
 
     // Assemble the parts into F
     double F = -expectedLogAlphaDist - expectedLogThetaDist - expectedLogPhiDist;
@@ -685,12 +695,12 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
 
     // Display the breakdown into terms
     /*  LOG << "F parts: " << -expectedLogAlphaDist << ", "
-	 << -expectedLogThetaDist << ", "
-	 << -expectedLogPhiDist;
-	 for (int i=0; i<10; i++)
-	 LOG << ", [" << i << "] == " << expectedLogPosteriorParts[i];
-	 LOG << endl;
-	 // */
+     << -expectedLogThetaDist << ", "
+     << -expectedLogPhiDist;
+     for (int i=0; i<10; i++)
+     LOG << ", [" << i << "] == " << expectedLogPosteriorParts[i];
+     LOG << endl;
+     // */
 
     // Error checking
     if (!(F - F == 0))
@@ -705,8 +715,8 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
     return F;
 }
 
-void Ar1cNoiseModel::Precalculate(NoiseParams &noise, const NoiseParams &noisePrior,
-    const ColumnVector &sampleData) const
+void Ar1cNoiseModel::Precalculate(
+    NoiseParams &noise, const NoiseParams &noisePrior, const ColumnVector &sampleData) const
 {
     Ar1cParams &posterior = dynamic_cast<Ar1cParams &>(noise);
     const Ar1cParams &prior = dynamic_cast<const Ar1cParams &>(noisePrior);

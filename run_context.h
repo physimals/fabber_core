@@ -1,7 +1,7 @@
 /**
  * run_context.h
  *
- * Copyright (C) 2007-2017 University of Oxford  
+ * Copyright (C) 2007-2017 University of Oxford
  */
 
 /*  CCOPYRIGHT */
@@ -16,7 +16,7 @@
 /**
  * Structure containing per-voxel state information for the run
  *
- * This is currently just a convenient way to pass around the information needed. 
+ * This is currently just a convenient way to pass around the information needed.
  * However it could take on some of the roles of the VB inference technique, e.g.
  * storing a reference to the main voxel data and identifying nearest neighbours
  */

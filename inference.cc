@@ -37,14 +37,10 @@ InferenceTechnique *InferenceTechnique::NewFromName(const string &name)
 
 void InferenceTechnique::UsageFromName(const string &name, std::ostream &stream)
 {
-    stream << "Usage information for method: " << name << endl
-           << endl;
+    stream << "Usage information for method: " << name << endl << endl;
 
     std::auto_ptr<InferenceTechnique> method(NewFromName(name));
-    stream << method->GetDescription() << endl
-           << endl
-           << "Options: " << endl
-           << endl;
+    stream << method->GetDescription() << endl << endl << "Options: " << endl << endl;
     vector<OptionSpec> options;
     method->GetOptions(options);
     if (options.size() > 0)
@@ -85,15 +81,18 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
     m_halt_bad_voxel = !rundata.GetBool("allow-bad-voxels");
     if (m_halt_bad_voxel)
     {
-        LOG << "InferenceTechnique::Note: numerical errors in voxels will cause the program to halt.\n"
-            << "InferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on calculating.\n";
+        LOG << "InferenceTechnique::Note: numerical errors in voxels will cause the program to "
+               "halt.\n"
+            << "InferenceTechnique::Use --allow-bad-voxels (with caution!) to keep on "
+               "calculating.\n";
     }
     else
     {
         LOG << "InferenceTechnique::Using --allow-bad-voxels: numerical errors in a voxel will\n"
             << "InferenceTechnique::simply stop the calculation of that voxel.\n"
             << "InferenceTechnique::Check log for 'Going on to the next voxel' messages.\n"
-            << "InferenceTechnique::Note that you should get very few (if any) exceptions like this;"
+            << "InferenceTechnique::Note that you should get very few (if any) exceptions like "
+               "this;"
             << "InferenceTechnique::they are probably due to bugs or a numerically unstable model.";
     }
 }
@@ -152,7 +151,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
         LOG << "InferenceTechnique::Writing model fit/residuals..." << endl;
 
         Matrix result, residuals, datamtx, coords, suppdata;
-        datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data in its calculations
+        datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data
+                                              // in its calculations
         coords = rundata.GetVoxelCoords();
         suppdata = rundata.GetVoxelSuppData();
         result.ReSize(datamtx.Nrows(), nVoxels);
@@ -174,7 +174,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                 }
 
                 // do the evaluation
-                m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
+                m_model->EvaluateFabber(
+                    resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
                 result.Column(vox) = tmp;
             }
             if (*iter == "")
@@ -225,7 +226,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     LOG << "InferenceTechnique::Done writing results." << endl;
 }
 
-void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData &rundata, string paramFilename = "")
+void InferenceTechnique::InitMVNFromFile(
+    string continueFromFile, FabberRunData &rundata, string paramFilename = "")
 {
     // Loads in a MVN to set it as inital values for inference
     // can cope with the special scenario in which extra parameters have been added to the inference
@@ -256,7 +258,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
             paramNames.push_back(currparam);
             LOG << currparam << endl;
         }
-        paramNames.pop_back(); //remove final empty line assocaited with eof
+        paramNames.pop_back(); // remove final empty line assocaited with eof
 
         // get the parameters in the model
         vector<string> ModelparamNames;
@@ -267,7 +269,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
             LOG << ModelparamNames[p] << endl;
         }
 
-        //load in the MVN
+        // load in the MVN
         vector<MVNDist *> MVNfile;
         MVNDist::Load(MVNfile, "continue-from-mvn", rundata, m_log);
 
@@ -287,7 +289,8 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
         vector<bool> usefile(m_num_params, false);
         // If true, location of parameter in file (starting at 0)
         vector<int> oldloc(m_num_params, 0);
-        // Vector of bools, one for each parameter in the file. True to flag matched to a file parameter
+        // Vector of bools, one for each parameter in the file. True to flag matched to a file
+        // parameter
         vector<bool> hasmatched(m_num_params, false);
         for (int p = 0; p < m_num_params; p++)
         {
@@ -308,7 +311,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
             }
         }
 
-        //Make a note of any parameters in the file that were not matched to params in the model
+        // Make a note of any parameters in the file that were not matched to params in the model
         for (unsigned int q = 0; q < paramNames.size(); q++)
         {
             if (!hasmatched[q])
@@ -336,7 +339,8 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
         {
             // Get the file data
             MVNDist fwddist = MVNfile[v]->GetSubmatrix(1, n_file_params);
-            MVNDist noisedist = MVNfile[v]->GetSubmatrix(n_file_params + 1, n_file_params + n_file_noiseparams);
+            MVNDist noisedist
+                = MVNfile[v]->GetSubmatrix(n_file_params + 1, n_file_params + n_file_noiseparams);
 
             for (unsigned int p = 0; p < ModelparamNames.size(); p++)
             {
@@ -349,7 +353,7 @@ void InferenceTechnique::InitMVNFromFile(string continueFromFile, FabberRunData 
             MVNDist newfwd(m_num_params);
             newfwd.means = newmeans;
 
-            //deal with the covariances
+            // deal with the covariances
             SymmetricMatrix filecov = fwddist.GetCovariance();
             for (unsigned int p = 0; p < ModelparamNames.size(); p++)
             {

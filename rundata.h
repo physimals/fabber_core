@@ -100,9 +100,7 @@ enum VoxelDataType
 class ProgressCheck
 {
 public:
-    virtual void Progress(int voxel, int nVoxels)
-    {
-    }
+    virtual void Progress(int voxel, int nVoxels) {}
 };
 
 /**
@@ -161,93 +159,93 @@ class FabberRunData : public Loggable
 {
 public:
     /**
-	 * Get general Fabber option descriptions
-	 */
+     * Get general Fabber option descriptions
+     */
     static void GetOptions(std::vector<OptionSpec> &opts);
 
     /**
-	 * Constructor
-	 *
-	 * @param io Instance responsible for loading/saving voxel data.
-	 *           This will not be copied or freed. The caller is responsible
-	 *           for freeing it after use.
-	 */
+     * Constructor
+     *
+     * @param io Instance responsible for loading/saving voxel data.
+     *           This will not be copied or freed. The caller is responsible
+     *           for freeing it after use.
+     */
     FabberRunData(bool compat_options = true);
     virtual ~FabberRunData();
 
     /**
-	 * Run fabber
-	 */
+     * Run fabber
+     */
     void Run(ProgressCheck *check = 0);
 
     /**
-	 * Parse command line arguments into run data
-	 *
-	 * Accepted forms:
-	 * --key=value -> args[key] == value
-	 * --key value -> args[key] == value
-	 * --key       -> args[key] == ""
-	 * For the last one, use args.count(key) as a boolean flag.  Do not look at
-	 * args[key] because that will create the empty key for you!
-	 * Also, the command name is stored in args[""].
+     * Parse command line arguments into run data
+     *
+     * Accepted forms:
+     * --key=value -> args[key] == value
+     * --key value -> args[key] == value
+     * --key       -> args[key] == ""
+     * For the last one, use args.count(key) as a boolean flag.  Do not look at
+     * args[key] because that will create the empty key for you!
+     * Also, the command name is stored in args[""].
 
-	 * Extensions:
-	 * - use a multimap so duplicate options are okay
-	 * - accept short-form options (e.g. -k)
-	 */
+     * Extensions:
+     * - use a multimap so duplicate options are okay
+     * - accept short-form options (e.g. -k)
+     */
     void Parse(int argc, char **argv);
 
     /**
-	 * Parse options from a .fab file
-	 *
-	 * This file has a simple format:
-	 *
-	 * # This is a comment
-	 * option=value
-	 * bool-option
-	 */
+     * Parse options from a .fab file
+     *
+     * This file has a simple format:
+     *
+     * # This is a comment
+     * option=value
+     * bool-option
+     */
     void ParseParamFile(const std::string &file);
 
     /**
-	 * Set string option.
-	 *
-	 * Will overwrite any boolean option of the same name
-	 *
-	 * @param key Name of the string option
-	 * @param value It's value
-	 */
+     * Set string option.
+     *
+     * Will overwrite any boolean option of the same name
+     *
+     * @param key Name of the string option
+     * @param value It's value
+     */
     void Set(const std::string &key, const std::string &value);
 
     /**
-	 * Set string option from a number.
-	 *
-	 * Will overwrite any boolean option of the same name
-	 *
-	 * @param key Name of the string option
-	 * @param value which will be converted to string
-	 */
+     * Set string option from a number.
+     *
+     * Will overwrite any boolean option of the same name
+     *
+     * @param key Name of the string option
+     * @param value which will be converted to string
+     */
     void Set(const std::string &key, double value);
 
     /**
-	 * 'Unset' an option
-	 *
-	 * If the option is normally treated as a bool its
-	 * value will now be 'false'
-	 */
+     * 'Unset' an option
+     *
+     * If the option is normally treated as a bool its
+     * value will now be 'false'
+     */
     void Unset(const std::string &key);
 
     /**
-	 * Set boolean option.
-	 *
-	 * Will overwrite any string option of the same name
-	 *
-	 * Note we do not overload the Set() method because
-	 * C++ will then misinterpret any call to Set which
-	 * uses a C-string as the value.
-	 *
-	 * @param key Name of the boolean option
-	 * @param value true or false
-	 */
+     * Set boolean option.
+     *
+     * Will overwrite any string option of the same name
+     *
+     * Note we do not overload the Set() method because
+     * C++ will then misinterpret any call to Set which
+     * uses a C-string as the value.
+     *
+     * @param key Name of the boolean option
+     * @param value true or false
+     */
     void SetBool(const std::string &key, bool value = true);
 
     /**
@@ -257,301 +255,305 @@ public:
     bool HaveKey(const std::string &key);
 
     /**
-	 * Get string option.
-	 *
-	 * @param key Name of the string option
-	 * @throw if option is missing or is a boolean
-	 */
+     * Get string option.
+     *
+     * @param key Name of the string option
+     * @throw if option is missing or is a boolean
+     */
     std::string GetString(const std::string &key);
 
     /**
-	 * Get string option with default if not found.
-	 *
-	 * @param key Name of the string option
-	 * @param def Default value to return if not found
-	 */
+     * Get string option with default if not found.
+     *
+     * @param key Name of the string option
+     * @param def Default value to return if not found
+     */
     std::string GetStringDefault(const std::string &key, const std::string &def) const;
 
     /**
-	 * Get a list of integers specified with a prefix and an index ,e.g. param1=a param2=b, etc
-	 *
-	 * @see GetIntList for details
-	 *
-	 * @param prefix Prefix before the index number
-	 */
+     * Get a list of integers specified with a prefix and an index ,e.g. param1=a param2=b, etc
+     *
+     * @see GetIntList for details
+     *
+     * @param prefix Prefix before the index number
+     */
     std::vector<std::string> GetStringList(const std::string &prefix);
 
     /**
-	 * Get boolean option
-	 *
-	 * @param key Name of the boolean option
-	 * @throw if string option specified
-	 */
+     * Get boolean option
+     *
+     * @param key Name of the boolean option
+     * @throw if string option specified
+     */
     bool GetBool(const std::string &key);
 
     /**
-	 * Get an integer option
-	 *
-	 * @param key Name of the option
-	 * @throw if option not specified, or not an integer
-	 */
+     * Get an integer option
+     *
+     * @param key Name of the option
+     * @throw if option not specified, or not an integer
+     */
     int GetInt(const std::string &key, int min = INT_MIN, int max = INT_MAX);
 
     /**
-	 * Get an integer option, returning default if not specified
-	 *
-	 * @param key Name of the option
-	 * @throw if option specified, but not a valid integer
-	 */
+     * Get an integer option, returning default if not specified
+     *
+     * @param key Name of the option
+     * @throw if option specified, but not a valid integer
+     */
     int GetIntDefault(const std::string &key, int def, int min = INT_MIN, int max = INT_MAX);
 
     /**
-	 * Get a list of integers specified with a prefix and an index ,e.g. rpt1=2, rpt2=3, etc
-	 *
-	 * The index number starts at 1. The list stops at the first index where no option can be 
-	 * found, so e.g. if options are given as a1=3 a2=4 a4=3 then only the first two items would 
-	 * be returned
-	 *
-	 * @param prefix Prefix before the index number
-	 * @param min Minimum allowed value
-	 * @param max maximum allowed value
-	 * @throw if option specified, but not a valid integer
-	 */
+     * Get a list of integers specified with a prefix and an index ,e.g. rpt1=2, rpt2=3, etc
+     *
+     * The index number starts at 1. The list stops at the first index where no option can be
+     * found, so e.g. if options are given as a1=3 a2=4 a4=3 then only the first two items would
+     * be returned
+     *
+     * @param prefix Prefix before the index number
+     * @param min Minimum allowed value
+     * @param max maximum allowed value
+     * @throw if option specified, but not a valid integer
+     */
     std::vector<int> GetIntList(const std::string &prefix, int min = INT_MIN, int max = INT_MAX);
 
     /**
-	 * Get an double option
-	 *
-	 * @param key Name of the option
-	 * @throw if option not specified, or not a double
-	 */
+     * Get an double option
+     *
+     * @param key Name of the option
+     * @throw if option not specified, or not a double
+     */
     double GetDouble(const std::string &key, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
-	 * Get an double option, returning default if not specified
-	 *
-	 * @param key Name of the option
-	 * @throw if option specified, but not a valid number
-	 */
-    double GetDoubleDefault(const std::string &key, double def, double min = -DBL_MAX, double max = DBL_MAX);
+     * Get an double option, returning default if not specified
+     *
+     * @param key Name of the option
+     * @throw if option specified, but not a valid number
+     */
+    double GetDoubleDefault(
+        const std::string &key, double def, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
-	 * Get a list of integers specified with a prefix and an index ,e.g. ti1=0.6, ti2=1.2, etc
-	 *
-	 * @see GetIntList for details
-	 *
-	 * @param prefix Prefix before the index number
-	 * @param min Minimum allowed value
-	 * @param max maximum allowed value
-	 * @throw if option specified, but not a valid number
-	 */
-    std::vector<double> GetDoubleList(const std::string &prefix, double min = -DBL_MAX, double max = DBL_MAX);
+     * Get a list of integers specified with a prefix and an index ,e.g. ti1=0.6, ti2=1.2, etc
+     *
+     * @see GetIntList for details
+     *
+     * @param prefix Prefix before the index number
+     * @param min Minimum allowed value
+     * @param max maximum allowed value
+     * @throw if option specified, but not a valid number
+     */
+    std::vector<double> GetDoubleList(
+        const std::string &prefix, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
-	 * Get the output directory for this run.
-	 *
-	 * This is derived from the value of the 'output' parameter.
-	 * However if this directory already exists and the 'overwrite'
-	 * boolean parameter is not set, then we append '+' to the
-	 * directory name until we obtain a unique directory, which
-	 * will then be created. If more than 50 such directories are
-	 * tried, give up and throw an exception
-	 *
-	 * If 'overwrite' is specified, we just use the directory specified
-	 * in the 'output' parameter regardless of whether it exists or
-	 * not. If it cannot be written to an exception is thrown.
-	 *
-	 * If 'output' is not set, "." is returned so output is written
-	 * to the working directory.
-	 */
+     * Get the output directory for this run.
+     *
+     * This is derived from the value of the 'output' parameter.
+     * However if this directory already exists and the 'overwrite'
+     * boolean parameter is not set, then we append '+' to the
+     * directory name until we obtain a unique directory, which
+     * will then be created. If more than 50 such directories are
+     * tried, give up and throw an exception
+     *
+     * If 'overwrite' is specified, we just use the directory specified
+     * in the 'output' parameter regardless of whether it exists or
+     * not. If it cannot be written to an exception is thrown.
+     *
+     * If 'output' is not set, "." is returned so output is written
+     * to the working directory.
+     */
     std::string GetOutputDir();
 
     /**
-	 * Save the specified voxel data
-	 *
-	 * If SetSaveFiles has been set to true, the specified data will be written
-	 * out to a file but not kept in memory. This is the default when
-	 * command line options have been used to initialize the rundata using Parse
-	 *
-	 * If SetSaveFiles is fales, the data will be saved internally
-	 * and can be retrieved using GetVoxelData. The filename specified is the
-	 * data key value.
-	 *
-	 * @param filename Filename to write to, or the key name for the data
-	 * @param data Data as a matrix in which each column is a voxel, and
-	 *        rows contain a series of data values for that voxel
-	 */
-    virtual void SaveVoxelData(const std::string &filename, NEWMAT::Matrix &coords, VoxelDataType data_type = VDT_SCALAR);
+     * Save the specified voxel data
+     *
+     * If SetSaveFiles has been set to true, the specified data will be written
+     * out to a file but not kept in memory. This is the default when
+     * command line options have been used to initialize the rundata using Parse
+     *
+     * If SetSaveFiles is fales, the data will be saved internally
+     * and can be retrieved using GetVoxelData. The filename specified is the
+     * data key value.
+     *
+     * @param filename Filename to write to, or the key name for the data
+     * @param data Data as a matrix in which each column is a voxel, and
+     *        rows contain a series of data values for that voxel
+     */
+    virtual void SaveVoxelData(
+        const std::string &filename, NEWMAT::Matrix &coords, VoxelDataType data_type = VDT_SCALAR);
 
     /**
-	 * Get the voxel co-ordinates
-	 *
-	 * @return an Nx3 matrix where each column is a voxel and the rows
-	 *         are the xyz co-ords of the voxel. The co-ordinates are
-	 *         grid positions (integers), not physical co-ordiantes (mm)
-	 */
+     * Get the voxel co-ordinates
+     *
+     * @return an Nx3 matrix where each column is a voxel and the rows
+     *         are the xyz co-ords of the voxel. The co-ordinates are
+     *         grid positions (integers), not physical co-ordiantes (mm)
+     */
     const NEWMAT::Matrix &GetVoxelCoords();
 
     /**
-	 * Get named voxel data
-	 *
-	 * GetVoxelData will check recursively for a string option with this key
-	 * until it can resolve the key no further. The last non-empty key will
-	 * then be used to request data from the FabberIo instance.
-	 *
-	 * For example, if GetVoxelData("data") is called, we first check for a
-	 * string option with key "data". If this option is set to "fmri_data",
-	 * then we check for a string option with key "fmri_data", and so on.
-	 * If no option with key "fmri_data" is found, we ask our FabberIo instance
-	 * to get the data with key "fmri_data", which it might, for example,
-	 * load from a file fmri_data.nii.gz.
-	 *
-	 * This sounds complicated, but actually simplifies situations such as
-	 * restarting runs from a file, where the restart might come from memory
-	 * saved data, or an external file.
-	 *
-	 * @param key Name identifying the voxel data required.
-	 * @return an NxM matrix where each column contains the data for a single
-	 *         voxel. The rows may contain the time series of data for that voxel
-	 *         however they might be used for other purposes, e.g. storing the mean
-	 *         of each parameter for that voxel.
-	 * @throw DataNotFound If no voxel data matching key is found and no data
-	 *                     could be loaded
-	 */
+     * Get named voxel data
+     *
+     * GetVoxelData will check recursively for a string option with this key
+     * until it can resolve the key no further. The last non-empty key will
+     * then be used to request data from the FabberIo instance.
+     *
+     * For example, if GetVoxelData("data") is called, we first check for a
+     * string option with key "data". If this option is set to "fmri_data",
+     * then we check for a string option with key "fmri_data", and so on.
+     * If no option with key "fmri_data" is found, we ask our FabberIo instance
+     * to get the data with key "fmri_data", which it might, for example,
+     * load from a file fmri_data.nii.gz.
+     *
+     * This sounds complicated, but actually simplifies situations such as
+     * restarting runs from a file, where the restart might come from memory
+     * saved data, or an external file.
+     *
+     * @param key Name identifying the voxel data required.
+     * @return an NxM matrix where each column contains the data for a single
+     *         voxel. The rows may contain the time series of data for that voxel
+     *         however they might be used for other purposes, e.g. storing the mean
+     *         of each parameter for that voxel.
+     * @throw DataNotFound If no voxel data matching key is found and no data
+     *                     could be loaded
+     */
     const NEWMAT::Matrix &GetVoxelData(const std::string &key);
 
     /**
-	 * Get named voxel data, with no further resolution of the name.
-	 *
-	 * Can be overridden in a subclass to, for example, load data from
-	 * an external file. In this case, key will be the filename
-	 */
+     * Get named voxel data, with no further resolution of the name.
+     *
+     * Can be overridden in a subclass to, for example, load data from
+     * an external file. In this case, key will be the filename
+     */
     virtual const NEWMAT::Matrix &LoadVoxelData(const std::string &key);
 
     /**
-	 * Get the number of data values associated with each voxel for the named data
-	 *
-	 * @param key Name identifying the voxel data
-	 * @return The number of data values, e.g. 1 for a simple image, or for a time
-	 *         series the number of time slices, etc.
-	 */
+     * Get the number of data values associated with each voxel for the named data
+     *
+     * @param key Name identifying the voxel data
+     * @return The number of data values, e.g. 1 for a simple image, or for a time
+     *         series the number of time slices, etc.
+     */
     int GetVoxelDataSize(const std::string &key);
 
     /**
-	 * Get the main voxel data
-	 *
-	 * This will initially call GetVoxelData with the key "data", however if
-	 * this is not found it may attempt to load data from multiple files
-	 * "data1", "data2", etc, using the data-order option.
-	 *
-	 * @return an NxT matrix where each column contains the data for a single
-	 *         voxel. The rows contain the time series of data for that voxel
-	 */
+     * Get the main voxel data
+     *
+     * This will initially call GetVoxelData with the key "data", however if
+     * this is not found it may attempt to load data from multiple files
+     * "data1", "data2", etc, using the data-order option.
+     *
+     * @return an NxT matrix where each column contains the data for a single
+     *         voxel. The rows contain the time series of data for that voxel
+     */
     const NEWMAT::Matrix &GetMainVoxelData();
 
     /**
-	 * Get the voxel supplementary data
-	 *
-	 * This is equivalent to calling GetVoxelData("suppdata"), except that if
-	 * no supplemental data is found this method returns an empty matrix rather
-	 * than throwing an exception.
-	 *
-	 * @return an NxT matrix where each column contains the supplementary data for a single
-	 *         voxel. The rows contain the time series of data for that voxel
-	 */
+     * Get the voxel supplementary data
+     *
+     * This is equivalent to calling GetVoxelData("suppdata"), except that if
+     * no supplemental data is found this method returns an empty matrix rather
+     * than throwing an exception.
+     *
+     * @return an NxT matrix where each column contains the supplementary data for a single
+     *         voxel. The rows contain the time series of data for that voxel
+     */
     const NEWMAT::Matrix &GetVoxelSuppData();
 
     /**
-	 * Get the data extent.
-	 *
-	 * FIXME dims is not yet implemented
-	 *
-	 * @param extent will be set to a list of the number of voxels in the x, y, z dimensions
-	 * @param dims will be set to a list of the mm physical sizes of each voxel in the x,y, z dimensions,
-	 *             if these are available. If not, they will be set equal to extent.
-	 */
+     * Get the data extent.
+     *
+     * FIXME dims is not yet implemented
+     *
+     * @param extent will be set to a list of the number of voxels in the x, y, z dimensions
+     * @param dims will be set to a list of the mm physical sizes of each voxel in the x,y, z
+     * dimensions,
+     *             if these are available. If not, they will be set equal to extent.
+     */
     virtual void GetExtent(std::vector<int> &extent, std::vector<float> &dims);
 
     /**
-	 * Set the data extent.
-	 *
-	 * The only requirement of the voxel numbers is that the coordinates do not
-	 * go outside the extent, e.g. the maximum x value is less than nx.
-	 * The voxel sizes may be used by the spatial method to allow for
-	 * anisotropic voxels when calculating distances.
-	 *
-	 * @param nx, ny, nz Number of voxels in x, y and z dimensions
-	 * @param sx, sy, sz Size of voxel in x, y and z dimensions
-	 */
+     * Set the data extent.
+     *
+     * The only requirement of the voxel numbers is that the coordinates do not
+     * go outside the extent, e.g. the maximum x value is less than nx.
+     * The voxel sizes may be used by the spatial method to allow for
+     * anisotropic voxels when calculating distances.
+     *
+     * @param nx, ny, nz Number of voxels in x, y and z dimensions
+     * @param sx, sy, sz Size of voxel in x, y and z dimensions
+     */
     void SetExtent(int nx, int ny, int nz, float sx = 1.0, float sy = 1.0, float sz = 1.0);
 
     /**
-	 * Clear the named voxel data from this IO module.
-	 *
-	 * If key is not specified, clear all voxel data.
-	 *
-	 * Internal data set in the Initialize method should not be cleared, only data which
-	 * affects LoadVoxelData and SaveVoxelData. GetVoxelCoords should not be affected
-	 * by a call to Clear()
-	 *
-	 * @param key Voxel data to clear, or if not specified, clear all voxel data.
-	 */
+     * Clear the named voxel data from this IO module.
+     *
+     * If key is not specified, clear all voxel data.
+     *
+     * Internal data set in the Initialize method should not be cleared, only data which
+     * affects LoadVoxelData and SaveVoxelData. GetVoxelCoords should not be affected
+     * by a call to Clear()
+     *
+     * @param key Voxel data to clear, or if not specified, clear all voxel data.
+     */
     virtual void ClearVoxelData(std::string key = "");
 
     /**
-	 * Set named voxel data
-	 *
-	 * @param key Name identifying the voxel data required
-	 * @param data an NxM matrix where each column contains the data for a single
-	 *        voxel. The rows may contain the time series of data for that voxel
-	 *        however they might be used for other purposes, e.g. storing the mean
-	 *        of each parameter for that voxel.
-	 * @throw If number of columns in data is not equal to the number of voxels
-	 */
+     * Set named voxel data
+     *
+     * @param key Name identifying the voxel data required
+     * @param data an NxM matrix where each column contains the data for a single
+     *        voxel. The rows may contain the time series of data for that voxel
+     *        however they might be used for other purposes, e.g. storing the mean
+     *        of each parameter for that voxel.
+     * @throw If number of columns in data is not equal to the number of voxels
+     */
     virtual void SetVoxelData(std::string key, const NEWMAT::Matrix &data);
 
     /**
-	 * Set the voxel co-ordinates
-	 *
-	 * @param coords an Nx3 matrix where each column is a voxel and the rows
-	 *         are the xyz co-ords of the voxel. The co-ordinates are
-	 *         grid positions (integers), not physical co-ordiantes (mm)
-	 */
+     * Set the voxel co-ordinates
+     *
+     * @param coords an Nx3 matrix where each column is a voxel and the rows
+     *         are the xyz co-ords of the voxel. The co-ordinates are
+     *         grid positions (integers), not physical co-ordiantes (mm)
+     */
     void SetVoxelCoords(const NEWMAT::Matrix &coords);
 
     /**
- 	 * Get list of nearest neighbours for each voxel
-	 *
-	 * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
-	 *               although this is unusual!
-	 *
-	 * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
- 	 */
+     * Get list of nearest neighbours for each voxel
+     *
+     * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
+     *               although this is unusual!
+     *
+     * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+     */
     std::vector<std::vector<int> > &GetNeighbours(int n_dims = 3);
 
     /**
       * Get list of second nearest neighbours for each voxel
-	  * 
- 	  * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
-	  *               although this is unusual!
-	  *
-	  * The list for each voxel will exclude itself, but include duplicates
-	  * if there are two routes to get there (diagonally connected) 
+      *
+      * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
+      *               although this is unusual!
+      *
+      * The list for each voxel will exclude itself, but include duplicates
+      * if there are two routes to get there (diagonally connected)
       *
       * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
       */
     std::vector<std::vector<int> > &GetSecondNeighbours(int n_dims = 3);
 
     /**
-	 * Report progress
-	 *
-	 * InferenceMethods call this to report how many voxels
-	 * have been completed. It will call the user-supplied
-	 * progress checking functor
-	 *
-	 * @param voxel Current voxel
-	 * @param nVoxels Total number of voxels
-	 */
+     * Report progress
+     *
+     * InferenceMethods call this to report how many voxels
+     * have been completed. It will call the user-supplied
+     * progress checking functor
+     *
+     * @param voxel Current voxel
+     * @param nVoxels Total number of voxels
+     */
     void Progress(int voxel, int nVoxels)
     {
         if (m_progress)
@@ -559,14 +561,14 @@ public:
     }
 
     /**
-	 * Send list of all parameters to the logfile
-	 */
+     * Send list of all parameters to the logfile
+     */
     void LogParams();
 
     /**
-	 * Friend function to allow summary of Parameters to be streamed
-	 * using the << operator.
-	 */
+     * Friend function to allow summary of Parameters to be streamed
+     * using the << operator.
+     */
     friend ostream &operator<<(ostream &out, const FabberRunData &opts);
 
 // Following methods present for compatibility only
@@ -600,21 +602,21 @@ protected:
     ProgressCheck *m_progress;
 
     /**
-	 * Empty matrix
-	 *
-	 * Used for returning SUPPDATA which is optional and methods expect to receive
-	 * and empty matrix when it is not supplied
-	 */
+     * Empty matrix
+     *
+     * Used for returning SUPPDATA which is optional and methods expect to receive
+     * and empty matrix when it is not supplied
+     */
     NEWMAT::Matrix m_empty;
 
     /**
-	 * Stores main voxel data when supplied in concatenated/interleaved form
-	 */
+     * Stores main voxel data when supplied in concatenated/interleaved form
+     */
     NEWMAT::Matrix m_mainDataMultiple;
 
     /**
-	 * Options as key/value pairs
-	 */
+     * Options as key/value pairs
+     */
     std::map<std::string, std::string> m_params;
 
     /** Nearest neighbour lists, calculated lazily in GetNeighbours() */
@@ -714,8 +716,7 @@ public:
 
 // Convert a string into almost anything, using operator>>. See the C++ FAQ-Lite:
 // http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.3
-template <typename T>
-inline T convertTo(const std::string &s, const std::string &key = "")
+template <typename T> inline T convertTo(const std::string &s, const std::string &key = "")
 {
     T x;
     istringstream i(s);
