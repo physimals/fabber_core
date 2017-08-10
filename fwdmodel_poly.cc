@@ -22,7 +22,10 @@ using namespace std;
 static OptionSpec OPTIONS[]
     = { { "degree", OPT_INT, "Maximum power in the polynomial function", OPT_REQ, "" }, { "" } };
 
-FwdModel *PolynomialFwdModel::NewInstance() { return new PolynomialFwdModel(); }
+FwdModel *PolynomialFwdModel::NewInstance()
+{
+    return new PolynomialFwdModel();
+}
 void PolynomialFwdModel::GetOptions(vector<OptionSpec> &opts) const
 {
     for (int i = 0; OPTIONS[i].name != ""; i++)
@@ -37,7 +40,10 @@ string PolynomialFwdModel::GetDescription() const
            "c2x^2 ... etc";
 }
 
-string PolynomialFwdModel::ModelVersion() const { return fabber_version(); }
+string PolynomialFwdModel::ModelVersion() const
+{
+    return fabber_version();
+}
 void PolynomialFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
@@ -46,10 +52,10 @@ void PolynomialFwdModel::Initialize(FabberRunData &args)
 
 void PolynomialFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
 {
-    for (unsigned int i = 0; i < m_degree + 1; i++)
+    for (int i = 0; i < m_degree + 1; i++)
     {
         params.push_back(
-            Parameter(i++, "c" + stringify(i), DistParams(0, 1e12), DistParams(0, 1e12)));
+            Parameter(i, "c" + stringify(i), DistParams(0, 1e12), DistParams(0, 1e12)));
     }
 }
 

@@ -25,7 +25,10 @@ using fabber::read_matrix_file;
 using namespace std;
 using namespace NEWMAT;
 
-FwdModel *LinearFwdModel::NewInstance() { return new LinearFwdModel(); }
+FwdModel *LinearFwdModel::NewInstance()
+{
+    return new LinearFwdModel();
+}
 static OptionSpec OPTIONS[] = { { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" }, { "" } };
 
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
@@ -41,7 +44,10 @@ std::string LinearFwdModel::GetDescription() const
     return "Model in which output is a linear combination of input parameters";
 }
 
-string LinearFwdModel::ModelVersion() const { return fabber_version(); }
+string LinearFwdModel::ModelVersion() const
+{
+    return fabber_version();
+}
 void LinearFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
@@ -63,20 +69,21 @@ void LinearFwdModel::Initialize(FabberRunData &args)
     if (args.GetBool("add-ones-regressor"))
     {
         // Add an additional 'parameter' whose timeseries if constant
+        // NB: Nbasis will no longer be the number of parameters
         LOG << "LinearFwdModel::Plus an additional regressor of all ones\n";
         ColumnVector ones(Ntimes);
         ones = 1.0;
         m_jacobian = m_jacobian | ones;
-        m_centre.ReSize(++Nbasis);
+        m_centre.ReSize(Nbasis+1);
     }
 }
 
 void LinearFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
 {
-    for (unsigned int i = 0; i < m_centre.Nrows(); i++)
+    for (int i = 0; i < m_centre.Nrows(); i++)
     {
         params.push_back(
-            Parameter(i++, "Parameter_" + stringify(i), DistParams(0, 1e12), DistParams(0, 1e12)));
+            Parameter(i, "Parameter_" + stringify(i+1), DistParams(0, 1e12), DistParams(0, 1e12)));
     }
 }
 
