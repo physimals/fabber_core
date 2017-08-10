@@ -621,12 +621,14 @@ string FabberRunData::GetOutputDir()
 #ifdef _WIN32
 #else
     // Might be useful for jobs running on the queue:
-    system(("uname -a > " + m_outdir + "/uname.txt").c_str());
+    int ret = system(("uname -a > " + m_outdir + "/uname.txt").c_str());
+    if (ret != 0) LOG << "FabberRunData::uname failed - uname.txt not created" << endl;
 
     if (GetBool("link-to-latest"))
     {
         // try to make a link to the latest version. If this fails, it doesn't really matter.
-        system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
+        int ret = system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
+        if (ret != 0) LOG << "FabberRunData::link-to-latest failed" << endl;
     }
 #endif
 

@@ -30,13 +30,13 @@ protected:
         remove("testfabber.tmp");
         remove("out.tmp_latest");
         remove("uname.txt");
-        system("rm -rf out.tmp"); //Not portable!
+        int ret = system("rm -rf out.tmp"); //Not portable!
+        if (ret != 0) cerr << "WARNING: failed to remove temp directory" << endl;
     }
 
     int runFabber(string cline)
     {
         string cmd = string(FABBER_BUILD_DIR) + "/fabber " + cline + ">testfabber.tmp";
-        //cout << cmd << endl;
         return system(cmd.c_str());
     }
 
@@ -275,7 +275,8 @@ TEST_F(ClTestTest, NoOverwrite)
     ASSERT_TRUE(contains(out, "noise=white"));
     ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
 
-    system("rm -rf out.tmp+"); //Not portable!
+    int ret = system("rm -rf out.tmp+"); //Not portable!
+    if (ret != 0) cerr << "WARNING: Failed to remove temp directory out.tmp+" << endl;
 }
 
 // Test fabber will overwrite the output dir if it already exists with --overwrite
