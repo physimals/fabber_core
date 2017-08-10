@@ -25,13 +25,12 @@ using fabber::read_matrix_file;
 using namespace std;
 using namespace NEWMAT;
 
-static int NUM_OPTIONS = 1;
-static OptionSpec OPTIONS[] = { { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" } };
-
 FwdModel *LinearFwdModel::NewInstance() { return new LinearFwdModel(); }
+static OptionSpec OPTIONS[] = { { "basis", OPT_MATRIX, "Design matrix", OPT_REQ, "" }, { "" } };
+
 void LinearFwdModel::GetOptions(std::vector<OptionSpec> &opts) const
 {
-    for (int i = 0; i < NUM_OPTIONS; i++)
+    for (int i = 0; OPTIONS[i].name != ""; i++)
     {
         opts.push_back(OPTIONS[i]);
     }
@@ -68,37 +67,23 @@ void LinearFwdModel::Initialize(FabberRunData &args)
         ColumnVector ones(Ntimes);
         ones = 1.0;
         m_jacobian = m_jacobian | ones;
-        m_centre.ReSize(Nbasis + 1);
+        m_centre.ReSize(++Nbasis);
     }
-
-    //
-    // Warning: Nbasis is now wrong!
 }
 
-void LinearFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
+void LinearFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
 {
-    assert(prior.means.Nrows() == NumParams());
-
-    // Set default for each parameter to a mean of 0 and close-to-zero precision.
-    prior.means = 0;
-    prior.SetPrecisions(IdentityMatrix(NumParams()) * 1e-12);
-    posterior = prior;
+    for (unsigned int i = 0; i < m_centre.Nrows(); i++)
+    {
+        params.push_back(
+            Parameter(i++, "Parameter_" + stringify(i), DistParams(0, 1e12), DistParams(0, 1e12)));
+    }
 }
 
 void LinearFwdModel::EvaluateModel(
     const ColumnVector &params, ColumnVector &result, const std::string &key) const
 {
     result = m_jacobian * (params - m_centre) + m_offset;
-}
-
-int LinearFwdModel::NumParams() const { return m_centre.Nrows(); }
-void LinearFwdModel::NameParams(vector<string> &names) const
-{
-    names.clear();
-
-    // Completely generic names.
-    for (int i = 1; i <= NumParams(); i++)
-        names.push_back("Parameter_" + stringify(i));
 }
 
 LinearizedFwdModel::LinearizedFwdModel(const FwdModel *model)
@@ -150,7 +135,6 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 
     // Calculate the Jacobian numerically.  jacobian is len(y)-by-len(m)
     m_jacobian.ReSize(m_offset.Nrows(), m_centre.Nrows());
-    // m_jacobian = 0.0/0.0; // fill with NaNs to check
 
     // Try and get the gradient matrix (Jacobian) from the model first
     // FIXME this is broken when transforms are used
@@ -182,7 +166,6 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
     }
 
     if (0 * m_jacobian != 0 * m_jacobian)
-    //    if(true)
     {
         LOG << "LinearizedFwdModel::jacobian:\n" << m_jacobian;
         LOG << "LinearizedFwdModel::about':\n" << about.t();
@@ -194,6 +177,5 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
 
 void LinearizedFwdModel::DumpParameters(const ColumnVector &vec, const string &indent) const
 {
-    //    LOG << indent << "This is what the nonlinear model has to say:" << endl;
     m_model->DumpParameters(vec, indent);
 }

@@ -19,14 +19,13 @@
 
 using namespace std;
 
-static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[]
-    = { { "degree", OPT_INT, "Maximum power in the polynomial function", OPT_REQ, "" } };
+    = { { "degree", OPT_INT, "Maximum power in the polynomial function", OPT_REQ, "" }, { "" } };
 
 FwdModel *PolynomialFwdModel::NewInstance() { return new PolynomialFwdModel(); }
 void PolynomialFwdModel::GetOptions(vector<OptionSpec> &opts) const
 {
-    for (int i = 0; i < NUM_OPTIONS; i++)
+    for (int i = 0; OPTIONS[i].name != ""; i++)
     {
         opts.push_back(OPTIONS[i]);
     }
@@ -34,7 +33,8 @@ void PolynomialFwdModel::GetOptions(vector<OptionSpec> &opts) const
 
 string PolynomialFwdModel::GetDescription() const
 {
-    return "Model which fits data to a simple polynomial function: c0 + c1x + c2x^2 ... etc";
+    return "Model which fits data to a simple polynomial function: c0 + c1x + "
+           "c2x^2 ... etc";
 }
 
 string PolynomialFwdModel::ModelVersion() const { return fabber_version(); }
@@ -42,6 +42,15 @@ void PolynomialFwdModel::Initialize(FabberRunData &args)
 {
     FwdModel::Initialize(args);
     m_degree = convertTo<int>(args.GetString("degree"));
+}
+
+void PolynomialFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
+{
+    for (unsigned int i = 0; i < m_degree + 1; i++)
+    {
+        params.push_back(
+            Parameter(i++, "c" + stringify(i), DistParams(0, 1e12), DistParams(0, 1e12)));
+    }
 }
 
 void PolynomialFwdModel::EvaluateModel(
@@ -61,24 +70,5 @@ void PolynomialFwdModel::EvaluateModel(
             p *= i;
         }
         result(i) = res;
-    }
-}
-
-int PolynomialFwdModel::NumParams() const { return m_degree + 1; }
-void PolynomialFwdModel::HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const
-{
-    // Have to implement this
-    assert(prior.means.Nrows() == m_degree + 1);
-    prior.means = 0;
-    prior.SetPrecisions(NEWMAT::IdentityMatrix(m_degree + 1) * 1e-12);
-    posterior = prior;
-}
-
-void PolynomialFwdModel::NameParams(vector<string> &names) const
-{
-    names.clear();
-    for (int i = 0; i <= m_degree; i++)
-    {
-        names.push_back((string) "c" + stringify(i));
     }
 }

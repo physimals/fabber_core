@@ -35,29 +35,31 @@ public:
     virtual std::string ModelVersion() const;
 
     virtual void Initialize(FabberRunData &args);
-    virtual int NumParams() const;
-    virtual void NameParams(std::vector<std::string> &names) const;
-
-    virtual void HardcodedInitialDists(MVNDist &prior, MVNDist &posterior) const;
 
     /**
      * Evaluate the model.
      *
-     * In the simplest case the model is evaluated by taking the product of the design
-     * matrix with the parameter vector. However the model can be recentred and offsetted
+     * In the simplest case the model is evaluated by taking the product of the
+     * design
+     * matrix with the parameter vector. However the model can be recentred and
+     * offsetted
      * so with this in mind the evaluation consists of:
      *
      * R = J x (P - C) + O
      *
-     * Where R is the output result, J is the Jacobian or design matrix, P are the parameters,
+     * Where R is the output result, J is the Jacobian or design matrix, P are the
+     * parameters,
      * C is the centre and O is the offset.
      *
-     * Centre and offset will be zero for a basic linear model, however a subclass can set
+     * Centre and offset will be zero for a basic linear model, however a subclass
+     * can set
      * these to non-zero values, e.g. in LinearizedFwdModel
      *
-     * @param params Parameter vector, P in above equation. Length equal to number of parameters
+     * @param params Parameter vector, P in above equation. Length equal to number
+     * of parameters
      *               i.e. number of columns in design matrix.
-     * @param result Result vector, R in above equation. Length equal to number of time samples
+     * @param result Result vector, R in above equation. Length equal to number of
+     * time samples
      *               i.e. number of rows in design matrix.
      */
     virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result,
@@ -76,10 +78,12 @@ public:
      */
     NEWMAT::ReturnMatrix Offset() const { return m_offset; }
 protected:
+    virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
+
     NEWMAT::Matrix m_jacobian;     // J (tranposed?)
     NEWMAT::ColumnVector m_centre; // m
     NEWMAT::ColumnVector m_offset; // g(m)
-    // The amount to effectively subtract from Y is g(m)-J*m
+                                   // The amount to effectively subtract from Y is g(m)-J*m
 };
 
 /**
