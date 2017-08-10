@@ -14,12 +14,12 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <float.h>
+#include <limits.h>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <float.h>
-#include <limits.h>
 
 /** Include deprecated compatibility methods */
 #define DEPRECATED 7
@@ -295,7 +295,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not an integer
 	 */
-    int GetInt(const std::string &key, int min=INT_MIN, int max=INT_MAX);
+    int GetInt(const std::string &key, int min = INT_MIN, int max = INT_MAX);
 
     /**
 	 * Get an integer option, returning default if not specified
@@ -303,7 +303,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid integer
 	 */
-    int GetIntDefault(const std::string &key, int def, int min=INT_MIN, int max=INT_MAX);
+    int GetIntDefault(const std::string &key, int def, int min = INT_MIN, int max = INT_MAX);
 
     /**
 	 * Get a list of integers specified with a prefix and an index ,e.g. rpt1=2, rpt2=3, etc
@@ -317,7 +317,7 @@ public:
 	 * @param max maximum allowed value
 	 * @throw if option specified, but not a valid integer
 	 */
-    std::vector<int> GetIntList(const std::string &prefix, int min=INT_MIN, int max=INT_MAX);
+    std::vector<int> GetIntList(const std::string &prefix, int min = INT_MIN, int max = INT_MAX);
 
     /**
 	 * Get an double option
@@ -325,7 +325,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option not specified, or not a double
 	 */
-    double GetDouble(const std::string &key, double min=-DBL_MAX, double max=DBL_MAX);
+    double GetDouble(const std::string &key, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
 	 * Get an double option, returning default if not specified
@@ -333,7 +333,7 @@ public:
 	 * @param key Name of the option
 	 * @throw if option specified, but not a valid number
 	 */
-    double GetDoubleDefault(const std::string &key, double def, double min=-DBL_MAX, double max=DBL_MAX);
+    double GetDoubleDefault(const std::string &key, double def, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
 	 * Get a list of integers specified with a prefix and an index ,e.g. ti1=0.6, ti2=1.2, etc
@@ -345,7 +345,7 @@ public:
 	 * @param max maximum allowed value
 	 * @throw if option specified, but not a valid number
 	 */
-    std::vector<double> GetDoubleList(const std::string &prefix, double min=-DBL_MAX, double max=DBL_MAX);
+    std::vector<double> GetDoubleList(const std::string &prefix, double min = -DBL_MAX, double max = DBL_MAX);
 
     /**
 	 * Get the output directory for this run.
@@ -519,7 +519,7 @@ public:
 	 */
     void SetVoxelCoords(const NEWMAT::Matrix &coords);
 
-	/**
+    /**
  	 * Get list of nearest neighbours for each voxel
 	 *
 	 * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
@@ -527,9 +527,9 @@ public:
 	 *
 	 * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
  	 */
-	std::vector<std::vector<int> > &GetNeighbours(int n_dims=3);
+    std::vector<std::vector<int> > &GetNeighbours(int n_dims = 3);
 
-	/**
+    /**
       * Get list of second nearest neighbours for each voxel
 	  * 
  	  * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
@@ -540,7 +540,7 @@ public:
       *
       * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
       */
-	std::vector<std::vector<int> > &GetSecondNeighbours(int n_dims=3);
+    std::vector<std::vector<int> > &GetSecondNeighbours(int n_dims = 3);
 
     /**
 	 * Report progress
@@ -617,10 +617,10 @@ protected:
 	 */
     std::map<std::string, std::string> m_params;
 
-	/** Nearest neighbour lists, calculated lazily in GetNeighbours() */
-	std::vector<std::vector<int> > m_neighbours;
+    /** Nearest neighbour lists, calculated lazily in GetNeighbours() */
+    std::vector<std::vector<int> > m_neighbours;
 
-	/** Second nearest neighbour lists, calculated lazily in GetSecondNeighbours() */
+    /** Second nearest neighbour lists, calculated lazily in GetSecondNeighbours() */
     std::vector<std::vector<int> > m_neighbours2;
 
     std::string m_outdir;
@@ -715,7 +715,7 @@ public:
 // Convert a string into almost anything, using operator>>. See the C++ FAQ-Lite:
 // http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.3
 template <typename T>
-inline T convertTo(const std::string &s, const std::string &key="")
+inline T convertTo(const std::string &s, const std::string &key = "")
 {
     T x;
     istringstream i(s);

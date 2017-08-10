@@ -25,12 +25,17 @@ const std::string TRANSFORM_CODE_FRACTIONAL = "F";
 /**
  * Immutable object describing distribution parameters for single model parameter
  */
-struct DistParams 
+struct DistParams
 {
-    DistParams(double m=0, double v=1) : m_mean(m), m_var(v), m_prec(1/v) {}
-    double mean() const {return m_mean;}
-    double var() const {return m_var;}
-    double prec() const {return m_prec;}
+    DistParams(double m = 0, double v = 1)
+        : m_mean(m)
+        , m_var(v)
+        , m_prec(1 / v)
+    {
+    }
+    double mean() const { return m_mean; }
+    double var() const { return m_var; }
+    double prec() const { return m_prec; }
 private:
     double m_mean;
     double m_var;
@@ -44,7 +49,6 @@ class Transform
 {
 public:
     virtual ~Transform() {}
-
     /**
      * Transform the Fabber internal value (which is assumed to have a Gaussian
      * distribution) to the value required by the model
@@ -55,7 +59,7 @@ public:
      * Transform a model parameter value to the value to be used by Fabber internally
      * (and modelled as a Gaussian random variable)
      */
-     virtual double ToFabber(double val) const = 0;
+    virtual double ToFabber(double val) const = 0;
 
     /**
      * Transform the Fabber internal mean/variance (of the Gaussian
@@ -90,10 +94,10 @@ public:
 class IdentityTransform : public Transform
 {
 public:
-    double ToModel(double val) const {return val;}
-    double ToFabber(double val) const {return val;}
-    DistParams ToModel(DistParams params) const {return params;}
-    DistParams ToFabber(DistParams params) const {return params;}
+    double ToModel(double val) const { return val; }
+    double ToFabber(double val) const { return val; }
+    DistParams ToModel(DistParams params) const { return params; }
+    DistParams ToFabber(DistParams params) const { return params; }
 };
 
 /**
@@ -104,8 +108,8 @@ class LogTransform : public Transform
 public:
     virtual DistParams ToModel(DistParams params) const;
     virtual DistParams ToFabber(DistParams params) const;
-    double ToModel(double val) const {return exp(val);}
-    double ToFabber(double val) const {return log(val);}
+    double ToModel(double val) const { return exp(val); }
+    double ToFabber(double val) const { return log(val); }
 };
 
 /**
@@ -119,8 +123,8 @@ public:
 class SoftPlusTransform : public Transform
 {
 public:
-    double ToModel(double val) const {return log(1+exp(val));}
-    double ToFabber(double val) const {return log(exp(val) - 1);}
+    double ToModel(double val) const { return log(1 + exp(val)); }
+    double ToFabber(double val) const { return log(exp(val) - 1); }
 };
 
 /**
@@ -137,8 +141,8 @@ class FractionalTransform : public Transform
 public:
     DistParams ToModel(DistParams params) const;
     DistParams ToFabber(DistParams params) const;
-    double ToModel(double val) const {return 1/(1+exp(val));}
-    double ToFabber(double val) const {return log(1/val - 1);}
+    double ToModel(double val) const { return 1 / (1 + exp(val)); }
+    double ToFabber(double val) const { return log(1 / val - 1); }
 };
 
 /** Singleton instance of identity transform */

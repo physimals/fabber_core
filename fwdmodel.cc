@@ -9,9 +9,9 @@
 #include "fwdmodel.h"
 
 #include "easylog.h"
+#include "priors.h"
 #include "rundata.h"
 #include "transforms.h"
-#include "priors.h"
 
 #include <newmatio.h>
 
@@ -170,9 +170,9 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
     }
 }
 
-string FwdModel::GetDescription() const 
-{ 
-    return "No description available"; 
+string FwdModel::GetDescription() const
+{
+    return "No description available";
 }
 
 string FwdModel::ModelVersion() const
@@ -195,12 +195,12 @@ void FwdModel::PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::Colum
     coord_z = coords(3);
 }
 
-void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params) 
+void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
 {
     GetParameterDefaults(params);
     m_params.clear();
 
-    for (vector<Parameter>::iterator p=params.begin(); p<params.end(); ++p)
+    for (vector<Parameter>::iterator p = params.begin(); p < params.end(); ++p)
     {
         // Complexity below is due to there being two ways of specifying
         // priors. One is using the param-spatial-priors option which is
@@ -209,8 +209,9 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // remaining parameters'. An 'I' means an image prior and
         // the filename is specified separately using an image-prior<n> option
         string types = Prior::ExpandPriorTypesString(rundata.GetStringDefault("param-spatial-priors", ""), params.size());
-        assert(types.size()==params.size());
-        if (types[p->idx] != PRIOR_DEFAULT) {
+        assert(types.size() == params.size());
+        if (types[p->idx] != PRIOR_DEFAULT)
+        {
             p->prior_type = types[p->idx];
         }
 
@@ -219,7 +220,7 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
         // it is the parameter index in the model's list (starting at 1), below it depends on
         // the order in which the names are given in the options.
         p->options["image"] = "image-prior" + stringify(p->idx + 1);
-        
+
         // Determine if we have any PSP_byname options for this parameter. These override the
         // options above
         int psp_idx = 1;
@@ -228,18 +229,20 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
             string name = rundata.GetStringDefault("PSP_byname" + stringify(psp_idx), "stop!");
             if (name == "stop!")
                 break;
-            else if (name == p->name) 
+            else if (name == p->name)
             {
                 string psp_idx_str = stringify(psp_idx);
                 string transform_code = rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_transform", "");
-                if (transform_code != "") p->transform = GetTransform(transform_code);
+                if (transform_code != "")
+                    p->transform = GetTransform(transform_code);
 
                 char prior_type = convertTo<char>(rundata.GetStringDefault("PSP_byname" + psp_idx_str + "_type", stringify(p->prior_type)));
-                if (prior_type != PRIOR_DEFAULT) p->prior_type = prior_type;
+                if (prior_type != PRIOR_DEFAULT)
+                    p->prior_type = prior_type;
 
                 double mean = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_mean", p->prior.mean());
                 double prec = rundata.GetDoubleDefault("PSP_byname" + psp_idx_str + "_prec", p->prior.prec());
-                p->prior = DistParams(mean, 1/prec);
+                p->prior = DistParams(mean, 1 / prec);
                 p->options["image"] = "PSP_byname" + psp_idx_str + "_image";
             }
             psp_idx++;
@@ -262,9 +265,10 @@ void FwdModel::GetInitialPosterior(MVNDist &posterior) const
 
     // Set model defaults
     NEWMAT::SymmetricMatrix cov = posterior.GetCovariance();
-    for (size_t p=0; p<m_params.size(); p++) {
-        posterior.means(p+1) = m_params[p].post.mean();
-        cov(p+1, p+1) = m_params[p].post.var();
+    for (size_t p = 0; p < m_params.size(); p++)
+    {
+        posterior.means(p + 1) = m_params[p].post.mean();
+        cov(p + 1, p + 1) = m_params[p].post.var();
     }
     posterior.SetCovariance(cov);
 
@@ -278,11 +282,12 @@ void FwdModel::GetInitialPosterior(MVNDist &posterior) const
 void FwdModel::ToFabber(MVNDist &mvn) const
 {
     NEWMAT::SymmetricMatrix cov = mvn.GetCovariance();
-    for (size_t p=0; p<m_params.size(); p++) {
-        DistParams dp(mvn.means(p+1), cov(p+1, p+1));
+    for (size_t p = 0; p < m_params.size(); p++)
+    {
+        DistParams dp(mvn.means(p + 1), cov(p + 1, p + 1));
         dp = m_params[p].transform->ToFabber(dp);
-        mvn.means(p+1) = dp.mean();
-        cov(p+1, p+1) = dp.var();
+        mvn.means(p + 1) = dp.mean();
+        cov(p + 1, p + 1) = dp.var();
     }
     mvn.SetCovariance(cov);
 }
@@ -290,11 +295,12 @@ void FwdModel::ToFabber(MVNDist &mvn) const
 void FwdModel::ToModel(MVNDist &mvn) const
 {
     NEWMAT::SymmetricMatrix cov = mvn.GetCovariance();
-    for (size_t p=0; p<m_params.size(); p++) {
-        DistParams dp(mvn.means(p+1), cov(p+1, p+1));
+    for (size_t p = 0; p < m_params.size(); p++)
+    {
+        DistParams dp(mvn.means(p + 1), cov(p + 1, p + 1));
         dp = m_params[p].transform->ToModel(dp);
-        mvn.means(p+1) = dp.mean();
-        cov(p+1, p+1) = dp.var();
+        mvn.means(p + 1) = dp.mean();
+        cov(p + 1, p + 1) = dp.var();
     }
     mvn.SetCovariance(cov);
 }
@@ -310,29 +316,34 @@ void FwdModel::GetParameterDefaults(vector<Parameter> &params) const
     MVNDist priors(names.size()), posts(names.size());
     HardcodedInitialDists(priors, posts);
 
-    for (unsigned int i=0; i<names.size(); i++) {
-        DistParams prior(priors.means(i+1), priors.GetCovariance()(i+1, i+1));
-        DistParams post(posts.means(i+1), posts.GetCovariance()(i+1, i+1));
+    for (unsigned int i = 0; i < names.size(); i++)
+    {
+        DistParams prior(priors.means(i + 1), priors.GetCovariance()(i + 1, i + 1));
+        DistParams post(posts.means(i + 1), posts.GetCovariance()(i + 1, i + 1));
         Parameter p(i, names[i], prior, post, PRIOR_NORMAL, TRANSFORM_IDENTITY());
-        
+
         // Old method of specifying ARD priors
-        if (find(ardindices.begin(), ardindices.end(), i+1) != ardindices.end()) {
+        if (find(ardindices.begin(), ardindices.end(), i + 1) != ardindices.end())
+        {
             p.prior_type = PRIOR_ARD;
         }
         params.push_back(p);
     }
 }
-	
+
 void FwdModel::EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key) const
 {
     assert((m_params.size() == 0) || (int(m_params.size()) == params.Nrows()));
-    if (m_params.size() == 0) {
+    if (m_params.size() == 0)
+    {
         EvaluateModel(params, result, key);
     }
-    else {
+    else
+    {
         NEWMAT::ColumnVector tparams(params.Nrows());
-        for (int i=1; i<=params.Nrows(); i++) {
-            tparams(i) = m_params[i-1].transform->ToModel(params(i));
+        for (int i = 1; i <= params.Nrows(); i++)
+        {
+            tparams(i) = m_params[i - 1].transform->ToModel(params(i));
         }
         EvaluateModel(tparams, result, key);
     }

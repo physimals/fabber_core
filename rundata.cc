@@ -228,8 +228,8 @@ void FabberRunData::Run(ProgressCheck *progress)
 
     fwd_model->Initialize(*this);
 
-	std::vector<Parameter> params;
-	fwd_model->GetParameters(*this, params);
+    std::vector<Parameter> params;
+    fwd_model->GetParameters(*this, params);
     assert(params.size() > 0);
     LOG << "FabberRunData::Forward Model version " << fwd_model->ModelVersion() << endl;
 
@@ -445,8 +445,9 @@ string FabberRunData::GetStringDefault(const string &key, const string &def) con
 std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
 {
     std::vector<std::string> ret;
-    int n=1;
-    while(HaveKey(prefix + stringify(n))) {
+    int n = 1;
+    while (HaveKey(prefix + stringify(n)))
+    {
         ret.push_back(GetString(prefix + stringify(n)));
     }
     return ret;
@@ -471,8 +472,10 @@ int FabberRunData::GetInt(const string &key, int min, int max)
     try
     {
         int i = convertTo<int>(val, key);
-        if (i < min) throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
-        if (i > max) throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
+        if (i < min)
+            throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
+        if (i > max)
+            throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
         return i;
     }
     catch (invalid_argument &)
@@ -492,8 +495,9 @@ int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
 std::vector<int> FabberRunData::GetIntList(const std::string &prefix, int min, int max)
 {
     std::vector<int> ret;
-    int n=1;
-    while(HaveKey(prefix + stringify(n))) {
+    int n = 1;
+    while (HaveKey(prefix + stringify(n)))
+    {
         ret.push_back(GetInt(prefix + stringify(n), min, max));
     }
     return ret;
@@ -505,8 +509,10 @@ double FabberRunData::GetDouble(const string &key, double min, double max)
     try
     {
         double d = convertTo<double>(val, key);
-        if (d < min) throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
-        if (d > max) throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
+        if (d < min)
+            throw InvalidOptionValue(key, val, "Minimum " + stringify(min));
+        if (d > max)
+            throw InvalidOptionValue(key, val, "Maximum " + stringify(max));
         return d;
     }
     catch (invalid_argument &)
@@ -526,8 +532,9 @@ double FabberRunData::GetDoubleDefault(const string &key, double def, double min
 std::vector<double> FabberRunData::GetDoubleList(const std::string &prefix, double min, double max)
 {
     std::vector<double> ret;
-    int n=1;
-    while(HaveKey(prefix + stringify(n))) {
+    int n = 1;
+    while (HaveKey(prefix + stringify(n)))
+    {
         ret.push_back(GetDouble(prefix + stringify(n), min, max));
     }
     return ret;
@@ -622,13 +629,15 @@ string FabberRunData::GetOutputDir()
 #else
     // Might be useful for jobs running on the queue:
     int ret = system(("uname -a > " + m_outdir + "/uname.txt").c_str());
-    if (ret != 0) LOG << "FabberRunData::uname failed - uname.txt not created" << endl;
+    if (ret != 0)
+        LOG << "FabberRunData::uname failed - uname.txt not created" << endl;
 
     if (GetBool("link-to-latest"))
     {
         // try to make a link to the latest version. If this fails, it doesn't really matter.
         int ret = system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
-        if (ret != 0) LOG << "FabberRunData::link-to-latest failed" << endl;
+        if (ret != 0)
+            LOG << "FabberRunData::link-to-latest failed" << endl;
     }
 #endif
 
@@ -918,11 +927,13 @@ static inline int binarySearch(const ColumnVector &data, int num)
 
 vector<vector<int> > &FabberRunData::GetNeighbours(int n_dims)
 {
-    if (m_neighbours.size() > 0) return m_neighbours;
-    
+    if (m_neighbours.size() > 0)
+        return m_neighbours;
+
     const Matrix &coords = GetVoxelCoords();
     const int nvoxels = coords.Ncols();
-    if (nvoxels == 0) return m_neighbours;
+    if (nvoxels == 0)
+        return m_neighbours;
 
     // Voxels must be ordered by increasing z, y and x values respectively
     // otherwise binary search for voxel by offset will not work
@@ -1023,16 +1034,18 @@ vector<vector<int> > &FabberRunData::GetNeighbours(int n_dims)
 }
 
 vector<vector<int> > &FabberRunData::GetSecondNeighbours(int n_dims)
-{   
-    if (m_neighbours2.size() > 0) return m_neighbours2;
+{
+    if (m_neighbours2.size() > 0)
+        return m_neighbours2;
 
     GetNeighbours(n_dims);
     const int nvoxels = m_neighbours.size();
-    if (nvoxels == 0) return m_neighbours2;
+    if (nvoxels == 0)
+        return m_neighbours2;
 
     // Similar algorithm but looking for Neighbours-of-neighbours, excluding self,
     // but including duplicates if there are two routes to get there
-    // (diagonally connected) 
+    // (diagonally connected)
     m_neighbours2.resize(nvoxels);
     for (int vid = 1; vid <= nvoxels; vid++)
     {

@@ -60,7 +60,7 @@ public:
 	 * @param result Result vector, R in above equation. Length equal to number of time samples
 	 *               i.e. number of rows in design matrix.
 	 */
-    virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key="") const;
+    virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key = "") const;
 
     /**
 	 * @return the Jacobian, or design matrix

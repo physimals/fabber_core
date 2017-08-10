@@ -7,9 +7,9 @@
 /*  CCOPYRIGHT */
 #pragma once
 
-#include "noisemodel.h"
-#include "fwdmodel_linear.h"
 #include "dist_mvn.h"
+#include "fwdmodel_linear.h"
+#include "noisemodel.h"
 
 #include <vector>
 
@@ -22,9 +22,13 @@
  */
 struct RunContext
 {
-    RunContext(int nv) 
-      : it(0), v(1), nvoxels(nv) {}
-    
+    RunContext(int nv)
+        : it(0)
+        , v(1)
+        , nvoxels(nv)
+    {
+    }
+
     /** Current iteration, starting at 0 */
     int it;
 

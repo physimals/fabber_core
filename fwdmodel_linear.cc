@@ -120,7 +120,8 @@ LinearizedFwdModel::LinearizedFwdModel(const FwdModel *model)
 }
 
 LinearizedFwdModel::LinearizedFwdModel(const LinearizedFwdModel &from)
-    : LinearFwdModel(from), m_model(from.m_model)
+    : LinearFwdModel(from)
+    , m_model(from.m_model)
 {
     SetLogger(from.GetLogger());
 }
@@ -194,7 +195,7 @@ void LinearizedFwdModel::ReCentre(const ColumnVector &about)
     }
 
     if (0 * m_jacobian != 0 * m_jacobian)
-//    if(true)
+    //    if(true)
     {
         LOG << "LinearizedFwdModel::jacobian:\n"
             << m_jacobian;

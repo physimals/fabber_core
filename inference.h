@@ -15,9 +15,9 @@
 #include "noisemodel.h"
 #include "rundata.h"
 
+#include <iomanip>
 #include <string>
 #include <vector>
-#include <iomanip>
 
 class InferenceTechnique : public Loggable
 {
@@ -135,10 +135,10 @@ protected:
 	 */
     std::vector<MVNDist *> resultMVNs;
 
-	/**
+    /**
 	 * Include very verbose debugging output
 	 */
-	bool m_debug;
+    bool m_debug;
 
 private:
     /**

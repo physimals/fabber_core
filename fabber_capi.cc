@@ -466,13 +466,13 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
     EasyLog log;
-    int ret=FABBER_ERR_FATAL;
+    int ret = FABBER_ERR_FATAL;
     stringstream logstr;
     try
     {
         FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
         std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
-        
+
         log.StartLog(logstr);
         model->SetLogger(&log);
         model->Initialize(*rundata);
@@ -481,20 +481,26 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         NEWMAT::ColumnVector o_vec(n_ts);
         NEWMAT::ColumnVector data_vec(n_ts);
         NEWMAT::ColumnVector coords(3);
-        for (unsigned int i=0; i<n_params; i++) {
-            p_vec(i+1) = params[i];
-            if (indata) data_vec(i+1) = indata[i];
-            else data_vec(i+1) = 0;
+        for (unsigned int i = 0; i < n_params; i++)
+        {
+            p_vec(i + 1) = params[i];
+            if (indata)
+                data_vec(i + 1) = indata[i];
+            else
+                data_vec(i + 1) = 0;
         }
         coords(1) = 1;
         coords(2) = 1;
         coords(3) = 1;
         model->PassData(data_vec, coords);
         model->EvaluateModel(p_vec, o_vec);
-        for (unsigned int i=0; i<n_ts; i++) {
+        for (unsigned int i = 0; i < n_ts; i++)
+        {
             // Model may not return the same number of timepoints as passed in!
-            if ((int)i < o_vec.Nrows()) output[i] = o_vec(i+1);
-            else output[i] = 0;
+            if ((int)i < o_vec.Nrows())
+                output[i] = o_vec(i + 1);
+            else
+                output[i] = 0;
         }
 
         log.ReissueWarnings();
@@ -512,7 +518,7 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
     {
         log.LogStream() << "Unexpected exception" << endl;
     }
-    
+
     log.StopLog();
     strncpy(err_buf, logstr.str().c_str(), 253);
     err_buf[254] = '\0';

@@ -5,10 +5,10 @@
 
 #include <newmat.h>
 
-#include <string>
 #include <map>
-#include <utility>
 #include <math.h>
+#include <string>
+#include <utility>
 
 using namespace std;
 using namespace NEWMAT;
@@ -19,7 +19,7 @@ using namespace NEWMAT;
 // Euclidian distance
 static double dist_euclid(double dx, double dy, double dz)
 {
-    return sqrt(dx*dx + dy*dy + dz*dz);
+    return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 // Manhattan distance
@@ -31,7 +31,7 @@ static double dist_manh(double dx, double dy, double dz)
 // Almost-squared Euclidian distance
 static double dist_sqeuclid(double dx, double dy, double dz)
 {
-    return pow(dx*dx + dy*dy + dz*dz, 0.995);
+    return pow(dx * dx + dy * dy + dz * dz, 0.995);
 }
 
 /**
@@ -99,10 +99,14 @@ void CovarianceCache::CalcDistances(const NEWMAT::Matrix &voxelCoords,
     {
         for (int b = 1; b <= a; b++)
         {
-            if (distanceMeasure == "dist1") m_distances(a, b) = dist_euclid(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
-            else if (distanceMeasure == "dist2") m_distances(a, b) = dist_sqeuclid(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
-            else if (distanceMeasure == "mdist") m_distances(a, b) = dist_manh(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
-            else throw InvalidOptionValue("distance-measure", distanceMeasure, "Unrecognized distance measure");
+            if (distanceMeasure == "dist1")
+                m_distances(a, b) = dist_euclid(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
+            else if (distanceMeasure == "dist2")
+                m_distances(a, b) = dist_sqeuclid(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
+            else if (distanceMeasure == "mdist")
+                m_distances(a, b) = dist_manh(relativePos[0](a, b), relativePos[1](a, b), relativePos[2](a, b));
+            else
+                throw InvalidOptionValue("distance-measure", distanceMeasure, "Unrecognized distance measure");
         }
     }
 }
@@ -214,7 +218,7 @@ const SymmetricMatrix &CovarianceCache::GetCiCodistCi(
         CiCodistCi_cache.clear();
 #endif
         GetCinv(delta); // for sensible messages, make sure cache hits
-        
+
         Matrix CiCodist = GetCinv(delta) * SP(GetC(delta), m_distances);
         CiCodistCi_cache[delta].second = CiCodist.Trace();
         Matrix CiCodistCi_tmp = CiCodist * GetCinv(delta);

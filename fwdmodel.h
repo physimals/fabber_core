@@ -23,30 +23,36 @@
  */
 struct Parameter
 {
-	Parameter(unsigned int idx, std::string name="", DistParams prior=DistParams(0, 1), DistParams post=DistParams(0, 1), char prior_type='N', const Transform *transform=TRANSFORM_IDENTITY())
-	  : idx(idx), name(name), prior(prior), post(post), prior_type(prior_type), transform(transform) {}
-	
-	unsigned int idx;
-	std::string name;
-	DistParams prior;
-	DistParams post;
-	char prior_type;
-	const Transform  *transform;
+    Parameter(unsigned int idx, std::string name = "", DistParams prior = DistParams(0, 1), DistParams post = DistParams(0, 1), char prior_type = 'N', const Transform *transform = TRANSFORM_IDENTITY())
+        : idx(idx)
+        , name(name)
+        , prior(prior)
+        , post(post)
+        , prior_type(prior_type)
+        , transform(transform)
+    {
+    }
 
-	/** 
+    unsigned int idx;
+    std::string name;
+    DistParams prior;
+    DistParams post;
+    char prior_type;
+    const Transform *transform;
+
+    /** 
 	 * Additional options, e.g. filename of data for image prior
 	 *
 	 * This should generally only by initialized by Fabber run options,
 	 * not by the model itself 
 	 */
-	std::map<std::string, std::string> options; 
+    std::map<std::string, std::string> options;
 };
 
 class FwdModel : public Loggable
 {
 public:
-
-	/** Required in case subclasses manage resources */
+    /** Required in case subclasses manage resources */
     virtual ~FwdModel()
     {
     }
@@ -74,9 +80,9 @@ public:
 	 * The default returns nothing to enable compatibility with older model code
 	 * however this should be implemented by every model
 	 */
-    virtual void GetOptions(std::vector<OptionSpec> &opts) const 
-	{
-	}
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const
+    {
+    }
 
     /**
 	 * Initialize a new instance using configuration from the given
@@ -96,9 +102,9 @@ public:
 	 * 
 	 * @param outputs Vector to be populated with names of alternative outputs, if any
 	 */
-    virtual void GetOutputs(std::vector<std::string> &outputs) const 
-	{
-	}
+    virtual void GetOutputs(std::vector<std::string> &outputs) const
+    {
+    }
 
     /**
 	 * Voxelwise initialization of the posterior in model space
@@ -114,9 +120,9 @@ public:
 	 */
     virtual void InitVoxelPosterior(MVNDist &posterior) const
     {
-		InitParams(posterior);
+        InitParams(posterior);
     }
-	
+
     /**
 	 * Evaluate the forward model in model parameter space
 	 * 
@@ -137,10 +143,10 @@ public:
 	 *            provided by the model in GetOutputs. Models are responsible for responding
 	 *            correctly to this parameter if they do define alternate outputs
 	 */
-    virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key="") const
-	{
-		Evaluate(params, result);
-	}
+    virtual void EvaluateModel(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key = "") const
+    {
+        Evaluate(params, result);
+    }
 
     /**
 	 * Get parameter descriptions for this model. 
@@ -164,7 +170,7 @@ public:
 	 * @param voxsuppdata Supplementary data if provided. Default is an empty vector. If not
 	 *                    empty, must be the same length as voxdata.
 	 */
-    void PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &coords, const NEWMAT::ColumnVector &voxsuppdata=NEWMAT::ColumnVector());
+    void PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &coords, const NEWMAT::ColumnVector &voxsuppdata = NEWMAT::ColumnVector());
 
     /**
 	 * Initialization of the posterior.
@@ -187,7 +193,7 @@ public:
 	 */
     void GetInitialPosterior(MVNDist &posterior) const;
 
-	/**
+    /**
 	 * Evaluate the forward model in Fabber internal parameter space
 	 * 
 	 * This method calls the model-specific Evaluate method, but handles parameter transforms
@@ -204,23 +210,23 @@ public:
 	 *            (which must be timeseries data). A list of alternative outputs is
 	 *            provided by the model in GetOutputs.
 	 */
-	void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key="") const;
+    void EvaluateFabber(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result, const std::string &key = "") const;
 
-	/**
+    /**
 	 * Transform an MVN containing model values to Fabber internal values. 
 	 *
 	 * NB: Only the diagonal elements of the covariance are affected
 	 */
-	void ToFabber(MVNDist &mvn) const;
+    void ToFabber(MVNDist &mvn) const;
 
-	/**
+    /**
 	 * Transform an MVN containing Fabber internal values to model values. 
 	 *
 	 * NB: Only the diagonal elements of the covariance are affected
 	 */
-	void ToModel(MVNDist &mvn) const;
+    void ToModel(MVNDist &mvn) const;
 
-	/**
+    /**
 	 * Load models from a dynamic library, adding them to the FwdModelFactory
 	 */
     static void LoadFromDynamicLibrary(const std::string &filename, EasyLog *log = 0);
@@ -242,21 +248,20 @@ public:
     static void UsageFromName(const std::string &name, std::ostream &stream);
 
 #ifdef DEPRECATED
-	/** 
+    /** 
 	 * Deprecated method for initializing voxelwise posterior - use 
 	 * InitVoxelPosterior instead
 	 */
-	virtual void InitParams(MVNDist &posterior) const
-	{
-	}
-    
-	/**
+    virtual void InitParams(MVNDist &posterior) const
+    {
+    }
+
+    /**
 	 * Use Evaluate with the key parameter instead
 	 */
     virtual void Evaluate(const NEWMAT::ColumnVector &params, NEWMAT::ColumnVector &result) const
-	{
-
-	}
+    {
+    }
 
     /**
 	 * How many parameters in the model? 
@@ -267,10 +272,10 @@ public:
 	 * @return number of parameters, i.e. size of vector to be passed
 	 * to Evaluate function
 	 */
-    virtual int NumParams() const 
-	{
-		return m_params.size();
-	}
+    virtual int NumParams() const
+    {
+        return m_params.size();
+    }
 
     /**
 	 * Name each of the parameters
@@ -279,7 +284,6 @@ public:
 	 * GetParameterDefaults()
 	 */
     virtual void NameParams(std::vector<std::string> &names) const {}
-
     /**
 	 * Load up some sensible suggestions for initial prior & posterior values
 	 * 
@@ -340,7 +344,6 @@ public:
 #endif
 
 protected:
-
     virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
 
     // Your derived classes should have storage for all constants that are
@@ -354,12 +357,12 @@ protected:
     NEWMAT::ColumnVector suppdata;
 
 #ifdef DEPRECATED
-	int coord_x;
-	int coord_y;
-	int coord_z;
+    int coord_x;
+    int coord_y;
+    int coord_z;
 #endif
 
-	std::vector<Parameter> m_params;
+    std::vector<Parameter> m_params;
 };
 
 /** 

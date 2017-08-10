@@ -11,8 +11,8 @@
 
 #include "newmat.h"
 
-#include <string>
 #include <map>
+#include <string>
 #include <utility>
 
 class CovarianceCache : public Loggable
@@ -29,8 +29,8 @@ public:
      * return true; otherwise return false and don't change *guess.
      */
     bool GetCachedInRange(double *guess, double lower, double upper, bool allowEndpoints = false) const;
-private:
 
+private:
     typedef std::map<double, NEWMAT::SymmetricMatrix> Cinv_cache_type;
     typedef std::map<double, std::pair<NEWMAT::SymmetricMatrix, double> > CiCodistCi_cache_type;
 

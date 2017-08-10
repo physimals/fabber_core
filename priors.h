@@ -6,25 +6,25 @@
  * Copyright (C) 2007-2017 University of Oxford  
  */
 
-#include "rundata.h"
-#include "run_context.h"
 #include "dist_mvn.h"
 #include "fwdmodel.h"
+#include "run_context.h"
+#include "rundata.h"
 
 #include <newmat.h>
 
-#include <vector>
-#include <string>
 #include <ostream>
+#include <string>
+#include <vector>
 
-const char PRIOR_NORMAL    = 'N';    // non-spatial prior
-const char PRIOR_IMAGE     = 'I';    // image prior
-const char PRIOR_ARD       = 'A';    // ARD prior
-const char PRIOR_SPATIAL_M = 'M';    // Markov random field - normally used
-const char PRIOR_SPATIAL_m = 'm';    // 'M' with Dirichlet BCs
-const char PRIOR_SPATIAL_P = 'P';    // Alternative to M (Penny prior?)
-const char PRIOR_SPATIAL_p = 'p';    // P with Dirichlet BCs
-const char PRIOR_DEFAULT   = '-';    // Use whatever the model specifies
+const char PRIOR_NORMAL = 'N';    // non-spatial prior
+const char PRIOR_IMAGE = 'I';     // image prior
+const char PRIOR_ARD = 'A';       // ARD prior
+const char PRIOR_SPATIAL_M = 'M'; // Markov random field - normally used
+const char PRIOR_SPATIAL_m = 'm'; // 'M' with Dirichlet BCs
+const char PRIOR_SPATIAL_P = 'P'; // Alternative to M (Penny prior?)
+const char PRIOR_SPATIAL_p = 'p'; // P with Dirichlet BCs
+const char PRIOR_DEFAULT = '-';   // Use whatever the model specifies
 
 /**
  * Abstract interface for a parameter prior
@@ -33,7 +33,6 @@ class Prior : public Loggable
 {
 public:
     virtual ~Prior() {}
-
     /** Dump info to output stream */
     virtual void DumpInfo(std::ostream &out) const = 0;
 
@@ -56,7 +55,6 @@ class DefaultPrior : public Prior
 public:
     DefaultPrior(const Parameter &param);
     virtual ~DefaultPrior() {}
-
     /** Parameter name this prior applies to */
     std::string m_param_name;
 
@@ -83,6 +81,7 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+
 protected:
     /** Filename containing image data if required */
     std::string m_filename;
@@ -97,8 +96,11 @@ protected:
 class ARDPrior : public DefaultPrior
 {
 public:
-    ARDPrior(const Parameter &param, FabberRunData &rundata) : DefaultPrior(param) 
-    { m_log = rundata.GetLogger();}
+    ARDPrior(const Parameter &param, FabberRunData &rundata)
+        : DefaultPrior(param)
+    {
+        m_log = rundata.GetLogger();
+    }
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
@@ -117,6 +119,7 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+
 protected:
     double CalculateAkmean(const RunContext &ctx);
     double m_akmean;

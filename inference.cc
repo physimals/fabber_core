@@ -67,7 +67,8 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 {
     m_log = rundata.GetLogger();
     m_debug = rundata.GetBool("debug");
-    if (m_debug) LOG << setprecision(17);
+    if (m_debug)
+        LOG << setprecision(17);
 
     m_model = fwd_model;
     vector<Parameter> params;
@@ -156,24 +157,28 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
         suppdata = rundata.GetVoxelSuppData();
         result.ReSize(datamtx.Nrows(), nVoxels);
         ColumnVector tmp;
-        for (vector<string>::iterator iter=outputs.begin(); iter!=outputs.end(); ++iter) {
+        for (vector<string>::iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
+        {
             for (int vox = 1; vox <= nVoxels; vox++)
             {
                 // pass in stuff that the model might need
                 ColumnVector y = datamtx.Column(vox);
                 ColumnVector vcoords = coords.Column(vox);
-                if (suppdata.Ncols() > 0) {
+                if (suppdata.Ncols() > 0)
+                {
                     m_model->PassData(y, vcoords, suppdata.Column(vox));
                 }
-                else {
+                else
+                {
                     m_model->PassData(y, vcoords);
                 }
-                
+
                 // do the evaluation
                 m_model->EvaluateFabber(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
                 result.Column(vox) = tmp;
             }
-            if (*iter == "") {
+            if (*iter == "")
+            {
                 if (saveResiduals)
                 {
                     residuals = datamtx - result;
@@ -184,12 +189,13 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                     rundata.SaveVoxelData("modelfit", result);
                 }
             }
-            else {
+            else
+            {
                 rundata.SaveVoxelData(*iter, result);
             }
         }
     }
-    
+
 #if 0
 	{
 		LOG << "InferenceTechnique::Writing model variances..." << endl;

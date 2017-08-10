@@ -127,7 +127,8 @@ class Loggable
 {
 public:
     explicit Loggable(EasyLog *log = 0)
-        : m_log(log), m_debug(false)
+        : m_log(log)
+        , m_debug(false)
     {
     }
     EasyLog *GetLogger() const { return m_log; }

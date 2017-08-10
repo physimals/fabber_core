@@ -22,7 +22,6 @@ namespace fabber
  * The matrix may be in ASCII or VEST format
  */
 NEWMAT::Matrix read_matrix_file(std::string filename);
-
 }
 
 // Calculate log-gamma from a Taylor expansion; good to one part in 2e-10.

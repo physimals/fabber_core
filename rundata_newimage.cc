@@ -47,7 +47,8 @@ static void DumpVolumeInfo(const volume<float> &info, ostream &out)
 
 FabberRunDataNewimage::FabberRunDataNewimage(bool compat_options)
     : FabberRunData(compat_options)
-    , m_mask(1, 1, 1), m_have_mask(false)
+    , m_mask(1, 1, 1)
+    , m_have_mask(false)
 {
 }
 
@@ -164,11 +165,13 @@ void FabberRunDataNewimage::SaveVoxelData(const std::string &filename, NEWMAT::M
     output.set_intent(nifti_intent_code, 0, 0, 0);
     output.setDisplayMaximumMinimum(output.max(), output.min());
 
-    if (filename[0] == '/') {
+    if (filename[0] == '/')
+    {
         // Absolute path
         save_volume4D(output, filename);
     }
-    else {
+    else
+    {
         // Relative path
         string filepath = GetOutputDir() + "/" + filename;
         save_volume4D(output, filepath);

@@ -12,9 +12,9 @@
 
 #include "easylog.h"
 #include "fwdmodel.h"
+#include "priors.h"
 #include "rundata.h"
 #include "version.h"
-#include "priors.h"
 
 #include <newmat.h>
 

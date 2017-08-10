@@ -37,7 +37,6 @@ Matrix read_matrix_file(std::string filename)
         return read_ascii_matrix(filename);
     }
 }
-
 }
 
 double gammaln(double x)

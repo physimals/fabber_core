@@ -30,7 +30,7 @@ using namespace std;
  */
 static void Version()
 {
-    cout << "Fabber " << fabber_version() <<  " : " << fabber_source_date() << endl;
+    cout << "Fabber " << fabber_version() << " : " << fabber_source_date() << endl;
 }
 
 /**
@@ -55,7 +55,6 @@ static void Usage()
         cout << options[i] << endl;
     }
 }
-
 
 #ifdef _WIN32
 static int setenv(const char *name, const char *value, int overwrite)
