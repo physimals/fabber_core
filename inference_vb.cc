@@ -464,8 +464,6 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
 
             if (m_halt_bad_voxel)
                 throw;
-            else
-                IgnoreVoxel(v);
         }
         catch (NEWMAT::Exception &e)
         {
@@ -474,8 +472,6 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
 
             if (m_halt_bad_voxel)
                 throw;
-            else
-                IgnoreVoxel(v);
         }
 
         // now write the results to resultMVNs
