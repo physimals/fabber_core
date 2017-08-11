@@ -61,6 +61,7 @@ public:
     virtual ~Transform()
     {
     }
+
     /**
      * Transform the Fabber internal value (which is assumed to have a Gaussian
      * distribution) to the value required by the model
@@ -74,21 +75,27 @@ public:
     virtual double ToFabber(double val) const = 0;
 
     /**
+     * Transform the Fabber internal variance (which is assumed to have a Gaussian
+     * distribution) to the value required by the model
+     */
+    virtual double ToModelVar(double val) const;
+
+    /**
+     * Transform the model variance to the variance of the Gaussian to be used by Fabber
+     * internally
+     */
+    virtual double ToFabberVar(double val) const;
+
+    /**
      * Transform the Fabber internal mean/variance (of the Gaussian
      * distribution) to the mean/variance of the model distribution
-     *
-     * The default just applies ToModel to the mean and performs
-     * an ad-hoc transformation to the variance by taking the square
-     * root, adding it to the mean, transforming the result, then
-     * subtracting the transformed mean and squaring. This just ensures that
-     * mean + s.d. transforms into transformed mean + transformed s.d.
-     *
+
      * Particular transformations may implement this differently, e.g.
      * the log transformation can use the known expression for the
      * variance of the log-normal distribution in terms of the
      * underlying normal distribution.
      */
-    virtual DistParams ToModel(DistParams params) const;
+    DistParams ToModel(DistParams params) const;
 
     /**
      * Transform the mean of the model distribution into the
@@ -97,7 +104,7 @@ public:
      * The default just applies ToFabber to the mean and transforms
      * the variance in an ad-hoc manner - @see ToModel for details.
      */
-    virtual DistParams ToFabber(DistParams params) const;
+    DistParams ToFabber(DistParams params) const;
 };
 
 /**
@@ -114,13 +121,13 @@ public:
     {
         return val;
     }
-    DistParams ToModel(DistParams params) const
+    double ToModelVar(double val) const
     {
-        return params;
+        return val;
     }
-    DistParams ToFabber(DistParams params) const
+    double ToFabberVar(double val) const
     {
-        return params;
+        return val;
     }
 };
 
@@ -130,13 +137,19 @@ public:
 class LogTransform : public Transform
 {
 public:
-    virtual DistParams ToModel(DistParams params) const;
-    virtual DistParams ToFabber(DistParams params) const;
     double ToModel(double val) const
     {
         return exp(val);
     }
     double ToFabber(double val) const
+    {
+        return log(val);
+    }
+    double ToModelVar(double val) const
+    {
+        return exp(val);
+    }
+    double ToFabberVar(double val) const
     {
         return log(val);
     }
@@ -175,8 +188,6 @@ public:
 class FractionalTransform : public Transform
 {
 public:
-    DistParams ToModel(DistParams params) const;
-    DistParams ToFabber(DistParams params) const;
     double ToModel(double val) const
     {
         return 1 / (1 + exp(val));
@@ -184,6 +195,14 @@ public:
     double ToFabber(double val) const
     {
         return log(1 / val - 1);
+    }
+    double ToModelVar(double val) const
+    {
+        return val;
+    }
+    double ToFabberVar(double val) const
+    {
+        return val;
     }
 };
 

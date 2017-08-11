@@ -3,47 +3,25 @@
 DistParams Transform::ToModel(DistParams params) const
 {
     double mean = ToModel(params.mean());
-    double var = pow(ToModel(params.mean() + sqrt(params.var())) - mean, 2);
+    double var = ToModelVar(params.var());
     return DistParams(mean, var);
 }
 
 DistParams Transform::ToFabber(DistParams params) const
 {
     double mean = ToFabber(params.mean());
-    double var = pow(ToFabber(params.mean() + sqrt(params.var())) - mean, 2);
+    double var = ToFabberVar(params.var());
     return DistParams(mean, var);
 }
 
-DistParams LogTransform::ToModel(DistParams params) const
+double Transform::ToModelVar(double val) const
 {
-    // Uses known relationship between mean of normal and log-normal distribution.
-    // Note that a simple log-transform of the mean and variance gives instead
-    // the geometric mean/variance of the distribution
-    double mean = exp(params.mean() + params.var() / 2);
-    double var = (exp(params.var()) - 1) * exp(2 * params.mean() + params.var());
-    return DistParams(mean, var);
+    return pow(ToModel(sqrt(val)) - ToModel(0), 2);
 }
 
-DistParams LogTransform::ToFabber(DistParams params) const
+double Transform::ToFabberVar(double val) const
 {
-    // See ToModel for details. This is the inverse of the transform given there
-    double mean = 2 * log(params.mean()) - 0.5 * log(params.var() + params.mean() * params.mean());
-    double var = log(params.var() / (params.mean() * params.mean()) + 1);
-    return DistParams(mean, var);
-}
-
-DistParams FractionalTransform::ToModel(DistParams params) const
-{
-    double mean = ToModel(params.mean());
-    double var = params.var();
-    return DistParams(mean, var);
-}
-
-DistParams FractionalTransform::ToFabber(DistParams params) const
-{
-    double mean = ToFabber(params.mean());
-    double var = params.var();
-    return DistParams(mean, var);
+    return pow(ToFabber(ToModel(0) + sqrt(val)), 2);
 }
 
 const Transform *TRANSFORM_IDENTITY()

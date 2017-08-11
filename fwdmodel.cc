@@ -287,10 +287,8 @@ void FwdModel::ToFabber(MVNDist &mvn) const
     NEWMAT::SymmetricMatrix cov = mvn.GetCovariance();
     for (size_t p = 0; p < m_params.size(); p++)
     {
-        DistParams dp(mvn.means(p + 1), cov(p + 1, p + 1));
-        dp = m_params[p].transform->ToFabber(dp);
-        mvn.means(p + 1) = dp.mean();
-        cov(p + 1, p + 1) = dp.var();
+        mvn.means(p + 1) = m_params[p].transform->ToFabber(mvn.means(p + 1));
+        cov(p + 1, p + 1) = m_params[p].transform->ToFabberVar(cov(p + 1, p + 1));
     }
     mvn.SetCovariance(cov);
 }
