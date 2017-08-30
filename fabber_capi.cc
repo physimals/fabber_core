@@ -212,8 +212,6 @@ int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_b
         return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
     if (!err_buf)
         return fabber_err(FABBER_ERR_FATAL, "Error buffer is NULL", err_buf);
-    if (log_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Log buffer size is < 0", err_buf);
     if (log_bufsize > 0 && !log_buf)
         return fabber_err(FABBER_ERR_FATAL, "Log buffer is NULL", err_buf);
 
@@ -284,8 +282,6 @@ int fabber_get_options(void *fab, const char *key, const char *value, unsigned i
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-    if (out_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
     if (!out_buf)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
     if (key && !value)
@@ -347,8 +343,6 @@ int fabber_get_models(void *fab, unsigned int out_bufsize, char *out_buf, char *
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-    if (out_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
     if (!out_buf)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
@@ -383,8 +377,6 @@ int fabber_get_methods(void *fab, unsigned int out_bufsize, char *out_buf, char 
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-    if (out_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
     if (!out_buf)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
@@ -419,8 +411,6 @@ int fabber_get_model_params(void *fab, unsigned int out_bufsize, char *out_buf, 
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-    if (out_bufsize < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
     if (!out_buf)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
@@ -462,12 +452,8 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
-    if (n_params < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Input params size is < 0", err_buf);
     if (!params)
         return fabber_err(FABBER_ERR_FATAL, "Params array is NULL", err_buf);
-    if (n_ts < 0)
-        return fabber_err(FABBER_ERR_FATAL, "Output buffer size is < 0", err_buf);
     if (!output)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
