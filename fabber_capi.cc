@@ -141,7 +141,7 @@ int fabber_set_data(
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
     try
     {
-        ((FabberRunDataArray *)rundata)->SetVoxelData(name, data_size, data);
+        ((FabberRunDataArray *)rundata)->SetVoxelDataArray(name, data_size, data);
     }
     catch (exception &e)
     {
@@ -188,7 +188,7 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
     try
     {
-        ((FabberRunDataArray *)rundata)->GetVoxelData(name, data_buf);
+        ((FabberRunDataArray *)rundata)->GetVoxelDataArray(name, data_buf);
         return 0;
     }
     catch (DataNotFound &e)

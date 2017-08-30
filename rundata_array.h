@@ -27,8 +27,8 @@ public:
     }
 
     void SetExtent(int nx, int ny, int nz, const int *mask);
-    void GetVoxelData(std::string key, float *data);
-    void SetVoxelData(std::string key, int data_size, const float *data);
+    void GetVoxelDataArray(std::string key, float *data);
+    void SetVoxelDataArray(std::string key, int data_size, const float *data);
 
 private:
     std::vector<int> m_mask;
