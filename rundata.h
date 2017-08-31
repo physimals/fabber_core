@@ -100,6 +100,9 @@ enum VoxelDataType
 class ProgressCheck
 {
 public:
+    virtual ~ProgressCheck()
+    {
+    }
     virtual void Progress(int voxel, int nVoxels)
     {
     }
@@ -117,7 +120,7 @@ public:
         : m_last(-1)
     {
     }
-    virtual void Progress(int voxel, int nVoxels);
+    void Progress(int voxel, int nVoxels);
 
 private:
     int m_last;
@@ -135,7 +138,7 @@ public:
         : m_cb(cb)
     {
     }
-    virtual void Progress(int voxel, int nVoxels)
+    void Progress(int voxel, int nVoxels)
     {
         m_cb(voxel, nVoxels);
     }
