@@ -58,12 +58,7 @@ public:
      * @param pm  Model whose parameters we are trying to
      *            adjust to fit the data
      */
-    NLLSCF(const NEWMAT::ColumnVector &pdata, const FwdModel *pm)
-        : m_data(pdata)
-        , m_model(pm)
-        , m_linear(pm)
-    {
-    }
+    NLLSCF(const NEWMAT::ColumnVector &pdata, const FwdModel *pm, std::vector<int> masked_tpoints);
 
     /**
      * Calculate the cost function
@@ -97,5 +92,6 @@ private:
     const NEWMAT::ColumnVector m_data;
     const FwdModel *m_model;
     mutable LinearizedFwdModel m_linear;
+    std::vector<int> m_masked_tpoints;
 };
 #endif
