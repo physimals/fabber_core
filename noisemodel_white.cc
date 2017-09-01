@@ -383,7 +383,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     const SymmetricMatrix &Linv = theta.GetCovariance();
 
     // some values we will need
-    int nTimes = data.Nrows(); //*NB assume that each row is an individual time point
+    int nTimes = data.Nrows() - m_masked_tpoints.size(); //*NB assume that each row is an individual time point
     int nTheta = theta.means.Nrows();
 
     // The following is based on noisemodel_ar::CalcFreeEnergy, modified to remove ar parts - MAC
