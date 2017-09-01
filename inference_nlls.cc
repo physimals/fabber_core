@@ -14,6 +14,7 @@
 #include "fwdmodel.h"
 #include "priors.h"
 #include "rundata.h"
+#include "tools.h"
 #include "version.h"
 
 #include <newmat.h>
@@ -24,6 +25,7 @@
 using namespace std;
 using namespace MISCMATHS;
 using namespace NEWMAT;
+using fabber::MaskRows;
 
 static int NUM_OPTIONS = 1;
 static OptionSpec OPTIONS[] = {
@@ -99,9 +101,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
         m_model->PassData(data.Column(1), coords.Column(1));
     }
 
-    // Check how many samples in time series - should
-    // be same as model outputs
-    int Nsamples = data.Nrows();
+    // Check how many samples in time series (ignoring any masked time points)
+    int Nsamples = data.Nrows() - m_masked_tpoints.size();
 
     // Loop over voxels. The result for each voxel is
     // stored as a MVN distribution for its parameters
@@ -129,7 +130,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
         // Create a cost function evaluator which will
         // measure the difference between the model
         // and the data
-        NLLSCF costfn(y, m_model);
+        NLLSCF costfn(y, m_model, m_masked_tpoints);
 
         // Set the convergence method
         // either Levenberg (L) or Levenberg-Marquardt (LM)
@@ -168,7 +169,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
 
             // Recenter linearized model on new parameters
             linear.ReCentre(fwdPosterior.means);
-            const Matrix &J = linear.Jacobian();
+            Matrix J = linear.Jacobian();
+            MaskRows(J, m_masked_tpoints);
 
             // Calculate the NLLS precision
             // This is (J'*J)/mse
@@ -216,12 +218,22 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
     }
 }
 
+NLLSCF::NLLSCF(
+    const NEWMAT::ColumnVector &pdata, const FwdModel *pm, std::vector<int> masked_tpoints)
+    : m_data(MaskRows(pdata, masked_tpoints))
+    , m_model(pm)
+    , m_linear(pm)
+    , m_masked_tpoints(masked_tpoints)
+{
+}
+
 double NLLSCF::cf(const ColumnVector &p) const
 {
     // p = parameters
     // data_pred = data predicted by model
     ColumnVector data_pred;
     m_model->EvaluateFabber(p, data_pred, "");
+    data_pred = MaskRows(data_pred, m_masked_tpoints);
 
     // m_data = actual data. Find sum of squares of differences
     // between this and the model data using a scalar product.
@@ -236,11 +248,13 @@ ReturnMatrix NLLSCF::grad(const ColumnVector &p) const
 
     // Need to recenter the linearised model to the current parameter values
     m_linear.ReCentre(p);
-    const Matrix &J = m_linear.Jacobian();
+    Matrix J = m_linear.Jacobian();
+    J = MaskRows(J, m_masked_tpoints);
 
     // Evaluate the model given the parameters
     ColumnVector data_pred;
     m_model->EvaluateFabber(p, data_pred, "");
+    data_pred = MaskRows(data_pred, m_masked_tpoints);
 
     gradv = -2 * J.t() * (m_data - data_pred);
     gradv.Release();
@@ -263,7 +277,8 @@ boost::shared_ptr<BFMatrix> NLLSCF::hess(
 
     // need to recenter the linearised model to the current parameter values
     m_linear.ReCentre(p);
-    const Matrix &J = m_linear.Jacobian();
+    Matrix J = m_linear.Jacobian();
+    J = MaskRows(J, m_masked_tpoints);
     Matrix hesstemp = 2 * J.t() * J; // Make the G-N approximation to the hessian
 
     //(*hessm) = J.t()*J;
