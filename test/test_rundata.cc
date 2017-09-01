@@ -74,7 +74,9 @@ TEST_F(RunDataTest, ConcatenatedData)
         }
     }
 
+    EasyLog log;
     FabberRunData rundata;
+    rundata.SetLogger(&log);
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data1", data1);
     rundata.SetVoxelData("data2", data2);
@@ -132,7 +134,9 @@ TEST_F(RunDataTest, InterleavedData)
         }
     }
 
+    EasyLog log;
     FabberRunData rundata;
+    rundata.SetLogger(&log);
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data1", data1);
     rundata.SetVoxelData("data2", data2);
