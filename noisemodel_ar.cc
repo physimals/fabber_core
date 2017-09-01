@@ -315,9 +315,13 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
     else if (nPhis == 2)
     {
     } // ok
-
     else
         throw InvalidOptionValue("num-echoes", stringify(nPhis), "Must be 1 or 2");
+
+    if (args.HaveKey("mt1")) 
+    {
+        throw InvalidOptionValue("mt1", "", "Masked time points are not supported for the AR noise model");
+    }
 }
 
 Ar1cParams *Ar1cNoiseModel::NewParams() const

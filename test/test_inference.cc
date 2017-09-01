@@ -557,7 +557,7 @@ TEST_P(InferenceMethodTest, MaskedTimepoints)
 }
 
 // Test fitting with and without masked timepoints.
-TEST_P(InferenceMethodTest, MaskedTimepointsArNoise)
+TEST_F(InferenceMethodTest, MaskedTimepointsArNoise)
 {
     int NTIMES = 10;
     int VSIZE = 5;
@@ -594,7 +594,7 @@ TEST_P(InferenceMethodTest, MaskedTimepointsArNoise)
     rundata.Set("model", "poly");
     rundata.Set("max-iterations", "10");
     rundata.Set("degree", "1");
-    rundata.Set("method", GetParam());
+    rundata.Set("method", "vb");
     rundata.Run();
 
     // Check we get the right answer before messing with the data
@@ -621,19 +621,12 @@ TEST_P(InferenceMethodTest, MaskedTimepointsArNoise)
         ASSERT_GT(mean(1, i + 1), VAL);
     }
 
-    // Now mask messed-up timepoints and check we get back to the 'right' answer
+    // Now mask messed-up timepoints. For now we should get an invalid option value
+    // as masking is not supported for AR noise
     rundata.Set("mt1", "3");
     rundata.Set("mt2", "7");
-    rundata.Run();
-    mean = rundata.GetVoxelData("mean_c0");
-    ASSERT_EQ(mean.Nrows(), 1);
-    ASSERT_EQ(mean.Ncols(), n_voxels);
-    for (int i = 0; i < n_voxels; i++)
-    {
-        ASSERT_TRUE(FloatEq(VAL, mean(1, i + 1)));
-    }
+    ASSERT_THROW(rundata.Run(), InvalidOptionValue);
 }
-
 
 INSTANTIATE_TEST_CASE_P(MethodTests, InferenceMethodTest, ::testing::Values("vb", "nlls", "spatialvb"));
 
