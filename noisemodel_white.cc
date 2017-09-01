@@ -27,6 +27,7 @@ NoiseModel *WhiteNoiseModel::NewInstance()
 {
     return new WhiteNoiseModel();
 }
+
 WhiteParams::WhiteParams(int N)
     : nPhis(N)
     , phis(N)
@@ -216,8 +217,12 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
     // what samples it applies to
     for (int d = 1; d <= dataLen; d++)
     {
-        //    Qis[pat[d-1]-1](d,d) = 1;
-        Qis.at(pat.at(d - 1) - 1)(d, d) = 1;
+        // Only flag a time point as relevant if it is not masked
+        if (std::find(m_masked_tpoints.begin(), m_masked_tpoints.end(), d)
+            == m_masked_tpoints.end())
+        {
+            Qis.at(pat.at(d - 1) - 1)(d, d) = 1;
+        }
     }
 
     // Sanity checking - make sure every phi defined
@@ -305,7 +310,6 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta,
     //
     // use << instead of = because this is considered a lossy assignment
     // (since NEWMAT isn't smart enough to know J'*X*J is always symmetric)
-
     SymmetricMatrix Ltmp;
     Ltmp << J.t() * X * J;
     theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
@@ -383,10 +387,10 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     int nTheta = theta.means.Nrows();
 
     // The following is based on noisemodel_ar::CalcFreeEnergy, modified to remove ar parts - MAC
-    // 11-7-2007
-    // Some modifications have been made for consistency with (MAC)varbayes2.m - these are noted
+    // 11-7-2007. Some modifications have been made for consistency with (MAC)varbayes2.m - these
+    // are noted
 
-    // calcualte individual aprts of the free energy
+    // calcualte individual parts of the free energy
     double expectedLogThetaDist = // bits arising from the factorised posterior for theta
         +0.5 * theta.GetPrecisions().LogDeterminant().LogValue()
         - 0.5 * nTheta * (log(2 * M_PI) + 1);

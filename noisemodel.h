@@ -159,6 +159,15 @@ public:
      */
     virtual int NumParams() = 0;
 
+protected:
+    /**
+     * List of masked timepoints
+     *
+     * Masked timepoints are indexed starting at 1 and are ignored
+     * in the analysis and parameter updates.
+     */
+    std::vector<int> m_masked_tpoints;
+
 private:
     /**
      * Prevent copying using anything other than the Clone() function.
