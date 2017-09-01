@@ -73,6 +73,16 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
     m_num_params = params.size();
     LOG << "InferenceTechnique::Model has " << m_num_params << " parameters" << endl;
 
+    // Read masked time points option and log if any have been specified
+    m_masked_tpoints = rundata.GetIntList("mt", 1);
+    if (m_masked_tpoints.size() > 0) {
+        LOG << "InferenceTechnique::Masking " << m_masked_tpoints.size() << " time points: ";
+        for (unsigned int i=0; i<m_masked_tpoints.size(); i++) {
+            LOG << m_masked_tpoints[i] << " ";
+        }
+        LOG << endl;
+    }
+
     // Allow calculation to continue even with bad voxels
     // Note that this is a bad idea when spatialDims>0, because the bad voxel
     // will drag its neighbours around... but can never recover!  Maybe a more
