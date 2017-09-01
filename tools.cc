@@ -40,15 +40,18 @@ Matrix read_matrix_file(std::string filename)
 
 ReturnMatrix MaskRows(Matrix m, vector<int> masked_rows)
 {
-    if (masked_rows.size() == 0) 
+    if (masked_rows.size() == 0)
     {
         return m;
     }
-    else {
+    else
+    {
         NEWMAT::Matrix masked(m.Nrows() - masked_rows.size(), m.Ncols());
         int masked_row = 1;
-        for (int r=1; r<=m.Nrows(); r++) {
-            if (std::find(masked_rows.begin(), masked_rows.end(), r) == masked_rows.end()) {
+        for (int r = 1; r <= m.Nrows(); r++)
+        {
+            if (std::find(masked_rows.begin(), masked_rows.end(), r) == masked_rows.end())
+            {
                 masked.Row(masked_row) = m.Row(r);
                 masked_row++;
             }
@@ -59,15 +62,18 @@ ReturnMatrix MaskRows(Matrix m, vector<int> masked_rows)
 
 ReturnMatrix MaskRows(ColumnVector v, vector<int> masked_rows)
 {
-    if (masked_rows.size() == 0) 
+    if (masked_rows.size() == 0)
     {
         return v;
     }
-    else {
+    else
+    {
         NEWMAT::ColumnVector masked(v.Nrows() - masked_rows.size());
         int masked_row = 1;
-        for (int r=1; r<=v.Nrows(); r++) {
-            if (std::find(masked_rows.begin(), masked_rows.end(), r) == masked_rows.end()) {
+        for (int r = 1; r <= v.Nrows(); r++)
+        {
+            if (std::find(masked_rows.begin(), masked_rows.end(), r) == masked_rows.end())
+            {
                 masked(masked_row) = v(r);
                 masked_row++;
             }
