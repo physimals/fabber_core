@@ -95,6 +95,21 @@ void LinearFwdModel::EvaluateModel(
     result = m_jacobian * (params - m_centre) + m_offset;
 }
 
+ReturnMatrix LinearFwdModel::Jacobian() const
+{
+    return m_jacobian;
+}
+
+ReturnMatrix LinearFwdModel::Centre() const
+{
+    return m_centre;
+}
+
+ReturnMatrix LinearFwdModel::Offset() const
+{
+    return m_offset;
+}
+
 LinearizedFwdModel::LinearizedFwdModel(const FwdModel *model)
     : m_model(model)
 {
