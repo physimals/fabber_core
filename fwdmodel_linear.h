@@ -68,24 +68,17 @@ public:
     /**
      * @return the Jacobian, or design matrix
      */
-    NEWMAT::ReturnMatrix Jacobian() const
-    {
-        return m_jacobian;
-    }
+    NEWMAT::ReturnMatrix Jacobian() const;
+
     /**
      * @return the vector used to recentre the parameters
      */
-    NEWMAT::ReturnMatrix Centre() const
-    {
-        return m_centre;
-    }
+    NEWMAT::ReturnMatrix Centre() const;
+
     /**
      * @return the vector used to offset the result vector
      */
-    NEWMAT::ReturnMatrix Offset() const
-    {
-        return m_offset;
-    }
+    NEWMAT::ReturnMatrix Offset() const;
 
 protected:
     virtual void GetParameterDefaults(std::vector<Parameter> &params) const;
@@ -99,7 +92,8 @@ protected:
  * Linearized wrapper interface to another nonlinear forward model
  *
  * This is not used as a model directly so we do not need to implement
- * parameter defaults, version numbers, options, etc.
+ * parameter defaults, version numbers, options, etc. It is debatable whether
+ * it should be a FwdModel instance at all.
  */
 class LinearizedFwdModel : public LinearFwdModel
 {
