@@ -75,9 +75,11 @@ void InferenceTechnique::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 
     // Read masked time points option and log if any have been specified
     m_masked_tpoints = rundata.GetIntList("mt", 1);
-    if (m_masked_tpoints.size() > 0) {
+    if (m_masked_tpoints.size() > 0)
+    {
         LOG << "InferenceTechnique::Masking " << m_masked_tpoints.size() << " time points: ";
-        for (unsigned int i=0; i<m_masked_tpoints.size(); i++) {
+        for (unsigned int i = 0; i < m_masked_tpoints.size(); i++)
+        {
             LOG << m_masked_tpoints[i] << " ";
         }
         LOG << endl;
