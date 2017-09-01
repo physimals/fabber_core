@@ -478,7 +478,6 @@ TEST_P(InferenceMethodTest, SaveModelFit)
     ASSERT_EQ(mean.Ncols(), n_voxels);
 }
 
-
 // Test fitting with and without masked timepoints.
 TEST_P(InferenceMethodTest, MaskedTimepoints)
 {
@@ -514,6 +513,84 @@ TEST_P(InferenceMethodTest, MaskedTimepoints)
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data", data);
     rundata.Set("noise", "white");
+    rundata.Set("model", "poly");
+    rundata.Set("max-iterations", "10");
+    rundata.Set("degree", "1");
+    rundata.Set("method", GetParam());
+    rundata.Run();
+
+    // Check we get the right answer before messing with the data
+    NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
+    ASSERT_EQ(mean.Nrows(), 1);
+    ASSERT_EQ(mean.Ncols(), n_voxels);
+    for (int i = 0; i < n_voxels; i++)
+    {
+        ASSERT_TRUE(FloatEq(VAL, mean(1, i + 1)));
+    }
+
+    // Change timepoints and check this gives a different answer
+    for (int v=1; v<=n_voxels; v++) {
+        data(3, v) = VAL*2;
+        data(7, v) = VAL*2;
+    }
+    rundata.SetVoxelData("data", data);
+    rundata.Run();
+    mean = rundata.GetVoxelData("mean_c0");
+    ASSERT_EQ(mean.Nrows(), 1);
+    ASSERT_EQ(mean.Ncols(), n_voxels);
+    for (int i = 0; i < n_voxels; i++)
+    {
+        ASSERT_GT(mean(1, i + 1), VAL);
+    }
+
+    // Now mask messed-up timepoints and check we get back to the 'right' answer
+    rundata.Set("mt1", "3");
+    rundata.Set("mt2", "7");
+    rundata.Run();
+    mean = rundata.GetVoxelData("mean_c0");
+    ASSERT_EQ(mean.Nrows(), 1);
+    ASSERT_EQ(mean.Ncols(), n_voxels);
+    for (int i = 0; i < n_voxels; i++)
+    {
+        ASSERT_TRUE(FloatEq(VAL, mean(1, i + 1)));
+    }
+}
+
+// Test fitting with and without masked timepoints.
+TEST_P(InferenceMethodTest, MaskedTimepointsArNoise)
+{
+    int NTIMES = 10;
+    int VSIZE = 5;
+    float VAL = 2;
+    int n_voxels = VSIZE * VSIZE * VSIZE;
+
+    // Create coordinates and data matrices. Data is constant.
+    NEWMAT::Matrix voxelCoords, data;
+    data.ReSize(NTIMES, n_voxels);
+    voxelCoords.ReSize(3, n_voxels);
+    int v = 1;
+    for (int z = 0; z < VSIZE; z++)
+    {
+        for (int y = 0; y < VSIZE; y++)
+        {
+            for (int x = 0; x < VSIZE; x++)
+            {
+                voxelCoords(1, v) = x;
+                voxelCoords(2, v) = y;
+                voxelCoords(3, v) = z;
+                for (int n = 0; n < NTIMES; n++)
+                {
+                    data(n + 1, v) = VAL;
+                }
+                v++;
+            }
+        }
+    }
+
+    FabberRunData rundata;
+    rundata.SetVoxelCoords(voxelCoords);
+    rundata.SetVoxelData("data", data);
+    rundata.Set("noise", "ar");
     rundata.Set("model", "poly");
     rundata.Set("max-iterations", "10");
     rundata.Set("degree", "1");
