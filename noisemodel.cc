@@ -33,6 +33,9 @@ NoiseModel *NoiseModel::NewFromName(const string &name)
 void NoiseModel::Initialize(FabberRunData &rundata)
 {
     m_log = rundata.GetLogger();
+
+    // Read masked time points option if any have been specified
+    m_masked_tpoints = rundata.GetIntList("mt", 1);
 }
 // ARD stuff
 double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const
