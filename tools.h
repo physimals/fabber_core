@@ -22,6 +22,9 @@ namespace fabber
  * The matrix may be in ASCII or VEST format
  */
 NEWMAT::Matrix read_matrix_file(std::string filename);
+
+NEWMAT::ReturnMatrix MaskRows(NEWMAT::Matrix m, std::vector<int> masked_rows);
+NEWMAT::ReturnMatrix MaskRows(NEWMAT::ColumnVector v, std::vector<int> masked_rows);
 }
 
 // Calculate log-gamma from a Taylor expansion; good to one part in 2e-10.
