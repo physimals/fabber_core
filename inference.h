@@ -137,6 +137,14 @@ protected:
     std::vector<MVNDist *> resultMVNs;
 
     /**
+     * List of masked timepoints 
+     *
+     * Masked timepoints are indexed starting at 1 and are ignored
+     * in the analysis and parameter updates.
+     */
+    std::vector<int> m_masked_tpoints;
+
+    /**
      * Include very verbose debugging output
      */
     bool m_debug;

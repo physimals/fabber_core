@@ -146,6 +146,9 @@ static OptionSpec OPTIONS[] = {
         OPT_NONREQ, "interleave" },
     { "mask", OPT_IMAGE, "Mask file. Inference will only be performed where mask value > 0",
         OPT_NONREQ, "" },
+    { "mt<n>", OPT_INT, "List of masked time points, indexed from 1. These will be ignored in the parameter updates",
+        OPT_NONREQ, "" },
+        
     { "suppdata", OPT_TIMESERIES, "'Supplemental' timeseries data, required for some models",
         OPT_NONREQ, "" },
     { "dump-param-names", OPT_BOOL,
