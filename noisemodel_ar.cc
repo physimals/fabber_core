@@ -555,25 +555,33 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
             X = si_ci(1) * alphaMat.GetMarginal(1);
     }
 
-    //    SymmetricMatrix Ltmp = J.t() * X * J;
+    // Update Lambda (model precisions)
+    //
+    // This is Eq (19) in Chappel et al (2009)
+    //
+    // use << instead of = because this is considered a lossy assignment
+    // (since NEWMAT isn't smart enough to know J'*X*J is always symmetric)
     SymmetricMatrix Ltmp;
+    Ltmp << J.t() * X * J;
+    theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
+
+    // Error checking
+    LogAndSign chk = theta.GetPrecisions().LogDeterminant();
+    if (chk.Sign() <= 0)
     {
-        Matrix Ltmp_tmp = J.t() * X * J;
-        // LOG<<"Max error: "<<(Ltmp_tmp.t() - Ltmp_tmp).MaximumAbsoluteValue()
-        //    <<", compared to "<<Ltmp_tmp.MaximumAbsoluteValue()<<endl;
-        // assert(Ltmp_tmp.t() == Ltmp_tmp);
-        Ltmp << Ltmp_tmp;
-        // assert(Ltmp == Ltmp_tmp);
+        LOG << "Ar1cNoiseModel::UpdateTheta - theta precisions aren't positive-definite: "
+            << chk.Sign() << ", " << chk.LogValue() << endl;
     }
 
-    ColumnVector mTmp;
-    {
-        mTmp = J.t() * X * (data - gml + J * ml);
+    // Update m (model means)
+    //
+    // This is the first term of RHS of Eq (20) in Chappel et al (2009)
+    ColumnVector mTmp = J.t() * X * (data - gml + J * ml);
 
-        theta.SetPrecisions(thetaPrior.GetPrecisions() + Ltmp);
-        theta.means
-            = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
-    }
+    // Normal update (NB the LM update reduces to this when alpha=0 strictly)
+    // This is Eq (20) in Chappel et al (2009). Note that covariance of theta
+    // is inverse of precisions.
+    theta.means = theta.GetCovariance() * (mTmp + thetaPrior.GetPrecisions() * thetaPrior.means);
 
     if (thetaWithoutPrior != NULL)
     {
@@ -590,19 +598,11 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
 
         if (wasSingular)
         {
-            WARN_ONCE("Ltmp was singular, so changed zeros on diagonal to 1e-20.");
-            // LOG << "Ltmp == \n" << Ltmp << "mTmp == \n" << mTmp;
+            WARN_ONCE("Ar1cNoiseModel::UpdateTheta - Ltmp was singular, so changed zeros on diagonal to 1e-20.");
         }
 
         thetaWithoutPrior->SetPrecisions(Ltmp);
         thetaWithoutPrior->means = thetaWithoutPrior->GetCovariance() * mTmp;
-    }
-
-    {
-        LogAndSign chk = theta.GetPrecisions().LogDeterminant();
-        if (chk.Sign() <= 0)
-            LOG << "Note: In UpdateTheta, theta precisions aren't positive-definite: " << chk.Sign()
-                << ", " << chk.LogValue() << endl;
     }
 }
 
@@ -621,6 +621,7 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
     const Ar1cParams &prior = dynamic_cast<const Ar1cParams &>(noisePrior);
     const Ar1cMatrixCache &alphaMat = posterior.alphaMat;
 
+    // Calculate some matrices we will need
     const Matrix &J = linear.Jacobian();
     ColumnVector k = data - linear.Offset() + J * (linear.Centre() - theta.means);
     const SymmetricMatrix &Linv = theta.GetCovariance();
@@ -654,8 +655,8 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
         +0.5 * theta.GetPrecisions().LogDeterminant().LogValue()
         - 0.5 * nTheta * (log(2 * M_PI) + 1);
 
-    double expectedLogPhiDist = 0;
-    vector<double> expectedLogPosteriorParts(10);
+    double expectedLogPhiDist = 0; // bits arising fromt he factorised posterior for phi
+    vector<double> expectedLogPosteriorParts(10); // bits arising from the likelihood
     for (int i = 0; i < 10; i++)
         expectedLogPosteriorParts[i] = 0;
 
@@ -704,15 +705,6 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
 
     for (int i = 0; i < 10; i++)
         F += expectedLogPosteriorParts[i];
-
-    // Display the breakdown into terms
-    /*  LOG << "F parts: " << -expectedLogAlphaDist << ", "
-     << -expectedLogThetaDist << ", "
-     << -expectedLogPhiDist;
-     for (int i=0; i<10; i++)
-     LOG << ", [" << i << "] == " << expectedLogPosteriorParts[i];
-     LOG << endl;
-     // */
 
     // Error checking
     if (!(F - F == 0))
