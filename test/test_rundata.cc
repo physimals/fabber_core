@@ -74,7 +74,9 @@ TEST_F(RunDataTest, ConcatenatedData)
         }
     }
 
+    EasyLog log;
     FabberRunData rundata;
+    rundata.SetLogger(&log);
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data1", data1);
     rundata.SetVoxelData("data2", data2);
@@ -132,7 +134,9 @@ TEST_F(RunDataTest, InterleavedData)
         }
     }
 
+    EasyLog log;
     FabberRunData rundata;
+    rundata.SetLogger(&log);
     rundata.SetVoxelCoords(voxelCoords);
     rundata.SetVoxelData("data1", data1);
     rundata.SetVoxelData("data2", data2);
@@ -263,6 +267,19 @@ TEST_F(RunDataTest, IntConvert)
     ASSERT_EQ(7, rundata.GetInt("wibble", 7, 7));
 }
 
+// Tests integer list option
+TEST_F(RunDataTest, IntList)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "7");
+    rundata.Set("wibble2", "8");
+
+    vector<int> list = rundata.GetIntList("wibble");
+    ASSERT_EQ(2, list.size());
+    ASSERT_EQ(7, list[0]);
+    ASSERT_EQ(8, list[1]);
+}
+
 // Tests double option
 TEST_F(RunDataTest, DoubleConvert)
 {
@@ -271,6 +288,19 @@ TEST_F(RunDataTest, DoubleConvert)
 
     ASSERT_EQ(7.5, rundata.GetDouble("wibble"));
     ASSERT_EQ(7.5, rundata.GetDouble("wibble", 7, 8));
+}
+
+// Tests double list option
+TEST_F(RunDataTest, DoubleList)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "7.5");
+    rundata.Set("wibble2", "8.5");
+
+    vector<double> list = rundata.GetDoubleList("wibble");
+    ASSERT_EQ(2, list.size());
+    ASSERT_EQ(7.5, list[0]);
+    ASSERT_EQ(8.5, list[1]);
 }
 
 // Tests bad int option
@@ -282,6 +312,16 @@ TEST_F(RunDataTest, IntConvertFail)
     ASSERT_THROW(rundata.GetInt("wibble"), InvalidOptionValue);
 }
 
+// Tests bad int list option
+TEST_F(RunDataTest, IntListConvertFail)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "2");
+    rundata.Set("wibble2", "ABC");
+
+    ASSERT_THROW(rundata.GetIntList("wibble"), InvalidOptionValue);
+}
+
 // Tests bad double option
 TEST_F(RunDataTest, DoubleConvertFail)
 {
@@ -289,6 +329,16 @@ TEST_F(RunDataTest, DoubleConvertFail)
     rundata.Set("wibble", "ABC");
 
     ASSERT_THROW(rundata.GetDouble("wibble"), InvalidOptionValue);
+}
+
+// Tests bad double list option
+TEST_F(RunDataTest, DoubleListConvertFail)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "2.3");
+    rundata.Set("wibble2", "ABC");
+
+    ASSERT_THROW(rundata.GetDoubleList("wibble"), InvalidOptionValue);
 }
 
 // Tests int option that's too small
@@ -309,6 +359,27 @@ TEST_F(RunDataTest, IntConvertFailMax)
     ASSERT_THROW(rundata.GetInt("wibble", 0, 3), InvalidOptionValue);
 }
 
+// Tests int list option that's too small
+TEST_F(RunDataTest, IntListConvertFailMin)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "14");
+    rundata.Set("wibble2", "7");
+
+    ASSERT_THROW(rundata.GetIntList("wibble", 10), InvalidOptionValue);
+}
+
+// Tests int list option that's too big
+TEST_F(RunDataTest, IntListConvertFailMax)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "1");
+    rundata.Set("wibble2", "2");
+    rundata.Set("wibble3", "7");
+
+    ASSERT_THROW(rundata.GetIntList("wibble", 0, 3), InvalidOptionValue);
+}
+
 // Tests double option that's too small
 TEST_F(RunDataTest, DoubleConvertFailMin)
 {
@@ -325,6 +396,27 @@ TEST_F(RunDataTest, DoubleConvertFailMax)
     rundata.Set("wibble", "7.5");
 
     ASSERT_THROW(rundata.GetDouble("wibble", 0.2, 3.3), InvalidOptionValue);
+}
+
+// Tests double list option that's too small
+TEST_F(RunDataTest, DoubleListConvertFailMin)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "14.8");
+    rundata.Set("wibble2", "7.3");
+
+    ASSERT_THROW(rundata.GetDoubleList("wibble", 10), InvalidOptionValue);
+}
+
+// Tests double list option that's too big
+TEST_F(RunDataTest, DoubleListConvertFailMax)
+{
+    FabberRunData rundata;
+    rundata.Set("wibble1", "1.2");
+    rundata.Set("wibble2", "2.3");
+    rundata.Set("wibble3", "7.1");
+
+    ASSERT_THROW(rundata.GetDoubleList("wibble", 0, 3), InvalidOptionValue);
 }
 
 // Tests odd case where data name could lead to circular reference

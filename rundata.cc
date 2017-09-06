@@ -452,6 +452,7 @@ std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
     while (HaveKey(prefix + stringify(n)))
     {
         ret.push_back(GetString(prefix + stringify(n)));
+        n++;
     }
     return ret;
 }
@@ -502,6 +503,7 @@ std::vector<int> FabberRunData::GetIntList(const std::string &prefix, int min, i
     while (HaveKey(prefix + stringify(n)))
     {
         ret.push_back(GetInt(prefix + stringify(n), min, max));
+        n++;
     }
     return ret;
 }
@@ -539,6 +541,7 @@ std::vector<double> FabberRunData::GetDoubleList(const std::string &prefix, doub
     while (HaveKey(prefix + stringify(n)))
     {
         ret.push_back(GetDouble(prefix + stringify(n), min, max));
+        n++;
     }
     return ret;
 }
