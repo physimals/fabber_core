@@ -149,6 +149,7 @@ void FwdModel::Initialize(FabberRunData &args)
 {
     m_log = args.GetLogger();
 }
+
 void FwdModel::UsageFromName(const string &name, std::ostream &stream)
 {
     stream << "Description: " << name << endl << endl;
@@ -166,6 +167,16 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
     else
     {
         model->Usage(stream);
+    }
+    vector<string> outputs;
+    model->GetOutputs(outputs);
+    if (outputs.size() > 0)
+    {
+        stream << endl << "Additional outputs: " << endl << endl;
+        for (vector<string>::iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
+        {
+            if (*iter != "") stream << "  " << *iter << endl;
+        }
     }
 }
 
