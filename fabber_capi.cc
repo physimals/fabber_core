@@ -471,7 +471,8 @@ int fabber_get_model_outputs(void *fab, unsigned int out_bufsize, char *out_buf,
         vector<string>::iterator iter;
         for (iter = outputs.begin(); iter != outputs.end(); ++iter)
         {
-            if (*iter != "") out << *iter << endl;
+            if (*iter != "")
+                out << *iter << endl;
         }
         string outstr = out.str();
         if (outstr.size() >= out_bufsize)

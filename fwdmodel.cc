@@ -176,7 +176,8 @@ void FwdModel::UsageFromName(const string &name, std::ostream &stream)
         stream << endl << "Additional outputs: " << endl << endl;
         for (vector<string>::iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
         {
-            if (*iter != "") stream << "  " << *iter << endl;
+            if (*iter != "")
+                stream << "  " << *iter << endl;
         }
     }
 }
