@@ -151,9 +151,10 @@ void FwdModel::Initialize(FabberRunData &args)
 }
 void FwdModel::UsageFromName(const string &name, std::ostream &stream)
 {
-    stream << "Description: " << name << endl << endl;
     std::auto_ptr<FwdModel> model(NewFromName(name));
-    stream << model->GetDescription() << endl << endl << "Options: " << endl << endl;
+    stream << name << ": " << model->ModelVersion() << endl << endl;
+    stream << model->GetDescription() << endl << endl;
+    stream << "Options: " << endl << endl;
     vector<OptionSpec> options;
     model->GetOptions(options);
     if (options.size() > 0)
