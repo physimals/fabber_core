@@ -447,11 +447,16 @@ string FabberRunData::GetStringDefault(const string &key, const string &def) con
 std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
 {
     std::vector<std::string> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
-    {
-        ret.push_back(GetString(prefix + stringify(n)));
-        n++;
+    if (HaveKey(prefix)) {
+        ret.push_back(GetString(prefix));
+    }
+    else {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetString(prefix + stringify(n)));
+            n++;
+        }
     }
     return ret;
 }
@@ -498,11 +503,16 @@ int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
 std::vector<int> FabberRunData::GetIntList(const std::string &prefix, int min, int max)
 {
     std::vector<int> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
-    {
-        ret.push_back(GetInt(prefix + stringify(n), min, max));
-        n++;
+    if (HaveKey(prefix)) {
+        ret.push_back(GetInt(prefix, min, max));
+    }
+    else {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetInt(prefix + stringify(n), min, max));
+            n++;
+        }
     }
     return ret;
 }
@@ -536,11 +546,16 @@ double FabberRunData::GetDoubleDefault(const string &key, double def, double min
 std::vector<double> FabberRunData::GetDoubleList(const std::string &prefix, double min, double max)
 {
     std::vector<double> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
-    {
-        ret.push_back(GetDouble(prefix + stringify(n), min, max));
-        n++;
+    if (HaveKey(prefix)) {
+        ret.push_back(GetDouble(prefix, min, max));
+    }
+    else {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetDouble(prefix + stringify(n), min, max));
+            n++;
+        }
     }
     return ret;
 }
