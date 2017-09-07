@@ -155,6 +155,7 @@ static OptionSpec OPTIONS[] = {
     { "save-residuals", OPT_BOOL,
         "Output the residuals (difference between the data and the model prediction)", OPT_NONREQ,
         "" },
+    { "save-model-extras", OPT_BOOL, "Output any additional model-specific timeseries data", OPT_NONREQ, "" },
     { "save-mvn", OPT_BOOL, "Output the final MVN distributions.", OPT_NONREQ, "" },
     { "save-mean", OPT_BOOL, "Output the parameter means.", OPT_NONREQ, "" },
     { "save-std", OPT_BOOL, "Output the parameter standard deviations.", OPT_NONREQ, "" },

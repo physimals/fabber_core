@@ -679,6 +679,9 @@ class FabberExec(Fabber):
     def get_model_params(self, rundata):
         raise FabberException("get_params not implemented for executable interface")
 
+    def get_model_outputs(self, rundata):
+        raise FabberException("get_outputs not implemented for executable interface")
+
     def run(self, rundata):
         """
         Run Fabber on the run data specified
@@ -836,6 +839,16 @@ class FabberLib(Fabber):
 
         return self.outbuf.value.splitlines()
 
+    def get_model_outputs(self, rundata=None):
+        """ Get additional model timeseries outputs, given the specified options"""
+        if rundata is not None:
+            self._init_clib()
+            for key, value in rundata.items():
+                self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
+
+        self._trycall(self.clib.fabber_get_model_outputs, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
+        return self.outbuf.value.splitlines()
+
     def model_evaluate(self, rundata, params, nt, indata=None):
         """ """
         self._init_clib()
@@ -928,6 +941,8 @@ class FabberLib(Fabber):
             output_items.append("residuals")
         if "save-mvn" in rundata:
             output_items.append("finalMVN")
+        if "save-model-extras" in rundata:
+            output_items += self.get_model_outputs()
 
         retdata, log = {}, ""
         self._trycall(self.clib.fabber_set_extent, self.handle, s[0], s[1], s[2], mask, self.errbuf)
@@ -997,6 +1012,7 @@ class FabberLib(Fabber):
             self.clib.fabber_get_methods.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
 
             self.clib.fabber_get_model_params.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
+            self.clib.fabber_get_model_outputs.argtypes = [c_void_p, c_uint, c_char_p, c_char_p]
             self.clib.fabber_model_evaluate.argtypes = [c_void_p, c_uint, c_float_arr, c_uint, c_float_arr, c_float_arr, c_char_p]
         except Exception, e:
             raise FabberException("Error initializing Fabber library: %s" % str(e))

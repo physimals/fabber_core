@@ -148,7 +148,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     m_model->GetOutputs(outputs);
     if (saveModelFit || saveResiduals || (outputs.size() > 1))
     {
-        LOG << "InferenceTechnique::Writing model fit/residuals..." << endl;
+        LOG << "InferenceTechnique::Writing model time series data (fit, residuals and model-specific output)" << endl;
 
         Matrix result, residuals, datamtx, coords, suppdata;
         datamtx = rundata.GetMainVoxelData(); // it is just possible that the model needs the data
@@ -190,7 +190,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                     rundata.SaveVoxelData("modelfit", result);
                 }
             }
-            else
+            else if (rundata.GetBool("save-model-extras"))
             {
                 rundata.SaveVoxelData(*iter, result);
             }
