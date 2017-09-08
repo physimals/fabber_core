@@ -213,7 +213,7 @@ FABBER_DLL_API int fabber_get_model_params(
     void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf);
 
 /**
- * Get a list of additional model-specific timeseries data that will be output. This 
+ * Get a list of additional model-specific timeseries data that will be output. This
  * could depend on the options specified, so must be called after all options are set
  *
  * @param fab Fabber context, returned by fabber_new

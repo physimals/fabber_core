@@ -155,7 +155,8 @@ static OptionSpec OPTIONS[] = {
     { "save-residuals", OPT_BOOL,
         "Output the residuals (difference between the data and the model prediction)", OPT_NONREQ,
         "" },
-    { "save-model-extras", OPT_BOOL, "Output any additional model-specific timeseries data", OPT_NONREQ, "" },
+    { "save-model-extras", OPT_BOOL, "Output any additional model-specific timeseries data",
+        OPT_NONREQ, "" },
     { "save-mvn", OPT_BOOL, "Output the final MVN distributions.", OPT_NONREQ, "" },
     { "save-mean", OPT_BOOL, "Output the parameter means.", OPT_NONREQ, "" },
     { "save-std", OPT_BOOL, "Output the parameter standard deviations.", OPT_NONREQ, "" },
@@ -449,11 +450,18 @@ string FabberRunData::GetStringDefault(const string &key, const string &def) con
 std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
 {
     std::vector<std::string> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
+    if (HaveKey(prefix))
     {
-        ret.push_back(GetString(prefix + stringify(n)));
-        n++;
+        ret.push_back(GetString(prefix));
+    }
+    else
+    {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetString(prefix + stringify(n)));
+            n++;
+        }
     }
     return ret;
 }
@@ -500,11 +508,18 @@ int FabberRunData::GetIntDefault(const string &key, int def, int min, int max)
 std::vector<int> FabberRunData::GetIntList(const std::string &prefix, int min, int max)
 {
     std::vector<int> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
+    if (HaveKey(prefix))
     {
-        ret.push_back(GetInt(prefix + stringify(n), min, max));
-        n++;
+        ret.push_back(GetInt(prefix, min, max));
+    }
+    else
+    {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetInt(prefix + stringify(n), min, max));
+            n++;
+        }
     }
     return ret;
 }
@@ -538,11 +553,18 @@ double FabberRunData::GetDoubleDefault(const string &key, double def, double min
 std::vector<double> FabberRunData::GetDoubleList(const std::string &prefix, double min, double max)
 {
     std::vector<double> ret;
-    int n = 1;
-    while (HaveKey(prefix + stringify(n)))
+    if (HaveKey(prefix))
     {
-        ret.push_back(GetDouble(prefix + stringify(n), min, max));
-        n++;
+        ret.push_back(GetDouble(prefix, min, max));
+    }
+    else
+    {
+        int n = 1;
+        while (HaveKey(prefix + stringify(n)))
+        {
+            ret.push_back(GetDouble(prefix + stringify(n), min, max));
+            n++;
+        }
     }
     return ret;
 }

@@ -117,7 +117,16 @@ int execute(int argc, char **argv)
         }
         if (params->GetBool("version"))
         {
-            Version();
+            string model_name = params->GetStringDefault("model", "");
+            if (model_name != "")
+            {
+                std::auto_ptr<FwdModel> model(FwdModel::NewFromName(model_name));
+                cout << model->ModelVersion() << endl;
+            }
+            else
+            {
+                Version();
+            }
             return 0;
         }
         else if (params->GetBool("listmodels"))
