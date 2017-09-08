@@ -163,6 +163,7 @@ static OptionSpec OPTIONS[] = {
     { "save-noise-mean", OPT_BOOL, "Output the noise means.", OPT_NONREQ, "" },
     { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
     { "save-free-energy", OPT_BOOL, "Output the free energy, if calculated. ", OPT_NONREQ, "" },
+    { "debug", OPT_BOOL, "Output large amounts of debug information. ONLY USE WITH VERY SMALL NUMBERS OF VOXELS", OPT_NONREQ, "" },
     { "" },
 };
 
