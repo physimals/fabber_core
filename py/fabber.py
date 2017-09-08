@@ -196,7 +196,7 @@ def find_fabber():
     Returns a tuple of exec, core lib, list of models
     """
     ex, lib, models = None, None, []
-    for envdir in ("FABBERDIR", "FSLDIR"):
+    for envdir in ("FABBERDIR", "FSLDEVDIR", "FSLDIR"):
         ex = _find_file(ex, envdir, _bin_format % "fabber")
         lib = _find_file(lib, envdir, _lib_format % "fabbercore_shared")
         models += glob.glob(os.path.join(os.environ.get(envdir, ""), _lib_format % "fabber_models_*"))
@@ -207,7 +207,6 @@ class FabberException(RuntimeError):
     """
     Thrown if there is an error using the Fabber executable or library
     """
-
     def __init__(self, msg, errcode=None, log=None):
         self.errcode = errcode
         self.log = log
