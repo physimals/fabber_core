@@ -57,8 +57,11 @@ all:	${XFILES} libfabbercore.a libfabberexec.a
 mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o 
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o rundata_newimage.o ${LIBS}
 
+clean:
+	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.exe core depend.mk
+
 #
-# Build a fabber exectuable, this will have nothing but the linear model so it not practically useful for data analysis
+# Build a fabber exectuable, this will have nothing but the generic models so it not practically useful for data analysis
 #
 fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${LIBS} 
