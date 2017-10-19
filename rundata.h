@@ -17,6 +17,7 @@
 #include <float.h>
 #include <limits.h>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -600,6 +601,7 @@ public:
 protected:
     void init(bool compat_options);
     void AddKeyEqualsValue(const std::string &key, bool trim_comments = false);
+    void CheckAllOptionsUsed() const;
     const NEWMAT::Matrix &GetMainVoxelDataMultiple();
     void CheckSize(std::string key, const NEWMAT::Matrix &mat);
 
@@ -627,6 +629,15 @@ protected:
      * Options as key/value pairs
      */
     std::map<std::string, std::string> m_params;
+
+    /**
+     * Record of what option keys have been read.
+     *
+     * This enables the program to warn if options are specified which are not
+     * used by any model, method, etc. They may be user typos! Mutable because
+     * needs to be changed by read methods which are declared const.
+     */
+    mutable std::set<std::string> m_used_params;
 
     /** Nearest neighbour lists, calculated lazily in GetNeighbours() */
     std::vector<std::vector<int> > m_neighbours;

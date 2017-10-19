@@ -326,6 +326,22 @@ TEST_F(ClTestTest, ListMethods)
     ASSERT_TRUE(contains(out, "spatialvb"));
 }
 
+TEST_F(ClTestTest, UnusedParams)
+{
+    string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white --overwrite";
+    args += " --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+    ASSERT_EQ(0, runFabber(args));
+    string out = getLogfile("out.tmp");
+    ASSERT_FALSE(contains(out, "WARNING"));
+
+    args += " --squaffle";
+    ASSERT_EQ(0, runFabber(args));
+    out = getLogfile("out.tmp");
+    ASSERT_TRUE(contains(out, "WARNING"));
+    ASSERT_TRUE(contains(out, "Unused option"));
+}
+
 INSTANTIATE_TEST_CASE_P(ClMethodTests, ClTestTest, ::testing::Values("vb", "nlls", "spatialvb"));
 }
 #endif

@@ -164,7 +164,9 @@ static OptionSpec OPTIONS[] = {
     { "save-noise-mean", OPT_BOOL, "Output the noise means.", OPT_NONREQ, "" },
     { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
     { "save-free-energy", OPT_BOOL, "Output the free energy, if calculated. ", OPT_NONREQ, "" },
-    { "debug", OPT_BOOL, "Output large amounts of debug information. ONLY USE WITH VERY SMALL NUMBERS OF VOXELS", OPT_NONREQ, "" },
+    { "debug", OPT_BOOL,
+        "Output large amounts of debug information. ONLY USE WITH VERY SMALL NUMBERS OF VOXELS",
+        OPT_NONREQ, "" },
     { "" },
 };
 
@@ -259,10 +261,6 @@ void FabberRunData::Run(ProgressCheck *progress)
     std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
     infer->Initialize(fwd_model.get(), *this);
 
-    // Arguments should all have been used by now, so complain if there's anything left.
-    // FIXME ineffective at present
-    // CheckEmpty();
-
     // Calculations
     int nvoxels = GetVoxelCoords().Ncols();
     LOG << "FabberRunData::Num voxels " << nvoxels << endl;
@@ -273,6 +271,9 @@ void FabberRunData::Run(ProgressCheck *progress)
     infer->SaveResults(*this);
 
     LOG << "FabberRunData::All done." << endl;
+
+    // Options should all have been used by now, so complain if there's anything left.
+    CheckAllOptionsUsed();
 
     time_t endTime;
     time(&endTime);
@@ -442,9 +443,16 @@ string FabberRunData::GetString(const string &key)
 }
 string FabberRunData::GetStringDefault(const string &key, const string &def) const
 {
+    // Flag parameter as having been read
+    m_used_params.insert(key);
     if (m_params.count(key) == 0)
+    {
         return def;
-    return m_params.find(key)->second;
+    }
+    else
+    {
+        return m_params.find(key)->second;
+    }
 }
 
 std::vector<std::string> FabberRunData::GetStringList(const std::string &prefix)
@@ -471,6 +479,8 @@ bool FabberRunData::GetBool(const string &key)
     if (m_params.count(key) == 0)
         return false;
 
+    // Flag parameter as having been read
+    m_used_params.insert(key);
     if (m_params[key] == "")
     {
         return true;
@@ -577,10 +587,9 @@ string FabberRunData::Read(const string &key, const string &msg)
     if (m_params[key] == "")
         throw InvalidOptionValue(key, "<no value>", "Value must be given");
 
-    // okay, option is valid.  Now remove it. FIXME not sorted
-    string ret = m_params[key];
-    //    m_params.erase(key);
-    return ret;
+    // Flag option as having been used and return it
+    m_used_params.insert(key);
+    return m_params[key];
 }
 
 std::string FabberRunData::Read(const std::string &key)
@@ -596,8 +605,24 @@ bool FabberRunData::ReadBool(const std::string &key)
 {
     return GetBool(key);
 }
+
+void FabberRunData::CheckAllOptionsUsed() const
+{
+    for (map<string, string>::const_iterator iter = m_params.begin(); iter != m_params.end();
+         ++iter)
+    {
+        if ((iter->first != "") && m_used_params.find(iter->first) == m_used_params.end())
+        {
+            WARN_ONCE("Unused option specified: " + iter->first);
+        }
+    }
+}
+
 string FabberRunData::GetOutputDir()
 {
+    // Avoid warning about unused parameter, this is set by default but not always relevant
+    bool ltl = GetBool("link-to-latest");
+
     if (m_outdir != "")
         return m_outdir;
 
@@ -661,7 +686,7 @@ string FabberRunData::GetOutputDir()
     if (ret != 0)
         LOG << "FabberRunData::uname failed - uname.txt not created" << endl;
 
-    if (GetBool("link-to-latest"))
+    if (ltl)
     {
         // try to make a link to the latest version. If this fails, it doesn't really matter.
         int ret = system(("ln -sfn '" + m_outdir + "' '" + basename + "_latest'").c_str());
