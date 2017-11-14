@@ -178,6 +178,11 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                 // do the evaluation
                 m_model->EvaluateFabber(
                     resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
+                if (result.Nrows() != tmp.Nrows()) {
+                    // Only occurs on first voxel if output size is not equal to 
+                    // data size
+                    result.ReSize(tmp.Nrows(), nVoxels);
+                }
                 result.Column(vox) = tmp;
             }
             if (*iter == "")
