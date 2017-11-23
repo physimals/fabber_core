@@ -52,7 +52,6 @@ void *fabber_new(char *err_buf)
     }
     catch (...)
     {
-        // FIXME theoretical memory leak of io
         fabber_err(FABBER_ERR_FATAL, "Failed to allocate memory for run data", err_buf);
         return NULL;
     }
