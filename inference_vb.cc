@@ -183,11 +183,11 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
     }
 
     // Initial noise distributions
-    NoiseParams *initialNoisePrior = m_noise->NewParams();
-    NoiseParams *initialNoisePosterior = m_noise->NewParams();
+    auto_ptr<NoiseParams> initialNoisePrior(m_noise->NewParams());
+    auto_ptr<NoiseParams> initialNoisePosterior(m_noise->NewParams());
     m_noise->HardcodedInitialDists(*initialNoisePrior, *initialNoisePosterior);
-    InitializeNoiseFromParam(rundata, initialNoisePrior, "noise-initial-prior");
-    InitializeNoiseFromParam(rundata, initialNoisePosterior, "noise-initial-posterior");
+    InitializeNoiseFromParam(rundata, initialNoisePrior.get(), "noise-initial-prior");
+    InitializeNoiseFromParam(rundata, initialNoisePosterior.get(), "noise-initial-posterior");
 
     for (int v = 1; v <= m_nvoxels; v++)
     {
@@ -315,6 +315,30 @@ void Vb::DebugVoxel(int v, const string &where)
     LOG << "Jacobian: " << m_lin_model[v - 1].Jacobian();
 }
 
+bool Vb::IsSpatial(FabberRunData &rundata) const
+{
+    if (rundata.GetString("method") == "spatialvb")
+    {
+        return true;
+    }
+    else 
+    {
+        // Really clunky way to detect if any spatial priors have been specified
+        vector<Parameter> params;
+        m_model->GetParameters(rundata, params);
+        for (vector<Parameter>::iterator iter=params.begin(); iter!=params.end(); iter++) {
+            switch(iter->prior_type) {
+                case PRIOR_SPATIAL_M:
+                case PRIOR_SPATIAL_m:
+                case PRIOR_SPATIAL_P:
+                case PRIOR_SPATIAL_p:
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
 void Vb::DoCalculations(FabberRunData &rundata)
 {
     // extract data (and the coords) from rundata for the (first) VB run
@@ -345,13 +369,13 @@ void Vb::DoCalculations(FabberRunData &rundata)
         // Do no calculations - now we have set resultMVNs we can finish
         LOG << "Vb::DoCalculations output-only set - not performing any calculations" << endl;
     }
-    else if (rundata.GetString("method") == "vb")
+    else if (IsSpatial(rundata))
     {
-        DoCalculationsVoxelwise(rundata);
+        DoCalculationsSpatial(rundata);
     }
     else
     {
-        DoCalculationsSpatial(rundata);
+        DoCalculationsVoxelwise(rundata);
     }
 
     if (!m_needF)
@@ -365,7 +389,9 @@ void Vb::DoCalculations(FabberRunData &rundata)
     {
         delete m_ctx->noise_post[v - 1];
         delete m_ctx->noise_prior[v - 1];
+        delete m_conv[v - 1];
     }
+    delete m_ctx;
 }
 
 void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
@@ -456,6 +482,8 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                 m_ctx->fwd_prior[v - 1] = fwdPriorSave;
                 m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
             }
+
+            delete noisePosteriorSave;
         }
         catch (FabberInternalError &e)
         {
@@ -495,6 +523,10 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
             if (m_needF)
                 resultFs.at(v - 1) = F;
         }
+    }
+    for (unsigned int i = 0; i < priors.size(); i++)
+    {
+        delete priors[i];
     }
 }
 
@@ -632,6 +664,10 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     {
         resultMVNs[v - 1]
             = new MVNDist(m_ctx->fwd_post[v - 1], m_ctx->noise_post[v - 1]->OutputAsMVN());
+    }
+    for (unsigned int i = 0; i < priors.size(); i++)
+    {
+        delete priors[i];
     }
 }
 

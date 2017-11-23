@@ -58,6 +58,14 @@ protected:
     void PassModelData(int voxel);
 
     /**
+     * Determine whether we need spatial VB mode
+     *
+     * It is required either because it has been asked for (--method=spatialvb) or
+     * if any spatial priors have been specified (types mMpP)
+     */
+    bool IsSpatial(FabberRunData &rundata) const;
+
+    /**
      * Do calculations loop in voxelwise mode (i.e. all iterations for
      * one voxel, then all iterations for the next voxel, etc)
      */
