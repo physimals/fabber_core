@@ -44,13 +44,16 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
     if disp: print("Running self test for model %s" % model)
     ret = {}
     rundata["model"] = model
-    data, roidata = generate_test_data(rundata, param_testvalues, param_rois=True, auto_load_models=True, **kwargs)
+    data, cleandata, roidata = generate_test_data(rundata, param_testvalues, param_rois=True, auto_load_models=True, **kwargs)
     
     if save_input:
         outfile=outfile_format % model
-        if disp: print("Saving test data to Nifti files: %s" % outfile)
+        if disp: print("Saving test data to Nifti file: %s" % outfile)
         data_nii = nib.Nifti1Image(data, np.identity(4))
         data_nii.to_filename(outfile)
+        if disp: print("Saving clean data to Nifti file: %s_clean" % outfile)
+        cleandata_nii = nib.Nifti1Image(cleandata, np.identity(4))
+        cleandata_nii.to_filename(outfile + "_clean")
         for param in param_testvalues:
             if param in roidata:
                 roi_nii = nib.Nifti1Image(roidata[param], np.identity(4))
@@ -167,15 +170,12 @@ def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10,
         # Add Gaussian noise
         #mean_signal = np.mean(data)
         noise = np.random.normal(0, noise, shape + [nt,])
-        data += noise
+        noisy_data = data + noise
 
-    if patch_rois or param_rois: 
-        ret = [data,] 
-        if patch_rois: ret.append(patch_roi_data)
-        if param_rois: 
-            ret.append(param_roi_data)
-        return tuple(ret)
-    else: return data
+    ret = [noisy_data, data,] 
+    if patch_rois: ret.append(patch_roi_data)
+    if param_rois: ret.append(param_roi_data)
+    return tuple(ret)
 
 def _find_file(f, envdir, newf):
     if f is not None:
@@ -489,8 +489,8 @@ class FabberRun:
                         return timestamp, timestamp_str
                     except:
                         warnings.warn("Failed to parse timestamp: '%s'" % timestamp_str)
-
-        warnings.warn("Could not find timestamp in log")
+        if log != "":
+            warnings.warn("Could not find timestamp in log")
         return datetime.datetime.now(), timestamp_str
 
 class LibRun(FabberRun):
