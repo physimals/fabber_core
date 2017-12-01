@@ -65,7 +65,7 @@ TEST_P(InferenceMethodTest, NoVoxels)
     rundata.Set("model", "poly");
     rundata.Set("degree", "0");
     rundata.Set("method", GetParam());
-    //ASSERT_NO_THROW(rundata.Run());
+    // ASSERT_NO_THROW(rundata.Run());
     rundata.Run();
 
     NEWMAT::Matrix mean = rundata.GetVoxelData("mean_c0");
@@ -329,7 +329,8 @@ TEST_P(InferenceMethodTest, CLArgs)
     }
 
     string method = (string) "--method=" + GetParam();
-    const char *argv[] = { "fabber", "--noise=white", "--model=poly", "--degree=0", method.c_str() };
+    const char *argv[]
+        = { "fabber", "--noise=white", "--model=poly", "--degree=0", method.c_str() };
     int argc = 5;
 
     FabberRunData rundata;
@@ -375,7 +376,8 @@ TEST_P(InferenceMethodTest, PolynomialFit)
                 for (int n = 0; n < NTIMES; n++)
                 {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
-                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
+                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1)
+                        - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
                 }
                 v++;
             }
@@ -453,7 +455,8 @@ TEST_P(InferenceMethodTest, SaveModelFit)
                 for (int n = 0; n < NTIMES; n++)
                 {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
-                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
+                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1)
+                        - 2 * VAL * (n + 1) * (n + 1) * (n + 1);
                 }
                 v++;
             }
@@ -529,9 +532,10 @@ TEST_P(InferenceMethodTest, MaskedTimepoints)
     }
 
     // Change timepoints and check this gives a different answer
-    for (int v=1; v<=n_voxels; v++) {
-        data(3, v) = VAL*2;
-        data(7, v) = VAL*2;
+    for (int v = 1; v <= n_voxels; v++)
+    {
+        data(3, v) = VAL * 2;
+        data(7, v) = VAL * 2;
     }
     rundata.SetVoxelData("data", data);
     rundata.Run();
@@ -607,9 +611,10 @@ TEST_F(InferenceMethodTest, MaskedTimepointsArNoise)
     }
 
     // Change timepoints and check this gives a different answer
-    for (int v=1; v<=n_voxels; v++) {
-        data(3, v) = VAL*2;
-        data(7, v) = VAL*2;
+    for (int v = 1; v <= n_voxels; v++)
+    {
+        data(3, v) = VAL * 2;
+        data(7, v) = VAL * 2;
     }
     rundata.SetVoxelData("data", data);
     rundata.Run();
@@ -628,6 +633,7 @@ TEST_F(InferenceMethodTest, MaskedTimepointsArNoise)
     ASSERT_THROW(rundata.Run(), InvalidOptionValue);
 }
 
-INSTANTIATE_TEST_CASE_P(MethodTests, InferenceMethodTest, ::testing::Values("vb", "nlls", "spatialvb"));
+INSTANTIATE_TEST_CASE_P(
+    MethodTests, InferenceMethodTest, ::testing::Values("vb", "nlls", "spatialvb"));
 
 } // namespace

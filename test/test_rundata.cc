@@ -231,8 +231,7 @@ TEST_F(RunDataTest, OptionsFileEmbeddedComment)
 
     ofstream os;
     os.open(FILENAME.c_str(), ios::out);
-    os << "model=poly" << endl
-       << "degree=0 # Keep things simple" << endl;
+    os << "model=poly" << endl << "degree=0 # Keep things simple" << endl;
     os.close();
 
     FabberRunData rundata;
