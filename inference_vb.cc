@@ -321,18 +321,20 @@ bool Vb::IsSpatial(FabberRunData &rundata) const
     {
         return true;
     }
-    else 
+    else
     {
         // Really clunky way to detect if any spatial priors have been specified
         vector<Parameter> params;
         m_model->GetParameters(rundata, params);
-        for (vector<Parameter>::iterator iter=params.begin(); iter!=params.end(); iter++) {
-            switch(iter->prior_type) {
-                case PRIOR_SPATIAL_M:
-                case PRIOR_SPATIAL_m:
-                case PRIOR_SPATIAL_P:
-                case PRIOR_SPATIAL_p:
-                    return true;
+        for (vector<Parameter>::iterator iter = params.begin(); iter != params.end(); iter++)
+        {
+            switch (iter->prior_type)
+            {
+            case PRIOR_SPATIAL_M:
+            case PRIOR_SPATIAL_m:
+            case PRIOR_SPATIAL_P:
+            case PRIOR_SPATIAL_p:
+                return true;
             }
         }
     }
