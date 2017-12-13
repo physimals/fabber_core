@@ -126,8 +126,8 @@ int main(int argc, char **argv)
                         }
                         if (abs(d1(x, y, z, t) - d2(x, y, z, t)) > EPSILON)
                         {
-                            cerr << "Value mismatch (" << x << ", " << y << ", " << z << ", " << t << "): "
-                                 << d1(x, y, z, t) << "!=" << d2(x, y, z, t) << endl;
+                            cerr << "Value mismatch (" << x << ", " << y << ", " << z << ", " << t
+                                 << "): " << d1(x, y, z, t) << "!=" << d2(x, y, z, t) << endl;
                             return 1;
                         }
                     }

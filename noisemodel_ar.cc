@@ -318,9 +318,10 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
     else
         throw InvalidOptionValue("num-echoes", stringify(nPhis), "Must be 1 or 2");
 
-    if (args.HaveKey("mt1")) 
+    if (args.HaveKey("mt1"))
     {
-        throw InvalidOptionValue("mt1", "", "Masked time points are not supported for the AR noise model");
+        throw InvalidOptionValue(
+            "mt1", "", "Masked time points are not supported for the AR noise model");
     }
 }
 
@@ -602,7 +603,8 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
 
         if (wasSingular)
         {
-            WARN_ONCE("Ar1cNoiseModel::UpdateTheta - Ltmp was singular, so changed zeros on diagonal to 1e-20.");
+            WARN_ONCE("Ar1cNoiseModel::UpdateTheta - Ltmp was singular, so changed zeros on "
+                      "diagonal to 1e-20.");
         }
 
         thetaWithoutPrior->SetPrecisions(Ltmp);

@@ -168,6 +168,9 @@ static OptionSpec OPTIONS[] = {
     { "save-noise-mean", OPT_BOOL, "Output the noise means.", OPT_NONREQ, "" },
     { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
     { "save-free-energy", OPT_BOOL, "Output the free energy, if calculated. ", OPT_NONREQ, "" },
+    { "optfile", OPT_BOOL, "File containing additional options, one per line, in the same form as "
+                           "specified on the command line",
+        OPT_NONREQ, "" },
     { "debug", OPT_BOOL,
         "Output large amounts of debug information. ONLY USE WITH VERY SMALL NUMBERS OF VOXELS",
         OPT_NONREQ, "" },
@@ -369,9 +372,14 @@ void FabberRunData::Parse(int argc, char **argv)
     {
         if (string(argv[a]) == "-f")
         {
-            // FIXME what if no file specified?
-            ParseParamFile(argv[++a]);
-            ++a;
+            if (++a < argc)
+            {
+                ParseParamFile(argv[a]);
+            }
+            else
+            {
+                throw InvalidOptionValue("-f", "", "No filename specified");
+            }
         }
         else if (string(argv[a], 0, 2) == "--")
         {
@@ -380,12 +388,18 @@ void FabberRunData::Parse(int argc, char **argv)
         }
         else if (string(argv[a]) == "-@")
         {
+            // DEPRECATED - not POSIX compliant but kept for compatibility
             ParseOldStyleParamFile(argv[++a]);
         }
         else
         {
             throw FabberRunDataError("Option '" + string(argv[a]) + "' doesn't begin with --");
         }
+    }
+    if (HaveKey("optfile"))
+    {
+        // Replacement for non-POSIX compliant -@ option
+        ParseOldStyleParamFile(GetString("optfile"));
     }
 }
 

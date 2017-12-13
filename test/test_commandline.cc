@@ -30,8 +30,9 @@ protected:
         remove("testfabber.tmp");
         remove("out.tmp_latest");
         remove("uname.txt");
-        int ret = system("rm -rf out.tmp"); //Not portable!
-        if (ret != 0) cerr << "WARNING: failed to remove temp directory" << endl;
+        int ret = system("rm -rf out.tmp"); // Not portable!
+        if (ret != 0)
+            cerr << "WARNING: failed to remove temp directory" << endl;
     }
 
     int runFabber(string cline)
@@ -104,9 +105,10 @@ TEST_F(ClTestTest, Help)
 // Test real data with a linear model and a VEST format basis
 TEST_P(ClTestTest, LinearModelVest)
 {
-    string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR) + "/test/test_linear_design.mat ";
-    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
-        + "/test/test_data.nii.gz --noise=white";
+    string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR)
+        + "/test/test_linear_design.mat ";
+    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data="
+        + string(FABBER_SRC_DIR) + "/test/test_data.nii.gz --noise=white";
     args += " --method=" + GetParam() + " ";
 
     ASSERT_EQ(0, runFabber(args));
@@ -124,22 +126,23 @@ TEST_P(ClTestTest, LinearModelVest)
         string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_3.nii.gz");
     compareNifti("out.tmp/mean_Parameter_4.nii.gz",
         string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_4.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_1.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_1.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_2.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_2.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_3.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_3.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_4.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_1.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_1.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_2.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_2.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_3.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_3.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_4.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
 }
 
 // Test real data with a linear model and an ASCII format basis
 TEST_P(ClTestTest, LinearModelAscii)
 {
-    string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR) + "/test/test_linear_design_ascii.mat ";
-    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
-        + "/test/test_data.nii.gz --noise=white";
+    string args = "--output=out.tmp --model=linear --basis=" + string(FABBER_SRC_DIR)
+        + "/test/test_linear_design_ascii.mat ";
+    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data="
+        + string(FABBER_SRC_DIR) + "/test/test_data.nii.gz --noise=white";
     args += " --method=" + GetParam() + " ";
 
     ASSERT_EQ(0, runFabber(args));
@@ -157,21 +160,21 @@ TEST_P(ClTestTest, LinearModelAscii)
         string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_3.nii.gz");
     compareNifti("out.tmp/mean_Parameter_4.nii.gz",
         string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/mean_Parameter_4.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_1.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_1.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_2.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_2.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_3.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_3.nii.gz");
-    compareNifti("out.tmp/zstat_Parameter_4.nii.gz",
-        string(FABBER_SRC_DIR) + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_1.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_1.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_2.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_2.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_3.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_3.nii.gz");
+    compareNifti("out.tmp/zstat_Parameter_4.nii.gz", string(FABBER_SRC_DIR)
+            + "/test/outdata_linear_" + GetParam() + "/zstat_Parameter_4.nii.gz");
 }
 // Test real data with a simple polynomial model
 TEST_F(ClTestTest, PolyModel)
 {
     string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
-    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
-        + "/test/test_data.nii.gz";
+    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data="
+        + string(FABBER_SRC_DIR) + "/test/test_data.nii.gz";
 
     ASSERT_EQ(0, runFabber(args));
     string out = getLogfile("out.tmp");
@@ -181,20 +184,26 @@ TEST_F(ClTestTest, PolyModel)
     ASSERT_TRUE(contains(out, "test_mask_small.nii.gz"));
     ASSERT_TRUE(contains(out, "test_data.nii.gz"));
 
-    compareNifti("out.tmp/mean_c0.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c0.nii.gz");
-    compareNifti("out.tmp/mean_c1.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c1.nii.gz");
-    compareNifti("out.tmp/mean_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c2.nii.gz");
-    compareNifti("out.tmp/std_c0.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c0.nii.gz");
-    compareNifti("out.tmp/std_c1.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c1.nii.gz");
-    compareNifti("out.tmp/std_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c2.nii.gz");
+    compareNifti(
+        "out.tmp/mean_c0.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c0.nii.gz");
+    compareNifti(
+        "out.tmp/mean_c1.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c1.nii.gz");
+    compareNifti(
+        "out.tmp/mean_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/mean_c2.nii.gz");
+    compareNifti(
+        "out.tmp/std_c0.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c0.nii.gz");
+    compareNifti(
+        "out.tmp/std_c1.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c1.nii.gz");
+    compareNifti(
+        "out.tmp/std_c2.nii.gz", string(FABBER_SRC_DIR) + "/test/outdata_poly/std_c2.nii.gz");
 }
 
 // Test real data with an empty mask. May occur when running in parallel if some chunks have not ROI
 TEST_F(ClTestTest, EmptyMask)
 {
     string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
-    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_empty.nii.gz --data=" + string(FABBER_SRC_DIR)
-        + "/test/test_data.nii.gz";
+    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_empty.nii.gz --data="
+        + string(FABBER_SRC_DIR) + "/test/test_data.nii.gz";
 
     ASSERT_EQ(0, runFabber(args));
     string out = getLogfile("out.tmp");
@@ -209,8 +218,8 @@ TEST_F(ClTestTest, EmptyMask)
 TEST_F(ClTestTest, OutputCopiesPropsMask)
 {
     string args = "--model=poly --output=out.tmp  --degree=2 --method=vb --noise=white ";
-    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data=" + string(FABBER_SRC_DIR)
-        + "/test/test_data.nii.gz";
+    args += " --mask=" + string(FABBER_SRC_DIR) + "/test/test_mask_small.nii.gz --data="
+        + string(FABBER_SRC_DIR) + "/test/test_data.nii.gz";
 
     ASSERT_EQ(0, runFabber(args));
 
@@ -275,8 +284,9 @@ TEST_F(ClTestTest, NoOverwrite)
     ASSERT_TRUE(contains(out, "noise=white"));
     ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
 
-    int ret = system("rm -rf out.tmp+"); //Not portable!
-    if (ret != 0) cerr << "WARNING: Failed to remove temp directory out.tmp+" << endl;
+    int ret = system("rm -rf out.tmp+"); // Not portable!
+    if (ret != 0)
+        cerr << "WARNING: Failed to remove temp directory out.tmp+" << endl;
 }
 
 // Test fabber will overwrite the output dir if it already exists with --overwrite
@@ -340,6 +350,81 @@ TEST_F(ClTestTest, UnusedParams)
     out = getLogfile("out.tmp");
     ASSERT_TRUE(contains(out, "WARNING"));
     ASSERT_TRUE(contains(out, "Unused option"));
+}
+
+TEST_F(ClTestTest, OptFileOldStyle)
+{
+    std::ofstream outfile;
+    outfile.open("optfile.tmp");
+    outfile << "--model=poly" << endl
+            << "--output=out.tmp" << endl
+            << "--degree=2" << endl
+            << "--method=vb" << endl
+            << "--noise=white" << endl
+            << "--overwrite" << endl;
+    outfile.close();
+
+    string args
+        = "--optfile=optfile.tmp --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+    ASSERT_EQ(0, runFabber(args));
+    string out = getLogfile("out.tmp");
+    ASSERT_TRUE(contains(out, "model=poly"));
+    ASSERT_TRUE(contains(out, "degree=2"));
+    ASSERT_TRUE(contains(out, "method=vb"));
+    ASSERT_TRUE(contains(out, "noise=white"));
+    ASSERT_TRUE(contains(out, "overwrite"));
+    ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+}
+
+TEST_F(ClTestTest, OptFileOldStyleOldName)
+{
+    std::ofstream outfile;
+    outfile.open("optfile.tmp");
+    outfile << "--model=poly" << endl
+            << "--output=out.tmp" << endl
+            << "--degree=2" << endl
+            << "--method=vb" << endl
+            << "--noise=white" << endl
+            << "--overwrite" << endl;
+    outfile.close();
+
+    string args
+        = "-@ optfile.tmp --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+    ASSERT_EQ(0, runFabber(args));
+    string out = getLogfile("out.tmp");
+    ASSERT_TRUE(contains(out, "model=poly"));
+    ASSERT_TRUE(contains(out, "degree=2"));
+    ASSERT_TRUE(contains(out, "method=vb"));
+    ASSERT_TRUE(contains(out, "noise=white"));
+    ASSERT_TRUE(contains(out, "overwrite"));
+    ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
+}
+
+TEST_F(ClTestTest, OptFileNewStyle)
+{
+    std::ofstream outfile;
+    outfile.open("optfile.tmp");
+    outfile << "model=poly" << endl
+            << "output=out.tmp" << endl
+            << "degree=2" << endl
+            << "method=vb" << endl
+            << "noise=white" << endl
+            << "overwrite" << endl;
+    outfile.close();
+
+    string args
+        = "-f optfile.tmp --data=" + string(FABBER_SRC_DIR) + "/test/test_data_small.nii.gz";
+
+    ASSERT_EQ(0, runFabber(args));
+    string out = getLogfile("out.tmp");
+    ASSERT_TRUE(contains(out, "model=poly"));
+    ASSERT_TRUE(contains(out, "degree=2"));
+    ASSERT_TRUE(contains(out, "method=vb"));
+    ASSERT_TRUE(contains(out, "noise=white"));
+    ASSERT_TRUE(contains(out, "overwrite"));
+    ASSERT_TRUE(contains(out, "test_data_small.nii.gz"));
 }
 
 INSTANTIATE_TEST_CASE_P(ClMethodTests, ClTestTest, ::testing::Values("vb", "nlls", "spatialvb"));

@@ -17,7 +17,6 @@
 
 namespace
 {
-
 class VbTest : public ::testing::TestWithParam<string>
 {
 protected:
@@ -51,9 +50,10 @@ protected:
     {
         std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(rundata->GetString("model")));
         fwd_model->Initialize(*rundata);
-        std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(rundata->GetString("method")));
-        
-        infer->Initialize(fwd_model.get(), *rundata);  
+        std::auto_ptr<InferenceTechnique> infer(
+            InferenceTechnique::NewFromName(rundata->GetString("method")));
+
+        infer->Initialize(fwd_model.get(), *rundata);
         infer->DoCalculations(*rundata);
         infer->SaveResults(*rundata);
     }
@@ -168,7 +168,7 @@ TEST_P(VbTest, ImagePriorsPrecTooHigh)
     {
         // we specified an image prior with high precision
         // so we expect the output to be close to that
-        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL*0.1);
+        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL * 0.1);
     }
 }
 
@@ -227,7 +227,7 @@ TEST_P(VbTest, ImagePriorsPrecLow)
     {
         // We expect the parameter to be about 'right' because
         // we specified an image prior with low precision
-        ASSERT_NEAR(mean(1, i + 1), VAL * 2, VAL*0.1);
+        ASSERT_NEAR(mean(1, i + 1), VAL * 2, VAL * 0.1);
     }
 }
 
@@ -294,7 +294,7 @@ TEST_P(VbTest, ImagePriorsFile)
     ASSERT_EQ(mean.Ncols(), VSIZE * VSIZE * VSIZE);
     for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
     {
-        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL*0.1);
+        ASSERT_NEAR(mean(1, i + 1), VAL * 1.5, VAL * 0.1);
     }
 
     remove(string(FILENAME + ".nii.gz").c_str());
@@ -360,12 +360,12 @@ TEST_P(VbTest, Restart)
     for (int repeat = 0; repeat < REPEATS; repeat++)
     {
         NEWMAT::Matrix mvns = rundata->GetVoxelData("finalMVN");
-        //ASSERT_EQ(mvns.Nrows(), 7);
+        // ASSERT_EQ(mvns.Nrows(), 7);
         // This was just so you could see the convergence
-        //mean = rundata->GetVoxelData("mean_c0");
-        //cout << mean(1, 1) << " != " << VAL << endl;
-        //mean = rundata->GetVoxelData("mean_c2");
-        //cout << mean(1, 1) << " != " << VAL*1.5 << endl;
+        // mean = rundata->GetVoxelData("mean_c0");
+        // cout << mean(1, 1) << " != " << VAL << endl;
+        // mean = rundata->GetVoxelData("mean_c2");
+        // cout << mean(1, 1) << " != " << VAL*1.5 << endl;
 
         TearDown();
         SetUp();
@@ -567,7 +567,7 @@ TEST_P(VbTest, RestartFromFile)
         TearDown();
         SetUp();
 
-        //ASSERT_EQ(mvns.Nrows(), 7);
+        // ASSERT_EQ(mvns.Nrows(), 7);
         rundata->SetVoxelCoords(voxelCoords);
         rundata->SetVoxelData("data", data);
         rundata->Set("max-iterations", "1");
@@ -577,10 +577,10 @@ TEST_P(VbTest, RestartFromFile)
         rundata->Set("degree", stringify(DEGREE));
         rundata->Set("method", "vb");
         // This was just so you could see the convergence
-        //mean = rundata->GetVoxelData("mean_c0");
-        //cout << mean(1, 1) << " != " << VAL << endl;
-        //mean = rundata->GetVoxelData("mean_c2");
-        //cout << mean(1, 1) << " != " << VAL*1.5 << endl;
+        // mean = rundata->GetVoxelData("mean_c0");
+        // cout << mean(1, 1) << " != " << VAL << endl;
+        // mean = rundata->GetVoxelData("mean_c2");
+        // cout << mean(1, 1) << " != " << VAL*1.5 << endl;
 
         Run();
 
@@ -641,7 +641,8 @@ TEST_P(VbTest, ArNoise)
                 {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 200;
-                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
+                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1)
+                        - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
                 }
                 v++;
             }
@@ -720,7 +721,8 @@ TEST_P(VbTest, WhiteNoise)
                 {
                     // function is VAL + 1.5VAL x n^2 - 2*VAL*n^3
                     float noise = (float(rand()) / RAND_MAX - 0.5) * VAL / 100;
-                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1) - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
+                    data(n + 1, v) = VAL + (1.5 * VAL) * (n + 1) * (n + 1)
+                        - 2 * VAL * (n + 1) * (n + 1) * (n + 1) + noise;
                 }
                 v++;
             }

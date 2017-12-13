@@ -38,7 +38,8 @@ protected:
 
     virtual void SetUp()
     {
-        svb = reinterpret_cast<PublicVersion *>(static_cast<SpatialVariationalBayes *>(SpatialVariationalBayes::NewInstance()));
+        svb = reinterpret_cast<PublicVersion *>(
+            static_cast<SpatialVariationalBayes *>(SpatialVariationalBayes::NewInstance()));
         model = FwdModel::NewFromName("poly");
         rundata = new FabberRunData();
         rundata->SetLogger(&log);
@@ -235,7 +236,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dZeros)
                 vector<int> nb = svb->m_neighbours[v - 1];
                 for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
                 {
-                    vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
+                    vector<int>::iterator found
+                        = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
                 v++;
@@ -289,7 +291,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic1D)
                 vector<int> nb = svb->m_neighbours[v - 1];
                 for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
                 {
-                    vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
+                    vector<int>::iterator found
+                        = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
                 v++;
@@ -347,7 +350,8 @@ TEST_F(SpatialVbTest, CalcNeighboursCubic2D)
                 vector<int> nb = svb->m_neighbours[v - 1];
                 for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
                 {
-                    vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
+                    vector<int>::iterator found
+                        = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
                 v++;
@@ -441,7 +445,8 @@ TEST_F(SpatialVbTest, CalcNeighbours2Cubic)
                 vector<int> nb = svb->m_neighbours2[v - 1];
                 for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
                 {
-                    vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
+                    vector<int>::iterator found
+                        = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
                 v++;
@@ -502,7 +507,8 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dNoZeros)
                 vector<int> nb = svb->m_neighbours[v - 1];
                 for (vector<int>::iterator iter = nb.begin(); iter != nb.end(); iter++)
                 {
-                    vector<int>::iterator found = std::find(expected.begin(), expected.end(), *iter);
+                    vector<int>::iterator found
+                        = std::find(expected.begin(), expected.end(), *iter);
                     ASSERT_TRUE(found != expected.end());
                 }
                 v++;
@@ -517,9 +523,7 @@ TEST_F(SpatialVbTest, CalcNeighboursMultiVoxels3dIrregular)
     int NVOXELS = 5;
 
     voxelCoords.ReSize(3, NVOXELS);
-    voxelCoords << 1 << 2 << 1 << 2 << 1
-                << 1 << 1 << 2 << 2 << 1
-                << 1 << 1 << 1 << 1 << 2;
+    voxelCoords << 1 << 2 << 1 << 2 << 1 << 1 << 1 << 2 << 2 << 1 << 1 << 1 << 1 << 1 << 2;
 
     Initialize();
     svb->CalcNeighbours(voxelCoords);
@@ -549,10 +553,7 @@ TEST_F(SpatialVbTest, CalcNeighbours2MultiVoxels3dIrregular)
     int NVOXELS = 5;
 
     voxelCoords.ReSize(3, NVOXELS);
-    voxelCoords
-        << 1 << 2 << 1 << 2 << 1
-        << 1 << 1 << 2 << 2 << 1
-        << 1 << 1 << 1 << 1 << 2;
+    voxelCoords << 1 << 2 << 1 << 2 << 1 << 1 << 1 << 2 << 2 << 1 << 1 << 1 << 1 << 1 << 2;
 
     Initialize();
     svb->CalcNeighbours(voxelCoords);
