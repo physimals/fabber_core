@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "rundata.h"
-
 // Export required symbols to Windows DLL
 #ifdef _WIN32
 #ifdef fabbercore_shared_EXPORTS
@@ -23,11 +21,13 @@
 #define FABBER_DLL_API
 #endif
 
-extern "C" {
-
 #define FABBER_ERR_MAXC 255
 #define FABBER_ERR_FATAL -255
 #define FABBER_ERR_NEWMAT -254
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Create a new context for running fabber.
@@ -242,4 +242,7 @@ FABBER_DLL_API int fabber_get_model_outputs(
  */
 FABBER_DLL_API int fabber_model_evaluate(void *fab, unsigned int n_params, float *params,
     unsigned int n_ts, float *indata, float *output, char *err_buf);
+
+#ifdef __cplusplus
 }
+#endif
