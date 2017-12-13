@@ -4,9 +4,7 @@ import warnings
 import datetime, time
 import collections
 import glob
-import subprocess as sub
 import traceback
-import distutils.spawn
 import math
 
 from ctypes import *
@@ -63,7 +61,7 @@ def self_test(model, rundata, param_testvalues, save_input=False, save_output=Fa
     if invert:
         if disp: sys.stdout.write("Inverting test data - running Fabber:  0%%")
         sys.stdout.flush()
-        fab = FabberLib(auto_load_models=True)
+        fab = Fabber(auto_load_models=True)
         if "method" not in rundata: rundata["method"] = "vb"
         if "noise" not in rundata: rundata["noise"] = "white"
         rundata["save-mean"] = ""
@@ -140,7 +138,7 @@ def generate_test_data(rundata, param_testvalues, nt=10, patchsize=10,
         for param in dim_params:
             if param is not None: 
                 param_roi_data[param] = np.zeros(shape)
-    fab = FabberLib(rundata=rundata, **kwargs)
+    fab = Fabber(rundata=rundata, **kwargs)
 
     # I bet there's a neater way to do this!
     patch_label = 1
@@ -214,15 +212,6 @@ class FabberException(RuntimeError):
             RuntimeError.__init__(self, "%i: %s" % (errcode, msg))
         else:
             RuntimeError.__init__(self, msg)
-
-class RunNotFound(RuntimeWarning):
-    """
-    A directory looked like a Fabber output directory, but no logfile was found in it
-    """
-
-    def __init__(self, dir):
-        RuntimeWarning.__init__(self, "Not a Fabber run directory: %s" % dir)
-        self.dir = dir
 
 class Model:
     """
@@ -321,7 +310,6 @@ class View:
 
     def do_update(self, obj_name):
         pass
-
 
 class FabberRunData(Model, collections.MutableMapping):
     """
@@ -476,6 +464,11 @@ class FabberRun:
     Base class for a completed Fabber run, either from the executable or from the library
     """
 
+    def __init__(self, data, log):
+        self.data = data
+        self.log = log
+        self.timestamp, self.timestamp_str = self.get_log_timestamp(self.log)
+
     def get_log_timestamp(self, log):
         prefixes = ["start time:", "fabberrundata::start time:"]
         timestamp_str = ""
@@ -493,112 +486,21 @@ class FabberRun:
             warnings.warn("Could not find timestamp in log")
         return datetime.datetime.now(), timestamp_str
 
-class LibRun(FabberRun):
-    """
-    A fabber library run, with output data and log
-    """
-
-    def __init__(self, data, log):
-        self.data = data
-        self.log = log
-        self.timestamp, self.timestamp_str = self.get_log_timestamp(self.log)
-
-
-class DirectoryRun(FabberRun):
-    """
-    A run of the fabber executable, with its output directory, logfile and output data.
-
-    The data is not loaded by default, but load_data and load_all_data can be used to do this.
-    """
-
-    def __init__(self, dir, load_data=False):
-        self.dir = dir
-        if not self._is_fabber_dir():
-            raise RunNotFound(dir)
-
-        self.files = {}
-        self.data = {}
-        self.logfile, self.log = self._get_log()
-        self.timestamp, self.timestamp_str = self.get_log_timestamp(self.log)
-        self.isquick = self._is_quick_run()
-        self.params = self._get_params()
-        self._scan_output()
-        if load_data: self.load_all_data()
-
-    def load_data(self, filename):
-        if name not in self.data:
-            try:
-                self.data[name] = nib.load(self.files[name]).get_data()
-
-            except:
-                warnings.warn("Could not load data file: ", f)
-        return self.data[name]
-
-    def load_all_data(self):
-        for name in self.files:
-            self.load_data(name)
-
-    def _is_fabber_dir(self):
-        return os.path.isfile(os.path.join(self.dir, "logfile"))
-
-    def _get_log(self):
-        logfile = os.path.join(self.dir, "logfile")
-        f = open(logfile)
-        log = "".join(f.readlines())
-        f.close()
-        return logfile, log
-
-    def _scan_output(self):
-        try:
-            outdir_files = [f for f in os.listdir(self.dir)
-                            if os.path.isfile(os.path.join(self.dir, f)) and f.endswith(".nii.gz")]
-        except:
-            warnings.warn("Could not read output directory: ", self.dir)
-            traceback.print_exc()
-            return
-
-        for fname in outdir_files:
-            try:
-                name = fname.split(".")[0]
-                f = os.path.join(self.dir, fname)
-                self.files[name] = f
-            except:
-                warnings.warn("Not a valid output data file: ", fname)
-
-    def _is_quick_run(self):
-        return os.path.isfile(os.path.join(self.dir, "QUICKRUN.txt"))
-
-    def _get_params(self):
-        try:
-            f = open(os.path.join(self.dir, "paramnames.txt"), "r")
-            params = set([p.strip() for p in f.readlines()])
-            f.close()
-            return params
-        except:
-            warnings.warn("Failed to get parameters")
-            return set()
-   
 class Fabber:
-    def __init__(self, ex=None, lib=None, model_libs=[], rundata=None, auto_load_models=False):
-        def_ex, def_lib, models = find_fabber()
-
-        if ex is not None:
-            self.ex = ex
+    """
+    Interface to Fabber in library mode using simplified C-API
+    """
+    def __init__(self, lib=None, model_libs=[], rundata=None, auto_load_models=False):
+        self.ex, def_lib, models = find_fabber()
             
-        elif rundata is not None and "fabber" in rundata:
-            self.ex = rundata["fabber"]
-        else:
-            self.ex = def_ex
-        if not os.path.isfile(self.ex):
-            raise FabberException("Invalid executable - file not found: %s" % self.ex)
-
         if lib is not None:
             self.lib = lib
         elif rundata is not None and "fabber_lib" in rundata:
             self.lib = rundata["fabber_lib"]
         else:
             self.lib = def_lib
-        if not os.path.isfile(self.lib):
+
+        if self.lib is None or not os.path.isfile(self.lib):
             raise FabberException("Invalid core library - file not found: %s" % self.lib)
 
         self.model_libs = set(model_libs)
@@ -611,175 +513,7 @@ class Fabber:
         if auto_load_models:
             for model in models:
                 self.model_libs.add(model)
-
-class FabberExec(Fabber):
-    """
-    Encapsulates a Fabber executable
-
-    Provides methods to query models and options and also run a file
-    """
-
-    def __init__(self, ex=None, model_libs=[], rundata=None, auto_load_models=False):
-        Fabber.__init__(self, ex=ex, model_libs=model_libs, rundata=rundata, auto_load_models=auto_load_models)
-            
-    def get_methods(self):
-        """ Get known inference methods """
-        stdout = self._run_help("--listmethods")
-        return [line.strip() for line in stdout.split()]
-
-    def get_models(self):
-        """ Get known models """
-        stdout = self._run_help("--listmodels")
-        return [line.strip() for line in stdout.split()]
-
-    def get_options(self, method=None, model=None):
-        """
-        Get general options, or options for a method/model. Returns a list of dictionaries
-        with keys: name, type, optional, default, description
-        """
-        args = []
-        if method: args.append("--method=%s" % method)
-        if model: args.append("--model=%s" % model)
-        stdout = self._run_help("--help", *args)
-        lines = stdout.split("\n")
-        opts = []
-        desc = ""
-        descnext = False
-        for line in lines:
-            if line.startswith("--"):
-                line2 = line[2:].replace("[", ",").replace("]", "")
-                l = [o.strip() for o in line2.split(",")]
-                if len(l) < 4:
-                    continue
-                opt = {}
-                opt["name"] = l[0]
-                opt["type"] = l[1]
-                opt["optional"] = l[2] != "REQUIRED"
-                if l[3].startswith("DEFAULT="):
-                    opt["default"] = l[3].split("=", 1)[1]
-                else:
-                    opt["default"] = ""
-                if opt["name"] in ["data", "data<n>", "mask", "help", "model", "method", "listmodels", "listmethods"]:
-                    continue
-                if len(l) == 4:
-                    opts.append(opt)
-                    descnext = True
-                else:
-                    descnext = False
-                    raise FabberException("Couldn't _parse option: " + line)
-            elif descnext:
-                opt["description"] = line.strip()
-                descnext = False
-            elif not line.startswith("Usage") and not line.startswith("Options") and not line.startswith("Description"):
-                desc += line.strip()
-
-        return opts, desc
-
-    def get_model_params(self, rundata):
-        raise FabberException("get_params not implemented for executable interface")
-
-    def get_model_outputs(self, rundata):
-        raise FabberException("get_outputs not implemented for executable interface")
-
-    def run(self, rundata):
-        """
-        Run Fabber on the run data specified
-        """
-        rundata.save()
-        workdir = rundata.get_filedir()
-        cmd = [self.ex, "-f", rundata.filepath]
-        for lib in self.model_libs:
-            cmd += " --loadmodels=%s" % lib
-        err = ""
-        p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE, cwd=workdir)
-        while 1:
-            (stdout, stderr) = p.communicate()
-            status = p.poll()
-            if stderr: err += stderr
-            if status is not None: break
-
-            if status != 0:
-                raise Exception(err)
-
-        # Hack to get the last run
-        outdir = rundata["output"]
-        if not os.path.isabs(outdir):
-            outdir = os.path.join(workdir, outdir)
-
-        return self.get_previous_runs(outdir)[0]
-
-    def get_previous_runs(self, outdir):
-        """
-        Get a list of known previous runs. The first in the list is the most recent
-
-        This starts with the specified output directory and tries to load a run.
-        If successful, it adds + to the filename (as Fabber does) and tries again.
-        It continues until it cannot find any more valid run directories.
-        """
-        runs = []
-        while os.path.exists(outdir):
-            try:
-                run = DirectoryRun(outdir)
-                runs.append(run)
-            except RunNotFound:
-                warnings.warn("Could not find logfile in: %s - ignoring" % outdir)
-            outdir += "+"
-        runs.sort(key=lambda run: run.timestamp)
-        return runs
-
-    def _write_temp_mask(self):
-        pass
-
-    """ FIXME
-        fname = os.path.join(self.fabdir, "fabber_mask_temp.nii.gz")
-        data = np.zeros(self.shape[:3])
-        data[self.focus[0], self.focus[1], self.focus[2]] = 1
-        affine = self.data["data"].affine # FIXME
-        img = nib.Nifti1Image(data, affine)
-        nib.save(img, fname)
-        return fname
-    """
-
-    def _write_quickrun_file(self, dir):
-        """
-        Write a little file which identifies a particular
-        run as a 1-voxel test run
-        """
-        f = open(os.path.join(dir, "QUICKRUN.txt"), "wc")
-        f.write("This data is from a 1-voxel test run\n")
-        f.close()
-
-    def _run_help(self, *opts):
-        """
-	    Run Fabber synchronously, this is presumed to be a quick
-	    run in order to get help options.
-
-	    Does not throw on failure because user may need to set
-	    the location of the executable first
-	    """
-        cmd = [self.ex] + list(opts)
-        for lib in self.model_libs:
-            cmd += " --loadmodels=%s" % lib
-
-        try:
-            p = sub.Popen(cmd, stdout=sub.PIPE)
-            (stdout, stderr) = p.communicate()
-            status = p.wait()
-            if status == 0:
-                return stdout
-            else:
-                raise FabberException("Failed to run fabber: " + str(cmd), status)
-        except Exception, e:
-            raise FabberException("Failed to run fabber: " + str(e))
-
-class FabberLib(Fabber):
-    """
-    Interface to Fabber in library mode using simplified C-API
-    """
-
-    def __init__(self, lib=None, model_libs=[], rundata=None, auto_load_models=False):
-        Fabber.__init__(self, lib=lib, model_libs=model_libs, rundata=rundata, auto_load_models=auto_load_models)
-
+           
         self.errbuf = create_string_buffer(255)
         self.outbuf = create_string_buffer(1000000)
         self.progress_cb_type = CFUNCTYPE(None, c_int, c_int)
@@ -877,7 +611,7 @@ class FabberLib(Fabber):
 
         :param rundata: FabberRunData instance
         :param progress_cb: Callable which will be called periodically during processing
-        :return: On success, a LibRun instance
+        :return: On success, a FabberRun instance
         """
         mask = None
         data = {}
@@ -904,7 +638,7 @@ class FabberLib(Fabber):
         :param data: Dictionary of data: string key, Numpy array value
         :param mask: Mask as Numpy array, or None if no mask
         :param progress_cb: Callable which will be called periodically during processing
-        :return: On success, a LibRun instance
+        :return: On success, a FabberRun instance
         """
         if not data.has_key("data"):
             raise Exception("Main voxel data not provided")
@@ -970,7 +704,7 @@ class FabberLib(Fabber):
                 arr = arr.reshape([s[0], s[1], s[2]], order='F')
             retdata[key] = arr
 
-        return LibRun(retdata, log)
+        return FabberRun(retdata, log)
 
     def __del__(self):
         self._destroy_handle()
@@ -1029,3 +763,7 @@ class FabberLib(Fabber):
             raise FabberException(self.errbuf.value, ret, self.outbuf.value)
         else:
             return ret
+
+class FabberLib(Fabber):
+    """ For compatibility only"""
+    pass
