@@ -17,6 +17,9 @@
 /**
  * Extends FabberRunData to allow setting and returning
  * data as plain C float arrays
+ *
+ * Note that Column-major order is used throughout, i.e. the x dimension is contiguous.
+ * This is the default in FSL although it is not the usual default in C/C++.
  */
 class FabberRunDataArray : public FabberRunData
 {
