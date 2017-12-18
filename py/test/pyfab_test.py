@@ -5,17 +5,17 @@ import numpy as np
 
 d = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.insert(0, os.path.join(d))
-from fabber import FabberLib, FabberExec, FabberRunData
+from fabber import Fabber, FabberRunData
 
 # Misc numbers for generating test data
 c0=0.4
 c1=0.8
 c2=-0.3
 
-class TestFabberLib(unittest.TestCase):
+class TestFabber(unittest.TestCase):
 
     def setUp(self):
-        self.fab = FabberLib()
+        self.fab = Fabber()
         self.progress = []
 
     def quad_data(self, x, y, z, t):
@@ -25,7 +25,7 @@ class TestFabberLib(unittest.TestCase):
     def test_get_no_lib(self):
         raised=False
         try:
-            FabberLib(fabber_lib="junk")
+            Fabber(fabber_lib="junk")
         except:
             raised=True
         self.assertTrue(raised)
@@ -33,7 +33,7 @@ class TestFabberLib(unittest.TestCase):
     def test_get_no_modellib(self):
         raised=False
         try:
-            FabberLib(models_lib="junk")
+            Fabber(models_lib="junk")
         except:
             raised=True
         self.assertTrue(raised)
