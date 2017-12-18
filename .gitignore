@@ -1,7 +1,8 @@
+mvntool
+fabber
 out.tmp*
 logfile
-build_release
-build_debug
+build_*
 CVS
 *.o
 *~
@@ -15,3 +16,4 @@ Debug
 Release
 out*
 *.pyc
+
