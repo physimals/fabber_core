@@ -313,7 +313,7 @@ void MVNDist::Load(vector<MVNDist *> &mvns, Matrix &voxel_data, EasyLog *log)
     // the number of rows, N, is found by inverting the formula
     // for N as a function of P given in Load, using the quadratic
     // formula.
-    const int nParams = ((int)sqrt(8 * voxel_data.Nrows() + 1) - 3) / 2;
+    const int nParams = ((int)sqrt(double(8 * voxel_data.Nrows() + 1)) - 3) / 2;
     if (voxel_data.Nrows() != nParams * (nParams + 1) / 2 + nParams + 1)
     {
         throw FabberRunDataError("MVNDist::Load  - Incorrect number of rows for an MVN input");
