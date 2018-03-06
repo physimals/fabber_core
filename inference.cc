@@ -175,28 +175,34 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
         {
             for (int vox = 1; vox <= nVoxels; vox++)
             {
-                // pass in stuff that the model might need
-                ColumnVector y = datamtx.Column(vox);
-                ColumnVector vcoords = coords.Column(vox);
-                if (suppdata.Ncols() > 0)
-                {
-                    m_model->PassData(y, vcoords, suppdata.Column(vox));
-                }
-                else
-                {
-                    m_model->PassData(y, vcoords);
-                }
-
                 // do the evaluation
-                m_model->EvaluateFabber(
-                    resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
-                if (result.Nrows() != tmp.Nrows())
-                {
-                    // Only occurs on first voxel if output size is not equal to
-                    // data size
-                    result.ReSize(tmp.Nrows(), nVoxels);
+                try {
+                    // pass in stuff that the model might need
+                    ColumnVector y = datamtx.Column(vox);
+                    ColumnVector vcoords = coords.Column(vox);
+                    if (suppdata.Ncols() > 0)
+                    {
+                        m_model->PassData(y, vcoords, suppdata.Column(vox));
+                    }
+                    else
+                    {
+                        m_model->PassData(y, vcoords);
+                    }
+
+                    m_model->EvaluateFabber(
+                        resultMVNs.at(vox - 1)->means.Rows(1, m_num_params), tmp, *iter);
+                    if (result.Nrows() != tmp.Nrows())
+                    {
+                        // Only occurs on first voxel if output size is not equal to
+                        // data size
+                        result.ReSize(tmp.Nrows(), nVoxels);
+                    }
+                    result.Column(vox) = tmp;
                 }
-                result.Column(vox) = tmp;
+                catch (...) {
+                    // Ignore exceptions. Errors when evaluating the model would already have
+                    // occurred during inference and the relevant warnings output
+                }
             }
             if (*iter == "")
             {
