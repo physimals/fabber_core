@@ -51,6 +51,8 @@ static OptionSpec OPTIONS[] = {
     { "PSP_byname<n>_image", OPT_IMAGE, "Image prior for parameter <n>", OPT_NONREQ, "" },
     { "PSP_byname<n>_prec", OPT_FLOAT, "Precision to apply to image prior for parameter <n>",
         OPT_NONREQ, "" },
+    { "PSP_byname<n>_transform", OPT_STR, "Transform to apply to parameter <n>",
+        OPT_NONREQ, "" },
     { "allow-bad-voxels", OPT_BOOL,
         "Continue if numerical error found in a voxel, rather than stopping", OPT_NONREQ, "" },
     { "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)",
@@ -306,13 +308,13 @@ double Vb::CalculateF(int v, string label, double Fprior)
 void Vb::DebugVoxel(int v, const string &where)
 {
     LOG << where << " - voxel " << v << " of " << m_nvoxels << endl;
-    LOG << "Prior means: " << m_ctx->fwd_prior[v - 1].means.t();
-    LOG << "Prior precisions: " << m_ctx->fwd_prior[v - 1].GetPrecisions();
-    LOG << "Noise prior means: " << m_ctx->noise_prior[v - 1]->OutputAsMVN().means.t();
-    LOG << "Noise prior precisions: " << m_ctx->noise_prior[v - 1]->OutputAsMVN().GetPrecisions();
-    LOG << "Centre: " << m_lin_model[v - 1].Centre();
-    LOG << "Offset: " << m_lin_model[v - 1].Offset();
-    LOG << "Jacobian: " << m_lin_model[v - 1].Jacobian();
+    LOG << "Prior means: " << endl << m_ctx->fwd_prior[v - 1].means.t();
+    LOG << "Prior precisions: " << endl << m_ctx->fwd_prior[v - 1].GetPrecisions();
+    LOG << "Noise prior means: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().means.t();
+    LOG << "Noise prior precisions: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().GetPrecisions();
+    LOG << "Centre: " << endl << m_lin_model[v - 1].Centre();
+    LOG << "Offset: " << endl << m_lin_model[v - 1].Offset();
+    LOG << "Jacobian: " << endl << m_lin_model[v - 1].Jacobian() << endl;
 }
 
 bool Vb::IsSpatial(FabberRunData &rundata) const
@@ -438,6 +440,8 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                     m_ctx->fwd_post[v - 1] = fwdPosteriorSave;
                     m_ctx->fwd_prior[v - 1] = fwdPriorSave;
                     m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
+                    if (m_debug)
+                        DebugVoxel(v, "Reverted");
                 }
 
                 // Save old values if called for
@@ -453,16 +457,25 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                     Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
                 }
 
+                if (m_debug)
+                    DebugVoxel(v, "Applied priors");
+
                 F = CalculateF(v, "before", Fprior);
 
                 m_noise->UpdateTheta(*m_ctx->noise_post[v - 1], m_ctx->fwd_post[v - 1],
                     m_ctx->fwd_prior[v - 1], m_lin_model[v - 1], m_origdata->Column(v), NULL,
                     m_conv[v - 1]->LMalpha());
 
+                if (m_debug)
+                    DebugVoxel(v, "Updated params");
+
                 F = CalculateF(v, "theta", Fprior);
 
                 m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
                     m_ctx->fwd_post[v - 1], m_lin_model[v - 1], m_origdata->Column(v));
+
+                if (m_debug)
+                    DebugVoxel(v, "Updated noise");
 
                 F = CalculateF(v, "phi", Fprior);
 
@@ -471,10 +484,16 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                 // (and ready for next round of theta and phi updates)
                 m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
 
+                if (m_debug)
+                    DebugVoxel(v, "Re-centered");
+
                 F = CalculateF(v, "lin", Fprior);
 
                 ++m_ctx->it;
             } while (!m_conv[v - 1]->Test(F));
+
+            if (m_debug) 
+                LOG << "Converged after " << m_ctx->it << " iterations" << endl;
 
             // Revert to old values at last stage if required
             if (m_conv[v - 1]->NeedRevert())
