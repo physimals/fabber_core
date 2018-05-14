@@ -48,6 +48,12 @@ const Transform *TRANSFORM_FRACTIONAL()
     return &t;
 }
 
+const Transform *TRANSFORM_ABS()
+{
+    static AbsTransform t;
+    return &t;
+}
+
 const Transform *GetTransform(std::string id)
 {
     if (id == TRANSFORM_CODE_IDENTITY)
@@ -58,6 +64,8 @@ const Transform *GetTransform(std::string id)
         return TRANSFORM_SOFTPLUS();
     else if (id == TRANSFORM_CODE_FRACTIONAL)
         return TRANSFORM_FRACTIONAL();
+    else if (id == TRANSFORM_CODE_ABS)
+        return TRANSFORM_ABS();
     else
         throw InvalidOptionValue("PSP_byname<n>_transform", id, "Supported transforms: I, L, S, F");
 }

@@ -21,6 +21,7 @@ const std::string TRANSFORM_CODE_IDENTITY = "I";
 const std::string TRANSFORM_CODE_LOG = "L";
 const std::string TRANSFORM_CODE_SOFTPLUS = "S";
 const std::string TRANSFORM_CODE_FRACTIONAL = "F";
+const std::string TRANSFORM_CODE_ABS = "A";
 
 /**
  * Immutable object describing distribution parameters for single model parameter
@@ -168,11 +169,21 @@ class SoftPlusTransform : public Transform
 public:
     double ToModel(double val) const
     {
-        return log(1 + exp(val));
+        if (val < 10) {
+            return log(1 + exp(val));
+        }
+        else {
+            return val;
+        }
     }
     double ToFabber(double val) const
     {
-        return log(exp(val) - 1);
+        if (val < 10) {
+            return log(exp(val) - 1);
+        }
+        else {
+            return val;
+        }
     }
 };
 
@@ -206,6 +217,26 @@ public:
     }
 };
 
+/**
+ * 'Absolute' transformation
+ *
+ * This enforces parameter values >= 0 using a modulus
+ * function. Note that this is not invertible - we take
+ * the positive branch when doing model->Fabber conversion
+ */
+class AbsTransform : public Transform
+{
+public:
+    double ToModel(double val) const
+    {
+        return fabs(val);
+    }
+    double ToFabber(double val) const
+    {
+        return val;
+    }
+};
+
 /** Singleton instance of identity transform */
 const Transform *TRANSFORM_IDENTITY();
 
@@ -217,5 +248,8 @@ const Transform *TRANSFORM_SOFTPLUS();
 
 /** Singleton instance of fractional transform */
 const Transform *TRANSFORM_FRACTIONAL();
+
+/** Singleton instance of fractional transform */
+const Transform *TRANSFORM_ABS();
 
 const Transform *GetTransform(std::string id);
