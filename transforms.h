@@ -169,19 +169,23 @@ class SoftPlusTransform : public Transform
 public:
     double ToModel(double val) const
     {
-        if (val < 10) {
+        if (val < 10)
+        {
             return log(1 + exp(val));
         }
-        else {
+        else
+        {
             return val;
         }
     }
     double ToFabber(double val) const
     {
-        if (val < 10) {
+        if (val < 10)
+        {
             return log(exp(val) - 1);
         }
-        else {
+        else
+        {
             return val;
         }
     }

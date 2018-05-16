@@ -176,7 +176,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
             for (int vox = 1; vox <= nVoxels; vox++)
             {
                 // do the evaluation
-                try {
+                try
+                {
                     // pass in stuff that the model might need
                     ColumnVector y = datamtx.Column(vox);
                     ColumnVector vcoords = coords.Column(vox);
@@ -199,7 +200,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                     }
                     result.Column(vox) = tmp;
                 }
-                catch (...) {
+                catch (...)
+                {
                     // Ignore exceptions. Errors when evaluating the model would already have
                     // occurred during inference and the relevant warnings output
                 }

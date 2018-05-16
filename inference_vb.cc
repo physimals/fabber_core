@@ -51,8 +51,7 @@ static OptionSpec OPTIONS[] = {
     { "PSP_byname<n>_image", OPT_IMAGE, "Image prior for parameter <n>", OPT_NONREQ, "" },
     { "PSP_byname<n>_prec", OPT_FLOAT, "Precision to apply to image prior for parameter <n>",
         OPT_NONREQ, "" },
-    { "PSP_byname<n>_transform", OPT_STR, "Transform to apply to parameter <n>",
-        OPT_NONREQ, "" },
+    { "PSP_byname<n>_transform", OPT_STR, "Transform to apply to parameter <n>", OPT_NONREQ, "" },
     { "allow-bad-voxels", OPT_BOOL,
         "Continue if numerical error found in a voxel, rather than stopping", OPT_NONREQ, "" },
     { "ar1-cross-terms", OPT_STR, "For AR1 noise, type of cross-linking (dual, same or none)",
@@ -313,7 +312,8 @@ void Vb::DebugVoxel(int v, const string &where)
     LOG << "Prior precisions: " << endl << m_ctx->fwd_prior[v - 1].GetPrecisions();
     LOG << "Posterior means: " << endl << m_ctx->fwd_post[v - 1].means.t();
     LOG << "Noise prior means: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().means.t();
-    LOG << "Noise prior precisions: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().GetPrecisions();
+    LOG << "Noise prior precisions: " << endl
+        << m_ctx->noise_prior[v - 1]->OutputAsMVN().GetPrecisions();
     LOG << "Centre: " << endl << m_lin_model[v - 1].Centre();
     LOG << "Offset: " << endl << m_lin_model[v - 1].Offset();
     LOG << "Jacobian: " << endl << m_lin_model[v - 1].Jacobian() << endl;
@@ -494,7 +494,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                 ++m_ctx->it;
             } while (!m_conv[v - 1]->Test(F));
 
-            if (m_debug) 
+            if (m_debug)
                 LOG << "Converged after " << m_ctx->it << " iterations" << endl;
 
             // Revert to old values at last stage if required
