@@ -651,6 +651,12 @@ class Fabber:
 
         self._init_clib()
         for key, value in rundata.items():
+            # Fabber interprets boolean values as 'option given=True, not given=False. Option value must be blank
+            if type(value) == bool:
+                if value:
+                    value = ""
+                else:
+                    continue
             self._trycall(self.clib.fabber_set_opt, self.handle, str(key), str(value), self.errbuf)
         self._trycall(self.clib.fabber_get_model_params, self.handle, len(self.outbuf), self.outbuf, self.errbuf)
         params = self.outbuf.value.splitlines()
