@@ -111,6 +111,7 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
         "continue-from-params", ""); // optional list of parameters in MVN
 
     // Figure out if F needs to be calculated every iteration
+    m_saveF = rundata.GetBool("save-free-energy");
     m_printF = rundata.GetBool("print-free-energy");
 
     // Motion correction related setup - by default no motion correction
@@ -227,7 +228,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         // inefficient but not harmful because all convergence detectors are the same type
         m_conv[v - 1] = ConvergenceDetector::NewFromName(conv_name);
         m_conv[v - 1]->Initialize(rundata);
-        m_needF = m_conv[v - 1]->UseF() || m_printF;
+        m_needF = m_conv[v - 1]->UseF() || m_printF || m_saveF;
 
         m_ctx->noise_prior[v - 1] = initialNoisePrior->Clone();
         m_noise->Precalculate(
@@ -310,6 +311,7 @@ void Vb::DebugVoxel(int v, const string &where)
     LOG << where << " - voxel " << v << " of " << m_nvoxels << endl;
     LOG << "Prior means: " << endl << m_ctx->fwd_prior[v - 1].means.t();
     LOG << "Prior precisions: " << endl << m_ctx->fwd_prior[v - 1].GetPrecisions();
+    LOG << "Posterior means: " << endl << m_ctx->fwd_post[v - 1].means.t();
     LOG << "Noise prior means: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().means.t();
     LOG << "Noise prior precisions: " << endl << m_ctx->noise_prior[v - 1]->OutputAsMVN().GetPrecisions();
     LOG << "Centre: " << endl << m_lin_model[v - 1].Centre();
@@ -922,7 +924,7 @@ void Vb::SaveResults(FabberRunData &rundata) const
     }
 
     // Save the Free Energy estimates
-    if (rundata.GetBool("save-free-energy") && !resultFs.empty())
+    if (m_saveF && !resultFs.empty())
     {
         LOG << "Vb::Writing free energy" << endl;
         assert((int)resultFs.size() == nVoxels);

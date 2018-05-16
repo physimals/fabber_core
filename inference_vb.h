@@ -23,6 +23,7 @@ public:
         , m_noise_params(0)
         , m_needF(false)
         , m_printF(false)
+        , m_saveF(false)
         , m_origdata(NULL)
         , m_coords(NULL)
         , m_suppdata(NULL)
@@ -141,6 +142,9 @@ protected:
 
     /** True if we need to print the free energy at each iteration */
     bool m_printF;
+
+    /** True if we need to to save the final free energy */
+    bool m_saveF;
 
     // These are used for resuming a previous calculation
     /** If not empty, load initial MVN from this file */
