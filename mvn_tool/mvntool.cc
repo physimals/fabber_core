@@ -30,11 +30,11 @@ int main(int argc, char **argv)
         FabberRunDataNewimage args;
         args.SetLogger(&log);
         args.Parse(argc, argv);
-        args.SetExtentFromData();
 
         // MVN tool uses a different argument for the main
-        // data, set the 'data' option to match
+        // data, set the 'data' option to match before we might use it
         args.Set("data", args.GetString("input"));
+        args.SetExtentFromData();
 
         if ((argc == 1) || args.ReadBool("help"))
         {
