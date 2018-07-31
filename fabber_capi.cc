@@ -545,20 +545,17 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
     }
     catch (exception &e)
     {
-        log.LogStream() << e.what() << endl;
+        ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
     catch (NEWMAT::Exception &e)
     {
-        log.LogStream() << e.what() << endl;
+        ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
     catch (...)
     {
-        log.LogStream() << "Unexpected exception" << endl;
+        ret = fabber_err(FABBER_ERR_FATAL, "Error evaluating model", err_buf);
     }
 
     log.StopLog();
-    strncpy(err_buf, logstr.str().c_str(), 253);
-    err_buf[254] = '\0';
-
     return ret;
 }
