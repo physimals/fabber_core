@@ -102,8 +102,7 @@ public:
     virtual ~InferenceTechnique();
 
 protected:
-    void InitMVNFromFile(
-        std::string continueFromFile, FabberRunData &rundata, std::string paramFilename);
+    void InitMVNFromFile(FabberRunData &rundata, std::string paramFilename);
 
     /**
      * Pointer to forward model, passed in to initialize.

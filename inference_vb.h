@@ -146,15 +146,6 @@ protected:
     /** True if we need to to save the final free energy */
     bool m_saveF;
 
-    // These are used for resuming a previous calculation
-    /** If not empty, load initial MVN from this file */
-    std::string m_continueFromFile;
-
-    std::string paramFilename;
-
-    /** If set, initial MVN only has fwd model information, not noise */
-    bool continueFwdOnly;
-
     /** Free energy for each voxel */
     std::vector<double> resultFs;
 

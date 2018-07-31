@@ -101,14 +101,6 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
     m_noise_params = m_noise->NumParams();
     LOG << "Vb::Noise has " << m_noise_params << " parameters" << endl;
 
-    // If we are resuming from a previous run, there will be a file containing a per-voxel
-    // distribution of the model parameters, and possibly the noise as well. So we may
-    // not need the initial posterior distributions we have created. We choose not to delete
-    // them here as the memory involved is not large (they are not per voxel).
-    m_continueFromFile = rundata.GetStringDefault("continue-from-mvn", "");
-    paramFilename = rundata.GetStringDefault(
-        "continue-from-params", ""); // optional list of parameters in MVN
-
     // Figure out if F needs to be calculated every iteration
     m_saveF = rundata.GetBool("save-free-energy");
     m_printF = rundata.GetBool("print-free-energy");
@@ -178,10 +170,23 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         lockedLinearCentres.ReSize(m_num_params, m_nvoxels);
     }
 
-    if (m_continueFromFile != "")
+    // If we are resuming from a previous run, there will be data containing a per-voxel
+    // distribution of the model parameters, and noise as well.
+    bool continueFromMvn = false;
+    try {
+        rundata.GetVoxelData("continue-from-mvn");
+        continueFromMvn = true;
+    }
+    catch(DataNotFound &e) {
+        // no worries
+    }
+
+    if (continueFromMvn)
     {
-        LOG << "Vb::Continuing from file " << m_continueFromFile << endl;
-        InitMVNFromFile(m_continueFromFile, rundata, paramFilename);
+        LOG << "Vb::Continuing from MVN" << endl;
+        // Optional list of parameters in MVN
+        string paramFilename = rundata.GetStringDefault("continue-from-params", ""); 
+        InitMVNFromFile(rundata, paramFilename);
     }
 
     // Initial noise distributions
@@ -193,7 +198,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
 
     for (int v = 1; v <= m_nvoxels; v++)
     {
-        if (m_continueFromFile != "")
+        if (continueFromMvn)
         {
             m_ctx->fwd_post[v - 1] = resultMVNs.at(v - 1)->GetSubmatrix(1, m_num_params);
             assert(m_num_params + m_noise_params == resultMVNs.at(v - 1)->GetSize());

@@ -254,8 +254,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     LOG << "InferenceTechnique::Done writing results." << endl;
 }
 
-void InferenceTechnique::InitMVNFromFile(
-    string continueFromFile, FabberRunData &rundata, string paramFilename = "")
+void InferenceTechnique::InitMVNFromFile(FabberRunData &rundata, string paramFilename = "")
 {
     // Loads in a MVN to set it as inital values for inference
     // can cope with the special scenario in which extra parameters have been added to the inference
