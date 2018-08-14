@@ -224,7 +224,6 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         }
         else
         {
-            // LOG  << "Initial re-centering: " << m_ctx->fwd_post[v - 1].means.t() << endl;
             m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
         }
 
@@ -260,7 +259,7 @@ void Vb::IgnoreVoxel(int v)
 {
     LOG << "Vb::IgnoreVoxel This voxel will be ignored in further updates" << endl;
 
-    m_ignore_voxels.push_back(v);
+    m_ctx->ignore_voxels.push_back(v);
 
     // Remove voxel from lists of neighbours of other voxels.
     // We identify affected voxels by looking in the neighbour
@@ -616,9 +615,12 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                     DebugVoxel(v, "Priors set");
 
                 // Ignore voxels where numerical issues have occurred
-                if (std::find(m_ignore_voxels.begin(), m_ignore_voxels.end(), v)
-                    != m_ignore_voxels.end())
+                if (std::find(m_ctx->ignore_voxels.begin(), m_ctx->ignore_voxels.end(), v)
+                    != m_ctx->ignore_voxels.end())
+                {
+                    LOG << "Ignoring voxel " << v << endl;
                     continue;
+                }
 
                 CalculateF(v, "before", Fprior);
 
@@ -654,21 +656,51 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
         Fglobal = 0;
         for (int v = 1; v <= m_nvoxels; v++)
         {
-            PassModelData(v);
+            try {
+                // Ignore voxels where numerical issues have occurred
+                if (std::find(m_ctx->ignore_voxels.begin(), m_ctx->ignore_voxels.end(), v)
+                    != m_ctx->ignore_voxels.end())
+                {
+                    LOG << "Ignoring voxel " << v << endl;
+                    continue;
+                }
 
-            m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
-                m_ctx->fwd_post[v - 1], m_lin_model[v - 1], m_origdata->Column(v));
-            if (m_debug)
-                DebugVoxel(v, "Noise updated");
+                PassModelData(v);
 
-            CalculateF(v, "noise", Fprior);
+                m_noise->UpdateNoise(*m_ctx->noise_post[v - 1], *m_ctx->noise_prior[v - 1],
+                    m_ctx->fwd_post[v - 1], m_lin_model[v - 1], m_origdata->Column(v));
+                if (m_debug)
+                    DebugVoxel(v, "Noise updated");
 
-            if (!m_locked_linear)
-                m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
-            if (m_debug)
-                DebugVoxel(v, "Re-centre");
+                CalculateF(v, "noise", Fprior);
 
-            Fglobal += CalculateF(v, "lin", Fprior);
+                if (!m_locked_linear)
+                    m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
+                if (m_debug)
+                    DebugVoxel(v, "Re-centre");
+
+                Fglobal += CalculateF(v, "lin", Fprior);
+            }
+            catch (FabberInternalError &e)
+            {
+                LOG << "Vb::Internal error for voxel " << v << " at " << m_coords->Column(v).t()
+                    << " : " << e.what() << endl;
+
+                if (m_halt_bad_voxel)
+                    throw;
+                else
+                    IgnoreVoxel(v);
+            }
+            catch (NEWMAT::Exception &e)
+            {
+                LOG << "Vb::NEWMAT exception for voxel " << v << " at " << m_coords->Column(v).t()
+                    << " : " << e.what() << endl;
+
+                if (m_halt_bad_voxel)
+                    throw;
+                else
+                    IgnoreVoxel(v);
+            }
         }
 
         ++m_ctx->it;

@@ -170,9 +170,6 @@ protected:
     /** Convergence detector for each voxel */
     std::vector<ConvergenceDetector *> m_conv;
 
-    /** Voxels to ignore, indexed from 1 as per NEWMAT */
-    std::vector<int> m_ignore_voxels;
-
     /**
      * Number of spatial dimensions
      *

@@ -215,6 +215,10 @@ double SpatialPrior::CalculateAkmean(const RunContext &ctx)
     double tmp2 = 0.0;
     for (int v = 1; v <= ctx.nvoxels; v++)
     {
+        // Ignore voxels where numerical issues have occurred
+        if (std::find(ctx.ignore_voxels.begin(), ctx.ignore_voxels.end(), v)
+            != ctx.ignore_voxels.end()) continue;
+
         double sigmak = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx + 1, m_idx + 1);
         int nn = ctx.neighbours.at(v - 1).size();
         if (m_type_code == PRIOR_SPATIAL_m) // useMRF)
