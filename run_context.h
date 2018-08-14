@@ -38,6 +38,9 @@ struct RunContext
     /** Total number of voxels to process */
     int nvoxels;
 
+    /** Voxels to ignore, indexed from 1 as per NEWMAT */
+    std::vector<int> ignore_voxels;
+
     std::vector<MVNDist> fwd_prior;
     std::vector<MVNDist> fwd_post;
     std::vector<NoiseParams *> noise_prior;
