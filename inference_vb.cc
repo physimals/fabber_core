@@ -242,16 +242,16 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
 void Vb::PassModelData(int v)
 {
     // Pass in data, coords and supplemental data for this voxel
-    ColumnVector y = m_origdata->Column(v);
+    ColumnVector data = m_origdata->Column(v);
     ColumnVector vcoords = m_coords->Column(v);
     if (m_suppdata->Ncols() > 0)
     {
         ColumnVector suppy = m_suppdata->Column(v);
-        m_model->PassData(y, vcoords, suppy);
+        m_model->PassData(v, data, vcoords, suppy);
     }
     else
     {
-        m_model->PassData(y, vcoords);
+        m_model->PassData(v, data, vcoords);
     }
 }
 

@@ -183,11 +183,11 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                     ColumnVector vcoords = coords.Column(vox);
                     if (suppdata.Ncols() > 0)
                     {
-                        m_model->PassData(y, vcoords, suppdata.Column(vox));
+                        m_model->PassData(vox, y, vcoords, suppdata.Column(vox));
                     }
                     else
                     {
-                        m_model->PassData(y, vcoords);
+                        m_model->PassData(vox, y, vcoords);
                     }
 
                     m_model->EvaluateFabber(

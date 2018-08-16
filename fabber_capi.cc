@@ -513,7 +513,6 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         log.StartLog(logstr);
         model->SetLogger(&log);
         model->Initialize(*rundata);
-
         NEWMAT::ColumnVector p_vec(n_params);
         NEWMAT::ColumnVector o_vec(n_ts);
         NEWMAT::ColumnVector data_vec(n_ts);
@@ -521,6 +520,9 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         for (unsigned int i = 0; i < n_params; i++)
         {
             p_vec(i + 1) = params[i];
+        }
+        for (unsigned int i=0; i < n_ts; i++) 
+        {
             if (indata)
                 data_vec(i + 1) = indata[i];
             else
@@ -529,7 +531,7 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         coords(1) = 1;
         coords(2) = 1;
         coords(3) = 1;
-        model->PassData(data_vec, coords);
+        model->PassData(1, data_vec, coords);
         model->EvaluateModel(p_vec, o_vec);
         for (unsigned int i = 0; i < n_ts; i++)
         {

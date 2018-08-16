@@ -777,6 +777,7 @@ const NEWMAT::Matrix &FabberRunData::GetVoxelCoords()
 {
     return GetVoxelData("coords");
 }
+
 const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
 {
     // Attempt to load data if not already present. Will

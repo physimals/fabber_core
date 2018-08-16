@@ -98,7 +98,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
     // use the first voxel values as our dummies
     if (Nvoxels > 0)
     {
-        m_model->PassData(data.Column(1), coords.Column(1));
+        m_model->PassData(1, data.Column(1), coords.Column(1));
     }
 
     // Check how many samples in time series (ignoring any masked time points)
@@ -113,7 +113,7 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
         ColumnVector vcoords = coords.Column(voxel);
 
         // Some models might want more information about the data
-        m_model->PassData(y, vcoords);
+        m_model->PassData(voxel, y, vcoords);
 
         LinearizedFwdModel linear(m_model);
 

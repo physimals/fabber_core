@@ -195,9 +195,10 @@ void FwdModel::Usage(std::ostream &stream) const
     stream << "No usage information available" << endl;
 }
 
-void FwdModel::PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxcoords,
+void FwdModel::PassData(unsigned int voxel_idx, const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &voxcoords,
     const NEWMAT::ColumnVector &voxsuppdata)
 {
+    voxel = voxel_idx;
     data = voxdata;
     suppdata = voxsuppdata;
     coords = voxcoords;

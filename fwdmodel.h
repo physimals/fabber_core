@@ -169,7 +169,7 @@ public:
      * @param voxsuppdata Supplementary data if provided. Default is an empty vector. If not
      *                    empty, must be the same length as voxdata.
      */
-    void PassData(const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &coords,
+    void PassData(unsigned int voxel_idx, const NEWMAT::ColumnVector &voxdata, const NEWMAT::ColumnVector &coords,
         const NEWMAT::ColumnVector &voxsuppdata = NEWMAT::ColumnVector());
 
     /**
@@ -351,6 +351,7 @@ protected:
     // constants, NumParams() should have a fixed value.
 
     // storage for current voxel data
+    unsigned int voxel;
     NEWMAT::ColumnVector coords;
     NEWMAT::ColumnVector data;
     NEWMAT::ColumnVector suppdata;
