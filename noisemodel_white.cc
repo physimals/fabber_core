@@ -320,6 +320,9 @@ void WhiteNoiseModel::UpdateTheta(const NoiseParams &noiseIn, MVNDist &theta,
     {
         LOG << "WhiteNoiseModel:: In UpdateTheta, theta precisions aren't positive-definite: "
             << chk.Sign() << ", " << chk.LogValue() << endl;
+        LOG << "Means: " << theta.means.t() << endl;
+        LOG << "Precisions: " << endl << theta.GetPrecisions() << endl;
+        LOG << "Data: " << data.t() << endl;
     }
 
     // Update m (model means)
