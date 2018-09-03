@@ -195,8 +195,7 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
     }
 
     // Extend pat to the the full data length by repeating
-    // FIXME ever heard of modular arithmetic :-)
-    // To be fair this is pretty harmless unless you have huge timeseries
+    // Inefficient but pretty harmless unless you have huge timeseries
     while ((int)pat.size() < dataLen)
         pat.push_back(pat.at(pat.size() - patternLen));
 
@@ -224,15 +223,6 @@ void WhiteNoiseModel::MakeQis(int dataLen) const
             Qis.at(pat.at(d - 1) - 1)(d, d) = 1;
         }
     }
-
-    // Sanity checking - make sure every phi defined
-    // in the pattern is used for at least one
-    // sample in the timeseries. Should be guaranteed
-    // by derivation above and previous check that pattern is
-    // not longer than the data.
-    for (int i = 1; i <= nPhis; i++)
-        if (Qis[i - 1].Trace() < 1.0) // this phi is never used
-            throw FabberInternalError("At least one Phi was unused! This is probably a bad thing.");
 }
 
 void WhiteNoiseModel::UpdateNoise(NoiseParams &noise, const NoiseParams &noisePrior,
