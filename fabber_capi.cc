@@ -138,9 +138,11 @@ int fabber_set_data(
         return fabber_err(FABBER_ERR_FATAL, "Data size must be >0", err_buf);
 
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
+    EasyLog log;
+    rundata->SetLogger(&log); // Ignored but avoids it going to stdout
     try
     {
-        ((FabberRunDataArray *)rundata)->SetVoxelDataArray(name, data_size, data);
+        rundata->SetVoxelDataArray(name, data_size, data);
     }
     catch (exception &e)
     {
@@ -161,6 +163,8 @@ int fabber_get_data_size(void *fab, const char *name, char *err_buf)
         return fabber_err(FABBER_ERR_FATAL, "Data name is NULL", err_buf);
 
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
+    EasyLog log;
+    rundata->SetLogger(&log); // Ignored but avoids it going to stdout
     try
     {
         return rundata->GetVoxelDataSize(name);
@@ -185,9 +189,11 @@ int fabber_get_data(void *fab, const char *name, float *data_buf, char *err_buf)
         return fabber_err(FABBER_ERR_FATAL, "Data name is NULL", err_buf);
 
     FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
+    EasyLog log;
+    rundata->SetLogger(&log); // Ignored but avoids it going to stdout
     try
     {
-        ((FabberRunDataArray *)rundata)->GetVoxelDataArray(name, data_buf);
+        rundata->GetVoxelDataArray(name, data_buf);
         return 0;
     }
     catch (DataNotFound &e)
