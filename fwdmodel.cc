@@ -265,6 +265,11 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
             psp_idx++;
         }
 
+        if (p->prior.prec() > 1e12) {
+            WARN_ONCE("Specified precision " + stringify(p->prior.prec()) + " is very high - this can trigger numerical instability. Using 1e12 instead");
+            p->prior = DistParams(p->prior.mean(), 1e-12);
+        }
+
         // FIXME do this here, or let the priors do it?
         //
         // Need to transform mean/precision as specified in the model into Fabber-space
