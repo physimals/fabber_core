@@ -10,9 +10,13 @@ vectors in RunContext are not threadsafe when written to
 Possible implementation
 -----------------------
 
-Put all data into RunContext (including timeseries data, suppdata etc)
-Create separate RunContext for each thread containing the relevant subset
-Ensure that all voxel processing only writes to RunContext
+Put all mutable data into RunContext
+Also non-mutable per-thread data:
+  - Timeseries data, suppdata etc (Could be shared but easier to split up on per-voxel basis)
+  - Model reference (model is not threadsafe so need 1 per thread)
+
+Create separate RunContext for each thread containing the relevant data subset
+Voxel processing only writes to RunContext
 Either separate copies of the model or locking around passmodeldata/evaluate
 
 Spatial mode

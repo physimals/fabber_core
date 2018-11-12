@@ -203,14 +203,10 @@ const SymmetricBandMatrix &Ar1cMatrixCache::GetMatrix(
 
 const SymmetricBandMatrix &Ar1cMatrixCache::GetMarginal(unsigned n) const
 {
-    //  LOG << "In GetMarginal("<<n<<") const" << endl;
-    //  LOG << alphaMarginals.size() << ":" << alphaMarginals[n-1].Nrows()<<endl;
     if (alphaMarginals.size() < n)
         throw FabberInternalError(("GetMarginal(" + stringify(n) + "): not enough elements (only"
                                       + stringify(alphaMarginals.size()) + ") in alphaMarginals!\n")
                                       .c_str());
-    //  LOG << "Size of alphaMarginals[n-1] is " << alphaMarginals[n-1].Nrows() << " by " <<
-    //  alphaMarginals[n-1].Ncols() << endl;
     return alphaMarginals[n - 1];
 }
 

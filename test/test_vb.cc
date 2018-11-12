@@ -53,7 +53,7 @@ protected:
         std::auto_ptr<InferenceTechnique> infer(
             InferenceTechnique::NewFromName(rundata->GetString("method")));
 
-        infer->Initialize(fwd_model.get(), *rundata);
+        infer->Initialize(*rundata);
         infer->DoCalculations(*rundata);
         infer->SaveResults(*rundata);
     }

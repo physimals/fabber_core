@@ -16,7 +16,7 @@ if (UNIX)
 endif(UNIX)
 
 # Basic objects - things that have nothing directly to do with inference
-set(BASIC_SRC tools.cc rundata.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc rundata_array.cc dist_gamma.cc version.cc)
+set(BASIC_SRC tools.cc rundata.cc dist_mvn.cc easylog.cc setup.cc fabber_capi.cc rundata_array.cc dist_gamma.cc version.cc run_context.cc)
 
 # Core objects - things that implement the framework for inference
 set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc factories.cc fwdmodel_linear.cc

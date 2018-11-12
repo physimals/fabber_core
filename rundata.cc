@@ -266,7 +266,7 @@ void FabberRunData::Run(ProgressCheck *progress)
 
     // Set the inference technique (and pass in the model)
     std::auto_ptr<InferenceTechnique> infer(InferenceTechnique::NewFromName(GetString("method")));
-    infer->Initialize(fwd_model.get(), *this);
+    infer->Initialize(*this);
 
     // Calculations
     int nvoxels = GetVoxelCoords().Ncols();

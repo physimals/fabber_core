@@ -17,7 +17,7 @@ SCRIPTS = fabber_var
 # Sets of objects separated into logical divisions
 
 # Basic objects - things that have nothing directly to do with inference
-BASICOBJS = tools.o rundata.o dist_mvn.o easylog.o fabber_capi.o version.o dist_gamma.o rundata_array.o
+BASICOBJS = run_context.o tools.o rundata.o dist_mvn.o easylog.o fabber_capi.o version.o dist_gamma.o rundata_array.o
 
 # Core objects - things that implement the framework for inference
 COREOBJS =  noisemodel.o fwdmodel.o inference.o fwdmodel_linear.o fwdmodel_poly.o convergence.o motioncorr.o priors.o transforms.o

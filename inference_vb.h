@@ -19,14 +19,9 @@ public:
     static InferenceTechnique *NewInstance();
 
     Vb()
-        : m_nvoxels(0)
-        , m_noise_params(0)
-        , m_needF(false)
+        : m_needF(false)
         , m_printF(false)
         , m_saveF(false)
-        , m_origdata(NULL)
-        , m_coords(NULL)
-        , m_suppdata(NULL)
         , m_num_mcsteps(0)
         , m_spatial_dims(-1)
         , m_locked_linear(false)
@@ -37,27 +32,12 @@ public:
     virtual std::string GetDescription() const;
     virtual string GetVersion() const;
 
-    virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
+    virtual void Initialize(FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
 
     virtual void SaveResults(FabberRunData &rundata) const;
 
 protected:
-    /**
-     * Initialize noise prior or posterior distribution from a file stored in the
-     * rundata under the given parameter key
-     */
-    void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
-
-    /**
-     * Pass the model the data, coords and suppdata for a voxel.
-     *
-     * FIXME this is not very nice and should not be necessary. Need to
-     * audit what models are using this info and find alternatives, e.g.
-     * reading suppdata in Initialize instead
-     */
-    void PassModelData(int voxel);
-
     /**
      * Determine whether we need spatial VB mode
      *
@@ -89,17 +69,6 @@ protected:
     void DebugVoxel(int v, const string &where);
 
     /**
-     * Setup per-voxel data for Spatial VB
-     *
-     * Spatial VB needs each voxel's prior/posterior and other
-     * data stored as it affects neighbouring voxels. This sets
-     * up the vectors which store these things which are just
-     * created on the fly for normal VB and throw away after each
-     * voxel is done.
-     */
-    void SetupPerVoxelDists(FabberRunData &allData);
-
-    /**
     * Check voxels are listed in order
     *
     * Order must be increasing in z value, or if same
@@ -124,19 +93,6 @@ protected:
      */
     void IgnoreVoxel(int v);
 
-    /** Number of voxels in data */
-    int m_nvoxels;
-
-    /**
-     * Noise model in use. This is created by the inference
-     * method deleted on destruction
-     */
-    std::auto_ptr<NoiseModel> m_noise;
-    /**
-     * Number of noise parameters.
-     */
-    int m_noise_params;
-
     /** True if convergence detector requires the free energy */
     bool m_needF;
 
@@ -146,29 +102,8 @@ protected:
     /** True if we need to to save the final free energy */
     bool m_saveF;
 
-    /** Free energy for each voxel */
-    std::vector<double> resultFs;
-
-    /** Voxelwise input data */
-    const NEWMAT::Matrix *m_origdata;
-
-    /** Voxelwise co-ordinates */
-    const NEWMAT::Matrix *m_coords;
-
-    /** Voxelwise supplementary data */
-    const NEWMAT::Matrix *m_suppdata;
-
     /** Number of motion correction steps to run */
     int m_num_mcsteps;
-
-    /** Stores current run state (parameters, MVNs, linearization centres etc */
-    RunContext *m_ctx;
-
-    /** Linearized wrapper around the forward model */
-    std::vector<LinearizedFwdModel> m_lin_model;
-
-    /** Convergence detector for each voxel */
-    std::vector<ConvergenceDetector *> m_conv;
 
     /**
      * Number of spatial dimensions

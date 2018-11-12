@@ -183,12 +183,21 @@ TEST_F(DefaultPriorTest, IgnoresTransform)
 
 TEST_F(DefaultPriorTest, ApplyToMVN)
 {
+    NEWMAT::Matrix data;
+    data.ReSize(1, NUM_VOXELS);
+    for (int i = 1; i <= NUM_VOXELS; i++)
+        data(1, i) = i * 2.3 - 7.4;
+
+    FabberRunData rundata;
+    rundata.SetVoxelData(IMAGE_FNAME, data);
+
     Parameter p(PARAM_IDX, PARAM_NAME, DistParams(PRIOR_MEAN, PRIOR_VAR),
         DistParams(POST_MEAN, POST_VAR), PRIOR_TYPE);
     DefaultPrior prior(p);
 
     MVNDist mvn(PARAM_IDX + 7);
-    RunContext ctx(1);
+    RunContext ctx;
+    ctx.Initialize(rundata);
     prior.ApplyToMVN(&mvn, ctx);
     for (int i = 1; i <= NUM_VOXELS; i++)
     {
@@ -242,7 +251,8 @@ TEST_F(ImagePriorTest, ApplyToMVN)
     ImagePrior prior(p, rundata);
 
     MVNDist mvn(PARAM_IDX + 7);
-    RunContext ctx(NUM_VOXELS);
+    RunContext ctx;
+    ctx.Initialize(rundata);
     for (int i = 1; i <= NUM_VOXELS; i++)
     {
         ctx.v = i;

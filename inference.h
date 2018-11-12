@@ -14,6 +14,7 @@
 #include "fwdmodel.h"
 #include "noisemodel.h"
 #include "rundata.h"
+#include "run_context.h"
 
 #include <iomanip>
 #include <string>
@@ -37,12 +38,6 @@ public:
      * Get usage information for a named method
      */
     static void UsageFromName(const std::string &name, std::ostream &stream);
-
-    /**
-     * Create a new instance of this class.
-     * @return pointer to new instance.
-     */
-    static InferenceTechnique *NewInstance();
 
     /**
      * Default constructor.
@@ -78,7 +73,7 @@ public:
      * @param fwd_model Forward model to be used.
      * @param args Additional configuration parameters.
      */
-    virtual void Initialize(FwdModel *fwd_model, FabberRunData &rundata);
+    virtual void Initialize(FabberRunData &rundata);
 
     /**
      * Perform inference using the given model upon the given data.
@@ -86,8 +81,6 @@ public:
      * This method should only be called after Initialize()
      * Subclasses of InferenceTechnique must implement this method
      * to carry out their given inference calculations
-     *
-     * @param data
      */
     virtual void DoCalculations(FabberRunData &rundata) = 0;
 
@@ -102,46 +95,16 @@ public:
     virtual ~InferenceTechnique();
 
 protected:
-    void InitMVNFromFile(FabberRunData &rundata, std::string paramFilename);
-
-    /**
-     * Pointer to forward model, passed in to initialize.
-     *
-     * Will not be deleted, that is the responsibility of
-     * the caller
+    /** 
+     * Stores current run state (parameters, MVNs, linearization centres etc 
      */
-    FwdModel *m_model;
-
-    /**
-     * Number of model parameters.
-     *
-     * This is used regularly so it's sensible to keep a
-     * copy around
-     */
-    int m_num_params;
+    RunContext *m_ctx;
 
     /**
      * If true, stop if we get a numerical execption in any voxel. If false,
      * simply print a warning and continue
      */
     bool m_halt_bad_voxel;
-
-    /**
-     * Results of the inference method
-     *
-     * Vector of MVNDist, one for each voxel
-     * Each MVNDist contains the means and covariance/precisions for
-     * the parameters in the model
-     */
-    std::vector<MVNDist *> resultMVNs;
-
-    /**
-     * List of masked timepoints
-     *
-     * Masked timepoints are indexed starting at 1 and are ignored
-     * in the analysis and parameter updates.
-     */
-    std::vector<int> m_masked_tpoints;
 
     /**
      * Include very verbose debugging output

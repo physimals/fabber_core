@@ -36,12 +36,10 @@ public:
     virtual std::string GetDescription() const;
     virtual std::string GetVersion() const;
 
-    virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
+    virtual void Initialize(FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
 
 protected:
-    const MVNDist *initialFwdPosterior;
-    bool m_vbinit;
     bool m_lm;
 };
 
