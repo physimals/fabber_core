@@ -69,7 +69,6 @@ else (FSL_BUILD)
                HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
   find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
                HINTS $ENV{FSLDIR}/lib REQUIRED )
-
   find_package(Boost)
   if(NOT Boost_FOUND)
       find_path(Boost_INCLUDE_DIRS boost/shared_ptr.hpp
@@ -78,6 +77,7 @@ else (FSL_BUILD)
 
   if(NOT WIN32)
     find_package(ZLIB)
+    find_library(PTHREAD_LIBRARY NAMES pthread libpthread OPTIONAL )
   endif(NOT WIN32)
   if (NOT ZLIB_FOUND)
       find_library(ZLIB_LIBRARY NAMES z libz zlib zlibd
@@ -100,7 +100,7 @@ else (FSL_BUILD)
            ${FSLIO_LIBRARY}
            ${MISCMATHS_LIBRARY}
            ${NIFTIIO_LIBRARY}
-           ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
+           ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY} ${PTHREAD_LIBRARY})
 endif(FSL_BUILD)
 
 if (UNIX)
@@ -163,7 +163,6 @@ INSTALL(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/fabber_var DESTINATION bin)
 # Conditional Targets
 
 find_library(GTEST_LIBRARY NAMES gtest libgtest OPTIONAL )
-find_library(PTHREAD_LIBRARY NAMES pthread libpthread OPTIONAL )
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h OPTIONAL )
 if (GTEST_LIBRARY)
   Message("-- Using gtest: ${GTEST_LIBRARY} ${GTEST_INCLUDE_DIR}")

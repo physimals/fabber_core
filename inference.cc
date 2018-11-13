@@ -9,7 +9,7 @@
 #include "inference.h"
 #include "easylog.h"
 
-#include <newmat.h>
+#include <newmatio.h>
 
 #include <fstream>
 #include <iomanip>
@@ -53,8 +53,7 @@ void InferenceTechnique::UsageFromName(const string &name, std::ostream &stream)
 }
 
 InferenceTechnique::InferenceTechnique()
-    : m_ctx(NULL)
-    , m_halt_bad_voxel(true)
+    : m_halt_bad_voxel(true)
 {
 }
 
@@ -92,35 +91,68 @@ void InferenceTechnique::Initialize(FabberRunData &rundata)
 void InferenceTechnique::SaveResults(FabberRunData &rundata) const
 {
     LOG << "InferenceTechnique::Preparing to save results..." << endl;
-    int nVoxels = m_ctx->resultMVNs.size();
+    int total_nvoxels = 0;
+    for (int i=0; i<m_ctxs.size(); i++) {
+        total_nvoxels += m_ctxs[i]->nvoxels;
+    }
 
-    // Save the resultMVNs NIFTI file
+    vector<Parameter> params;
+    m_ctxs[0]->m_model->GetParameters(rundata, params);
+    int nparams = params.size();
+
+    // Save the finalMVN NIFTI file
     if (rundata.GetBool("save-mvn"))
     {
-        MVNDist::Save(m_ctx->resultMVNs, "finalMVN", rundata);
+        ColumnVector aOne(1);
+        aOne = 1.0;
+        Matrix mvns;
+
+        for (int c=0; c<m_ctxs.size(); c++) {
+            ThreadContext *ctx = m_ctxs[c];
+            if (mvns.Nrows() == 0) {
+                int mvn_nparams = nparams + ctx->m_noise_params;
+                //cerr << mvn_nparams << ", " << nparams << ", " << ctx->m_noise_params << endl;
+                mvns.ReSize(mvn_nparams * (mvn_nparams + 1) / 2 + mvn_nparams + 1, total_nvoxels);
+            }
+            for (int vox = 1; vox <= ctx->nvoxels; vox++)
+            {
+                MVNDist *mvn = ctx->resultMVNs[vox - 1];
+                //cerr << mvn->means.Nrows() << ", " << mvns.Nrows() << endl;
+                
+                //cerr << nparams << ", " << vox << ", " << ctx->start_voxel + vox - 1 << ", " << mvn << endl;
+                //cerr << mvns.Nrows() << ", " << mvns.Ncols() << endl; 
+                //cerr << mvn->GetCovariance().AsColumn();
+                //cerr << mvn->means.Nrows();
+                mvns.Column(ctx->start_voxel + vox - 1)
+                    = mvn->GetCovariance().AsColumn() & mvn->means & aOne;
+            }
+        }
+
+        rundata.SaveVoxelData("finalMVN", mvns, VDT_MVN);
     }
 
     // Create individual files for each parameter's mean and Z-stat
-    vector<Parameter> params;
-    m_ctx->m_model->GetParameters(rundata, params);
     if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat"))
     {
         LOG << "InferenceTechnique::Writing means..." << endl;
         for (unsigned i = 1; i <= params.size(); i++)
         {
             Matrix paramMean, paramZstat, paramStd;
-            paramMean.ReSize(1, nVoxels);
-            paramZstat.ReSize(1, nVoxels);
-            paramStd.ReSize(1, nVoxels);
+            paramMean.ReSize(1, total_nvoxels);
+            paramZstat.ReSize(1, total_nvoxels);
+            paramStd.ReSize(1, total_nvoxels);
 
-            for (int vox = 1; vox <= nVoxels; vox++)
-            {
-                MVNDist result = *m_ctx->resultMVNs[vox - 1];
-                m_ctx->m_model->ToModel(result);
-                paramMean(1, vox) = result.means(i);
-                double std = sqrt(result.GetCovariance()(i, i));
-                paramZstat(1, vox) = paramMean(1, vox) / std;
-                paramStd(1, vox) = std;
+            for (int c=0; c<m_ctxs.size(); c++) {
+                ThreadContext *ctx = m_ctxs[c];
+                for (int vox = 1; vox <= ctx->nvoxels; vox++)
+                {
+                    MVNDist *result = ctx->resultMVNs[vox - 1];
+                    ctx->m_model->ToModel(*result);
+                    paramMean(1, ctx->start_voxel + vox - 1) = result->means(i);
+                    double std = sqrt(result->GetCovariance()(i, i));
+                    paramZstat(1, ctx->start_voxel + vox - 1) = paramMean(1, ctx->start_voxel + vox - 1) / std;
+                    paramStd(1, ctx->start_voxel + vox - 1) = std;
+                }
             }
 
             if (rundata.GetBool("save-mean"))
@@ -137,7 +169,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     bool saveResiduals = rundata.GetBool("save-residuals");
     vector<string> outputs;
     outputs.push_back("");
-    m_ctx->m_model->GetOutputs(outputs);
+    m_ctxs[0]->m_model->GetOutputs(outputs);
     if (saveModelFit || saveResiduals || (outputs.size() > 1))
     {
         LOG << "InferenceTechnique::Writing model time series data (fit, residuals and "
@@ -149,60 +181,63 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                                               // in its calculations
         coords = rundata.GetVoxelCoords();
         suppdata = rundata.GetVoxelSuppData();
-        result.ReSize(datamtx.Nrows(), nVoxels);
+        result.ReSize(datamtx.Nrows(), total_nvoxels);
         ColumnVector tmp;
         for (vector<string>::iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
         {
             LOG << "InferenceTechnique::Evaluating model for output: " << *iter << endl;
-            for (int vox = 1; vox <= nVoxels; vox++)
-            {
-                // do the evaluation
-                try
+            for (int i=0; i<m_ctxs.size(); i++) {
+                ThreadContext *ctx = m_ctxs[i];
+                for (int vox = 1; vox <= ctx->nvoxels; vox++)
                 {
-                    // pass in stuff that the model might need
-                    ColumnVector y = datamtx.Column(vox);
-                    ColumnVector vcoords = coords.Column(vox);
-                    if (suppdata.Ncols() > 0)
+                    // do the evaluation
+                    try
                     {
-                        m_ctx->m_model->PassData(vox, y, vcoords, suppdata.Column(vox));
-                    }
-                    else
-                    {
-                        m_ctx->m_model->PassData(vox, y, vcoords);
-                    }
+                        // pass in stuff that the model might need
+                        ColumnVector y = datamtx.Column(vox);
+                        ColumnVector vcoords = coords.Column(vox);
+                        if (suppdata.Ncols() > 0)
+                        {
+                            ctx->m_model->PassData(vox, y, vcoords, suppdata.Column(vox));
+                        }
+                        else
+                        {
+                            ctx->m_model->PassData(vox, y, vcoords);
+                        }
 
-                    m_ctx->m_model->EvaluateFabber(
-                        m_ctx->resultMVNs.at(vox - 1)->means.Rows(1, m_ctx->m_num_params), tmp, *iter);
-                    if (result.Nrows() != tmp.Nrows())
-                    {
-                        // Only occurs on first voxel if output size is not equal to
-                        // data size
-                        result.ReSize(tmp.Nrows(), nVoxels);
+                        ctx->m_model->EvaluateFabber(
+                            ctx->resultMVNs.at(vox - 1)->means.Rows(1, ctx->m_num_params), tmp, *iter);
+                        if (result.Nrows() != tmp.Nrows())
+                        {
+                            // Only occurs on first voxel if output size is not equal to
+                            // data size
+                            result.ReSize(tmp.Nrows(), total_nvoxels);
+                        }
+                        result.Column(ctx->start_voxel + vox - 1) = tmp;
                     }
-                    result.Column(vox) = tmp;
-                }
-                // Ignore exceptions for the default Evaluate key - errors when evaluating the model would already have
-                // occurred during inference and the relevant warnings output
-                catch (NEWMAT::Exception &e)
-                {
-                    if (*iter != "") 
+                    // Ignore exceptions for the default Evaluate key - errors when evaluating the model would already have
+                    // occurred during inference and the relevant warnings output
+                    catch (NEWMAT::Exception &e)
                     {
-                        LOG << "InferenceTechnique::NEWMAT error generating output " << *iter << " for voxel " << vox << " : " << e.what() << endl;
-                    } 
-                }
-                catch (Exception &e)
-                {
-                    if (*iter != "") 
+                        if (*iter != "") 
+                        {
+                            LOG << "InferenceTechnique::NEWMAT error generating output " << *iter << " for voxel " << vox << " : " << e.what() << endl;
+                        } 
+                    }
+                    catch (Exception &e)
                     {
-                        LOG << "InferenceTechnique::Error generating output " << *iter << " for voxel " << vox << " : " << e.what() << endl;
-                    } 
-                }
-                catch (...)
-                {
-                    if (*iter != "") 
+                        if (*iter != "") 
+                        {
+                            LOG << "InferenceTechnique::Error generating output " << *iter << " for voxel " << vox << " : " << e.what() << endl;
+                        } 
+                    }
+                    catch (...)
                     {
-                        LOG << "InferenceTechnique::Unexpected error generating output " << *iter << " for voxel " << vox << " : no message available" << endl;
-                    }  
+                        if (*iter != "") 
+                        {
+                            LOG << "InferenceTechnique::Unexpected error generating output " << *iter << " for voxel " << vox << " : no message available" << endl;
+                        }  
+                    }
                 }
             }
             if (*iter == "")
@@ -232,8 +267,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
 		LOG << "InferenceTechnique::Writing model variances..." << endl;
 		Matrix modelStd;
 		Matrix datamtx = data.GetMainVoxelData();
-		modelStd.ReSize(datamtx.Nrows(), nVoxels);
-		for (int vox = 1; vox <= nVoxels; vox++)
+		modelStd.ReSize(datamtx.Nrows(), nvoxels);
+		for (int vox = 1; vox <= nvoxels; vox++)
 		{
 			LinearizedFwdModel lin(model);
 			lin.ReCentre(resultMVNs.at(vox - 1)->means.Rows(1, m_num_params));
@@ -258,7 +293,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
 
 InferenceTechnique::~InferenceTechnique()
 {
-    if (m_ctx) {
-        delete m_ctx;
-    }
+    //if (m_ctx) {
+    //    delete m_ctx;
+   // } FIXME
 }

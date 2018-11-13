@@ -98,7 +98,7 @@ protected:
     /** 
      * Stores current run state (parameters, MVNs, linearization centres etc 
      */
-    RunContext *m_ctx;
+    std::vector<ThreadContext *> m_ctxs;
 
     /**
      * If true, stop if we get a numerical execption in any voxel. If false,

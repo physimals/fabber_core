@@ -5,25 +5,30 @@ Difficulties
 ------------
 
 Model is not threadsafe - pass data in before calling Evaluate
-vectors in RunContext are not threadsafe when written to
+vectors in ThreadContext are not threadsafe when written to
 
 Possible implementation
 -----------------------
 
-Put all mutable data into RunContext
+Put all mutable data into ThreadContext
 Also non-mutable per-thread data:
   - Timeseries data, suppdata etc (Could be shared but easier to split up on per-voxel basis)
   - Model reference (model is not threadsafe so need 1 per thread)
 
-Create separate RunContext for each thread containing the relevant data subset
-Voxel processing only writes to RunContext
-Either separate copies of the model or locking around passmodeldata/evaluate
+Create separate ThreadContext for each thread containing the relevant data subset
+Voxel processing only writes to ThreadContext
+Copy of the model for each ThreadContext
+ThreadContext(s) created by InferenceMethod - necessary since parallelism is method dependent
 
 Spatial mode
 ------------
 In spatial mode, updates to priors are not multi-threaded
 Must be distributed to threads after each iteration. Suggests creating 
 separate set of threads for each spatial iteration
+
+SaveResults
+-----------
+A bit tricky - need to combine output of multiple ThreadContext objects
 
 Alternatives
 ------------

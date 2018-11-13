@@ -70,39 +70,39 @@ void NLLSInferenceTechnique::Initialize(FabberRunData &args)
 
 void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
 {
-    m_ctx = new RunContext();
-    m_ctx->Initialize(allData);
+    m_ctxs.push_back(new ThreadContext(allData));
+    ThreadContext *ctx = m_ctxs[0];
 
     // Check how many samples in time series (ignoring any masked time points)
-    int Nsamples = m_ctx->m_origdata->Nrows() - m_ctx->m_masked_tpoints.size();
+    int Nsamples = ctx->m_origdata.Nrows() - ctx->m_masked_tpoints.size();
 
     // Loop over voxels. The result for each voxel is
     // stored as a MVN distribution for its parameters
     // in resultMVNs.
-    for (unsigned int voxel = 1; voxel <= m_ctx->nvoxels; voxel++)
+    for (unsigned int voxel = 1; voxel <= ctx->nvoxels; voxel++)
     {
-        ColumnVector y = m_ctx->m_origdata->Column(voxel);
-        ColumnVector vcoords = m_ctx->m_coords->Column(voxel);
+        ColumnVector y = ctx->m_origdata.Column(voxel);
+        ColumnVector vcoords = ctx->m_coords.Column(voxel);
 
         // Some models might want more information about the data
-        m_ctx->PassModelData(voxel);
-        IdentityMatrix I(m_ctx->m_num_params);
+        ctx->PassModelData(voxel);
+        IdentityMatrix I(ctx->m_num_params);
 
         // Create a cost function evaluator which will
         // measure the difference between the model
         // and the data
-        NLLSCF costfn(y, m_ctx->m_model, m_ctx->m_masked_tpoints);
+        NLLSCF costfn(y, ctx->m_model, ctx->m_masked_tpoints);
 
         // Set the convergence method
         // either Levenberg (L) or Levenberg-Marquardt (LM)
-        NonlinParam nlinpar(m_ctx->m_num_params, NL_LM);
+        NonlinParam nlinpar(ctx->m_num_params, NL_LM);
         if (!m_lm)
         {
             nlinpar.SetGaussNewtonType(LM_L);
         }
 
         // set ics from 'posterior'
-        nlinpar.SetStartingEstimate(m_ctx->fwd_post[voxel-1].means);
+        nlinpar.SetStartingEstimate(ctx->fwd_post[voxel-1].means);
         nlinpar.LogPar(true);
         nlinpar.LogCF(true);
 
@@ -125,19 +125,19 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
 			}
 #endif
             // Get the new parameters
-            m_ctx->fwd_post[voxel-1].means = nlinpar.Par();
+            ctx->fwd_post[voxel-1].means = nlinpar.Par();
 
             // Recenter linearized model on new parameters
-            m_ctx->m_lin_model[voxel-1].ReCentre(m_ctx->fwd_post[voxel-1].means);
-            Matrix J = m_ctx->m_lin_model[voxel-1].Jacobian();
-            MaskRows(J, m_ctx->m_masked_tpoints);
+            ctx->m_lin_model[voxel-1].ReCentre(ctx->fwd_post[voxel-1].means);
+            Matrix J = ctx->m_lin_model[voxel-1].Jacobian();
+            MaskRows(J, ctx->m_masked_tpoints);
 
             // Calculate the NLLS precision
             // This is (J'*J)/mse
             // The covariance is the inverse
             SymmetricMatrix nllsprec;
-            double sqerr = costfn.cf(m_ctx->fwd_post[voxel-1].means);
-            double mse = sqerr / (Nsamples - m_ctx->m_num_params);
+            double sqerr = costfn.cf(ctx->fwd_post[voxel-1].means);
+            double mse = sqerr / (Nsamples - ctx->m_num_params);
             nllsprec << J.t() * J / mse;
 
             // Look for zero diagonal elements (implies parameter is not observable)
@@ -149,8 +149,8 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
                     nllsprec(i, i) = 1e-6;
                 }
             }
-            m_ctx->fwd_post[voxel-1].SetPrecisions(nllsprec);
-            m_ctx->fwd_post[voxel-1].GetCovariance();
+            ctx->fwd_post[voxel-1].SetPrecisions(nllsprec);
+            ctx->fwd_post[voxel-1].GetCovariance();
         }
         catch (Exception &e)
         {
@@ -164,16 +164,16 @@ void NLLSInferenceTechnique::DoCalculations(FabberRunData &allData)
                 << "   Going on to the next voxel" << endl;
 
             // output the results where we are
-            m_ctx->fwd_post[voxel-1].means = nlinpar.Par();
+            ctx->fwd_post[voxel-1].means = nlinpar.Par();
 
             // recenter linearized model on new parameters
-            m_ctx->m_lin_model[voxel-1].ReCentre(m_ctx->fwd_post[voxel-1].means);
+            ctx->m_lin_model[voxel-1].ReCentre(ctx->fwd_post[voxel-1].means);
 
             // precision matrix is probably singular so set manually
-            m_ctx->fwd_post[voxel-1].SetPrecisions(I * 1e-12);
+            ctx->fwd_post[voxel-1].SetPrecisions(I * 1e-12);
         }
 
-        m_ctx->resultMVNs.at(voxel-1) = new MVNDist(m_ctx->fwd_post[voxel-1]);
+        ctx->resultMVNs.at(voxel-1) = new MVNDist(ctx->fwd_post[voxel-1]);
     }
 }
 

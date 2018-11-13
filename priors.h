@@ -43,7 +43,7 @@ public:
      *
      * Returns any additional free energy contribution (e.g. for ARD priors)
      */
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx) = 0;
+    virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx) = 0;
 
     /** Expand the param-spatial-priors string to give a value for each parameter */
     static std::string ExpandPriorTypesString(std::string priors_str, unsigned int num_params);
@@ -72,7 +72,7 @@ public:
     DistParams m_params;
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx);
 };
 
 /**
@@ -84,7 +84,7 @@ public:
     ImagePrior(const Parameter &param, FabberRunData &rundata);
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx);
 
 protected:
     /** Filename containing image data if required */
@@ -107,7 +107,7 @@ public:
     }
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx);
 };
 
 /**
@@ -122,10 +122,10 @@ public:
     SpatialPrior(const Parameter &param, FabberRunData &rundata);
 
     virtual void DumpInfo(std::ostream &out) const;
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx);
 
 protected:
-    double CalculateAkmean(const RunContext &ctx);
+    double CalculateAkmean(const ThreadContext &ctx);
     double m_akmean;
     int m_spatial_dims;
     double m_spatial_speed;

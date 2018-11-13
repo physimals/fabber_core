@@ -105,7 +105,7 @@ void DefaultPrior::DumpInfo(std::ostream &out) const
         << " mean: " << m_params.mean() << " precision: " << m_params.prec();
 }
 
-double DefaultPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
+double DefaultPrior::ApplyToMVN(MVNDist *prior, const ThreadContext &ctx)
 {
     prior->means(m_idx + 1) = m_params.mean();
 
@@ -130,7 +130,7 @@ void ImagePrior::DumpInfo(std::ostream &out) const
         << " filename: " << m_filename << " precision: " << m_params.prec();
 }
 
-double ImagePrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
+double ImagePrior::ApplyToMVN(MVNDist *prior, const ThreadContext &ctx)
 {
     prior->means(m_idx + 1) = m_image(ctx.v);
 
@@ -147,7 +147,7 @@ void ARDPrior::DumpInfo(std::ostream &out) const
         << " initial mean: " << m_params.mean() << " initial precision: " << m_params.prec();
 }
 
-double ARDPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
+double ARDPrior::ApplyToMVN(MVNDist *prior, const ThreadContext &ctx)
 {
     SymmetricMatrix cov = prior->GetCovariance();
     double post_mean = ctx.fwd_post[ctx.v - 1].means(m_idx + 1);
@@ -208,7 +208,7 @@ SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
     m_update_first_iter = rundata.GetBool("update-spatial-prior-on-first-iteration");
 }
 
-double SpatialPrior::CalculateAkmean(const RunContext &ctx)
+double SpatialPrior::CalculateAkmean(const ThreadContext &ctx)
 {
     // The following calculates Tr[Sigmak*S'*S]
     double tmp1 = 0.0;
@@ -282,7 +282,7 @@ void SpatialPrior::DumpInfo(std::ostream &out) const
         << " precision: " << m_params.prec();
 }
 
-double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
+double SpatialPrior::ApplyToMVN(MVNDist *prior, const ThreadContext &ctx)
 {
     if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter))
     {

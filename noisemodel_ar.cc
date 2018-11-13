@@ -327,7 +327,7 @@ Ar1cParams *Ar1cNoiseModel::NewParams() const
 }
 int Ar1cNoiseModel::NumParams()
 {
-    return nPhis;
+    return nPhis + NumAlphas();
 }
 // Just convert a string into a number
 int Ar1cNoiseModel::NumAlphas() const

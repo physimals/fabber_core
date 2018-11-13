@@ -1,7 +1,7 @@
 /**
  * run_context.cc
  *
- * RunContext is currently a pure structure. May wish to add methods later
+ * ThreadContext is currently a pure structure. May wish to add methods later
  *
  * Copyright (C) 2007-2017 University of Oxford
  */
@@ -20,7 +20,7 @@ using NEWMAT::SymmetricMatrix;
 using NEWMAT::ColumnVector;
 using MISCMATHS::sign;
 
-void RunContext::InitializeNoiseFromParam(FabberRunData &rundata, NoiseParams *dist, string param_key)
+void ThreadContext::InitializeNoiseFromParam(FabberRunData &rundata, NoiseParams *dist, string param_key)
 {
     string filename = rundata.GetStringDefault(param_key, "modeldefault");
     if (filename != "modeldefault")
@@ -32,167 +32,21 @@ void RunContext::InitializeNoiseFromParam(FabberRunData &rundata, NoiseParams *d
     }
 }
 
-void RunContext::InitMVNFromFile(FabberRunData &rundata, string paramFilename = "")
+void ThreadContext::InitMVNFromFile(FabberRunData &rundata)
 {
-    // Loads in a MVN to set it as inital values for inference
-    // can cope with the special scenario in which extra parameters have been added to the inference
-    LOG << "InferenceTechnique::Merging supplied MVN with model intialization." << endl;
-
-    if (paramFilename == "")
-    {
-        MVNDist::Load(resultMVNs, "continue-from-mvn", rundata, m_log);
-    }
-    else
-    {
-        // load in parameters FIXME this will not work right now
-        LOG << "InferenceTechnique::Parameters named in file" << endl;
-
-        // Get a list of parameter names which were associated with the previous
-        // run so we can merge the MVNs with the full parameter set
-        string currparam;
-        ifstream paramFile((paramFilename).c_str());
-        if (!paramFile.good())
-        {
-            throw InvalidOptionValue("", paramFilename, "Could not open parameter file");
-        }
-        vector<string> paramNames;
-        LOG << "InferenceTechnique::Parameters from previous run: " << endl;
-        while (paramFile.good())
-        {
-            getline(paramFile, currparam);
-            paramNames.push_back(currparam);
-            LOG << currparam << endl;
-        }
-        paramNames.pop_back(); // remove final empty line assocaited with eof
-
-        // get the parameters in the model
-        vector<string> ModelparamNames;
-        m_model->NameParams(ModelparamNames);
-        LOG << "InferenceTechnique::Parameters named in model" << endl;
-        for (int p = 0; p < m_num_params; p++)
-        {
-            LOG << ModelparamNames[p] << endl;
-        }
-
-        // load in the MVN
-        vector<MVNDist *> MVNfile;
-        MVNDist::Load(MVNfile, "continue-from-mvn", rundata, m_log);
-
-        // Get defaults from the model. The prior is not used, the posterior is used
-        // if we don't have a posterior for a parameter in the file
-        MVNDist tempprior(m_num_params);
-        MVNDist tempposterior(m_num_params);
-        m_model->HardcodedInitialDists(tempprior, tempposterior);
-
-        // go through the parameters in the model and either:
-        // 1.) load the MVN from MVNfile if it is included, or
-        // 2.) use the default value from the model
-
-        // first work out where parameters in file MVN go in the model
-        LOG << "InferenceTechnique::Matching parameters from file with model:" << endl;
-        // Vector of bools for each parameter in the model. True if found in the file we're loading
-        vector<bool> usefile(m_num_params, false);
-        // If true, location of parameter in file (starting at 0)
-        vector<int> oldloc(m_num_params, 0);
-        // Vector of bools, one for each parameter in the file. True to flag matched to a file
-        // parameter
-        vector<bool> hasmatched(m_num_params, false);
-        for (int p = 0; p < m_num_params; p++)
-        {
-            usefile[p] = false;
-            for (unsigned q = 0; q < paramNames.size(); q++)
-            {
-                if (ModelparamNames[p] == paramNames[q])
-                {
-                    usefile[p] = true;
-                    oldloc[p] = q;
-                    hasmatched[q] = true;
-                    LOG << ModelparamNames[p] << ": Matched with file" << endl;
-                }
-            }
-            if (!usefile[p])
-            {
-                LOG << ModelparamNames[p] << ": Not matched, set from model default" << endl;
-            }
-        }
-
-        // Make a note of any parameters in the file that were not matched to params in the model
-        for (unsigned int q = 0; q < paramNames.size(); q++)
-        {
-            if (!hasmatched[q])
-            {
-                LOG_ERR(paramNames[q] + ": Not matched!");
-            }
-        }
-
-        // for (int a=0; a<usefile.size(); a++) {
-        //       cout << usefile[a] << "  " << oldloc[a] << endl;
-        //     }
-
-        ColumnVector modelmeans = tempposterior.means;
-        ColumnVector newmeans = modelmeans;
-        SymmetricMatrix modelcov = tempposterior.GetCovariance();
-        SymmetricMatrix newcov = modelcov;
-
-        // Number of forward model and noise params in the FILE we are loading
-        int n_file_params = paramNames.size();
-        int n_file_noiseparams = MVNfile[1]->means.Nrows() - n_file_params;
-        int nvox = MVNfile.size();
-
-        // For every voxel we need to add an MVNDist to resultMVNs.
-        for (int v = 0; v < nvox; v++)
-        {
-            // Get the file data
-            MVNDist fwddist = MVNfile[v]->GetSubmatrix(1, n_file_params);
-            MVNDist noisedist
-                = MVNfile[v]->GetSubmatrix(n_file_params + 1, n_file_params + n_file_noiseparams);
-
-            for (unsigned int p = 0; p < ModelparamNames.size(); p++)
-            {
-                // deal with the means
-                if (usefile[p])
-                {
-                    newmeans(p + 1) = fwddist.means(oldloc[p] + 1);
-                }
-            }
-            MVNDist newfwd(m_num_params);
-            newfwd.means = newmeans;
-
-            // deal with the covariances
-            SymmetricMatrix filecov = fwddist.GetCovariance();
-            for (unsigned int p = 0; p < ModelparamNames.size(); p++)
-            {
-                for (unsigned int q = 0; q <= p; q++)
-                {
-                    if (usefile[p])
-                    {
-                        if (usefile[q])
-                        {
-                            newcov(p + 1, q + 1) = filecov(oldloc[p] + 1, oldloc[q] + 1);
-                        }
-                    }
-                }
-            }
-            newfwd.SetCovariance(newcov);
-
-            // Note that this assumes we have the same number of noise parameters in the
-            // file as we want in the calculation, not sure at moment if this is always
-            // true or not.
-            MVNDist *distout = new MVNDist(newfwd, noisedist);
-            resultMVNs.push_back(distout);
-        }
-    }
+    LOG << "InferenceTechnique::Loading previous output from MVN" << endl;
+    Matrix mvn_data = GetVoxelData(rundata, "continue-from-mvn");
+    MVNDist::Load(resultMVNs, mvn_data, m_log);
 }
 
-void RunContext::PassModelData(int v)
+void ThreadContext::PassModelData(int v)
 {
     // Pass in data, coords and supplemental data for this voxel
-    ColumnVector data = m_origdata->Column(v);
-    ColumnVector vcoords = m_coords->Column(v);
-    if (m_suppdata->Ncols() > 0)
+    ColumnVector data = m_origdata.Column(v);
+    ColumnVector vcoords = m_coords.Column(v);
+    if (m_suppdata.Ncols() > 0)
     {
-        ColumnVector suppy = m_suppdata->Column(v);
-        m_model->PassData(v, data, vcoords, suppy);
+        m_model->PassData(v, data, vcoords, m_suppdata.Column(v));
     }
     else
     {
@@ -200,19 +54,52 @@ void RunContext::PassModelData(int v)
     }
 }
 
-void RunContext::Initialize(FabberRunData &rundata)
+Matrix ThreadContext::GetVoxelData(FabberRunData &rundata, std::string name)
+{
+    try 
+    {
+        Matrix data = rundata.GetVoxelData(name);
+        return data.Columns(start_voxel, start_voxel+nvoxels-1);
+    }
+    catch (DataNotFound &e) 
+    {
+        Matrix empty;
+        return empty;
+    }
+}
+
+ThreadContext::ThreadContext(FabberRunData &rundata, int worker_id, int num_workers, int start_vox, int num_vox)
+    : m_rundata(&rundata)
+    , m_id(worker_id)
+    , m_num_workers(num_workers)
+    , it(0)
+    , v(1)
+    , start_voxel(1)
+    , nvoxels(0)
+    , m_num_params(0)
+    , m_noise_params(0)
 {
     m_log = rundata.GetLogger();
-    m_origdata = &rundata.GetMainVoxelData();
-    m_coords = &rundata.GetVoxelCoords();
-    m_suppdata = &rundata.GetVoxelSuppData();
-    nvoxels = m_origdata->Ncols();
+    m_debug = rundata.GetBool("debug");
+    m_halt_bad_voxel = !rundata.GetBool("allow-bad-voxels");
+    
+    if (num_vox < 0) 
+    {
+        num_vox = rundata.GetMainVoxelData().Ncols();
+    }
+    start_voxel = start_vox;
+    nvoxels = num_vox;
+
+    //cerr << "ThreadContext: " << start_vox << ", " << num_vox << endl;
+    m_origdata = rundata.GetMainVoxelData().Columns(start_vox, start_vox+num_vox-1);
+    m_coords = rundata.GetVoxelCoords().Columns(start_vox, start_vox+num_vox-1);
+    m_suppdata = GetVoxelData(rundata, "suppdata");
 
     // Read masked time points option and log if any have been specified
     m_masked_tpoints = rundata.GetIntList("mt", 1);
     if (m_masked_tpoints.size() > 0)
     {
-        LOG << "InferenceTechnique::Masking " << m_masked_tpoints.size() << " time points: ";
+        LOG << "ThreadContext::Masking " << m_masked_tpoints.size() << " time points: ";
         for (unsigned int i = 0; i < m_masked_tpoints.size(); i++)
         {
             LOG << m_masked_tpoints[i] << " ";
@@ -231,7 +118,11 @@ void RunContext::Initialize(FabberRunData &rundata)
     // Get noise model.
     m_noise = NoiseModel::NewFromName(rundata.GetStringDefault("noise", "white"));
     m_noise->Initialize(rundata);
-    m_noise_params = m_noise->NumParams();
+    if (rundata.GetStringDefault("method", "vb") != "nlls") 
+    {
+        m_noise_params = m_noise->NumParams();
+        //cerr << "noise has " << m_noise_params << " params" << endl;
+    }
 
     // Initialezed in voxel loop below (from file or default as required)
     noise_post.resize(nvoxels, NULL);
@@ -256,9 +147,10 @@ void RunContext::Initialize(FabberRunData &rundata)
 
     // Whether to fix the linearization centres (default: false)
     string locked_linear = rundata.GetStringDefault("locked-linear-from-mvn", "");
+    m_locked_linear = locked_linear != "";
     vector<MVNDist *> lockedLinearDists;
     Matrix lockedLinearCentres;
-    if (locked_linear != "")
+    if (m_locked_linear)
     {
         string file = rundata.GetString("locked-linear-from-mvn");
         LOG << "Vb::Loading fixed linearization centres from the MVN '" << file
@@ -282,9 +174,7 @@ void RunContext::Initialize(FabberRunData &rundata)
     if (continueFromMvn)
     {
         LOG << "Vb::Continuing from MVN" << endl;
-        // Optional list of parameters in MVN
-        string paramFilename = rundata.GetStringDefault("continue-from-params", ""); 
-        InitMVNFromFile(rundata, paramFilename);
+        InitMVNFromFile(rundata);
     }
 
     // Initial noise distributions
@@ -314,7 +204,7 @@ void RunContext::Initialize(FabberRunData &rundata)
             noise_post[v - 1] = initialNoisePosterior->Clone();
         }
 
-        if (locked_linear != "")
+        if (m_locked_linear)
         {
             lockedLinearCentres.Column(v)
                 = lockedLinearDists.at(v - 1)->means.Rows(1, m_num_params);
@@ -329,14 +219,18 @@ void RunContext::Initialize(FabberRunData &rundata)
         // inefficient but not harmful because all convergence detectors are the same type
         m_conv[v - 1] = ConvergenceDetector::NewFromName(conv_name);
         m_conv[v - 1]->Initialize(rundata);
-        //m_needF = m_conv[v - 1]->UseF() || m_printF || m_saveF;
+
+        // Free energy
+        m_saveF = rundata.GetBool("save-free-energy");
+        m_printF = rundata.GetBool("print-free-energy");
+        m_needF = m_conv[v - 1]->UseF() || m_printF || m_saveF;
 
         noise_prior[v - 1] = initialNoisePrior->Clone();
-        m_noise->Precalculate(*noise_post[v - 1], *noise_prior[v - 1], m_origdata->Column(v));
+        m_noise->Precalculate(*noise_post[v - 1], *noise_prior[v - 1], m_origdata.Column(v));
     }
 }
 
-RunContext::~RunContext()
+ThreadContext::~ThreadContext()
 {
     while (!resultMVNs.empty())
     {
@@ -345,19 +239,49 @@ RunContext::~RunContext()
     }
 } 
 
-void RunContext::CheckCoordMatrixCorrectlyOrdered(const Matrix &coords)
+void ThreadContext::IgnoreVoxel(int v)
+{
+    LOG << "Vb::IgnoreVoxel This voxel will be ignored in further updates" << endl;
+
+    ignore_voxels.push_back(v);
+
+    // Remove voxel from lists of neighbours of other voxels.
+    // We identify affected voxels by looking in the neighbour
+    // lists for the bad voxel, because any voxel which has
+    // the bad voxel as a neighbour will be a neighbour of the
+    // bad voxel
+    vector<int> nn = neighbours[v - 1];
+    for (vector<int>::iterator i = nn.begin(); i != nn.end(); ++i)
+    {
+        // Reference to list of neighbours of some other voxel which
+        // has the bad voxel as a neighbour
+        vector<int> &n2 = neighbours[*i - 1];
+
+        n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
+    }
+
+    // Same for next-nearest-neighbours
+    nn = neighbours2[v - 1];
+    for (vector<int>::iterator i = nn.begin(); i != nn.end(); ++i)
+    {
+        // Reference to list of neighbours of some other voxel which
+        // has the bad voxel as a neighbour
+        vector<int> &n2 = neighbours2[*i - 1];
+
+        n2.erase(std::remove(n2.begin(), n2.end(), v), n2.end());
+    }
+}
+
+void ThreadContext::CheckCoordMatrixCorrectlyOrdered()
 {
     // Only 3D
-    assert(coords.Nrows() == 3);
-
-    // Voxels are stored one per column, each column is the x/y/z coords
-    const int m_nvoxels = coords.Ncols();
+    assert(m_coords.Nrows() == 3);
 
     // Go through each voxel one at a time apart from last
-    for (int v = 1; v <= m_nvoxels - 1; v++)
+    for (int v = 1; v <= nvoxels - 1; v++)
     {
         // Find difference between current coords and next
-        ColumnVector diff = coords.Column(v + 1) - coords.Column(v);
+        ColumnVector diff = m_coords.Column(v + 1) - m_coords.Column(v);
 
         // Check order
         // +1 = +x, +10 = +y, +100 = +z, -100 = -z+x, etc.
@@ -406,14 +330,14 @@ static inline int binarySearch(const ColumnVector &data, int num)
 /**
  * Calculate nearest and second-nearest neighbours for the voxels
  */
-void RunContext::CalcNeighbours(const Matrix &coords, int spatial_dims)
+void ThreadContext::CalcNeighbours(int spatial_dims)
 {
     if (nvoxels == 0)
         return;
 
     // Voxels must be ordered by increasing z, y and x values respectively
     // otherwise binary search for voxel by offset will not work
-    CheckCoordMatrixCorrectlyOrdered(coords);
+    CheckCoordMatrixCorrectlyOrdered();
 
     // Create a column vector with one entry per voxel.
     ColumnVector offsets(nvoxels);
@@ -421,13 +345,13 @@ void RunContext::CalcNeighbours(const Matrix &coords, int spatial_dims)
     // Populate offsets with the offset into the
     // matrix of each voxel. We assume that co-ordinates
     // could be zero but not negative
-    int xsize = coords.Row(1).Maximum() + 1;
-    int ysize = coords.Row(2).Maximum() + 1;
+    int xsize = m_coords.Row(1).Maximum() + 1;
+    int ysize = m_coords.Row(2).Maximum() + 1;
     for (int v = 1; v <= nvoxels; v++)
     {
-        int x = coords(1, v);
-        int y = coords(2, v);
-        int z = coords(3, v);
+        int x = m_coords(1, v);
+        int y = m_coords(2, v);
+        int z = m_coords(3, v);
         int offset = z * xsize * ysize + y * xsize + x;
         offsets(v) = offset;
     }

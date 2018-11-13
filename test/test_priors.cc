@@ -196,8 +196,7 @@ TEST_F(DefaultPriorTest, ApplyToMVN)
     DefaultPrior prior(p);
 
     MVNDist mvn(PARAM_IDX + 7);
-    RunContext ctx;
-    ctx.Initialize(rundata);
+    ThreadContext ctx(rundata);
     prior.ApplyToMVN(&mvn, ctx);
     for (int i = 1; i <= NUM_VOXELS; i++)
     {
@@ -251,8 +250,7 @@ TEST_F(ImagePriorTest, ApplyToMVN)
     ImagePrior prior(p, rundata);
 
     MVNDist mvn(PARAM_IDX + 7);
-    RunContext ctx;
-    ctx.Initialize(rundata);
+    ThreadContext ctx(rundata);
     for (int i = 1; i <= NUM_VOXELS; i++)
     {
         ctx.v = i;
