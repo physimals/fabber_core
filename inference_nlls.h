@@ -38,8 +38,20 @@ public:
 
     virtual void Initialize(FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
+};
+
+class NllsThreadContext : public ThreadContext
+{
+public:
+    NllsThreadContext(FabberRunData &rundata, int worker_id=0, int n_workers=1, int start_vox=1, int num_vox=-1);
 
 protected:
+    /**
+     * Do calculations loop in voxelwise mode (i.e. all iterations for
+     * one voxel, then all iterations for the next voxel, etc)
+     */
+    void Run();
+
     bool m_lm;
 };
 

@@ -117,6 +117,7 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
             for (int vox = 1; vox <= ctx->nvoxels; vox++)
             {
                 MVNDist *mvn = ctx->resultMVNs[vox - 1];
+                //cerr << mvn << endl;
                 //cerr << mvn->means.Nrows() << ", " << mvns.Nrows() << endl;
                 
                 //cerr << nparams << ", " << vox << ", " << ctx->start_voxel + vox - 1 << ", " << mvn << endl;

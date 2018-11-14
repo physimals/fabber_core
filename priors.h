@@ -5,11 +5,13 @@
  *
  * Copyright (C) 2007-2017 University of Oxford
  */
+#pragma once
 
 #include "dist_mvn.h"
 #include "fwdmodel.h"
 #include "run_context.h"
 #include "rundata.h"
+#include "inference_vb.h"
 
 #include <newmat.h>
 
@@ -125,7 +127,7 @@ public:
     virtual double ApplyToMVN(MVNDist *prior, const ThreadContext &ctx);
 
 protected:
-    double CalculateAkmean(const ThreadContext &ctx);
+    double CalculateAkmean(const SpatialVbThreadContext &sctx);
     double m_akmean;
     int m_spatial_dims;
     double m_spatial_speed;

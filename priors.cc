@@ -208,19 +208,19 @@ SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
     m_update_first_iter = rundata.GetBool("update-spatial-prior-on-first-iteration");
 }
 
-double SpatialPrior::CalculateAkmean(const ThreadContext &ctx)
+double SpatialPrior::CalculateAkmean(const SpatialVbThreadContext &sctx)
 {
     // The following calculates Tr[Sigmak*S'*S]
     double tmp1 = 0.0;
     double tmp2 = 0.0;
-    for (int v = 1; v <= ctx.nvoxels; v++)
+    for (int v = 1; v <= sctx.nvoxels; v++)
     {
         // Ignore voxels where numerical issues have occurred
-        if (std::find(ctx.ignore_voxels.begin(), ctx.ignore_voxels.end(), v)
-            != ctx.ignore_voxels.end()) continue;
+        if (std::find(sctx.ignore_voxels.begin(), sctx.ignore_voxels.end(), v)
+            != sctx.ignore_voxels.end()) continue;
 
-        double sigmak = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx + 1, m_idx + 1);
-        int nn = ctx.neighbours.at(v - 1).size();
+        double sigmak = sctx.fwd_post.at(v - 1).GetCovariance()(m_idx + 1, m_idx + 1);
+        int nn = sctx.m_neighbours->at(v - 1).size();
         if (m_type_code == PRIOR_SPATIAL_m) // useMRF)
             tmp1 += sigmak * m_spatial_dims * 2;
         else if (m_type_code == PRIOR_SPATIAL_M) // useMRF2)
@@ -230,15 +230,15 @@ double SpatialPrior::CalculateAkmean(const ThreadContext &ctx)
         else // P
             tmp1 += sigmak * (nn * nn + nn);
 
-        double wk = ctx.fwd_post.at(v - 1).means(m_idx + 1);
+        double wk = sctx.fwd_post.at(v - 1).means(m_idx + 1);
         double Swk = 0.0;
-        for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
-             v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
+        for (vector<int>::const_iterator v2It = (*sctx.m_neighbours2)[v - 1].begin();
+             v2It != sctx.m_neighbours->at(v - 1).end(); ++v2It)
         {
-            Swk += wk - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            Swk += wk - sctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
         }
         if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
-            Swk += wk * (m_spatial_dims * 2 - ctx.neighbours.at(v - 1).size());
+            Swk += wk * (m_spatial_dims * 2 - sctx.m_neighbours->at(v - 1).size());
 
         if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
             tmp2 += Swk * wk;
@@ -249,7 +249,7 @@ double SpatialPrior::CalculateAkmean(const ThreadContext &ctx)
     LOG << "SpatialPrior::UpdateAkmean " << m_idx << ": tmp1=" << tmp1 << ", tmp2=" << tmp2 << endl;
 
     double gk = 1 / (0.5 * tmp1 + 0.5 * tmp2 + 0.1); // prior q1 == 10 (1/q1 == 0.1)
-    double akmean = gk * (ctx.nvoxels * 0.5 + 1.0);  // prior q2 == 1.0
+    double akmean = gk * (sctx.nvoxels * 0.5 + 1.0);  // prior q2 == 1.0
     double akmeanMax = akmean * m_spatial_speed;
     if (akmean < 1e-50)
     {
@@ -284,34 +284,36 @@ void SpatialPrior::DumpInfo(std::ostream &out) const
 
 double SpatialPrior::ApplyToMVN(MVNDist *prior, const ThreadContext &ctx)
 {
-    if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter))
+    const SpatialVbThreadContext& sctx = dynamic_cast<const SpatialVbThreadContext&>(ctx);
+
+    if (sctx.v == 1 && (sctx.it > 0 || m_update_first_iter))
     {
-        m_akmean = CalculateAkmean(ctx);
+        m_akmean = CalculateAkmean(sctx);
     }
 
     double weight8 = 0; // weighted +8
     double contrib8 = 0.0;
-    for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
-         nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
+    for (vector<int>::const_iterator nidIt = (*sctx.m_neighbours2)[sctx.v - 1].begin();
+         nidIt != (*sctx.m_neighbours2)[sctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
-        const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
+        const MVNDist &neighbourPost = sctx.fwd_post[nid - 1];
         contrib8 += 8 * neighbourPost.means(m_idx + 1);
         weight8 += 8;
     }
 
     double weight12 = 0; // weighted -1, may be duplicated
     double contrib12 = 0.0;
-    for (vector<int>::const_iterator nidIt = ctx.neighbours2[ctx.v - 1].begin();
-         nidIt != ctx.neighbours2[ctx.v - 1].end(); ++nidIt)
+    for (vector<int>::const_iterator nidIt = (*sctx.m_neighbours2)[sctx.v - 1].begin();
+         nidIt != (*sctx.m_neighbours2)[sctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
-        const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
+        const MVNDist &neighbourPost = sctx.fwd_post[nid - 1];
         contrib12 += -neighbourPost.means(m_idx + 1);
         weight12 += -1;
     }
 
-    int nn = ctx.neighbours[ctx.v - 1].size();
+    int nn = (*sctx.m_neighbours2)[sctx.v - 1].size();
 
     if (m_type_code == PRIOR_SPATIAL_p)
     {

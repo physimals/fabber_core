@@ -30,28 +30,69 @@ public:
     ThreadContext(FabberRunData &rundata, int worker_id=0, int n_workers=1, int start_vox=1, int num_vox=-1);
     ~ThreadContext();
 
+    /**
+     * Start the processing
+     *
+     * This is a static function which calls the non-static `Run` method.
+     * `obj` is a pointer to a subclass of ThreadContext. 
+     *
+     * This is required because thread creation (e.g. pthread_create) calls a 
+     * function not a method. 
+     */
+    static void *Start(void *obj);
+
     FabberRunData *m_rundata;
     int m_id, m_num_workers;
     bool m_debug;
     bool m_halt_bad_voxel;
-    bool m_printF, m_needF, m_saveF;
-    bool m_locked_linear;
-
     NEWMAT::Matrix GetVoxelData(FabberRunData &rundata, std::string name);
 
+    /**
+     * Forward model to use.
+     *
+     * This is a per-thread copy of the model
+     */
     FwdModel *m_model;
+
+    /**
+     * Noise model to use.
+     *
+     * This is a per-thread copy of the noise model
+     */
     NoiseModel *m_noise;
 
-    /** Voxelwise input data */
+    /** 
+     * Voxelwise input data 
+     *
+     * This is a subset of the full input data from the start to the end
+     * voxel
+     */
     NEWMAT::Matrix m_origdata;
 
-    /** Voxelwise co-ordinates */
+    /** 
+     * Voxelwise co-ordinates 
+     *
+     * This is a subset of the coordinates, containing just those for the
+     * subset of voxels this ThreadContext is processing
+     */
     NEWMAT::Matrix m_coords;
 
-    /** Voxelwise supplementary data */
+    /**
+     * Voxelwise supplementary data if provided
+     *
+     * This is a subset of the full suppdata for the voxels this ThreadContext
+     * is processing. If no suppdata was provided it has 0 columns.
+     */
     NEWMAT::Matrix m_suppdata;
 
+    /**
+     * Number of model parameters
+     */
     int m_num_params;
+
+    /**
+     * Number of noise parameters
+     */
     int m_noise_params;
 
     /** Current iteration, starting at 0 */
@@ -63,8 +104,10 @@ public:
     /** Start voxel number (in original data space) */
     int start_voxel;
 
-    /** Total number of voxels to process */
+    /** Total number of voxels to process in this ThreadContext */
     int nvoxels;
+
+    bool m_locked_linear;
 
     /** Voxels to ignore, indexed from 1 as per NEWMAT */
     std::vector<int> ignore_voxels;
@@ -96,9 +139,6 @@ public:
      */
     std::vector<ConvergenceDetector *> m_conv;
 
-    std::vector<std::vector<int> > neighbours;
-    std::vector<std::vector<int> > neighbours2;
-
     /**
      * List of masked timepoints
      *
@@ -109,24 +149,16 @@ public:
 
     void PassModelData(int v);
     void IgnoreVoxel(int v);
+protected:
+
     /**
-     * Calculate first and second nearest neighbours of each voxel
-    */
-    void CalcNeighbours(int spatial_dims);
+     * Run the calculation. 
+     *
+     * This must be implemented by subclasses
+     */
+    virtual void Run() {}
+
 private:
     void InitializeNoiseFromParam(FabberRunData &rundata, NoiseParams *dist, std::string param_key);
     void InitMVNFromFile(FabberRunData &rundata);
-    
-    /**
-    * Check voxels are listed in order
-    *
-    * Order must be increasing in z value, or if same
-    * increasing in y value, and if y and z are same
-    * increasing in x value.
-    *
-    * This is basically column-major (Fortran) ordering - used as default by NEWIMAGE.
-    */
-    void CheckCoordMatrixCorrectlyOrdered();
-
-
 };
