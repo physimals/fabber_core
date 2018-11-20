@@ -24,7 +24,7 @@ using namespace std;
 using namespace NEWIMAGE;
 using NEWMAT::Matrix;
 
-static void DumpVolumeInfo(const volume4D<float> &info, ostream &out)
+static void DumpVolumeInfo4D(const volume4D<float> &info, ostream &out)
 {
     out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize()
         << ", z=" << info.zsize() << ", vols=" << info.tsize() << endl;
@@ -114,7 +114,7 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
         {
             throw DataNotFound(filename, "Error loading file");
         }
-        DumpVolumeInfo(vol, LOG);
+        DumpVolumeInfo4D(vol, LOG);
 
         try
         {
