@@ -7,6 +7,8 @@
 #include "setup.h"
 #include "gtest/gtest.h"
 
+#define ALLOWED_DELTA 0.001
+
 namespace
 {
 // The fixture for testing class Foo.
@@ -85,7 +87,7 @@ protected:
             {
                 for (int z = 1; z <= d1.zsize(); z++)
                 {
-                    ASSERT_FLOAT_EQ(d1(x, y, z), d2(x, y, z));
+                    ASSERT_NEAR(d1(x, y, z), d2(x, y, z), ALLOWED_DELTA);
                 }
             }
         }
