@@ -31,7 +31,7 @@ set(NOISE_SRC noisemodel_white.cc noisemodel_ar.cc)
 # Find FSL dependencies
 
 if (FSL_BUILD)
-  set(LIBS newimage fslio miscmaths niftiio utils newmat znz ${ZLIB_LIBRARY})
+  set(LIBS newimage NewNifti miscmaths utils newmat znz ${ZLIB_LIBRARY})
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
 else (FSL_BUILD)
 
@@ -40,7 +40,7 @@ else (FSL_BUILD)
   find_path(FSL_EXTRAS_INCLUDE_DIR cprob/cprob.h
             HINTS $ENV{FSLDIR}/extras/include REQUIRED)
   find_path(NEWMAT_INCLUDE_DIR newmat.h
-            HINTS $ENV{FSLDIR}/extras/include/newmat REQUIRED)
+            HINTS $ENV{FSLDIR}/extras/include/newmat $ENV{FSLDIR}/extras/include/armawrap/armawrap REQUIRED)
 
   #find_path(MCFLIRT_INCLUDE_DIR /mcflirt/rigidreglib.h
   #          HINTS $ENV{FSLDIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/.. OPTIONAL)
@@ -61,14 +61,18 @@ else (FSL_BUILD)
                HINTS $ENV{FSLDIR}/lib REQUIRED )
   find_library(MISCMATHS_LIBRARY NAMES miscmaths libmiscmaths
                HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(NEWNIFTI_LIBRARY NAMES NewNifti libNewNifti
+               HINTS $ENV{FSLDIR}/lib OPTIONAL)
   find_library(FSLIO_LIBRARY NAMES fslio libfslio
-               HINTS $ENV{FSLDIR}/lib REQUIRED )
+               HINTS $ENV{FSLDIR}/lib OPTIONAL)
   find_library(NIFTIIO_LIBRARY NAMES niftiio libniftiio
-               HINTS $ENV{FSLDIR}/lib REQUIRED )
+               HINTS $ENV{FSLDIR}/lib OPTIONAL)
   find_library(NEWMAT_LIBRARY NAMES newmat libnewmat
                HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
   find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
                HINTS $ENV{FSLDIR}/lib REQUIRED )
+  find_library(BLAS_LIBRARY NAMES openblas libopenblas
+               REQUIRED )
 
   find_package(Boost)
   if(NOT Boost_FOUND)
@@ -86,21 +90,38 @@ else (FSL_BUILD)
 
   Message("-- FSL headers in ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${NEWMAT_INCLUDE_DIR}")
   Message("-- Using newimage: ${NEWIMAGE_LIBRARY}")
-  Message("-- Using fslio: ${FSLIO_LIBRARY}")
   Message("-- Using miscmaths: ${MISCMATHS_LIBRARY}")
-  Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
   Message("-- Using libznz: ${ZNZ_LIBRARY}")
   Message("-- Using zlib: ${ZLIB_LIBRARY}")
   Message("-- Using newmat: ${NEWMAT_LIBRARY}")
   Message("-- Using Boost: ${Boost_INCLUDE_DIRS}")
-
+  Message("-- Using BLAS: ${BLAS_LIBRARY}")
+  
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-  set(LIBS ${NEWIMAGE_LIBRARY} ${WARPFNS_LIBRARY}
-           ${FSLIO_LIBRARY}
+  set(LIBS ${BLAS_LIBRARY}
+           ${NEWIMAGE_LIBRARY} 
+           ${WARPFNS_LIBRARY}
            ${MISCMATHS_LIBRARY}
-           ${NIFTIIO_LIBRARY}
-           ${NEWMAT_LIBRARY} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
+           ${NEWMAT_LIBRARY})
+
+  if (FSLIO_LIBRARY)
+    Message("-- Using fslio: ${FSLIO_LIBRARY}")
+    set(LIBS ${LIBS} ${FSLIO_LIBRARY})
+  endif (FSLIO_LIBRARY)
+  
+  if (NIFTIIO_LIBRARY)
+    Message("-- Using niftiio: ${NIFTIIO_LIBRARY}")
+    set(LIBS ${LIBS} ${NIFTIIO_LIBRARY})
+  endif (NIFTIIO_LIBRARY)
+
+  if (NEWNIFTI_LIBRARY)
+    Message("-- Using newnifti: ${NEWNIFTI_LIBRARY}")
+    set(LIBS ${LIBS} ${NEWNIFTI_LIBRARY})
+  endif (NEWNIFTI_LIBRARY)
+
+  set(LIBS ${LIBS} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
+
 endif(FSL_BUILD)
 
 if (UNIX)
@@ -131,7 +152,8 @@ if (NOT GIT_DATE)
   set(GIT_DATE unknown)
 endif(NOT GIT_DATE)
 
-add_definitions(-DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
+add_definitions(-DARMA_USE_LAPACK -DARMA_USE_BLAS -DARMA_64BIT_WORD 
+                -DGIT_SHA1="${GIT_SHA1}" -DGIT_DATE="${GIT_DATE}"
                 -DFABBER_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
                 -DFABBER_BUILD_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 
