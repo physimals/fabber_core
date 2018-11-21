@@ -66,10 +66,20 @@ MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
     // Always duplicate the covariances (even if this means some recalculation)
     // Otherwise if we use precisions.i(), zeros won't stay exactly zero
     covariance = 0;
-    covariance.SymSubMatrix(1, from1.m_size) = from1.GetCovariance();
-    covariance.SymSubMatrix(from1.m_size + 1, from1.m_size + from2.m_size) = from2.GetCovariance();
-    precisionsValid = false;
-    covarianceValid = true;
+    for (int row=1; row <= from1.m_size; row++) 
+    {
+        for (int col=1; col <= from1.m_size; col++) 
+        {
+            covariance(row, col) = from1.GetCovariance()(row, col);
+        }
+    }
+    for (int row=1; row <= from2.m_size; row++) 
+    {
+        for (int col=1; row <= from2.m_size; row++) 
+        {
+            covariance(from1.m_size + row, from1.m_size + col) = from2.GetCovariance()(row, col);
+        }
+    }
 
     assert(means.Nrows() == m_size);
 }
@@ -377,8 +387,8 @@ void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, Fabber
     // This explains the formula below to calculate the number of data
     // elements required. The other triangle of the matrix is inferred
     // because of NIFTI_INTENT_SYMMATRIX
-    vols.ReSize(nParams * (nParams + 1) / 2 + nParams + 1, nVoxels);
-
+    int nCov = nParams * (nParams + 1) / 2;
+    vols.ReSize(nCov + nParams + 1, nVoxels);
     ColumnVector aOne(1);
     aOne = 1.0;
 
@@ -391,8 +401,17 @@ void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, Fabber
         // Note that AsColumn for a SymmetricMatrix uses row ordering on the
         // lower triangular part, returning (1,1) (2,1) (2,2) (3,1).. as
         // required by NIFTI_INTENT_SYMMATRIX
-        vols.Column(vox)
-            = mvns.at(vox - 1)->GetCovariance().AsColumn() & mvns.at(vox - 1)->means & aOne;
+        ColumnVector cov(nCov);
+        int idx=1;
+        for (int row=1; row <=nParams; row++) 
+        {
+            for (int col=1; col<=row; col++) 
+            {
+                cov(idx++) = mvns.at(vox - 1)->GetCovariance()(row, col);
+            }
+        }
+
+        vols.Column(vox) = cov & mvns.at(vox - 1)->means & aOne;
     }
 
     data.SaveVoxelData(filename, vols, VDT_MVN);
