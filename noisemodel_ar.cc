@@ -21,6 +21,25 @@
 
 using MISCMATHS::digamma;
 
+/**
+ * There seem to be compatibility problems using SymmetricBandMatrix 
+ * through armawrap. So we are just using a SymmetricMatrix and 
+ * then manually zero out the off-band elements
+ */
+static void MakeBandMatrix(SymmetricMatrix &mat)
+{
+    for (int row=1; row <= mat.Nrows(); row++) 
+    {
+        for (int col=1; col <= mat.Ncols(); col++) 
+        {
+            if (abs(col-row) > AR1_BANDWIDTH)
+            {
+                mat(row, col) = 0;
+            }
+        }
+    }
+}
+
 // Good enough for AR(1) with covariance terms
 // Reason: regular AR(1) matrix R has stuff only in -2.
 // R'*R are oppositely oriented so +/- 2 is still good enough.
@@ -31,14 +50,15 @@ NoiseModel *Ar1cNoiseModel::NewInstance()
 {
     return new Ar1cNoiseModel();
 }
+
 Ar1cMatrixCache::Ar1cMatrixCache(int numPhis)
     : nPhis(numPhis)
 {
 }
 
 Ar1cMatrixCache::Ar1cMatrixCache(const Ar1cMatrixCache &from)
-    : alphaMarginals(from.alphaMarginals)
-    , alphaMatrices(from.alphaMatrices)
+    : alphaMatrices(from.alphaMatrices)
+    , alphaMarginals(from.alphaMarginals)
     , nPhis(from.nPhis)
 {
 }
@@ -52,7 +72,6 @@ unsigned Ar1cMatrixCache::FlattenIndex(unsigned n, unsigned a12pow, unsigned a34
 
 void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
 {
-    //  LOG << "In Ar1cMatrixCache::Update..." << endl;
     // Let's see if alphaMatrices have been defined yet
     if (alphaMatrices.size() == 0)
     {
@@ -71,9 +90,9 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
 
                     unsigned index = FlattenIndex(n, a12pow, a34pow);
                     assert(index < alphaMatrices.size());
-                    SymmetricBandMatrix &mat = alphaMatrices[index];
+                    SymmetricMatrix &mat = alphaMatrices[index];
 
-                    mat.ReSize(nTimes * nPhis, AR1_BANDWIDTH);
+                    mat.ReSize(nTimes * nPhis);
                     mat = 0;
 
                     // Take advantage of the fact that all the alphaMatrices have the same
@@ -148,6 +167,7 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
                         mat(row, col) = value;
                         assert(row <= mat.Nrows() && col <= mat.Ncols());
                     }
+                    MakeBandMatrix(mat);
                 }
             }
         }
@@ -155,13 +175,11 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
 
     // So now we know alphaMatrices are defined.
     assert(alphaMatrices[0].Nrows() == nTimes * nPhis);
-
-    // Always update the alphaMatrices
     if (alphaMarginals.size() == 0)
     {
         alphaMarginals.resize(2);
-        alphaMarginals[0].ReSize(nTimes * nPhis, AR1_BANDWIDTH);
-        alphaMarginals[1].ReSize(nTimes * nPhis, AR1_BANDWIDTH);
+        alphaMarginals[0].ReSize(nTimes * nPhis);
+        alphaMarginals[1].ReSize(nTimes * nPhis);
     }
     assert(alphaMarginals[0].Nrows() == nTimes * nPhis);
     assert(alphaMarginals[1].Nrows() == nTimes * nPhis);
@@ -189,28 +207,30 @@ void Ar1cMatrixCache::Update(const Ar1cParams &dist, int nTimes)
 
             alphaMarginals.at(n - 1) = GetMatrix(n, 0, 0) + GetMatrix(n, 1, 0) * dist.alpha.means(n)
                 + GetMatrix(n, 2, 0) * covarPlus(n, n);
+            MakeBandMatrix(alphaMarginals.at(n - 1));
         }
     }
 }
 
-const SymmetricBandMatrix &Ar1cMatrixCache::GetMatrix(
-    unsigned n, unsigned a12pow, unsigned a34pow) const
+const SymmetricMatrix &Ar1cMatrixCache::GetMatrix(unsigned n, unsigned a12pow, unsigned a34pow) const
 {
-    //  LOG << "Called: GetMatrix(" << n << "," << a12pow << "," << a34pow << ")" << endl;
-    assert(alphaMatrices.size() > FlattenIndex(n, a12pow, a34pow));
-    return alphaMatrices[FlattenIndex(n, a12pow, a34pow)]; //[n-1][a12pow][a3pow];
+    unsigned idx = FlattenIndex(n, a12pow, a34pow);
+    if (alphaMatrices.size() <= idx) 
+    {
+        throw FabberInternalError(("GetMatrix(" + stringify(idx) + "): not enough elements (only"
+                                      + stringify(alphaMatrices.size()) + ") in alphaMatrices!\n")
+                                      .c_str());
+    }
+
+    return alphaMatrices[idx];
 }
 
-const SymmetricBandMatrix &Ar1cMatrixCache::GetMarginal(unsigned n) const
+const SymmetricMatrix &Ar1cMatrixCache::GetMarginal(unsigned n) const
 {
-    //  LOG << "In GetMarginal("<<n<<") const" << endl;
-    //  LOG << alphaMarginals.size() << ":" << alphaMarginals[n-1].Nrows()<<endl;
     if (alphaMarginals.size() < n)
         throw FabberInternalError(("GetMarginal(" + stringify(n) + "): not enough elements (only"
                                       + stringify(alphaMarginals.size()) + ") in alphaMarginals!\n")
                                       .c_str());
-    //  LOG << "Size of alphaMarginals[n-1] is " << alphaMarginals[n-1].Nrows() << " by " <<
-    //  alphaMarginals[n-1].Ncols() << endl;
     return alphaMarginals[n - 1];
 }
 
@@ -390,27 +410,17 @@ public:
         , L(L2)
         , J(J2)
     {
-        return;
     }
-    //    : k(k2), JLiJt(J2.Ncols(), AR1_BANDWIDTH)
-    //            JLiJt << (J2*L2.i()*J2.t());
-    //            // the above doesn't work... should be some sort of lossy store, but
-    //            // it crashes with an "Undefined bandwidth" error... not sure why.
-    //            // Could always calculate it as a SymmetricMatrix then manually
-    //            // (i.e. in a loop) copy the near-diagonal bit to a
-    //            // a SymmetricBandMatrix -- so much hassle!)
-    //        }
 
-    double operator()(const SymmetricBandMatrix &input) const;
+    double operator()(const SymmetricMatrix &input) const;
 
 private:
     const ColumnVector &k;
     const SymmetricMatrix &L;
     const Matrix &J;
-    //  SymmetricBandMatrix JLiJt;
 };
 
-double OperatorKLJ::operator()(const SymmetricBandMatrix &input) const
+double OperatorKLJ::operator()(const SymmetricMatrix &input) const
 {
     //  assert(input.BandWidth().Lower() <= AR1_BANDWIDTH);
     //  return (k.t() * input * k).AsScalar()
@@ -521,11 +531,11 @@ void Ar1cNoiseModel::UpdatePhi(NoiseParams &noise, const NoiseParams &noisePrior
     for (int i = 1; i <= nPhis; i++)
     {
         {
-            const SymmetricBandMatrix &Qi = alphaMat.GetMarginal(i);
+            const SymmetricMatrix &Qi = alphaMat.GetMarginal(i);
 
             double tmp
                 = (k.t() * Qi * k).AsScalar() + (theta.GetCovariance() * J.t() * Qi * J).Trace();
-
+           
             posterior.phis[i - 1].b = 1 / (tmp * 0.5 + 1 / prior.phis[i - 1].b);
         }
 
@@ -552,13 +562,14 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
     for (int i = 1; i <= nPhis; i++)
         si_ci(i) = posterior.phis.at(i - 1).b * posterior.phis.at(i - 1).c;
 
-    SymmetricBandMatrix X;
+    SymmetricMatrix X;
     {
         if (nPhis == 2)
             X = si_ci(1) * alphaMat.GetMarginal(1) + si_ci(2) * alphaMat.GetMarginal(2);
         else
             X = si_ci(1) * alphaMat.GetMarginal(1);
     }
+    MakeBandMatrix(X);
 
     // Update Lambda (model precisions)
     //

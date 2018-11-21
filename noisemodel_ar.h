@@ -23,12 +23,11 @@ class Ar1cMatrixCache
 public:
     explicit Ar1cMatrixCache(int numPhis);
     Ar1cMatrixCache(const Ar1cMatrixCache &from);
-    const NEWMAT::SymmetricBandMatrix &GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
-    const NEWMAT::SymmetricBandMatrix &GetMarginal(unsigned n) const;
+    const NEWMAT::SymmetricMatrix &GetMatrix(unsigned n, unsigned a12pow, unsigned a3pow) const;
+    const NEWMAT::SymmetricMatrix &GetMarginal(unsigned n) const;
     void Update(const Ar1cParams &dist, int nTimes);
 
 private:
-    std::vector<NEWMAT::SymmetricBandMatrix> alphaMarginals;
     // recalculated whenever alpha changes
     unsigned FlattenIndex(unsigned n, unsigned a12pow, unsigned a34pow) const;
 
@@ -36,7 +35,8 @@ private:
     // Note that if more than one model is being inferred upon at a time,
     // this will be unnecessarily duplicated in every one of them --
     // might speed things up considerably by sharing.
-    std::vector<NEWMAT::SymmetricBandMatrix> alphaMatrices;
+    std::vector<NEWMAT::SymmetricMatrix> alphaMatrices;
+    std::vector<NEWMAT::SymmetricMatrix> alphaMarginals;
 
     int nPhis;
 };
