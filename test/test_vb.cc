@@ -397,7 +397,7 @@ TEST_P(VbTest, Restart)
     for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
     {
         // GTEST has difficulty with comparing floats to 0
-        ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
+        ASSERT_NEAR(0, mean(1, i + 1), 0.00001);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
@@ -601,7 +601,7 @@ TEST_P(VbTest, RestartFromFile)
     for (int i = 0; i < VSIZE * VSIZE * VSIZE; i++)
     {
         // GTEST has difficulty with comparing floats to 0
-        ASSERT_FLOAT_EQ(1, mean(1, i + 1) + 1);
+        ASSERT_NEAR(1, mean(1, i + 1) + 1, 0.00001);
     }
     mean = rundata->GetVoxelData("mean_c2");
     ASSERT_EQ(mean.Nrows(), 1);
