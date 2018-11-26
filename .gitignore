@@ -16,4 +16,7 @@ Debug
 Release
 out*
 *.pyc
+build
+fabber_test
+
 
