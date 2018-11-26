@@ -5,7 +5,14 @@ PROJNAME = fabber_core
 USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat -lNewNifti -lznz -lz -ldl
+FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
+ifeq ($(FSLVERSION), 6) 
+  NIFTILIB = -lNewNifti
+else 
+  NIFTILIB = -lfslio -lniftiio 
+endif
+
+LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
@@ -57,7 +64,7 @@ CXXFLAGS += -DGIT_SHA1=\"${GIT_SHA1}\" -DGIT_DATE="\"${GIT_DATE}\""
 all:	${XFILES} libfabbercore.a libfabberexec.a
 
 clean:
-	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.exe core depend.mk
+	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.exe core depend.mk fabber_test
 
 mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o 
 	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o rundata_newimage.o ${LIBS}
@@ -74,7 +81,7 @@ libfabberexec.a : ${EXECOBJS}
 	${AR} -r $@ ${EXECOBJS} 
 
 # Unit tests
-fabbertest: ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${TESTOBJS}
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${TESTINC} -o $@ ${OBJS} ${EXECOBJS} ${TESTOBJS} ${LIBS} ${TESTLIBS} 
+test: ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${TESTOBJS}
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${TESTINC} -o fabber_test ${OBJS} ${EXECOBJS} ${TESTOBJS} ${LIBS} ${TESTLIBS} 
 
 # DO NOT DELETE
