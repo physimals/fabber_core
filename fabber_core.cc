@@ -90,7 +90,8 @@ int execute(int argc, char **argv)
         set_environment();
 
         // Create a new Fabber run
-        FabberRunDataNewimage *params = new FabberRunDataNewimage(true);
+        FabberRunDataNewimage paramso(true);
+        FabberRunDataNewimage *params = &paramso;
         params->SetLogger(&log);
         params->Parse(argc, argv);
 
