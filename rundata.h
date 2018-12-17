@@ -128,6 +128,25 @@ private:
 };
 
 /**
+ * ProgressCheck which prints percentages on separate lines without % sign
+ *
+ * This is useful when parsing the output of the CL tool and is used when
+ * --simple-output is set.
+ */
+class SimpleProgressCheck : public PercentProgressCheck
+{
+public:
+    SimpleProgressCheck()
+        : m_last(-1)
+    {
+    }
+    void Progress(int voxel, int nVoxels);
+
+private:
+    int m_last;
+};
+
+/**
  * ProgressCheck which calls a C function pointer
  *
  * Used for the C API

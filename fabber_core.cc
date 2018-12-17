@@ -83,6 +83,7 @@ int execute(int argc, char **argv)
 {
     EasyLog log;
     bool gzLog = false;
+    bool simple_output = false;
     int ret = 1;
 
     try
@@ -152,23 +153,65 @@ int execute(int argc, char **argv)
 
             return 0;
         }
+        else if (params->GetBool("listparams")) 
+        {
+            string model = params->GetStringDefault("model", "");
+            std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
+            EasyLog log;
+            fwd_model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+            fwd_model->Initialize(*params);
 
+            vector<Parameter> model_params;
+            fwd_model->GetParameters(*params, model_params);
+            vector<Parameter>::iterator iter;
+            for (iter = model_params.begin(); iter != model_params.end(); ++iter)
+            {
+                cout << iter->name << endl;
+            }
+
+            return 0;
+        }
+        else if (params->GetBool("listoutputs")) 
+        {
+            string model = params->GetStringDefault("model", "");
+            std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
+            EasyLog log;
+            fwd_model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+            fwd_model->Initialize(*params);
+
+            vector<string> model_outputs;
+            fwd_model->GetOutputs(model_outputs);
+            vector<string>::iterator iter;
+            for (iter = model_outputs.begin(); iter != model_outputs.end(); ++iter)
+            {
+                cout << *iter << endl;
+            }
+
+            return 0;
+        }
         // Make sure command line tool creates a parameter names file
         params->SetBool("dump-param-names");
         // Link to latest run
         params->SetBool("link-to-latest");
-
-        cout << "----------------------" << endl;
-        cout << "Welcome to FABBER " << fabber_version() << endl;
-        cout << "----------------------" << endl;
-        cout << "Last commit: " << fabber_source_date() << endl;
+        params->SetExtentFromData();
+        simple_output = params->GetBool("simple-output");
 
         log.StartLog(params->GetOutputDir());
-        cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;
-
-        params->SetExtentFromData();
-        PercentProgressCheck percent;
-        params->Run(&percent);
+        if (!simple_output)
+        {
+            cout << "----------------------" << endl;
+            cout << "Welcome to FABBER " << fabber_version() << endl;
+            cout << "----------------------" << endl;
+            cout << "Last commit: " << fabber_source_date() << endl;
+            cout << "Logfile started: " << log.GetOutputDirectory() << "/logfile" << endl;
+            PercentProgressCheck progress;
+            params->Run(&progress);
+        }
+        else
+        {
+            SimpleProgressCheck progress;
+            params->Run(&progress);
+        }
 
         log.ReissueWarnings();
 
@@ -197,15 +240,18 @@ int execute(int argc, char **argv)
 
     if (log.LogStarted())
     {
-        cout << endl
-             << "Final logfile: " << log.GetOutputDirectory()
-             << (gzLog ? "/logfile.gz" : "/logfile") << endl;
+        if (!simple_output)
+        {
+            cout << endl
+                << "Final logfile: " << log.GetOutputDirectory()
+                << (gzLog ? "/logfile.gz" : "/logfile") << endl;
+        }
         log.StopLog(gzLog);
     }
     else
     {
-        // Flush any errors to stdout as we didn't get as far as starting the logfile
-        log.StartLog(cout);
+        // Flush any errors to stderr as we didn't get as far as starting the logfile
+        log.StartLog(cerr);
         log.StopLog();
     }
     return ret;

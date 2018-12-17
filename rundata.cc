@@ -120,12 +120,31 @@ void PercentProgressCheck::Progress(int voxel, int nVoxels)
     }
 }
 
+void SimpleProgressCheck::Progress(int voxel, int nVoxels)
+{
+    if (nVoxels == 0)
+    {
+        cout << "100" << endl;
+        return;
+    }
+
+    int percent = (100 * voxel) / nVoxels;
+    if (percent > m_last)
+    {
+        m_last = percent;
+        cout << m_last << endl << flush;
+    }
+}
+
 static OptionSpec OPTIONS[] = {
     { "help", OPT_BOOL, "Print this usage method. If given with --method or --model, display "
                         "relevant method/model usage information",
         OPT_NONREQ, "" },
     { "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
     { "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
+    { "listparams", OPT_BOOL, "List model parameters (requires model configuration options to be given)", OPT_NONREQ, "" },
+    { "listoutputs", OPT_BOOL, "List additional model outputs (requires model configuration options to be given)", OPT_NONREQ, "" },
+    { "simple-output", OPT_BOOL, "Instead of usual standard output, simply output series of lines each giving progress as percentage", OPT_NONREQ, "" },
     { "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
     { "overwrite", OPT_BOOL, "If set will overwrite existing output. If not set, new output "
                              "directories will be created by appending '+' to the directory name ",
@@ -212,6 +231,7 @@ void FabberRunData::init(bool compat_options)
 FabberRunData::~FabberRunData()
 {
 }
+
 void FabberRunData::LogParams()
 {
     map<string, string>::iterator iter;
@@ -243,7 +263,6 @@ void FabberRunData::Run(ProgressCheck *progress)
 
     // For backwards compatibility - model may not have called superclass initialize
     fwd_model->SetLogger(m_log);
-
     fwd_model->Initialize(*this);
 
     std::vector<Parameter> params;
