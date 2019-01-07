@@ -11,6 +11,7 @@
 #include "inference.h"
 #include "rundata_newimage.h"
 #include "version.h"
+#include "tools.h"
 
 #include <exception>
 #include <iostream>
@@ -185,6 +186,42 @@ int execute(int argc, char **argv)
             for (iter = model_outputs.begin(); iter != model_outputs.end(); ++iter)
             {
                 cout << *iter << endl;
+            }
+
+            return 0;
+        }
+        else if (params->GetBool("evaluate")) 
+        {
+            string model = params->GetStringDefault("model", "");
+            std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
+            EasyLog log;
+            fwd_model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+            fwd_model->Initialize(*params);
+
+            Matrix param_values = fabber::read_matrix_file(params->GetString("evaluate-params"));
+            ColumnVector p_vec = param_values.Column(1);
+
+            int n_ts = params->GetInt("evaluate-nt", 0);
+            ColumnVector data_vec(n_ts);
+            if (params->HaveKey("evaluate-data")) {
+                Matrix data_values = fabber::read_matrix_file(params->GetString("evaluate-data"));
+                data_vec = data_values.Column(0);
+            }
+            else {
+                data_vec = 0;
+            }
+
+            ColumnVector coords(3);
+            coords(1) = 1;
+            coords(2) = 1;
+            coords(3) = 1;
+            fwd_model->PassData(1, data_vec, coords);
+
+            ColumnVector o_vec(n_ts);
+            fwd_model->EvaluateModel(p_vec, o_vec, params->GetStringDefault("evaluate", ""));
+            for (unsigned int i = 0; i < o_vec.Nrows(); i++)
+            {
+                cout << o_vec(i+1) << endl;
             }
 
             return 0;
