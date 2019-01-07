@@ -190,7 +190,7 @@ int execute(int argc, char **argv)
 
             return 0;
         }
-        else if (params->GetBool("evaluate")) 
+        else if (params->HaveKey("evaluate")) 
         {
             string model = params->GetStringDefault("model", "");
             std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
