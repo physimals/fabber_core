@@ -501,10 +501,18 @@ int fabber_get_model_outputs(void *fab, unsigned int out_bufsize, char *out_buf,
 int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsigned int n_ts,
     float *indata, float *output, char *err_buf)
 {
+    return fabber_model_evaluate_output(fab, n_params, params, n_ts, indata, "", output, err_buf);
+}
+
+int fabber_model_evaluate_output(void *fab, unsigned int n_params, float *params, unsigned int n_ts,
+    float *indata, char *output_name, float *output, char *err_buf)
+{
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
     if (!params)
         return fabber_err(FABBER_ERR_FATAL, "Params array is NULL", err_buf);
+    if (!output_name)
+        return fabber_err(FABBER_ERR_FATAL, "Output name is NULL", err_buf);
     if (!output)
         return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
 
@@ -538,7 +546,7 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
         coords(2) = 1;
         coords(3) = 1;
         model->PassData(1, data_vec, coords);
-        model->EvaluateModel(p_vec, o_vec);
+        model->EvaluateModel(p_vec, o_vec, output_name);
         for (unsigned int i = 0; i < n_ts; i++)
         {
             // Model may not return the same number of timepoints as passed in!

@@ -243,6 +243,24 @@ FABBER_DLL_API int fabber_get_model_outputs(
 FABBER_DLL_API int fabber_model_evaluate(void *fab, unsigned int n_params, float *params,
     unsigned int n_ts, float *indata, float *output, char *err_buf);
 
+/**
+ * Evaluate the model for a given set of parameters with the option of returning one
+ * of the alternative model outputs (i.e. those returned by get_model_outputs).
+ *
+ * @param fab Fabber context, returned by fabber_new
+ * @param n_params Number of parameters passed
+ * @param params Array of parameter values in order returned by fabber_get_model_params
+ * @param n_ts Length of input data / output buffer, i.e. number of t-points to evaluate
+ * @param indata Array buffer for input data - may be NULL if not passing any input data
+ * @param output_name Name of output to return - empty string for the default output
+ * @param output Array buffer for output data
+ * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ *
+ * @return 0 on success, <0 on failure
+ */
+FABBER_DLL_API int fabber_model_evaluate_output(void *fab, unsigned int n_params, float *params, 
+    unsigned int n_ts, float *indata, char *output_name, float *output, char *err_buf);
+
 #ifdef __cplusplus
 }
 #endif
