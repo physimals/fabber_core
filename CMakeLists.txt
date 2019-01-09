@@ -71,8 +71,7 @@ else (FSL_BUILD)
                HINTS $ENV{FSLDIR}/extras/lib REQUIRED )
   find_library(NEWIMAGE_LIBRARY NAMES newimage libnewimage
                HINTS $ENV{FSLDIR}/lib REQUIRED )
-  find_library(BLAS_LIBRARY NAMES openblas libopenblas
-               REQUIRED )
+  find_library(BLAS_LIBRARY NAMES openblas libopenblas OPTIONAL )
 
   find_package(Boost)
   if(NOT Boost_FOUND)
@@ -99,8 +98,7 @@ else (FSL_BUILD)
   
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR} ${NEWMAT_INCLUDE_DIR} ${FSL_INCLUDE_DIR} ${FSL_EXTRAS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-  set(LIBS ${BLAS_LIBRARY}
-           ${NEWIMAGE_LIBRARY} 
+  set(LIBS ${NEWIMAGE_LIBRARY} 
            ${WARPFNS_LIBRARY}
            ${MISCMATHS_LIBRARY}
            ${NEWMAT_LIBRARY})
@@ -117,7 +115,7 @@ else (FSL_BUILD)
 
   if (NEWNIFTI_LIBRARY)
     Message("-- Using newnifti: ${NEWNIFTI_LIBRARY}")
-    set(LIBS ${LIBS} ${NEWNIFTI_LIBRARY})
+    set(LIBS ${BLAS_LIBRARY} ${LIBS} ${NEWNIFTI_LIBRARY})
   endif (NEWNIFTI_LIBRARY)
 
   set(LIBS ${LIBS} ${ZNZ_LIBRARY} ${ZLIB_LIBRARY})
