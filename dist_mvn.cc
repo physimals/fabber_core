@@ -75,7 +75,7 @@ MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
     }
     for (int row=1; row <= from2.m_size; row++) 
     {
-        for (int col=1; row <= from2.m_size; row++) 
+        for (int col=1; col <= from2.m_size; col++) 
         {
             covariance(from1.m_size + row, from1.m_size + col) = from2.GetCovariance()(row, col);
         }

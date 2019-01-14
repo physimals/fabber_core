@@ -366,6 +366,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &linear,
     const ColumnVector &data) const
 {
+    MakeQis(data.Nrows());
     const int nPhis = Qis.size();
     const WhiteParams &noise = dynamic_cast<const WhiteParams &>(noiseIn);
     const WhiteParams &noisePrior = dynamic_cast<const WhiteParams &>(noisePriorIn);
@@ -441,7 +442,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     if (!(F - F == 0))
     {
         LOG_ERR("WhiteNoiseModel::expectedLogThetaDist == " << expectedLogThetaDist << endl);
-        LOG_ERR("eWhiteNoiseModel::xpectedLogPhiDist == " << expectedLogPhiDist << endl);
+        LOG_ERR("WhiteNoiseModel::expectedLogPhiDist == " << expectedLogPhiDist << endl);
         // LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << endl);
         throw FabberInternalError("WhiteNoiseModel::Non-finite free energy!");
     }
