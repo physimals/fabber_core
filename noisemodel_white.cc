@@ -441,7 +441,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     if (!(F - F == 0))
     {
         LOG_ERR("WhiteNoiseModel::expectedLogThetaDist == " << expectedLogThetaDist << endl);
-        LOG_ERR("eWhiteNoiseModel::xpectedLogPhiDist == " << expectedLogPhiDist << endl);
+        LOG_ERR("WhiteNoiseModel::expectedLogPhiDist == " << expectedLogPhiDist << endl);
         // LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << endl);
         throw FabberInternalError("WhiteNoiseModel::Non-finite free energy!");
     }
