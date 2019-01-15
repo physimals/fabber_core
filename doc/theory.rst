@@ -4,7 +4,7 @@ Theory
 Forward model
 -------------
 
-The forward model :math:`M` varies according to application, and produces a predicted time series
+The forward model :math:`M` varies according to application, and produces a predicted *time series*
 for a set of parameter values :math:`P_n`:
 
 .. math::
@@ -16,7 +16,8 @@ values we wish to estimate (infer) from the data. For example in a CASL model th
 is a parameter of the model which predict the ASL signal but we may choose to regard this as fixed
 by the acquisition sequence and not infer it. 
 
-From here we will use the term *parameter* to mean those model parameters which we wish to infer.
+From here we will use the term *parameter* only for parameters of the model whose values we intend
+to infer.
 
 'Best Fit' modelling
 --------------------
@@ -45,10 +46,16 @@ Bayesian inference
 ------------------
 
 In the Bayesian picture of inference, we always start with some *prior* distribution for 
-the value of each parameter. This may be informed by experimental evidence in which case
-we may use an *informative* prior with a limited variance to constrain the likely values.
-Alternatively if the value could vary by a very wide degree we our prior may be *uninformative*
-which means its variance is very large.
+the value of each parameter. This represents what we know about the parameter's value *before*
+we have seen the data we are fitting it to.
+
+The prior may be based on experimental evidence in which case it may have a mean (the accepted
+experimental value) and a limited variance (reflecting the range of values obtained in 
+previous experiments). This is an example of an *informative* prior.
+
+Alternatively if the value of the parameter could vary by a very wide degree we our prior may
+be given some default mean with very large variance that effectively allows it to take on any
+possible value. This is an *uninformative* prior. 
 
 Prior distributions should not be informed by the data we are fitting, instead Bayesian inference
 calculates a *posterior* distribution for each parameter value which takes into account both
@@ -56,12 +63,21 @@ our prior knowledge (if any) and what the data says. Mathematically this is base
 
 .. math::
 
-    Bayes's theorem
+    P(value \mid data) = \frac{P(data \mid value) \, P(value)}{P(data)}
 
-So rather than determining the 'best fit' values of model parameters, the output is a
-set of posterior distributions which include information
-about the predicted mean value of each parameter, but also its variance. If the variance of 
-a parameter is high this means it's value is not precisely determined by the data, whereas
+Here :math:`P(value \mid data)`: is the posterior distribution of the parameter's value given
+the data we have. :math:`P(value)` is the prior distribution of the parameter's value. 
+:math:`P(data \mid value)` is the probability of getting the data we have given the value 
+of the parameter and is determined from the forward model together with some model of random
+noise. This term is known as the *likelihood*. The final term :math:`P(data)` is known as the
+*evidence*, and can generally be neglected as it only provides a normalization of the
+posterior distribution.
+
+So, rather than determining the 'best fit' values of model parameters, the output is a
+set of posterior distributions for each parameter which include information
+about the predicted mean value, and also its variance. If the variance of 
+a parameter's posterior distribution is high this means it's value is not precisely determined 
+by the data (i.e. there are a range of probable value which are consistent with the data), whereas
 if the variance of the posterior is low the value is well determined by the data (and/or the
 prior).
 
@@ -72,6 +88,10 @@ Advantages of the Bayesian approach include:
    the known range of expected T1 values. In conventional model fitting we would either need
    to fix the value of T1 or allow it to vary in any way to fit the data, potentially 
    resulting in physically unlikely parameter values (which nevertheless fit the data well!)
+
+ - Related to the above, we can potentially fit models which are formally 'over specified' 
+   by parameters (i.e. where there are different combinations of parameter values which 
+   produce identical output).
 
  - The output includes information about how confident we can be in the parameter values 
    as well as the values themselves.

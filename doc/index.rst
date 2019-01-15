@@ -13,7 +13,9 @@ general and could be applied to most problems involving fitting
 discrete data points to a nonlinear model.
 
 Bayesian nonlinear model fitting provides a more flexible alternative to
-traditional linear analysis of perfusion data. In multi-echo or
+traditional linear analysis of perfusion data. 
+
+In multi-echo or
 multi-inversion-time data, this approach uses all time points to
 estimate all the parameters of interest simultaneously. This can be more
 accurate because it uses a detailed nonlinear model of the pulse
