@@ -1,13 +1,12 @@
 // fwdmodel_sine.h - A simple sine curve fitting model
-
-#ifndef FWDMODEL_SINE_H
-#define FWDMODEL_SINE_H
+#pragma once
 
 #include "fabber_core/fwdmodel.h"
 
 #include "newmat.h"
 
 #include <string>
+#include <vector>
 
 class SineFwdModel : public FwdModel {
 public:
@@ -18,19 +17,17 @@ public:
     {
     }
 
-    void GetOptions(std::vector<OptionSpec>& opts) const;
-    std::string GetDescription() const;
     std::string ModelVersion() const;
+    std::string GetDescription() const;
+    void GetOptions(std::vector<OptionSpec> &opts) const;
 
-    void Initialize(FabberRunData& args);
-    int NumParams() const;
-    void NameParams(std::vector<std::string>& names) const;
-    void HardcodedInitialDists(MVNDist& prior, MVNDist& posterior) const;
-    void Evaluate(const NEWMAT::ColumnVector& params, NEWMAT::ColumnVector& result) const;
-
+    void Initialize(FabberRunData &args);
+    void EvaluateModel(const NEWMAT::ColumnVector &params, 
+                       NEWMAT::ColumnVector &result, 
+                       const std::string &key="") const;
+    
 private:
     bool m_include_offset;
     static FactoryRegistration<FwdModelFactory, SineFwdModel> registration;
 };
 
-#endif

@@ -10,7 +10,6 @@ CVS
 .DS_Store
 depend.mk
 testfabber
-doc
 .sconsign.dblite
 Debug
 Release
@@ -18,5 +17,5 @@ out*
 *.pyc
 build
 fabber_test
-
+doc/html
 
