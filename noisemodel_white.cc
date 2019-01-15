@@ -366,7 +366,6 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &linear,
     const ColumnVector &data) const
 {
-    MakeQis(data.Nrows());
     const int nPhis = Qis.size();
     const WhiteParams &noise = dynamic_cast<const WhiteParams &>(noiseIn);
     const WhiteParams &noisePrior = dynamic_cast<const WhiteParams &>(noisePriorIn);
