@@ -16,7 +16,7 @@ Spatial priors
 
 A spatial prior applies spatial regularization to the parameter so that the spatial
 variation in it's value is limited by the information present in the data. This has
-the effect of smoothing the parameter map in areas where there is not enought 
+the effect of smoothing the parameter map in areas where there is not enough 
 information in the data to justify more detail. 
 
 This can be beneficial since it produces smoother parameter maps with clearer 
@@ -26,7 +26,9 @@ and applies a degree of smoothing related to the information in the data.
 A spatial prior would be defined as follows::
 
     --PSP_byname1=myparam
-    --PSP_byname1_type=P
+    --PSP_byname1_type=M
+
+Valid spatial prior types are ``M``, ``m``, ``P``, and ``p``.
 
 Spatial priors are normally only applied to a single parameter which is representative
 of the overall scale of the data. Since all the parameters are linked in the model, 
