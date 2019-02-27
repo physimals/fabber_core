@@ -53,12 +53,12 @@ is `Quantiphyse <https://quantiphyse.readthedocs.io/en/latest/>`_.
    :maxdepth: 1
    :caption: Contents:
   
-   theory
    getting
    building
    running
    priors
    models
+   theory
    
 **Referencing Fabber**
 

@@ -16,19 +16,14 @@ Then building Fabber should be a case of:
 
 ::
 
+   cd fabber_core
    make
 
-There are some limitations to this:
-
--  You won’t get the shared library
--  You won’t get the tests or documentation built
--  You won’t get the Python API
-
-However it should use the same build tools as the rest of FSL which is
+This approach uses the same build tools as the rest of FSL which is
 important on some platforms, notably OSX.
 
-That’s not good enough for me
------------------------------
+I don't have an FSL distribution which supports development
+-----------------------------------------------------------
 
 Fabber has an alternative build system using ``cmake`` as its build
 tool. CMake is cross-platform and is designed for out-of-source builds,
@@ -94,13 +89,8 @@ need to follow these steps:
 1. Add your model source code into the fabber_core directory,
    e.g. \ ``fabber_core/fwdmodel_mine.cc`` and
    ``fabber_core/fwdmodel_mine.h``
-2. Edit CMakeLists.txt to add your model sources as follows
 
-.. raw:: html
-
-   <!-- -->
-
-::
+2. Edit CMakeLists.txt to add your model sources as follows::
 
    # Core objects - things that implement the framework for inference
-   set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc u
+   set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc)

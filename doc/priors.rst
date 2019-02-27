@@ -28,11 +28,13 @@ A spatial prior would be defined as follows::
     --PSP_byname1=myparam
     --PSP_byname1_type=M
 
-Valid spatial prior types are ``M``, ``m``, ``P``, and ``p``.
+The first options specifies which named parameter any additional ``--PSP_byname1_*`` options
+refer to. The second option sets the prior type as ``M`` which is the most common 
+type of spatial prior. Other supported types are ``m``, ``P`` and `p`.
 
 Spatial priors are normally only applied to a single parameter which is representative
 of the overall scale of the data. Since all the parameters are linked in the model, 
-the result will normally be that all parameters are smoothed appropriately.
+the result will generally be that all parameters are smoothed appropriately.
 
 ARD priors
 ----------
@@ -65,7 +67,8 @@ Image priors can be specified as follows::
 Note that the precision can be specified, this controls how free the model is to
 vary the parameter. Choosing a high precision (e.g. 1e6) effectively makes the
 image 'ground truth'. In this case we have given a precision of 100 which translates
-into a standard deviation of 0.1.
+into a standard deviation of 0.1, allowing *some* variation in the inferred value
+but ensuring it will remain close to the image value.
 
 Customizing priors
 ------------------
@@ -124,14 +127,13 @@ a transit time and it's normal prior has a mean of 1.3s and a precision of 5.
 Unfortunately this defines a Gaussian which has a significant probability of 
 being negative, which is probably not physically reasonable.
 
-We might choose to apply a log-transform to this parameter to avoid this proble. 
+We might choose to apply a log-transform to this parameter to avoid this problem. 
 But what should the mean and variance of the underlying Gaussian distribution
 (i.e. the distribution of the log of the value) be.
 
 We might naively assume that the same transform applies fir the mean, however this is not the
 case. If we choose :math:`log(1.3)` as our mean we are modelling the prior as 
 a log-normal distribution with a *geometric* mean of 1.3, which is subtly different.
-
 
 
 
