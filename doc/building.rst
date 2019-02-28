@@ -17,10 +17,11 @@ Then building Fabber should be a case of:
 ::
 
    cd fabber_core
-   make
+   make install
 
 This approach uses the same build tools as the rest of FSL which is
-important on some platforms, notably OSX.
+important on some platforms, notably OSX. It will install the updated
+code into whatever prefix you selected as ``FSLDEVDIR``.
 
 I don't have an FSL distribution which supports development
 -----------------------------------------------------------
