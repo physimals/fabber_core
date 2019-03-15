@@ -5,16 +5,17 @@ I have an official FSL distribution installed
 ---------------------------------------------
 
 You can build Fabber using the FSL build system. First you need to set
-up your development environment:
-
-::
+up your development environment::
 
    source $FSLDIR/etc/fslconf/fsl-devel.sh
    export FSLDEVDIR=<prefix to install into>
 
-Then building Fabber should be a case of:
+``FSLDEVDIR`` is an anternate prefix to ``FSLDIR`` which is used to 
+store updated code separately from the official FSL release. Most
+FSL-based scripts should use code installed in ``FSLDEVDIR`` in preference
+to the main FSL release code.
 
-::
+Building Fabber should be a case of::
 
    cd fabber_core
    make install
@@ -23,75 +24,59 @@ This approach uses the same build tools as the rest of FSL which is
 important on some platforms, notably OSX. It will install the updated
 code into whatever prefix you selected as ``FSLDEVDIR``.
 
-I don't have an FSL distribution which supports development
------------------------------------------------------------
+Building new or updated model libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Fabber has an alternative build system using ``cmake`` as its build
-tool. CMake is cross-platform and is designed for out-of-source builds,
-so you create a separate build directory and all the compiled files end
-up there. This helps to keep your source tree free of build artifacts.
+Model libraries are distributed separately from the Fabber core.
+If you need an updated version of a model library, for example
+the ASL model library, you first need to get the source code
+for the models library. A number of model libraries are
+available in our `Github repositories <https://github.com/ibme-qubic/>`_
+all named ``fabber_models_<name>``.
 
-Some convenience scripts are provided to build and install Fabber. You
-need to ensure that ``FSLDIR`` is set to point to wherever the FSL
-dependencies are installed, then for example to do a build which
-includes debug symbols on Linux or OSX you run:
+Then to build and install the updated model libraries you would then 
+run, for example::
 
-::
-
-   scripts/build.sh debug
-
-The executables and libraries will end up in ``build_debug``. Other
-options are:
-
-::
-
-   scripts/build.sh release
-
-   scripts/build.sh relwithdebinfo
-
-The last example is quite useful - it produces a release build with full
-optimization (typically about 2x faster than a debug build) but keeps
-the debug symbols in the executable so debugging is possible.
-
-You can also look at the scripts - they are very simple - to see the
-actual CMake commands being run.
-
-Pitfalls
-~~~~~~~~
-
-gcc vs Clang on OSX
-^^^^^^^^^^^^^^^^^^^
-
-OSX has Apple’s ``Clang`` compiler and the LLVM C++ standard library
-``libc++`` as its default for compiling C++. However FSL uses ``gcc``
-and the GNU ``libstdc++`` library for OSX builds. These are not
-compatible. If you are building against a standard FSL installation you
-need to force CMake to use ``gcc`` and ``libstdc++``. To do this:
-
-1. Uncomment the following line in CMakeLists.txt
-
-   set(CMAKE_CXX_FLAGS “${CMAKE_CXX_FLAGS} -std=c++11
-   -stdlib=libstdc++”)
-
-2. Add the following directives to the ``cmake`` command itself (edit
-   the scripts/build.sh script if you are using it):
-
-   -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++
+    cd fabber_models_asl
+    make install
 
 Adding your own models
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
+
+If you want to create your own model to use with the Fabber core
+model fitting engine, see `Building a new model`_. Once you've
+designed and coded your model there are two ways to incorporate
+it into the Fabber system:
+
+Adding models directly to the core
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you wish, you can add your own models directly into the Fabber source
 tree and build the executable as above. This is not generally
-recommended because your model will be built into libfabbercore, however
+recommended because your model will be built into the core executable, however
 it can be the quickest way to get an existing model built in. You will
 need to follow these steps:
 
-1. Add your model source code into the fabber_core directory,
-   e.g. \ ``fabber_core/fwdmodel_mine.cc`` and
-   ``fabber_core/fwdmodel_mine.h``
+1. Add your model source code into the fabber_core directory, e.g.::
 
-2. Edit CMakeLists.txt to add your model sources as follows::
+   fabber_core/fwdmodel_mine.cc
+   fabber_core/fwdmodel_mine.h
 
-   # Core objects - things that implement the framework for inference
-   set(CORE_SRC noisemodel.cc fwdmodel.cc inference.cc)
+2. Edit ``Makefile`` to add your model to the list of core objects, e.g.::
+
+   COREOBJS =  fwdmodel_mine.o noisemodel.o fwdmodel.o inference.o fwdmodel_linear.o fwdmodel_poly.o convergence.o motioncorr.o priors.o transforms.o
+
+3. Run ``make install`` again to build and install a new executable
+
+Creating a new models library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the preferred approach if you want to distribute your new models. A template
+for a new model library including a simple sine-function implementation is
+included with the Fabber source code in ``fabber_core/examples``. See
+`Building a new model`_ for a full tutorial on this example which includes
+how to set up the build scripts.
+
+.. _Building a new model: models
+
+

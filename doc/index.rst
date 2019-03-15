@@ -46,8 +46,8 @@ for ASL, CEST, DSC, DCE and dual echo fMRI data.
 Fabber is distributed as part of `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki>`_, 
 however you should ensure that you are using **FSL v6.0.1 as a minimum version**.
 
-A GUI tool for processing ASL, CEST and (soon) DSC and DCE data using Fabber
-is `Quantiphyse <https://quantiphyse.readthedocs.io/en/latest/>`_.
+The `Quantiphyse <https://quantiphyse.readthedocs.io/en/latest/>`_ visual analysis
+tool contains plugins to analyse ASL, CEST, DSC and DCE fMRI data using Fabber.
 
 .. toctree::
    :maxdepth: 1
