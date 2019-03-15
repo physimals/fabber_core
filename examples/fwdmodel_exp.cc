@@ -52,10 +52,13 @@ void ExpFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
 
     int p=0;
     for (int i=0; i<m_num; i++) {
+        // Infer log of parameter values to prevent negative values
         params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1, 100), DistParams(1, 100), PRIOR_NORMAL, TRANSFORM_LOG()));
         params.push_back(Parameter(p++, "r" + stringify(i+1), DistParams(1, 100), DistParams(1, 100), PRIOR_NORMAL, TRANSFORM_LOG()));
-        //params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1.0, 1e6), DistParams(1, 100)));
-        //params.push_back(Parameter(p++, "r" + stringify(i+1), DistParams(1, 1e6), DistParams(1, 100)));
+
+        // Infer parameter values directly
+        //params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1, 100), DistParams(1, 100)));
+        //params.push_back(Parameter(p++, "r" + stringify(i+1), DistParams(1, 100), DistParams(1, 100)));
     }
 }
 
@@ -69,10 +72,6 @@ void ExpFwdModel::EvaluateModel(const NEWMAT::ColumnVector &params,
     for (int i=0; i<m_num; i++) {
         double amp = params(2*i+1);
         double r = params(2*i+2);
-        //if (amp < 1e-6) amp = 1e-6;
-        //if (r < 1e-6) r = 1e-6;
-        //if (amp > 100) amp = 100;
-        //if (r > 100) r = 100;
         for (int i=0; i < data.Nrows(); i++)
         {
             double t = double(i) * m_dt;
