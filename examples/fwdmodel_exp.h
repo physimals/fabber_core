@@ -1,4 +1,4 @@
-// fwdmodel_sine.h - A simple sine curve fitting model
+// fwdmodel_exp.h - A simple exponential decay fitting model
 #pragma once
 
 #include "fabber_core/fwdmodel.h"
@@ -8,12 +8,12 @@
 #include <string>
 #include <vector>
 
-class SineFwdModel : public FwdModel {
+class ExpFwdModel : public FwdModel {
 public:
     static FwdModel* NewInstance();
 
-    SineFwdModel()
-        : m_include_offset(false)
+    ExpFwdModel()
+        : m_num(1), m_dt(1.0)
     {
     }
 
@@ -26,8 +26,14 @@ public:
                        NEWMAT::ColumnVector &result, 
                        const std::string &key="") const;
     
+    void InitVoxelPosterior(MVNDist &posterior) const;
+
+protected:
+    void GetParameterDefaults(std::vector<Parameter> &params) const;
+
 private:
-    bool m_include_offset;
-    static FactoryRegistration<FwdModelFactory, SineFwdModel> registration;
+    int m_num;
+    double m_dt;
+    static FactoryRegistration<FwdModelFactory, ExpFwdModel> registration;
 };
 

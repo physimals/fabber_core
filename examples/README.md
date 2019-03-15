@@ -3,9 +3,9 @@
 This example provides a complete template module for a model of your own. To adapt it to your own model you will
 need to do, as a minimum, the following:
 
- - Replace `sine` in all files with the name of your model (including `CMakeLists.txt`)
+ - Replace `exp` in all files with the name of your model (including `Makefile`)
 
- - Rename files to replace `sine` with your model name
+ - Rename files to replace `exp` with your model name
  
  - Edit `<model_name>_models.cc` to return the name of your model and its constructor function
  

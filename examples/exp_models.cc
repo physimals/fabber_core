@@ -1,5 +1,5 @@
-#include "sine_models.h"
-#include "fwdmodel_sine.h"
+#include "exp_models.h"
+#include "fwdmodel_exp.h"
 
 #include <fabber_core/fwdmodel.h>
 
@@ -14,7 +14,7 @@ const char *CALL get_model_name(int index)
     switch (index)
     {
     case 0:
-        return "sine";
+        return "exp";
         break;
     default:
         return NULL;
@@ -23,9 +23,9 @@ const char *CALL get_model_name(int index)
 
 NewInstanceFptr CALL get_new_instance_func(const char *name)
 {
-    if (string(name) == "sine")
+    if (string(name) == "exp")
     {
-        return SineFwdModel::NewInstance;
+        return ExpFwdModel::NewInstance;
     }
     else
     {
