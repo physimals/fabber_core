@@ -1,11 +1,19 @@
 Building Fabber
 ===============
 
-I have an official FSL distribution installed
----------------------------------------------
+Building Fabber using an installed FSL distribution
+---------------------------------------------------
 
-You can build Fabber using the FSL build system. First you need to set
-up your development environment::
+**You will need FSL to build Fabber** - it requires a number of
+libraries distributed as part of FSL. In addition the Fabber
+``Makefile`` is based around the FSL build system.
+
+.. note::
+    An additional ``cmake`` based build system also exists
+    for use particularly on Windows. We will not describe this
+    here.
+
+First you need to set up an FSL development environment::
 
    source $FSLDIR/etc/fslconf/fsl-devel.sh
    export FSLDEVDIR=<prefix to install into>
@@ -57,12 +65,16 @@ recommended because your model will be built into the core executable, however
 it can be the quickest way to get an existing model built in. You will
 need to follow these steps:
 
-1. Add your model source code into the fabber_core directory, e.g.::
+1. Add your model source code into the fabber_core directory, e.g. 
+
+::
 
    fabber_core/fwdmodel_mine.cc
    fabber_core/fwdmodel_mine.h
 
-2. Edit ``Makefile`` to add your model to the list of core objects, e.g.::
+2. Edit ``Makefile`` to add your model to the list of core objects, e.g. 
+
+::
 
    COREOBJS =  fwdmodel_mine.o noisemodel.o fwdmodel.o inference.o fwdmodel_linear.o fwdmodel_poly.o convergence.o motioncorr.o priors.o transforms.o
 
@@ -77,6 +89,6 @@ included with the Fabber source code in ``fabber_core/examples``. See
 `Building a new model`_ for a full tutorial on this example which includes
 how to set up the build scripts.
 
-.. _Building a new model: models
+.. _Building a new model: models.html
 
 

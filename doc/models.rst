@@ -18,7 +18,7 @@ the class ``FwdModel``. As an example, we will create a model which fits the
 data to sum of exponential functions, each with an amplitude and decay rate.
 
 .. math::
-    \sum{A_n\exp(-R_nt)
+    \sum_n{A_n\exp(-R_nt)}
 
 .. note::
     The source code and ``Makefile`` file for this example are in the
@@ -66,7 +66,7 @@ will need to implement::
     };
 
 We have not made our methods virtual, so nobody will be able to create a
-subclass of our model. If we wanted this to be the case all themake 
+subclass of our model. If we wanted this to be the case all the 
 non-static methods would need to be virtual, and we would need to add a
 virtual destructor. This is sometimes useful when you want to create 
 variations on a basic model.
@@ -145,7 +145,7 @@ and what the time resolution in the data is. Each option is listed in the ``OPTI
 An option is described by:
 
  - It's name which generally should *not* include underscores (hyphen is OK as in this
-   case). This translates into a command line option ``--use-offset``.
+   case). The name translates into a command line option e.g. ``--num-exps``.
  - An option type. Possibilities are:
     - ``OPT_BOOL`` for a Yes/No boolean
     - ``OPT_FLOAT`` for a decimal number
@@ -168,7 +168,7 @@ An option is described by:
 In this case we have made the time resolution option mandatory, but the number
 of exponentials defaults to 1 if not specified.
 
-This option system is a little cumbersome when there is only one option, but if
+This option system is a little cumbersome when there is only a couple of options, but if
 you have many it will make it clear to see what they are. Most
 real models will have many configuration options, for example an ASL
 model will need to know details of the sequence such as the TIs/PLDs, 
@@ -180,7 +180,7 @@ in the ``Initialize`` method. ``Initialize`` is called before the model
 will be used. Its purpose is to allow the model to set up any internal 
 variables based on the user-supplied options. Here we capture the
 time resolution option and the number of exponentials - note that
-the latter has a default value.
+the latter has a default value::
 
     void ExpFwdModel::Initialize(FabberRunData& rundata)
     {
@@ -310,7 +310,7 @@ Then to build and install our new model library we can just do::
 
     make install
 
-.. _Building Fabber: building
+.. _Building Fabber: building.html
 
 This creates an executable ``fabber_exp`` which installs into 
 ``$FSLDEVDIR/bin``. This executable contains the built-in
@@ -324,7 +324,7 @@ Testing the model - single exponential
 
 A Python interface to Fabber is available which includes a simple
 self-test framework for models. To use this you will need to get
-the ``pyfab`` package - see `pyfab.readthedocs.io`_ for more information
+the ``pyfab`` package - see pyfab.readthedocs.io for more information
 on installing this package.
 
 Once installed a simple test script for this model might look like this
@@ -481,11 +481,11 @@ Initialising the posterior
 The initial posterior is a 'first guess' at the parameter values
 and can be based on the data. Fabber models can use their knowledge
 of the model to make a better guess by overriding the ``InitVoxelPosterior``
-method. We firstly add this method to ``fwdmodel_exp.h``
+method. We firstly add this method to ``fwdmodel_exp.h``::
 
     void InitVoxelPosterior(MVNDist &posterior) const;
 
-Now we implement it in ``fwdmodel_exp.cc``
+Now we implement it in ``fwdmodel_exp.cc``::
 
     void ExpFwdModel::InitVoxelPosterior(MVNDist &posterior) const
     {
@@ -532,24 +532,24 @@ as follows::
 With these changes we still retain some bad fitting voxels but 
 fewer than previously. The output of the test script is now::
 
-    python test_biexp.py --save
+    python test_biexp.py --saveike this::
     Running self test for model exp
     Saving test data to Nifti file: test_data_exp
     Saving clean data to Nifti file: test_data_exp_clean
     Inverting test data - running Fabber: 100%
 
     Parameter: amp1
-    Input 1.000000 -> 9.651313 Output
-    Input 0.500000 -> 0.499837 Output
+    Input 1.000000 -> 0.714108 Output
+    Input 0.500000 -> 0.498471 Output
     Parameter: r1
-    Input 1.000000 -> 6.453277 Output
-    Input 0.800000 -> 124170.593750 Output
-    Noise: Input 0.100000 -> 0.099531 Output
+    Input 1.000000 -> 4.898833 Output
+    Input 0.800000 -> 4.674414 Output
+    Noise: Input 0.100000 -> 0.099399 Output
 
-So we have a reduction in the number of extreme values. In this case we can't actually trust the 
+So we clearly have a reduction in the number of extreme values. In this case we can't actually trust the 
 self-test output because sometimes the inference 'swaps' the exponentials around making 
 ``amp1`` = ``amp2`` and ``r1`` = ``r2``. But viewing the model fit 
-visually shows sensible fitting in the overwhelming majority of voxels::
+visually shows sensible fitting in the overwhelming majority of voxels:
 
 .. image:: exp_test_biexp_improved.png
 
