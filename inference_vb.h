@@ -146,8 +146,14 @@ protected:
     /** True if we need to to save the final free energy */
     bool m_saveF;
 
+    /** True if we need to to save the free energy history */
+    bool m_saveFsHistory;
+
     /** Free energy for each voxel */
     std::vector<double> resultFs;
+
+    /** Free energy history for each voxel / iteration number */
+    std::vector<std::vector<double> > resultFsHistory;
 
     /** Voxelwise input data */
     const NEWMAT::Matrix *m_origdata;

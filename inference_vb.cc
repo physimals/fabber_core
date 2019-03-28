@@ -103,6 +103,7 @@ void Vb::Initialize(FwdModel *fwd_model, FabberRunData &rundata)
 
     // Figure out if F needs to be calculated every iteration
     m_saveF = rundata.GetBool("save-free-energy");
+    m_saveFsHistory = rundata.GetBool("save-free-energy-history");
     m_printF = rundata.GetBool("print-free-energy");
 
     // Motion correction related setup - by default no motion correction
@@ -156,6 +157,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
 
     // Initialized during calculation
     resultFs.resize(m_nvoxels, 9999); // 9999 is a garbage default value
+    resultFsHistory.resize(m_nvoxels);
 
     // Whether to fix the linearization centres (default: false)
     vector<MVNDist *> lockedLinearDists;
@@ -231,7 +233,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
         // inefficient but not harmful because all convergence detectors are the same type
         m_conv[v - 1] = ConvergenceDetector::NewFromName(conv_name);
         m_conv[v - 1]->Initialize(rundata);
-        m_needF = m_conv[v - 1]->UseF() || m_printF || m_saveF;
+        m_needF = m_conv[v - 1]->UseF() || m_printF || m_saveF || m_saveFsHistory;
 
         m_ctx->noise_prior[v - 1] = initialNoisePrior->Clone();
         m_noise->Precalculate(
@@ -410,6 +412,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
     m_model->GetParameters(rundata, params);
     vector<Prior *> priors = PriorFactory(rundata).CreatePriors(params);
 
+    LOG << "Vb::Voxelwise calculations loop" << endl;
     // Loop over voxels
     for (int v = 1; v <= m_nvoxels; v++)
     {
@@ -427,6 +430,7 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
         // Give an indication of the progress through the voxels;
         rundata.Progress(v, m_nvoxels);
         double F = 1234.5678;
+        double Fprior = 0;
 
         try
         {
@@ -437,30 +441,19 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
             // convergence testing)
             do
             {
-                double Fprior = 0;
-
-                if (m_conv[v - 1]->NeedRevert()) // revert to previous solution if the convergence
-                                                 // detector calls for it
-                {
-                    *m_ctx->noise_post[v - 1] = *noisePosteriorSave;
-                    m_ctx->fwd_post[v - 1] = fwdPosteriorSave;
-                    m_ctx->fwd_prior[v - 1] = fwdPriorSave;
-                    m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
-                    if (m_debug)
-                        DebugVoxel(v, "Reverted");
-                }
-
-                // Save old values if called for
+                // Save old values if the convergence detector found that they were the best so far
                 if (m_conv[v - 1]->NeedSave())
                 {
                     *noisePosteriorSave = *m_ctx->noise_post[v - 1]; // copy values, not pointer!
                     fwdPosteriorSave = m_ctx->fwd_post[v - 1];
                     fwdPriorSave = m_ctx->fwd_prior[v - 1];
+                    if (m_debug)
+                        DebugVoxel(v, "Saving as best solution so far");
                 }
 
                 for (int k = 0; k < m_num_params; k++)
                 {
-                    Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
+                    Fprior = priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
                 }
 
                 if (m_debug)
@@ -494,6 +487,8 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                     DebugVoxel(v, "Re-centered");
 
                 F = CalculateF(v, "lin", Fprior);
+                if (m_saveFsHistory) 
+                    resultFsHistory.at(v - 1).push_back(F);
 
                 ++m_ctx->it;
             } while (!m_conv[v - 1]->Test(F));
@@ -501,13 +496,26 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
             if (m_debug)
                 LOG << "Converged after " << m_ctx->it << " iterations" << endl;
 
-            // Revert to old values at last stage if required
+            // Save old values if best so far FIXME is this needed?
+            if (m_conv[v - 1]->NeedSave())
+            {
+                *noisePosteriorSave = *m_ctx->noise_post[v - 1]; // copy values, not pointer!
+                fwdPosteriorSave = m_ctx->fwd_post[v - 1];
+                fwdPriorSave = m_ctx->fwd_prior[v - 1];
+                if (m_debug)
+                    DebugVoxel(v, "Saving as best solution at end");
+            }
+
+            // Revert to previous best values at last stage if required
             if (m_conv[v - 1]->NeedRevert())
             {
                 *m_ctx->noise_post[v - 1] = *noisePosteriorSave;
                 m_ctx->fwd_post[v - 1] = fwdPosteriorSave;
                 m_ctx->fwd_prior[v - 1] = fwdPriorSave;
                 m_lin_model[v - 1].ReCentre(m_ctx->fwd_post[v - 1].means);
+                if (m_debug)
+                        DebugVoxel(v, "Reverted to better solution");
+                F = CalculateF(v, "revert", Fprior);
             }
 
             delete noisePosteriorSave;
@@ -536,6 +544,8 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
                 = new MVNDist(m_ctx->fwd_post[v - 1], m_ctx->noise_post[v - 1]->OutputAsMVN());
             if (m_needF)
                 resultFs.at(v - 1) = F;
+            if (m_saveFsHistory) 
+                resultFsHistory.at(v - 1).push_back(F);
         }
         catch (...)
         {
@@ -549,6 +559,8 @@ void Vb::DoCalculationsVoxelwise(FabberRunData &rundata)
             resultMVNs.at(v - 1) = tmp;
             if (m_needF)
                 resultFs.at(v - 1) = F;
+            if (m_saveFsHistory) 
+                resultFsHistory.at(v - 1).push_back(F);
         }
     }
     for (unsigned int i = 0; i < priors.size(); i++)
@@ -977,5 +989,40 @@ void Vb::SaveResults(FabberRunData &rundata) const
     {
         LOG << "Vb::Free energy wasn't recorded, so no freeEnergy data saved" << endl;
     }
+
+    // Save the Free Energy history
+    if ((nVoxels > 0)  && m_saveFsHistory && !resultFsHistory.empty())
+    {
+        LOG << "Vb::Writing free energy history" << endl;
+        assert((int)resultFsHistory.size() == nVoxels);
+        int num_iters = resultFsHistory[0].size();
+        for (int vox = 1; vox <= nVoxels; vox++)
+        {
+            if (resultFsHistory[vox-1].size() > num_iters) 
+            {
+                num_iters = resultFsHistory[vox-1].size();
+            }
+        }
+
+        LOG << "Vb::Maximum number of iterations for a voxel was: " << num_iters << endl;
+        Matrix freeEnergyHistory;
+        freeEnergyHistory.ReSize(num_iters, nVoxels);
+        for (int vox = 1; vox <= nVoxels; vox++)
+        {
+            for (int iter=1; iter <= num_iters; iter++) 
+            {
+                if (iter <= resultFsHistory.at(vox - 1).size()) 
+                {
+                    freeEnergyHistory(iter, vox) = resultFsHistory.at(vox - 1).at(iter-1);
+                }
+                else 
+                {
+                    freeEnergyHistory(iter, vox) = resultFsHistory.at(vox - 1).at(resultFsHistory.at(vox - 1).size()-1);
+                }
+            }
+        }
+        rundata.SaveVoxelData("freeEnergyHistory", freeEnergyHistory);
+    }
+    
     LOG << "Vb::Done writing results." << endl;
 }
