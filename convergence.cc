@@ -166,43 +166,75 @@ bool TrialModeConvergenceDetector::Test(double F)
     // if we are not in trial mode
     if (!m_trialmode)
     {
-        // if F has reduced then we will enter trial mode
         if (diff < 0)
         {
+            // if F has reduced then we will enter trial mode. Don't overwrite 
+            // our best F so far
             ++m_trials;
             m_trialmode = true;
             m_revert = true;
             m_save = false;
+            return false;
         }
-        return FchangeConvergenceDetector::Test(F);
+        else {
+            double absdiff = diff > 0 ? diff : -diff;
+            if (absdiff < m_min_fchange) {
+                // F has increased by less than tolerance - stop here and don't revert
+                m_reason = "F increased by less than tolerance";
+                m_revert = false;
+                m_save = false;
+                return true;
+            }
+            else {
+                // F has increased by more than tolerance - continue, and save as best so far 
+                m_save = true;
+                m_revert = false;
+                m_prev_f = F;
+                return false;
+            }
+        }
     }
     // if we are in trial mode
     else
     {
         ++m_trials;
 
-        // if F has improved over our previous best then resume iterations
-        // FIXME not necessarily improved over previous best, just over
-        // previous decrease. Should save=true?
         if (diff > 0)
         {
-            m_trialmode = false;
-            m_save = true;
-            m_revert = false;
-            m_trials = 0; // reset number of trials for future use
-            return FchangeConvergenceDetector::Test(F);
+            double absdiff = diff > 0 ? diff : -diff;
+            if (absdiff < m_min_fchange) {
+                // if F has improved over our previous best and by less than tolerance
+                // - stop here and don't revert
+                m_reason = "F increased by less than tolerance during trial mode";
+                m_revert = false;
+                m_save = false;
+                return true;
+            }
+            else {
+                // F has increased over previous best by more than tolerance - continue iterations
+                // and save as best so far 
+                m_trialmode = false;
+                m_trials = 0;
+                m_save = true;
+                m_revert = false;
+                m_prev_f = F;
+                return false;
+            }
         }
-        // if we have exceeded max trials then stop and output previous best result
         else if (m_trials >= m_max_trials)
         {
+            // if we have exceeded max trials then stop and revert to previous best result
             m_reason = "Reached max trials";
+            m_save = false;
+            m_revert = true;
             return true;
         }
-        // otherwise continue in trial mode for time being. FIXME do we want
-        // to stop if difference is < 0 but very small?
         else
         {
-            return FchangeConvergenceDetector::Test(F);
+            // otherwise continue in trial mode for time being.
+            m_save = false;
+            m_revert = false;
+            return false;
         }
     }
 }
