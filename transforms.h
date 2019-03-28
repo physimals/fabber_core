@@ -205,11 +205,15 @@ class FractionalTransform : public Transform
 public:
     double ToModel(double val) const
     {
-        return 1 / (1 + exp(val));
+        if (val > 10) return 0;
+        else if (val < -10) return 1;
+        else return 1 / (1 + exp(val));
     }
     double ToFabber(double val) const
     {
-        return log(1 / val - 1);
+        if (val == 0) return 1e6;
+        else if (val == 1) return -1e6; 
+        else return log(1 / val - 1);
     }
     double ToModelVar(double val) const
     {
