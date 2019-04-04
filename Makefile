@@ -8,12 +8,13 @@ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
 FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
 ifeq ($(FSLVERSION), 5) 
   NIFTILIB = -lfslio -lniftiio 
-  LIB_NEWMAT = ${LIB_NEWMAT} -lnewmat
+  MATLIB = -lnewmat
 else 
   NIFTILIB = -lNewNifti
+  MATLIB = -lopenblas
 endif
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob -L${LIB_NEWMAT} ${NIFTILIB} -lznz -lz -ldl
+LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
