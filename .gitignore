@@ -18,4 +18,5 @@ out*
 build
 fabber_test
 doc/html
-
+examples/*.nii
+examples/fabber_exp
