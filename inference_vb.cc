@@ -995,7 +995,7 @@ void Vb::SaveResults(FabberRunData &rundata) const
     {
         LOG << "Vb::Writing free energy history" << endl;
         assert((int)resultFsHistory.size() == nVoxels);
-        int num_iters = resultFsHistory[0].size();
+        size_t num_iters = resultFsHistory[0].size();
         for (int vox = 1; vox <= nVoxels; vox++)
         {
             if (resultFsHistory[vox-1].size() > num_iters) 

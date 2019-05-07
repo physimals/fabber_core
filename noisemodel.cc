@@ -42,7 +42,7 @@ double NoiseModel::SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDis
 {
     double Fard = 0;
 
-    if (~ardindices.empty())
+    if (!ardindices.empty())
     {
         SymmetricMatrix PriorPrec;
         PriorPrec = thetaPrior.GetPrecisions();
@@ -72,7 +72,7 @@ double NoiseModel::UpdateARD(
 {
     double Fard = 0;
 
-    if (~ardindices.empty())
+    if (!ardindices.empty())
     {
         SymmetricMatrix PriorCov;
         SymmetricMatrix PostCov;
