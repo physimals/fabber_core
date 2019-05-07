@@ -172,6 +172,29 @@ int execute(int argc, char **argv)
 
             return 0;
         }
+        else if (params->GetBool("descparams")) 
+        {
+            string model = params->GetStringDefault("model", "");
+            std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
+            EasyLog log;
+            fwd_model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+            fwd_model->Initialize(*params);
+
+            vector<Parameter> model_params;
+            fwd_model->GetParameters(*params, model_params);
+            vector<Parameter>::iterator iter;
+            for (iter = model_params.begin(); iter != model_params.end(); ++iter)
+            {
+                cout << iter->name << " " << iter->desc;
+                if (iter->units != "") 
+                {
+                    cout << " (units: " << iter->units << ")";
+                }
+                cout << endl;
+            }
+
+            return 0;
+        }
         else if (params->GetBool("listoutputs")) 
         {
             string model = params->GetStringDefault("model", "");

@@ -213,6 +213,23 @@ FABBER_DLL_API int fabber_get_model_params(
     void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf);
 
 /**
+ * Get a list of model parameters with descriptions. Note that this will depend
+ * on the options specified, so must be called after all options are set
+ *
+ * @param fab Fabber context, returned by fabber_new
+ * @param out_bufsize Size of the output buffer. If too small, no output is returned
+ * @param out_buf Char buffer of size out_bufsize to receive output. Each line will
+ *                contain parameter name followed by a space followed by an optinal 
+ *                description string followed by the optional terminating string 
+ *                (units: <units>)
+ * @param err_buf Optional buffer for error message. Max message length=FABBER_ERR_MAXC
+ *
+ * @return 0 on success, <0 on failure
+ */
+FABBER_DLL_API int fabber_get_model_param_descs(
+    void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf);
+
+/**
  * Get a list of additional model-specific timeseries data that will be output. This
  * could depend on the options specified, so must be called after all options are set
  *

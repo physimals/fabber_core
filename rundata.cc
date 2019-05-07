@@ -143,6 +143,7 @@ static OptionSpec OPTIONS[] = {
     { "listmethods", OPT_BOOL, "List all known inference methods", OPT_NONREQ, "" },
     { "listmodels", OPT_BOOL, "List all known forward models", OPT_NONREQ, "" },
     { "listparams", OPT_BOOL, "List model parameters (requires model configuration options to be given)", OPT_NONREQ, "" },
+    { "descparams", OPT_BOOL, "Descript model parameters (name, description, units) - requires model configuration options to be given. Note that not all models provide parameter descriptions", OPT_NONREQ, "" },
     { "listoutputs", OPT_BOOL, "List additional model outputs (requires model configuration options to be given)", OPT_NONREQ, "" },
     { "evaluate", OPT_STR, "Evaluate model. Set to name of output required or blank for default output. Requires model configuration options, --evaluate-params and --evaluate-nt", OPT_NONREQ, "" },
     { "evaluate-params", OPT_MATRIX, "List of parameter values for evaluation", OPT_NONREQ, "" },
@@ -216,7 +217,7 @@ void FabberRunData::init(bool compat_options)
 {
     FabberSetup::SetupDefaults();
 
-    if (compat_options)
+    if (compat_options && !GetBool("no-compat-output"))
     {
         // For backwards compatibility with previous version of Fabber, save these data items by
         // default

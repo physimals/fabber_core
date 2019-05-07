@@ -456,6 +456,52 @@ int fabber_get_model_params(void *fab, unsigned int out_bufsize, char *out_buf, 
     }
 }
 
+int fabber_get_model_param_descs(void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf)
+{
+    if (!fab)
+        return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
+    if (!out_buf)
+        return fabber_err(FABBER_ERR_FATAL, "Output buffer is NULL", err_buf);
+
+    try
+    {
+        FabberRunDataArray *rundata = (FabberRunDataArray *)fab;
+        std::auto_ptr<FwdModel> model(FwdModel::NewFromName(rundata->GetString("model")));
+        EasyLog log;
+        model->SetLogger(&log); // We ignore the log but this stops it going to cerr
+        model->Initialize(*rundata);
+        vector<Parameter> params;
+        model->GetParameters(*rundata, params);
+        stringstream out;
+        vector<Parameter>::iterator iter;
+        for (iter = params.begin(); iter != params.end(); ++iter)
+        {
+            out << iter->name << " " << iter->desc;
+            if (iter->units != "") 
+            {
+                out << " (units: " << iter->units << ")";
+            }
+            out << endl;
+        }
+        string outstr = out.str();
+        if (outstr.size() >= out_bufsize)
+        {
+            return fabber_err(-1, "Buffer too small", err_buf);
+        }
+        strncpy(out_buf, outstr.c_str(), outstr.size());
+        out_buf[outstr.size()] = '\0';
+        return 0;
+    }
+    catch (exception &e)
+    {
+        return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
+    }
+    catch (...)
+    {
+        return fabber_err(FABBER_ERR_FATAL, "Error in get_model_params", err_buf);
+    }
+}
+
 int fabber_get_model_outputs(void *fab, unsigned int out_bufsize, char *out_buf, char *err_buf)
 {
     if (!fab)
