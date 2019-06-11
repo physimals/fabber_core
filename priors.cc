@@ -286,103 +286,135 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
     if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter))
     {
+        // m_akmean is a global (all voxels) spatial precision variable for 
+        // the parameter. It determines the degree of smoothness
+        // and is estimated from the data. We update it on the first
+        // voxel (unless it is the first iteration and m_update_first_iter 
+        // is false). See Penny et all 2004
         m_akmean = CalculateAkmean(ctx);
     }
 
-    double weight8 = 0; // weighted +8
-    double contrib8 = 0.0;
+    // Loop over nearest neighbours of the current voxel
+    // These have weighting +8
+    int nn = ctx.neighbours[ctx.v - 1].size();
+    double contrib_nn = 0.0;
     for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
          nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        contrib8 += 8 * neighbourPost.means(m_idx + 1);
-        weight8 += 8;
+        contrib_nn += 8 * neighbourPost.means(m_idx + 1);
     }
 
-    double weight12 = 0; // weighted -1, may be duplicated
-    double contrib12 = 0.0;
+    // Loop over second neighbours of the current voxel. Note that this list
+    // contains duplicates of voxels which can be reached by two different routes.
+    // By giving each a weighting of -1, this automatically generates the weightings 
+    // of -1 and -2 for linearly/diagonally connected voxels, as shown in Penny et 
+    // al 2004, Fig 3
+    int nn2 = ctx.neighbours2[ctx.v - 1].size();
+    double contrib_nn2 = 0.0;
     for (vector<int>::const_iterator nidIt = ctx.neighbours2[ctx.v - 1].begin();
          nidIt != ctx.neighbours2[ctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        contrib12 += -neighbourPost.means(m_idx + 1);
-        weight12 += -1;
+        contrib_nn2 += -neighbourPost.means(m_idx + 1);
     }
 
-    int nn = ctx.neighbours[ctx.v - 1].size();
-
+    // In the original Penny prior, the number of neighbours is fixed by the number
+    // of spatial dimensions, but this is not correct at the edges of the volume
     if (m_type_code == PRIOR_SPATIAL_p)
     {
         assert(nn <= m_spatial_dims * 2);
-        weight8 = 8 * 2 * m_spatial_dims;
-        weight12 = -1 * (4 * m_spatial_dims * m_spatial_dims - nn);
+        nn = 2 * m_spatial_dims;
+        nn2 = 4 * m_spatial_dims * m_spatial_dims - nn;
     }
 
+    // Prior precision
+    //
+    // The precision of the prior depends on the degree of spatial regularization
+    // (m_akmean) and the number of neighbours.
+     
+    // Calculate spatial precision for each prior type
     double spatial_prec = 0;
-
-    if (m_type_code == PRIOR_SPATIAL_P)
+    if (m_type_code == PRIOR_SPATIAL_M)
+        spatial_prec = m_akmean * (nn + 1e-8);
+    else if (m_type_code == PRIOR_SPATIAL_P)
         spatial_prec = m_akmean * (nn * nn + nn);
     else if (m_type_code == PRIOR_SPATIAL_m)
         spatial_prec = m_akmean * m_spatial_dims * 2;
-    else if (m_type_code == PRIOR_SPATIAL_M)
-        spatial_prec = m_akmean * (nn + 1e-8);
     else if (m_type_code == PRIOR_SPATIAL_p)
         spatial_prec = m_akmean * (4 * m_spatial_dims * m_spatial_dims + nn);
     else
         assert(false);
 
-    // Set the prior precision for this parameter
     SymmetricMatrix precs = prior->GetPrecisions();
     if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
     {
-        //	Penny-style DirichletBC priors -- ignoring initialFwdPrior completely!
+        // Penny-style DirichletBC prior ignores original prior precision completely
         precs(m_idx + 1, m_idx + 1) = spatial_prec;
     }
     else
     {
+        // All other priors set a prior precision based on the sum of the original
+        // prior precision and the spatial precision - i.e. spatial smoothing
+        // makes prior more informative
         precs(m_idx + 1, m_idx + 1) = m_params.prec() + spatial_prec;
     }
     prior->SetPrecisions(precs);
 
-    // Set the prior mean for this parameter
-    // Note that we multiply by reciprocals rather than dividing. This is
+    // Prior mean
+    //
+    // The prior mean depends on the degree of spatial regularization (which has been
+    // absorbed into the prior precision/covariance matrix). It may also reflect the
+    // original prior mean for the parameter, i.e. spatial regularization does not completely
+    // override the original prior mean.
+
+    // NB that we multiply by reciprocals rather than dividing. This is
     // to maximise numerical compatibility with NEWMAT which presumably
     // does it as an optimization when dividing a whole matrix by a constant
-    double mTmp;
+    double spatial_mean;
     if (m_type_code == PRIOR_SPATIAL_m)
     {
         // Dirichlet BCs on MRF
         double rec = 1 / (8 * m_spatial_dims * 2);
-        mTmp = contrib8 * rec;
+        spatial_mean = contrib_nn * rec;
     }
     else if (m_type_code == PRIOR_SPATIAL_M)
     {
         double rec = 1 / (8 * (double(nn) + 1e-8));
-        mTmp = contrib8 * rec;
+        spatial_mean = contrib_nn * rec;
     }
-    else if (weight8 != 0)
+    else if (nn != 0)
     {
-        double rec = 1 / (weight8 + weight12);
-        mTmp = (contrib8 + contrib12) * rec;
+        double rec = 1 / (8*nn - nn2);
+        spatial_mean = (contrib_nn + contrib_nn2) * rec;
     }
     else
-        mTmp = 0;
-
-    // LOG << "SpatialPrior:: " << prior->GetCovariance()(m_idx+1, m_idx+1) << ", " << spatial_prec
-    // << ", " << contrib8 << ", " << den << ", " << mTmp << " : " << t1 << endl;
+        spatial_mean = 0;
 
     if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
+        // These priors do not take account of the original parameter prior mean at all - 
+        // the prior mean is determined entirely by the expectation of spatial uniformity
+        // compared to neighbouring voxels.
+        //
+        // For prior type m this reduces to spatial_mean since the covariance is in this 
+        // case simply the reciprocal of the spatial precision
         prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * spatial_prec
-            * mTmp; // = mTmp for p or m
+            * spatial_mean;
     else
     {
-        // equivalent, when non-spatial priors are very weak: m_fwd_prior[v-1].means = mTmp;
+        // These priors include the original parameter prior mean as well as the values of 
+        // the parameter at neighbouring voxels.
+        //
+        // For prior type p, this reduces to spatial_mean + spatial_cov * original_prec * original_mean
+        // For a weak original non-spatial prior (i.e. m_params->prec is small)  this reduces to
+        // the spatial spatial_mean, 
         prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1)
-            * (spatial_prec * mTmp + m_params.prec() * m_params.mean());
+            * (spatial_prec * spatial_mean + m_params.prec() * m_params.mean());
     }
 
+    // Spatial prior does not contribute to the free energy?
     return 0;
 }
 
