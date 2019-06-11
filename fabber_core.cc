@@ -242,7 +242,7 @@ int execute(int argc, char **argv)
 
             ColumnVector o_vec(n_ts);
             fwd_model->EvaluateModel(p_vec, o_vec, params->GetStringDefault("evaluate", ""));
-            for (unsigned int i = 0; i < o_vec.Nrows(); i++)
+            for (int i = 0; i < o_vec.Nrows(); i++)
             {
                 cout << o_vec(i+1) << endl;
             }
