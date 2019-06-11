@@ -16,3 +16,23 @@ If you use fabber in your research, please make sure that you reference at least
 *Woolrich, M., Chiarelli, P., Gallichan, D., Perthen, J., Liu, T. “Bayesian Inference of Haemodynamic Changes in Functional ASL Data”, Magnetic Resonance in Medicine, 56:891-906, 2006.*
 
 *Groves, A. R., Chappell, M. A., & Woolrich, M. W. (2009). Combined spatial and non-spatial prior for inference on MRI time-series. NeuroImage, 45(3), 2009. <doi:10.1016/j.neuroimage.2008.12.027>.*
+
+GIFTI support
+=============
+
+This branch has been created to add support for GIFTI input.
+
+What is required for this?
+
+Add option --gifti-surface=<gii surface file>
+
+When supplied this will cause all image data to be loaded as Gifti files and output to similar.
+
+To do this we will need a new class similar to FabberRunDataNewimage but using giftiio. 
+Masks may not be supported. Internally all data is vectors of unmasked voxels so 
+can remain unchanged. One important issue is the use of neighbours and second-neighbours
+in spatial mode. This needs to be calculatd from the GIFTI file and passed to the VB 
+inference class.
+
+SetExtentFromData may need to be made a full method of FabberRunData as we can implement it 
+differently for Newimage and Gifti
