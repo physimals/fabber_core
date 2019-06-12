@@ -17,8 +17,11 @@
 #ifndef NO_GIFTI
 #include "rundata.h"
 
-#include "giftiio/giftiio.h"
-#include "newmat.h"
+// There is a bug in the following header which means we MUST import fslsurfaceio.h before
+// fslsurface.h (even though we don't need it here)
+#include <fslsurface/fslsurfaceio.h>
+#include <fslsurface/fslsurface.h>
+#include <newmat.h>
 
 #include <string>
 
@@ -30,13 +33,14 @@ class FabberRunDataGifti : public FabberRunData
 public:
     FabberRunDataGifti(bool compat_options = true);
 
-    void SetExtentFromSurface();
+    void Initialize();
     const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
-    virtual void SaveVoxelData(
+    void SaveVoxelData(
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
 private:
-    void SetCoordsFromSurface(int nx, int ny, int nz);
+    void SetCoordsFromSurface();
+    fslsurface_name::fslSurface<float, unsigned int> m_surface;
 };
 
 #endif /* NO_NEWIMAGE */
