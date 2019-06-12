@@ -17,7 +17,8 @@ else
   NIFTILIB = -lNewNifti
 endif
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
+SURFACE_LIBS = -lfslsurface -lfslvtkio -lgiftiio -lmeshclass -lfirst_lib -lexpat
+LIBS = ${SURFACE_LIBS} -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
@@ -45,7 +46,7 @@ NOISEOBJS = noisemodel_white.o noisemodel_ar.o
 CONFIGOBJS = setup.o factories.o
 
 # Library for executables
-EXECOBJS = rundata_newimage.o fabber_core.o
+EXECOBJS = rundata_newimage.o rundata_gifti.o fabber_core.o
 
 # Executable main object
 CLIENTOBJS =  fabber_main.o

@@ -160,7 +160,7 @@ add_definitions(-DARMA_USE_LAPACK -DARMA_USE_BLAS -DARMA_64BIT_WORD
 add_library(fabbercore STATIC ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 add_library(fabbercore_shared SHARED ${BASIC_SRC} ${CORE_SRC} ${INFERENCE_SRC} ${NOISE_SRC})
 target_link_libraries(fabbercore_shared ${LIBS})
-add_library(fabberexec rundata_newimage.cc fabber_core.cc )
+add_library(fabberexec rundata_gifti.cc rundata_newimage.cc fabber_core.cc )
 
 add_executable(fabber fabber_main.cc)
 target_link_libraries(fabber fabberexec fabbercore ${LIBS})
