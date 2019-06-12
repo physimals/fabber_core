@@ -200,7 +200,25 @@ public:
      *           for freeing it after use.
      */
     FabberRunData(bool compat_options = true);
+
+    /**
+     * Free any resources allocated by the implementation
+     * 
+     * Default implementation does nothing.
+     */
     virtual ~FabberRunData();
+
+    /**
+     * Initialize prior to a Fabber run.
+     * 
+     * This method should be overridden to perform any implementation-specific 
+     * initialization, for example setting up the co-ordinates data when this
+     * is determined from the input options (rather than being provided explicitly
+     * as a data set). 
+     * 
+     * Default implementation does nothing.
+     */
+    virtual void Initialize();
 
     /**
      * Run fabber
