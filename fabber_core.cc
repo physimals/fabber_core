@@ -10,6 +10,7 @@
 #include "fwdmodel.h"
 #include "inference.h"
 #include "rundata_newimage.h"
+#include "rundata_gifti.h"
 #include "version.h"
 #include "tools.h"
 
@@ -92,8 +93,21 @@ int execute(int argc, char **argv)
         set_environment();
 
         // Create a new Fabber run
-        FabberRunDataNewimage paramso(true);
-        FabberRunDataNewimage *params = &paramso;
+        FabberRunData *params;
+        FabberRunData params_temp;
+        FabberRunDataGifti params_gifti(true);
+        FabberRunDataNewimage params_newimage(true);
+        params_temp.Parse(argc, argv);
+        if (params_temp.HaveKey("surface"))
+        {
+            // Surface-based input
+            params = &params_gifti;
+        }
+        else 
+        {
+            // Standard volumetric mode
+            params = &params_newimage;
+        }
         params->SetLogger(&log);
         params->Parse(argc, argv);
 
@@ -250,10 +264,15 @@ int execute(int argc, char **argv)
             return 0;
         }
         // Make sure command line tool creates a parameter names file
-        params->SetBool("dump-param-names");
-        // Link to latest run
+        params->Initialize();
+
+        // Link to latest run and write out parameter names by default
+        // for compatibility with older versions
         params->SetBool("link-to-latest");
-        params->SetExtentFromData();
+        params->SetBool("dump-param-names");
+
+        // Determine if we are doing simplified machine-readable output or
+        // human-readable
         simple_output = params->GetBool("simple-output");
 
         log.StartLog(params->GetOutputDir());
@@ -303,8 +322,8 @@ int execute(int argc, char **argv)
         if (!simple_output)
         {
             cout << endl
-                << "Final logfile: " << log.GetOutputDirectory()
-                << (gzLog ? "/logfile.gz" : "/logfile") << endl;
+                 << "Final logfile: " << log.GetOutputDirectory()
+                 << (gzLog ? "/logfile.gz" : "/logfile") << endl;
         }
         log.StopLog(gzLog);
     }
