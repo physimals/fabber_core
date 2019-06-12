@@ -24,32 +24,36 @@ This branch has been created to add support for GIFTI input.
 
 What is required for this?
 
- - Add option --surface=<gii surface file> to specify reference surface file DONE
+ - [x] Add option --surface=<gii surface file> to specify reference surface file
 
- - Add FabberRunDataGifti to load/save voxel data from GIFTI files DONE
+ - [x] Add FabberRunDataGifti to load/save voxel data from GIFTI files
 
 Currently we are using libfslsurface. This seems to be a bit buggy and under development. A better
 option is probably to use libgiftiio directly until it has matured. In particular handling of
 timeseries data seems poor and there is ugly debug messages being written to stdout. The main
 advantage of libfslsurface is that we can support formats other than GIFTI.
 
- - Add support in fabber_core.cc to detect --surface option and use FabberRunDataGifti 
-   instead of FabberRunDataNewimage DONE
+ - [x] Add support in fabber_core.cc to detect --surface option and use FabberRunDataGifti 
+       instead of FabberRunDataNewimage
 
 This is ugly - we have to create a temporary FabberRunData object to parse the options initially
 and if we find --surface we then re-parse with FabberRunDataGifti. Consequence of the way
 we implemented run data which is not ideal for this use case.
 
- - Move calculation of neighbours into the FabberRunData instance
+ - [x] Move calculation of neighbours into the FabberRunData instance
 
 This is required because knowledge of the connectivity of voxels/vertices is now 
 dependent on the input data format - volume or surface.
 
- - Evaluate whether spatial priors are valid on the assumption that a voxel may have 
+ - [ ] Implement neighbour calculation for FabberRunDataGifti
+
+Straighforward from vertex/triangle connectivity data
+
+ - [ ] Evaluate whether spatial priors are valid on the assumption that a voxel may have 
    any number of neighbours at potentially varying distances. 
    
 This is a difficult question!
 
- - Evaluate use of FabberRunData.SetExtent which seems kind of useless but is used in the
+ - [x] Evaluate use of FabberRunData.SetExtent which seems kind of useless but is used in the
    C API so it presumably has some purpose. Maybe can be limited to FabberRunDataArray
 

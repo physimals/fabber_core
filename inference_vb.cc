@@ -577,12 +577,8 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     if (m_nvoxels > 0)
         PassModelData(1);
 
-    // Make the neighbours[] lists if required
-    // if (m_prior_types_str.find_first_of("mMpP") != string::npos)
-    if (true) // FIXME
-    {
-        CalcNeighbours(*m_coords);
-    }
+    // Make the neighbours lists if required
+    rundata.GetNeighbours(m_ctx->neighbours, m_ctx->neighbours2);
 
     vector<Parameter> params;
     m_model->GetParameters(rundata, params);
@@ -743,32 +739,6 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     }
 }
 
-void Vb::CheckCoordMatrixCorrectlyOrdered(const Matrix &coords)
-{
-    // Only 3D
-    assert(coords.Nrows() == 3);
-
-    // Voxels are stored one per column, each column is the x/y/z coords
-    const int m_nvoxels = coords.Ncols();
-
-    // Go through each voxel one at a time apart from last
-    for (int v = 1; v <= m_nvoxels - 1; v++)
-    {
-        // Find difference between current coords and next
-        ColumnVector diff = coords.Column(v + 1) - coords.Column(v);
-
-        // Check order
-        // +1 = +x, +10 = +y, +100 = +z, -100 = -z+x, etc.
-        int d = sign(diff(1)) + 10 * sign(diff(2)) + 100 * sign(diff(3));
-        if (d <= 0)
-        {
-            LOG << "Vb::Found mis-ordered voxels " << v << " and " << v + 1 << ": d=" << d << endl;
-            throw FabberInternalError(
-                "Coordinate matrix must be in correct order to use adjacency-based priors.");
-        }
-    }
-}
-
 // Binary search for data(index) == num
 // Assumes data is sorted ascending!!
 // Either returns an index such that data(index) == num
@@ -799,145 +769,6 @@ static inline int binarySearch(const ColumnVector &data, int num)
         }
     }
     return -1;
-}
-
-/**
- * Calculate nearest and second-nearest neighbours for the voxels
- */
-void Vb::CalcNeighbours(const Matrix &coords)
-{
-    const int nVoxels = coords.Ncols();
-    if (nVoxels == 0)
-        return;
-
-    // Voxels must be ordered by increasing z, y and x values respectively
-    // otherwise binary search for voxel by offset will not work
-    CheckCoordMatrixCorrectlyOrdered(coords);
-
-    // Create a column vector with one entry per voxel.
-    ColumnVector offsets(nVoxels);
-
-    // Populate offsets with the offset into the
-    // matrix of each voxel. We assume that co-ordinates
-    // could be zero but not negative
-    int xsize = coords.Row(1).Maximum() + 1;
-    int ysize = coords.Row(2).Maximum() + 1;
-    for (int v = 1; v <= nVoxels; v++)
-    {
-        int x = coords(1, v);
-        int y = coords(2, v);
-        int z = coords(3, v);
-        int offset = z * xsize * ysize + y * xsize + x;
-        offsets(v) = offset;
-    }
-
-    // Delta is a list of offsets to find nearest
-    // neighbours in x y and z direction (not diagonally)
-    // Of course applying these offsets naively would not
-    // always work, e.g. offset of -1 in the x direction
-    // will not be a nearest neighbour for the first voxel
-    // so need to check for this in subsequent code
-    vector<int> delta;
-    delta.push_back(1);              // next row
-    delta.push_back(-1);             // prev row
-    delta.push_back(xsize);          // next column
-    delta.push_back(-xsize);         // prev column
-    delta.push_back(xsize * ysize);  // next slice
-    delta.push_back(-xsize * ysize); // prev slice
-
-    // Don't look for neighbours in all dimensions.
-    // For example if spatialDims=2, max_delta=3 so we
-    // only look for neighbours in rows and columns
-    //
-    // However note we still need the full list of 3D deltas for later
-    int max_delta = m_spatial_dims * 2 - 1;
-
-    // Neighbours is a vector of vectors, so each voxel
-    // will have an entry which is a vector of its neighbours
-    m_ctx->neighbours.resize(nVoxels);
-
-    // Go through each voxel. Note that offsets is indexed from 1 not 0
-    // however the offsets themselves (potentially) start at 0.
-    for (int vid = 1; vid <= nVoxels; vid++)
-    {
-        // Get the voxel offset into the matrix
-        int pos = int(offsets(vid));
-
-        // Now search for neighbours
-        for (int n = 0; n <= max_delta; n++)
-        {
-            // is there a voxel at this neighbour position?
-            // indexed from 1; id == -1 if not found.
-            int id = binarySearch(offsets, pos + delta[n]);
-
-            // No such voxel: continue
-            if (id < 0)
-                continue;
-
-            // Check for wrap-around
-
-            // Don't check for wrap around on final co-ord
-            // PREVIOUSLY		if (delta.size() >= n + 2)
-            // Changed (fixed)? because if spatialDims != 3 we still need
-            // to check for wrap around in y-coordinate FIXME check
-            if (n < 4)
-            {
-                bool ignore = false;
-                if (delta[n] > 0)
-                {
-                    int test = delta[n + 2];
-                    if (test > 0)
-                        ignore = (pos % test) >= test - delta[n];
-                }
-                else
-                {
-                    int test = -delta[n + 2];
-                    if (test > 0)
-                        ignore = (pos % test) < -delta[n];
-                }
-                if (ignore)
-                {
-                    continue;
-                }
-            }
-
-            // If we get this far, add it to the list
-            m_ctx->neighbours.at(vid - 1).push_back(id);
-        }
-    }
-
-    // Similar algorithm but looking for Neighbours-of-neighbours, excluding self,
-    // but including duplicates if there are two routes to get there
-    // (diagonally connected)
-    m_ctx->neighbours2.resize(nVoxels);
-
-    for (int vid = 1; vid <= nVoxels; vid++)
-    {
-        // Go through the list of neighbours for each voxel.
-        for (unsigned n1 = 0; n1 < m_ctx->neighbours.at(vid - 1).size(); n1++)
-        {
-            // n1id is the voxel index (not the offset) of the neighbour
-            int n1id = m_ctx->neighbours[vid - 1].at(n1);
-            int checkNofN = 0;
-            // Go through each of it's neighbours. Add each, apart from original voxel
-            for (unsigned n2 = 0; n2 < m_ctx->neighbours.at(n1id - 1).size(); n2++)
-            {
-                int n2id = m_ctx->neighbours[n1id - 1].at(n2);
-                if (n2id != vid)
-                {
-                    m_ctx->neighbours2[vid - 1].push_back(n2id);
-                }
-                else
-                    checkNofN++;
-            }
-
-            if (checkNofN != 1)
-            {
-                throw FabberInternalError("Each of this voxel's neighbours must have "
-                                          "this voxel as a neighbour");
-            }
-        }
-    }
 }
 
 void Vb::SaveResults(FabberRunData &rundata) const
@@ -1009,7 +840,7 @@ void Vb::SaveResults(FabberRunData &rundata) const
         freeEnergyHistory.ReSize(num_iters, nVoxels);
         for (int vox = 1; vox <= nVoxels; vox++)
         {
-            for (int iter=1; iter <= num_iters; iter++) 
+            for (size_t iter=1; iter <= num_iters; iter++) 
             {
                 if (iter <= resultFsHistory.at(vox - 1).size()) 
                 {

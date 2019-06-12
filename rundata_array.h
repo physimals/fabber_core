@@ -32,6 +32,8 @@ public:
     void SetExtent(int nx, int ny, int nz, const int *mask);
     void GetVoxelDataArray(std::string key, float *data);
     void SetVoxelDataArray(std::string key, int data_size, const float *data);
+    void GetNeighbours(std::vector<std::vector<int> > &neighbours, 
+                       std::vector<std::vector<int> > &neighbours2);
 
 private:
     std::vector<int> m_mask;

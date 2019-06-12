@@ -100,22 +100,6 @@ protected:
     void SetupPerVoxelDists(FabberRunData &allData);
 
     /**
-    * Check voxels are listed in order
-    *
-    * Order must be increasing in z value, or if same
-    * increasing in y value, and if y and z are same
-    * increasing in x value.
-    *
-    * This is basically column-major (Fortran) ordering - used as default by NEWIMAGE.
-    */
-    void CheckCoordMatrixCorrectlyOrdered(const NEWMAT::Matrix &voxelCoords);
-
-    /**
-     * Calculate first and second nearest neighbours of each voxel
-    */
-    void CalcNeighbours(const NEWMAT::Matrix &voxelCoords);
-
-    /**
      * Ignore this voxel in future updates.
      *
      * No calculation of priors or posteriors will occur for this voxel

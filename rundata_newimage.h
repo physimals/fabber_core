@@ -21,6 +21,7 @@
 #include "newmat.h"
 
 #include <string>
+#include <vector>
 
 /**
  * Run data which uses NEWIMAGE to load NIFTII files
@@ -34,6 +35,8 @@ public:
     const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
     void SaveVoxelData(
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
+    void GetNeighbours(std::vector<std::vector<int> > &neighbours, 
+                       std::vector<std::vector<int> > &neighbours2);
 
 private:
     void SetCoordsFromData();

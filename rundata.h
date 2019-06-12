@@ -544,27 +544,20 @@ public:
     void SetVoxelCoords(const NEWMAT::Matrix &coords);
 
     /**
-     * Get list of nearest neighbours for each voxel
+     * Get list of nearest neighbours and second nearest neighbours for each voxel
      *
      * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
      *               although this is unusual!
      *
      * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+     * Second nearest neighbours will exclude the source voxel, but include duplicates
+     * if there are two routes to get there (diagonally connected).
+     * 
+     * This should be implemented by subclasses. The default implementation returns 
+     * no neighbours for any voxel (but correctly sized output vectors).
      */
-    std::vector<std::vector<int> > &GetNeighbours(int n_dims = 3);
-
-    /**
-      * Get list of second nearest neighbours for each voxel
-      *
-      * @param n_dims If 2, get neighbours in 2D slices only. Also works for 1
-      *               although this is unusual!
-      *
-      * The list for each voxel will exclude itself, but include duplicates
-      * if there are two routes to get there (diagonally connected)
-      *
-      * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
-      */
-    std::vector<std::vector<int> > &GetSecondNeighbours(int n_dims = 3);
+    virtual void GetNeighbours(std::vector<std::vector<int> > &neighbours, 
+                               std::vector<std::vector<int> > &neighbours2);
 
     /**
      * Report progress
