@@ -36,8 +36,9 @@ public:
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
 private:
-    void SetCoordsFromExtent(int nx, int ny, int nz);
+    void SetCoordsFromData();
     NEWIMAGE::volume<float> m_mask;
+    NEWIMAGE::volume<float> m_main_vol;
     bool m_have_mask;
 };
 

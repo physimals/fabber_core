@@ -510,31 +510,6 @@ public:
     const NEWMAT::Matrix &GetVoxelSuppData();
 
     /**
-     * Get the data extent.
-     *
-     * FIXME dims is not yet implemented
-     *
-     * @param extent will be set to a list of the number of voxels in the x, y, z dimensions
-     * @param dims will be set to a list of the mm physical sizes of each voxel in the x,y, z
-     * dimensions,
-     *             if these are available. If not, they will be set equal to extent.
-     */
-    virtual void GetExtent(std::vector<int> &extent, std::vector<float> &dims);
-
-    /**
-     * Set the data extent.
-     *
-     * The only requirement of the voxel numbers is that the coordinates do not
-     * go outside the extent, e.g. the maximum x value is less than nx.
-     * The voxel sizes may be used by the spatial method to allow for
-     * anisotropic voxels when calculating distances.
-     *
-     * @param nx, ny, nz Number of voxels in x, y and z dimensions
-     * @param sx, sy, sz Size of voxel in x, y and z dimensions
-     */
-    void SetExtent(int nx, int ny, int nz, float sx = 1.0, float sy = 1.0, float sz = 1.0);
-
-    /**
      * Clear the named voxel data from this IO module.
      *
      * If key is not specified, clear all voxel data.
@@ -643,8 +618,6 @@ protected:
     void CheckSize(std::string key, const NEWMAT::Matrix &mat);
 
     std::map<std::string, NEWMAT::Matrix> m_voxel_data;
-    std::vector<int> m_extent;
-    std::vector<float> m_dims;
 
     /** Optional progress checker, could be NULL - not owned and will not be freed */
     ProgressCheck *m_progress;

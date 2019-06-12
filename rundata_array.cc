@@ -27,8 +27,11 @@ void FabberRunDataArray::SetExtent(int nx, int ny, int nz, const int *mask)
     assert(nz > 0);
     assert(mask);
 
-    FabberRunData::SetExtent(nx, ny, nz);
-
+    m_extent.resize(3);
+    m_extent[0] = nx;
+    m_extent[1] = ny;
+    m_extent[2] = nz;
+    
     int nv = nx * ny * nz;
     if (mask)
     {

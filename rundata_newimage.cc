@@ -59,7 +59,7 @@ void FabberRunDataNewimage::Initialize()
 
     if (m_have_mask)
     {
-        LOG << "FabberRunDataNewimage::Loading mask data from '" + mask_fname << "'" << endl;
+        LOG << "FabberRunDataNewimage::Initialize - Loading mask data from '" + mask_fname << "'" << endl;
         if (!fsl_imageexists(mask_fname))
         {
             throw DataNotFound(mask_fname, "File is invalid or does not exist");
@@ -67,22 +67,16 @@ void FabberRunDataNewimage::Initialize()
         read_volume(m_mask, mask_fname);
         m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
         DumpVolumeInfo(m_mask, LOG);
-        SetCoordsFromExtent(m_mask.xsize(), m_mask.ysize(), m_mask.zsize());
     }
-    else
+        
+    string data_fname = GetStringDefault("data", GetStringDefault("data1", ""));
+    if (!fsl_imageexists(data_fname))
     {
-        // Make sure the coords are loaded from the main data even if we don't
-        // have a mask, and that the reference volume is initialized
-        LOG << "FabberRunDataNewimage::No mask, using data for extent" << endl;
-        string data_fname = GetStringDefault("data", GetStringDefault("data1", ""));
-        if (!fsl_imageexists(data_fname))
-        {
-            throw DataNotFound(data_fname, "File is invalid or does not exist");
-        }
-        volume<float> main_vol;
-        read_volume(main_vol, data_fname);
-        SetCoordsFromExtent(main_vol.xsize(), main_vol.ysize(), main_vol.zsize());
+        throw DataNotFound(data_fname, "File is invalid or does not exist");
     }
+    read_volume(m_main_vol, data_fname);
+
+    SetCoordsFromData();
 }
 
 const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
@@ -152,7 +146,10 @@ void FabberRunDataNewimage::SaveVoxelData(
     }
 
     int data_size = data.Nrows();
-    volume4D<float> output(m_extent[0], m_extent[1], m_extent[2], data_size);
+    int nx = m_main_vol.xsize();
+    int ny = m_main_vol.ysize();
+    int nz = m_main_vol.zsize();
+    volume4D<float> output(nx, ny, nz, data_size);
     if (m_have_mask)
     {
         output.setmatrix(data, m_mask);
@@ -178,11 +175,12 @@ void FabberRunDataNewimage::SaveVoxelData(
     }
 }
 
-void FabberRunDataNewimage::SetCoordsFromExtent(int nx, int ny, int nz)
+void FabberRunDataNewimage::SetCoordsFromData()
 {
-    LOG << "FabberRunDataNewimage::Setting coordinates from extent" << endl;
-
-    FabberRunData::SetExtent(nx, ny, nz);
+    LOG << "FabberRunDataNewimage::Setting coordinates from data" << endl;
+    int nx = m_main_vol.xsize();
+    int ny = m_main_vol.ysize();
+    int nz = m_main_vol.zsize();
 
     volume4D<float> coordvol(nx, ny, nz, 3);
     for (int i = 0; i < nx; i++)

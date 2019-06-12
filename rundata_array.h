@@ -35,4 +35,5 @@ public:
 
 private:
     std::vector<int> m_mask;
+    std::vector<int> m_extent;
 };

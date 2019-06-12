@@ -956,49 +956,6 @@ void FabberRunData::SetVoxelCoords(const NEWMAT::Matrix &coords)
     }
 
     SetVoxelData("coords", coords);
-
-    if (m_extent.size() == 0)
-    {
-        m_extent.resize(3);
-        m_dims.resize(3);
-        for (int i = 0; i < 3; i++)
-        {
-            if (coords.Ncols() > 0)
-            {
-                // FIXME we assume coords will not be negative
-                m_extent[i] = coords.Row(i + 1).Maximum() - coords.Row(i + 1).Minimum() + 1;
-            }
-            else
-            {
-                m_extent[i] = 0;
-            }
-            m_dims[i] = 1.0;
-        }
-    }
-}
-
-void FabberRunData::GetExtent(vector<int> &extent, vector<float> &dims)
-{
-    extent = m_extent;
-    dims = m_dims;
-}
-
-void FabberRunData::SetExtent(int nx, int ny, int nz, float sx, float sy, float sz)
-{
-    if ((nx < 0) || (ny < 0) || (nz < 0) || (sx <= 0) || (sy <= 0) || (sz <= 0))
-    {
-        throw InvalidOptionValue(
-            "extent", "negative values", "Extent and voxel sizes must be positive");
-    }
-
-    m_extent.resize(3);
-    m_dims.resize(3);
-    m_extent[0] = nx;
-    m_extent[1] = ny;
-    m_extent[2] = nz;
-    m_dims[0] = sx;
-    m_dims[1] = sy;
-    m_dims[2] = sz;
 }
 
 // Binary search for data(index) == num
