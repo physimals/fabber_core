@@ -34,7 +34,7 @@ int main(int argc, char **argv)
         // MVN tool uses a different argument for the main
         // data, set the 'data' option to match before we might use it
         args.Set("data", args.GetString("input"));
-        args.SetExtentFromData();
+        args.Initialize();
 
         if ((argc == 1) || args.ReadBool("help"))
         {
