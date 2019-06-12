@@ -52,7 +52,7 @@ FabberRunDataNewimage::FabberRunDataNewimage(bool compat_options)
 {
 }
 
-void FabberRunDataNewimage::SetExtentFromData()
+void FabberRunDataNewimage::Initialize()
 {
     string mask_fname = GetStringDefault("mask", "");
     m_have_mask = (mask_fname != "");
@@ -91,7 +91,6 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
     {
         LOG << "FabberRunDataNewimage::Loading data from '" + filename << "'" << endl;
         // Load the data file using Newimage library
-        // FIXME should check for presence of file before trying to load.
         if (!fsl_imageexists(filename))
         {
             throw DataNotFound(filename, "File is invalid or does not exist");

@@ -30,9 +30,9 @@ class FabberRunDataNewimage : public FabberRunData
 public:
     FabberRunDataNewimage(bool compat_options = true);
 
-    void SetExtentFromData();
+    void Initialize();
     const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
-    virtual void SaveVoxelData(
+    void SaveVoxelData(
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
 private:
