@@ -182,7 +182,7 @@ double ARDPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 
 SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
     : DefaultPrior(p)
-    , m_akmean(1e-8)
+    , m_aK(1e-8)
     , m_spatial_dims(3)
     , m_spatial_speed(-1)
 {
@@ -208,73 +208,6 @@ SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
     m_update_first_iter = rundata.GetBool("update-spatial-prior-on-first-iteration");
 }
 
-double SpatialPrior::CalculateAkmean(const RunContext &ctx)
-{
-    // The following calculates Tr[Sigmak*S'*S]
-    double tmp1 = 0.0;
-    double tmp2 = 0.0;
-    for (int v = 1; v <= ctx.nvoxels; v++)
-    {
-        // Ignore voxels where numerical issues have occurred
-        if (std::find(ctx.ignore_voxels.begin(), ctx.ignore_voxels.end(), v)
-            != ctx.ignore_voxels.end()) continue;
-
-        double sigmak = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx + 1, m_idx + 1);
-        int nn = ctx.neighbours.at(v - 1).size();
-        if (m_type_code == PRIOR_SPATIAL_m) // useMRF)
-            tmp1 += sigmak * m_spatial_dims * 2;
-        else if (m_type_code == PRIOR_SPATIAL_M) // useMRF2)
-            tmp1 += sigmak * (nn + 1e-8);
-        else if (m_type_code == PRIOR_SPATIAL_p)
-            tmp1 += sigmak * (4 * m_spatial_dims * m_spatial_dims + nn);
-        else // P
-            tmp1 += sigmak * (nn * nn + nn);
-
-        double wk = ctx.fwd_post.at(v - 1).means(m_idx + 1);
-        double Swk = 0.0;
-        for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
-             v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
-        {
-            Swk += wk - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
-        }
-        if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
-            Swk += wk * (m_spatial_dims * 2 - ctx.neighbours.at(v - 1).size());
-
-        if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
-            tmp2 += Swk * wk;
-        else
-            tmp2 += Swk * Swk;
-    }
-
-    LOG << "SpatialPrior::UpdateAkmean " << m_idx << ": tmp1=" << tmp1 << ", tmp2=" << tmp2 << endl;
-
-    double gk = 1 / (0.5 * tmp1 + 0.5 * tmp2 + 0.1); // prior q1 == 10 (1/q1 == 0.1)
-    double akmean = gk * (ctx.nvoxels * 0.5 + 1.0);  // prior q2 == 1.0
-    double akmeanMax = akmean * m_spatial_speed;
-    if (akmean < 1e-50)
-    {
-        LOG << "SpatialPrior::UpdateAkmean " << m_idx << ": was " << akmean << endl;
-        WARN_ONCE("SpatialPrior::UpdateAkmean akmean value was tiny!");
-        akmean = 1e-50; // prevent crashes
-    }
-
-    if (akmeanMax < 0.5)
-    {
-        akmeanMax = 0.5; // totally the wrong scaling.. oh well
-    }
-
-    if (m_spatial_speed > 0 && akmean > akmeanMax)
-    {
-        LOG << "SpatialPrior::UpdateAkmean " << m_idx
-            << ": Rate-limiting the increase on akmean: was " << akmean << ", now " << akmeanMax
-            << endl;
-        akmean = akmeanMax;
-    }
-
-    LOG << "SpatialPrior::UpdateAkmean " << m_idx << ": New akmean: " << akmean << endl;
-    return akmean;
-}
-
 void SpatialPrior::DumpInfo(std::ostream &out) const
 {
     out << "SpatialPrior: Parameter " << m_idx << " '" << m_param_name << "'"
@@ -282,16 +215,142 @@ void SpatialPrior::DumpInfo(std::ostream &out) const
         << " precision: " << m_params.prec();
 }
 
+double SpatialPrior::CalculateaK(const RunContext &ctx)
+{
+    // Calculation of update equations in Penny et al 2005 Fig 4 (Spatial Precisions)
+    //
+    // sigmaK = Voxelwise parameter posterior variance 
+    // wK     = Voxelwise parameter posterior means
+    // S      = Spatial precisions matrix. For Penny priors this is the Laplacian
+    //          whereas for MRF priors we work with a matrix representing S' * S directly
+    //
+    // Theory notes and references are from MSC and should not be considered
+    // reliable! Read Penny 2005 for details
+
+    double trace_term = 0.0;    // First term for gk:   Tr(sigmaK*S'*S)
+    double term2 = 0.0;         // Second term for gk:  wK'S'SwK
+    for (int v = 1; v <= ctx.nvoxels; v++)
+    {
+        // Ignore voxels where numerical issues have occurred. Note that
+        // excluded voxels are also deleted from neighbour lists for other voxels
+        if (std::find(ctx.ignore_voxels.begin(), ctx.ignore_voxels.end(), v)
+            != ctx.ignore_voxels.end()) continue;
+
+        // Parameter variance
+        double sigmaK = ctx.fwd_post.at(v - 1).GetCovariance()(m_idx + 1, m_idx + 1);
+
+        // Number of neighbours
+        int nn = ctx.neighbours.at(v - 1).size();
+
+        if (m_type_code == PRIOR_SPATIAL_m)
+        {
+            // Markov random field without boundary correction
+            // Assuming spatial_dims*2 nearest neighbours
+            trace_term += sigmaK * m_spatial_dims * 2;
+        }
+        else if (m_type_code == PRIOR_SPATIAL_M) 
+        {
+            // Markov random field with boundary correction
+            // Using the actual number of nearest neighbours
+            // (1e-8 term is to guarantee invertibility?)
+            trace_term += sigmaK * (nn + 1e-8);
+        }
+        else if (m_type_code == PRIOR_SPATIAL_p)
+        {
+            // Penny prior without boundary correction
+            // assumes number of nearest neighbours = 2*spatial_dims
+            trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + nn);
+        }
+        else 
+        {
+            // Penny prior with boundary correction using actual
+            // number of nearest neighbours
+            trace_term += sigmaK * (nn * nn + nn);
+        }
+
+        // Posterior means
+        double wK = ctx.fwd_post.at(v - 1).means(m_idx + 1);
+
+        // Contribution from nearest neighbours - sum of differences
+        // between voxel mean and neighbour mean
+        double SwK = 0.0;
+        for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
+             v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
+        {
+            SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+        }
+
+        // For priors with no boundary correction assume fixed number of neighbours
+        // which means at boundaries some of the wK contribution will not have
+        // appeared in the above sum. This is equivalent to assuming a mean
+        // outside the boundary of zero (hence biased)
+        if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
+            SwK += wK * (m_spatial_dims * 2 - ctx.neighbours.at(v - 1).size());
+
+        // For MRF spatial prior the spatial precision matrix S'S is handled
+        // directly so we are effectively calculating wK * D * wK where
+        // D is the spatial matrix. For Penny prior we work with the 
+        // Laplacian matrix and need wK * S' * S * wK
+        if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
+            term2 += SwK * wK;
+        else
+            term2 += SwK * SwK;
+    }
+
+    LOG << "SpatialPrior::Calculate aK " << m_idx << ": trace_term=" << trace_term << ", term2=" << term2 << endl;
+
+    // Fig 4 in Penny (2005) update equations for gK, hK and aK
+    //
+    // Following Penny, prior on aK is a relatively uninformative gamma distribution with 
+    // q1 = 10 (1/q1 = 0.1) and q2 = 1.0
+    double gk = 1 / (0.5 * trace_term + 0.5 * term2 + 0.1); 
+    double hK = (ctx.nvoxels * 0.5 + 1.0);
+    double aK = gk * hK;
+
+    if (aK < 1e-50)
+    {
+        // Don't let aK get too small
+        LOG << "SpatialPrior::Calculate aK " << m_idx << ": was " << aK << endl;
+        WARN_ONCE("SpatialPrior::Calculate aK - value was tiny - fixing to 1e-50");
+        aK = 1e-50;
+    }
+
+    // Controls the speed of changes to aK - unsure whether this is useful or not but
+    // it is only used if m_spatial_speed is given as an option
+
+    // FIXME default for m_spatial_speed is -1 so code below will always be executed - 
+    // harmless but potentially confusing
+    double aKMax = aK * m_spatial_speed;
+    if (aKMax < 0.5)
+    {
+        // totally the wrong scaling.. oh well
+        aKMax = 0.5; 
+    }
+
+    if ((m_spatial_speed > 0) && (aK > aKMax))
+    {
+        LOG << "SpatialPrior::Calculate aK " << m_idx
+            << ": Rate-limiting the increase on aK: was " << aK << ", now " << aKMax
+            << endl;
+        aK = aKMax;
+    }
+
+    LOG << "SpatialPrior::Calculate aK " << m_idx << ": New aK: " << aK << endl;
+    return aK;
+}
+
 double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
 {
+    // Comments and theory notes are from MSC and should not be trusted
+
     if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter))
     {
-        // m_akmean is a global (all voxels) spatial precision variable for 
+        // m_aK is a global (all voxels) spatial precision variable for 
         // the parameter. It determines the degree of smoothness
         // and is estimated from the data. We update it on the first
         // voxel (unless it is the first iteration and m_update_first_iter 
         // is false). See Penny et all 2004
-        m_akmean = CalculateAkmean(ctx);
+        m_aK = CalculateaK(ctx);
     }
 
     // Loop over nearest neighbours of the current voxel
@@ -321,9 +380,12 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         contrib_nn2 += -neighbourPost.means(m_idx + 1);
     }
 
-    // In the original Penny prior, the number of neighbours is fixed by the number
-    // of spatial dimensions, but this is not correct at the edges of the volume
-    if (m_type_code == PRIOR_SPATIAL_p)
+    // In priors without boundary correction, the number of neighbours is fixed by
+    // the spatial dimensions, although this is not correct at the edges of the volume
+    // The contributions from first and second neighbours are unchanged - this is
+    // equivalent to the 'missing' voxels outside the boundary having value 0
+    // (hence biased towards zero as noted in Penny 2005).
+    if ((m_type_code == PRIOR_SPATIAL_p) || (m_type_code == PRIOR_SPATIAL_m))
     {
         assert(nn <= m_spatial_dims * 2);
         nn = 2 * m_spatial_dims;
@@ -333,23 +395,22 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     // Prior precision
     //
     // The precision of the prior depends on the degree of spatial regularization
-    // (m_akmean) and the number of neighbours.
+    // (m_aK) and the number of neighbours.
      
-    // Calculate spatial precision for each prior type
+    // Calculate spatial precision for each prior type. Note the 1e-8 contribution
+    // for the MRF prior, this is to ensure invertibility?
     double spatial_prec = 0;
     if (m_type_code == PRIOR_SPATIAL_M)
-        spatial_prec = m_akmean * (nn + 1e-8);
-    else if (m_type_code == PRIOR_SPATIAL_P)
-        spatial_prec = m_akmean * (nn * nn + nn);
+        spatial_prec = m_aK * (nn + 1e-8);
     else if (m_type_code == PRIOR_SPATIAL_m)
-        spatial_prec = m_akmean * m_spatial_dims * 2;
-    else if (m_type_code == PRIOR_SPATIAL_p)
-        spatial_prec = m_akmean * (4 * m_spatial_dims * m_spatial_dims + nn);
+        spatial_prec = m_aK * nn;
+    else if ((m_type_code == PRIOR_SPATIAL_P) || (m_type_code == PRIOR_SPATIAL_p))
+        spatial_prec = m_aK * (nn * nn + nn);
     else
         assert(false);
 
     SymmetricMatrix precs = prior->GetPrecisions();
-    if (m_type_code == PRIOR_SPATIAL_p || m_type_code == PRIOR_SPATIAL_m)
+    if ((m_type_code == PRIOR_SPATIAL_p) || (m_type_code == PRIOR_SPATIAL_m))
     {
         // Penny-style DirichletBC prior ignores original prior precision completely
         precs(m_idx + 1, m_idx + 1) = spatial_prec;
@@ -376,8 +437,8 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     double spatial_mean;
     if (m_type_code == PRIOR_SPATIAL_m)
     {
-        // Dirichlet BCs on MRF
-        double rec = 1 / (8 * m_spatial_dims * 2);
+        // Dirichlet BCs on MRF i.e. no boundary correction
+        double rec = 1 / (8 * nn);
         spatial_mean = contrib_nn * rec;
     }
     else if (m_type_code == PRIOR_SPATIAL_M)
@@ -394,6 +455,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         spatial_mean = 0;
 
     if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
+    {
         // These priors do not take account of the original parameter prior mean at all - 
         // the prior mean is determined entirely by the expectation of spatial uniformity
         // compared to neighbouring voxels.
@@ -402,6 +464,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         // case simply the reciprocal of the spatial precision
         prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * spatial_prec
             * spatial_mean;
+    }
     else
     {
         // These priors include the original parameter prior mean as well as the values of 
@@ -415,6 +478,8 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     }
 
     // Spatial prior does not contribute to the free energy?
+    // Technically I think it should via the prior on ak (q1, q2) however since this is uninformative
+    // it may not matter.
     return 0;
 }
 

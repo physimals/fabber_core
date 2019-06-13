@@ -125,8 +125,8 @@ public:
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
 
 protected:
-    double CalculateAkmean(const RunContext &ctx);
-    double m_akmean;
+    double CalculateaK(const RunContext &ctx);
+    double m_aK;
     int m_spatial_dims;
     double m_spatial_speed;
     bool m_update_first_iter;
