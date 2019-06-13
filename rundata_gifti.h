@@ -37,7 +37,8 @@ public:
     const NEWMAT::Matrix &LoadVoxelData(const std::string &filename);
     void SaveVoxelData(
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
-
+    void GetNeighbours(std::vector<std::vector<int> > &neighbours, 
+                       std::vector<std::vector<int> > &neighbours2);
 private:
     void SetCoordsFromSurface();
     fslsurface_name::fslSurface<float, unsigned int> m_surface;

@@ -155,3 +155,78 @@ void FabberRunDataGifti::SetCoordsFromSurface()
     SetVoxelCoords(coords);
 }
 
+void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbours, 
+                                       std::vector<std::vector<int> > &neighbours2)
+{
+    LOG << "FabberRunDataGifti::Getting nearest neigbours and second neighbours" << endl;
+
+    int nv = m_surface.getNumberOfVertices();
+    int nt = m_surface.getNumberOfFaces();
+    neighbours.clear();
+    neighbours2.clear();
+    neighbours.resize(nv);
+    neighbours2.resize(nv);
+
+    // Iterate over faces
+    for (int t=0; t<nt; t++)
+    {
+        fslsurface_name::vec3<unsigned int> trig = m_surface.getFace(t, 3);
+
+        // Iterate over vertices in a triangle - each vertex is connected to each other vertex
+        // so add neighbours for all combinations unless they are already in the neighbours list
+        // (no duplicates in the nearest neighbour lists)
+        for (int v1=0; v1<3; v1++) 
+        {
+            if (std::find(neighbours[trig.x].begin(), neighbours[trig.x].end(), trig.y + 1) == neighbours[trig.x].end())
+                neighbours[trig.x].push_back(trig.y + 1);
+            if (std::find(neighbours[trig.x].begin(), neighbours[trig.x].end(), trig.z + 1) == neighbours[trig.x].end())
+                neighbours[trig.x].push_back(trig.z + 1);
+            if (std::find(neighbours[trig.y].begin(), neighbours[trig.y].end(), trig.x + 1) == neighbours[trig.y].end())
+                neighbours[trig.y].push_back(trig.x + 1);
+            if (std::find(neighbours[trig.y].begin(), neighbours[trig.y].end(), trig.z + 1) == neighbours[trig.y].end())
+                neighbours[trig.y].push_back(trig.z + 1);
+            if (std::find(neighbours[trig.z].begin(), neighbours[trig.z].end(), trig.x + 1) == neighbours[trig.z].end())
+                neighbours[trig.z].push_back(trig.x + 1);
+            if (std::find(neighbours[trig.z].begin(), neighbours[trig.z].end(), trig.y + 1) == neighbours[trig.z].end())
+                neighbours[trig.z].push_back(trig.y + 1);
+        }
+    }
+
+    // Search for Neighbours-of-neighbours, excluding self,
+    // but including duplicates if there are two routes to get there (diagonally connected)
+    // Note that voxel indices start at 1 because of NEWMAT
+    for (unsigned int vid=1; vid <= nv; vid++)
+    {   
+        //cout << "Voxel " << (vid-1);
+        // Go through the list of neighbours for each voxel.
+        for (unsigned int n1 = 0; n1 < neighbours[vid-1].size(); n1++)
+        {
+            //cout << " " << (neighbours[vid-1][n1] - 1);
+            // n1id is the voxel index (starting at 1) of the neighbour
+            unsigned int n1id = neighbours[vid-1][n1];
+            int found_self_as_second_neighbour = 0;
+            // Go through each of it's neighbours. Add each, apart from original voxel
+            for (unsigned int n2=0; n2<neighbours[n1id-1].size(); n2++)
+            {
+                //cerr << n2 << ", " << n1id << ", " << neighbours.size() << ", " << nv << endl;
+                unsigned int n2id = neighbours[n1id-1][n2];
+                if (n2id != vid)
+                {
+                    neighbours2[vid-1].push_back(n2id);
+                }
+                else
+                {
+                    found_self_as_second_neighbour++;
+                }
+            }
+
+            if (found_self_as_second_neighbour != 1)
+            {
+                throw FabberInternalError("Each voxel's neighbour must have "
+                                          "the original voxel as a neighbour exactly once");
+            }
+        }
+        //cout << endl;
+    }
+}
+
