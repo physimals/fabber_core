@@ -45,7 +45,7 @@ we implemented run data which is not ideal for this use case.
 This is required because knowledge of the connectivity of voxels/vertices is now 
 dependent on the input data format - volume or surface.
 
- - [ ] Implement neighbour calculation for FabberRunDataGifti
+ - [x] Implement neighbour calculation for FabberRunDataGifti
 
 Straighforward from vertex/triangle connectivity data
 
@@ -57,3 +57,5 @@ This is a difficult question!
  - [x] Evaluate use of FabberRunData.SetExtent which seems kind of useless but is used in the
    C API so it presumably has some purpose. Maybe can be limited to FabberRunDataArray
 
+Removed and limited to FabberRunDataArray. In general we don't want anything explicity
+volumetric in FabberRunData.
