@@ -210,6 +210,9 @@ void FabberRunDataNewimage::GetNeighbours(std::vector<std::vector<int> > &neighb
                                           std::vector<std::vector<int> > &neighbours2)
 {
     LOG << "FabberRunDataNewimage::Getting nearest neigbours and second neighbours" << endl;
+    neighbours.clear();
+    neighbours2.clear();
+
     int nx = m_main_vol.xsize();
     int ny = m_main_vol.ysize();
     int nz = m_main_vol.zsize();
@@ -234,9 +237,6 @@ void FabberRunDataNewimage::GetNeighbours(std::vector<std::vector<int> > &neighb
             }
         }
     }
-
-    neighbours.clear();
-    neighbours2.clear();
 
     // Tedious but fundamentally simple search for unmasked nearest neighbours
     v = 0;
