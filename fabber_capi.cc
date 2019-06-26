@@ -91,11 +91,11 @@ int fabber_set_extent(
         rundata->SetExtent(nx, ny, nz, mask);
         return 0;
     }
-    catch (exception &e)
+    catch (NEWMAT::Exception &e)
     {
         return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
-    catch (NEWMAT::Exception &e)
+    catch (exception &e)
     {
         return fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
@@ -244,17 +244,17 @@ int fabber_dorun(void *fab, unsigned int log_bufsize, char *log_buf, char *err_b
         log.LogStream() << e.what() << endl;
         ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
-    catch (const exception &e)
-    {
-        log.ReissueWarnings();
-        log.LogStream() << "STL exception caught in fabber:\n  " << e.what() << endl;
-        ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
-    }
     catch (NEWMAT::Exception &e)
     {
         log.ReissueWarnings();
         log.LogStream() << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
         ret = fabber_err(FABBER_ERR_NEWMAT, e.what(), err_buf);
+    }
+    catch (const exception &e)
+    {
+        log.ReissueWarnings();
+        log.LogStream() << "STL exception caught in fabber:\n  " << e.what() << endl;
+        ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
     catch (...)
     {
@@ -551,7 +551,7 @@ int fabber_model_evaluate(void *fab, unsigned int n_params, float *params, unsig
 }
 
 int fabber_model_evaluate_output(void *fab, unsigned int n_params, float *params, unsigned int n_ts,
-    float *indata, char *output_name, float *output, char *err_buf)
+    float *indata, const char *output_name, float *output, char *err_buf)
 {
     if (!fab)
         return fabber_err(FABBER_ERR_FATAL, "Rundata is NULL", err_buf);
@@ -605,11 +605,11 @@ int fabber_model_evaluate_output(void *fab, unsigned int n_params, float *params
         log.ReissueWarnings();
         ret = 0;
     }
-    catch (exception &e)
+    catch (NEWMAT::Exception &e)
     {
         ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }
-    catch (NEWMAT::Exception &e)
+    catch (exception &e)
     {
         ret = fabber_err(FABBER_ERR_FATAL, e.what(), err_buf);
     }

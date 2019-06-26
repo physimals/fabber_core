@@ -1009,7 +1009,7 @@ void Vb::SaveResults(FabberRunData &rundata) const
         freeEnergyHistory.ReSize(num_iters, nVoxels);
         for (int vox = 1; vox <= nVoxels; vox++)
         {
-            for (int iter=1; iter <= num_iters; iter++) 
+            for (unsigned int iter=1; iter <= num_iters; iter++) 
             {
                 if (iter <= resultFsHistory.at(vox - 1).size()) 
                 {
