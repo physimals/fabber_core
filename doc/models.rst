@@ -1,12 +1,12 @@
-Building a new model
-====================
+Building a new model library
+============================
 
 For most new applications, a model will need to be constructed. This will
 include adjustable parameters which Fabber will then fit.
 
-A complete example model is provided in the ``examples`` subdirectory of
+The example shown below is included in the ``examples`` subdirectory of
 the Fabber source code. This provides an easy template to implement a
-new model. In the next section we will go through this example.
+new model.
 
 We will assume only some basic knowledge of ``C++`` for this example.
 
@@ -69,7 +69,8 @@ We have not made our methods virtual, so nobody will be able to create a
 subclass of our model. If we wanted this to be the case all the 
 non-static methods would need to be virtual, and we would need to add a
 virtual destructor. This is sometimes useful when you want to create 
-variations on a basic model.
+variations on a basic model (for example we have a variety of DCE models
+all inheriting from a common base class).
 
 Most of the code above is completely generic to any model. The only parts which
 are specific to our exp-function model are:
@@ -144,12 +145,12 @@ and what the time resolution in the data is. Each option is listed in the ``OPTI
 
 An option is described by:
 
- - It's name which generally should *not* include underscores (hyphen is OK as in this
+ - It's name which generally should *not* include underscores (hyphen is preferred as in this
    case). The name translates into a command line option e.g. ``--num-exps``.
  - An option type. Possibilities are:
-    - ``OPT_BOOL`` for a Yes/No boolean
+    - ``OPT_BOOL`` for a Yes/No option which is considered 'off' unless it is specified
     - ``OPT_FLOAT`` for a decimal number
-    - ``OPT_INT`` for a whole number
+    - ``OPT_INT`` for a whole number (integer)
     - ``OPT_STR`` for text
     - ``OPT_MATRIX`` for a small matrix (specified by giving the filename of
       a text file which contains the matrix data in tab-separated form)
@@ -160,13 +161,13 @@ An option is described by:
    requested for the model
  - ``OPT_NONREQ`` if the option is not mandatory (does not need to be specified)
    or ``OPT_REQ`` if the option must be provided by the user.
- - An indication of the default value. This value is not actually used to initialize 
+ - An indication of the default value. This value is *not* used to initialize 
    anything but is shown in ``--help`` to explain to the user what the default is
    if the option is not given. So it can contain any text (e.g. ``"0.7 for PASL, 1.3 for pCASL"``.
    You should not specify a default for a mandatory option (``OPT_REQ``)
 
-In this case we have made the time resolution option mandatory, but the number
-of exponentials defaults to 1 if not specified.
+In this case we have made the time resolution option mandatory because we have no reasonable
+way to guess this, but the number of exponentials defaults to 1.
 
 This option system is a little cumbersome when there is only a couple of options, but if
 you have many it will make it clear to see what they are. Most
@@ -188,8 +189,11 @@ the latter has a default value::
         m_num = rundata.GetIntDefault("num-exps", 1);
     }
 
+The lack of a default value for ``dt`` means that an exception will be thrown
+if this option is not specified.
+
 We use the term *Options* to distinguish user-specified or default model 
-configuration from *Parameters* which are the parts of the model inferred by 
+configuration from *Parameters* which are the variables of the model inferred by 
 the Fabber process. Next we need to specify what parameters our model
 includes::
 
@@ -221,7 +225,7 @@ Priors and Posteriors
 *Priors* are central to Bayesian inference, and describe the extent of our belief about a parameter's
 value *before we have seen any data*. 
 
-For example if a parameter represents the T_1 value of
+For example if a parameter represents the :math:`T_1` value of
 grey matter in the brain there is a well known range of plausible values. By declaring a
 suitable prior we ensure that probabilities are calculated correctly and unlikely values 
 of the parameter are avoided unless the data very strongly supports this. 
@@ -234,24 +238,27 @@ it makes sense to give them defaults of ``1`` wherease ``c`` and ``d`` are addit
 prior means of ``0`` seems more appropriate.
 
 The second ``DistParams`` instance represents the initial *posterior*. This is the starting
-point for the optimisation as it tries to find the best values for each parameter. Usually this
-does not matter too much and can often be set to be identical to the prior. 
+point for the optimisation as it tries to find the best values for each parameter. Since the
+optimization process should iterate to the correct posterior, this may not matter too much 
+and can often be set to be identical to the prior. 
 
-Sometimes, however, it may be helpful to give the initial posterior a more restrictive (lower) 
-variance to avoid numerical instability. 
+When using a non-informative prior, however, it may be better to give the initial posterior 
+a more restrictive (lower) variance to avoid numerical instability. We have done that here,
+using 100 for the initial posterior variance. 
 
-It is also possible to adjust the initial posterior on a per-voxel basis using the actual
-voxel data. We will not do that here, but it can be useful when fitting, for
+There is rarely a good reason to set the initial posterior to have a different  mean 
+to the prior globally. However it is possible to adjust the initial posterior on a per-voxel 
+basis using the actual voxel data. We will not do that here, but it can be useful when fitting, for
 example, a constant offset, where we can tell the optimisation to start with a value that 
 is the mean of the data. This may help avoid instability and local minima.
 
 In general it is against the spirit of the Bayesian approach to modify the priors on the
-basis of the data, and no means are provided to do this. It is possible for the user to modify 
+basis of the data, and we don't provide a method for doing thsi. It is possible for the user to modify 
 the priors on a global basis but this is not encouraged and in general a model should try to provide
 good priors that will not need modification.
 
-We now go back to our model code where we finally reach the point where we write 
-the code to calculate our model::
+We now go back to our code where we finally reach the point where we calculate the output 
+of our model::
 
     void ExpFwdModel::EvaluateModel(const NEWMAT::ColumnVector &params, 
                                     NEWMAT::ColumnVector &result, 
@@ -279,12 +286,17 @@ exponential to the output result.
 
 The additional argument ``key`` is not required in this case. It is used
 to allow a model to evaluate 'alternative' outputs such as an interim 
-residual or AIF curve.
+residual or AIF curve. These are not used in the fitting process but can
+be written out using the ``--save-model-extras`` option.
+
+Note that the variable ``data`` is available
+at this point and contains the current voxel's time series. We are using
+it here to determine how many time points to generate.
 
 Making the example into an executable
 -------------------------------------
 
-We need one more file to build our new model into it's own Fabber executable.
+We need one more file to build our new model library into it's own Fabber executable.
 This is called ``fabber_main.cc`` and it is very simple::
 
     #include "fabber_core/fabber_core.h"
@@ -294,11 +306,16 @@ This is called ``fabber_main.cc`` and it is very simple::
         return execute(argc, argv);
     }
 
-It is also possible to build Fabber models into a shared library 
-which can be loaded dynamically by any Fabber executable. We will
-not do that in this example but if you're interested look at the
-additional source files ``exp_models.cc`` and ``exp_models.h``
-for details.
+Any number of models can be included in a library. The resulting executable
+will contain all the new models we define alongside the default generic
+models ``linear`` and ``poly``.
+
+.. note::
+    It is also possible to build Fabber models into a shared library 
+    which can be loaded dynamically by any Fabber executable. We will
+    not do that in this example but if you're interested look at the
+    additional source files ``exp_models.cc`` and ``exp_models.h``
+    for details.
 
 Building an executable with our new model
 -----------------------------------------
@@ -556,10 +573,10 @@ visually shows sensible fitting in the overwhelming majority of voxels:
 Changing the example to your own model
 --------------------------------------
 
-To summaries, these are the main steps you'll need to take to
+To summarize, these are the main steps you'll need to take to
 change this example into your own new model:
 
--  Edit the ``Makefile`` to change references to ``exp`` to the name of your model
+-  Edit the ``Makefile`` to change references to ``exp`` and ``Exp`` to the name of your model
 -  Rename source files, e.g. ``fwdmodel_exp.cc`` -> ``fwdmodel_<mymodel>.cc``
 -  Add your model options to the options list in the ``.cc`` file
 -  Add any model-specific private variables in the ``.h`` file
