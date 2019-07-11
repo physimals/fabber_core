@@ -86,9 +86,9 @@ Creating a new models library
 This is the preferred approach if you want to distribute your new models. A template
 for a new model library including a simple sine-function implementation is
 included with the Fabber source code in ``fabber_core/examples``. See
-`Building a new model`_ for a full tutorial on this example which includes
+`Building a new model library`_ for a full tutorial on this example which includes
 how to set up the build scripts.
 
-.. _Building a new model: models.html
+.. _Building a new model library: models.html
 
 
