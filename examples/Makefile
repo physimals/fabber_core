@@ -8,11 +8,16 @@ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB}
 FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
 ifeq ($(FSLVERSION), 5) 
   NIFTILIB = -lfslio -lniftiio 
+  MATLIB = -lnewmat
 else 
+  UNAME := $(shell uname -s)
+  ifeq ($(UNAME), Linux)
+    MATLIB = -lopenblas
+  endif
   NIFTILIB = -lNewNifti
 endif
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob -lnewmat ${NIFTILIB} -lznz -lz -ldl
+LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 
 XFILES = fabber_exp
 
