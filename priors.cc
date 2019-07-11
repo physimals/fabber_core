@@ -258,8 +258,9 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
         else if (m_type_code == PRIOR_SPATIAL_p)
         {
             // Penny prior without boundary correction
-            // assumes number of nearest neighbours = 2*spatial_dims
-            trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + nn);
+            // Uses Laplacian spatial matrix with
+            // number of nearest neighbours = 2*spatial_dims
+            trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + 2 * m_spatial_dims);
         }
         else 
         {
