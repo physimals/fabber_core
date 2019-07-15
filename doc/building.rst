@@ -13,17 +13,47 @@ libraries distributed as part of FSL. In addition the Fabber
     for use particularly on Windows. We will not describe this
     here.
 
-First you need to set up an FSL development environment::
+Setting up an FSL development environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You need to have your system set up to compile FSL code. If you're already
+building other FSL tools from source you've probably already done this,
+and can skip this section. Otherwise, run the following commands (you
+may want to put this in your ``.profile`` or ``.bash_profile`` script
+if you are going to be doing a lot of recompiling)::
 
    source $FSLDIR/etc/fslconf/fsl-devel.sh
    export FSLDEVDIR=<prefix to install into>
+   export PATH=$FSLDEVDIR/bin:$PATH
 
-``FSLDEVDIR`` is an anternate prefix to ``FSLDIR`` which is used to 
+``FSLDEVDIR`` is an alternate prefix to ``FSLDIR`` which is used to 
 store updated code separately from the official FSL release. Most
 FSL-based scripts should use code installed in ``FSLDEVDIR`` in preference
 to the main FSL release code.
 
-Building Fabber should be a case of::
+Sometimes this is all you need to do, however often you will need to set
+up a link so that FSL knows what compiler flags to use for your platform.
+A couple of samples are given below:
+
+OSX
+###
+
+.. code::
+    
+    sudo ln -s $FSLDIR/config/apple-darwin13-llvm6.0 $FSLDIR/config/$FSLMACHTYPE
+
+Ubuntu
+######
+
+.. code::
+    
+    sudo ln -s $FSLDIR/config/linux_64-gcc4.8 $FSLDIR/config/$FSLMACHTYPE
+
+Building ``fabber_core``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can probably skip this if you are just building an updated model
+library. If you need to recompile the core, however, it should be a case of::
 
    cd fabber_core
    make install
