@@ -82,7 +82,7 @@ Adding your own models
 ----------------------
 
 If you want to create your own model to use with the Fabber core
-model fitting engine, see `Building a new model`_. Once you've
+model fitting engine, see `Building a new model library`_. Once you've
 designed and coded your model there are two ways to incorporate
 it into the Fabber system:
 
