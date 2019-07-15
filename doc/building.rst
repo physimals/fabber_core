@@ -35,17 +35,11 @@ Sometimes this is all you need to do, however often you will need to set
 up a link so that FSL knows what compiler flags to use for your platform.
 A couple of samples are given below:
 
-OSX
-###
+**OSX**::
 
-.. code::
-    
     sudo ln -s $FSLDIR/config/apple-darwin13-llvm6.0 $FSLDIR/config/$FSLMACHTYPE
 
-Ubuntu
-######
-
-.. code::
+**Ubuntu**::
     
     sudo ln -s $FSLDIR/config/linux_64-gcc4.8 $FSLDIR/config/$FSLMACHTYPE
 
