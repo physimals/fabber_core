@@ -16,24 +16,28 @@ libraries distributed as part of FSL. In addition the Fabber
 Setting up an FSL development environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You need to have your system set up to compile FSL code. If you're already
+First you need to have your system set up to compile FSL code. If you're already
 building other FSL tools from source you've probably already done this,
-and can skip this section. Otherwise, run the following commands (you
-may want to put this in your ``.profile`` or ``.bash_profile`` script
-if you are going to be doing a lot of recompiling)::
+and can skip this section. Otherwise, run the following commands::
 
    source $FSLDIR/etc/fslconf/fsl-devel.sh
    export FSLDEVDIR=<prefix to install into>
    export PATH=$FSLDEVDIR/bin:$PATH
+
+.. note::
+    you may want to put this in your ``.profile`` or ``.bash_profile`` script
+    if you are going to be doing a lot of recompiling)
 
 ``FSLDEVDIR`` is an alternate prefix to ``FSLDIR`` which is used to 
 store updated code separately from the official FSL release. Most
 FSL-based scripts should use code installed in ``FSLDEVDIR`` in preference
 to the main FSL release code.
 
-Sometimes this is all you need to do, however often you will need to set
+*Sometimes* this is all you need to do, however often you will need to set
 up a link so that FSL knows what compiler flags to use for your platform.
-A couple of samples are given below:
+If you get compilation errors (especially referring to missing libraries),
+you may need to create a link in $FSLDIR/config. A couple of samples are given below
+for popular platforms:
 
 **OSX**::
 
