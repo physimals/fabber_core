@@ -36,6 +36,24 @@ Spatial priors are normally only applied to a single parameter which is represen
 of the overall scale of the data. Since all the parameters are linked in the model, 
 the result will generally be that all parameters are smoothed appropriately.
 
+The following descriptions of the spatial prior types are based on Penny et al 2004.
+
+Markov random field spatial prior (type M)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this case the spatial matrix :math:`S^TS` is defined as 1 for nearest neighbour 
+voxels and 0 otherwise. The actual number of nearest neighbours is used so there
+is no bias at boundaries (e.g. at the surface of the volume)
+
+Markov random field spatial prior without boundary correction (type m)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this case the spatial matrix :math:`S^TS` is defined as 1 for nearest neighbour 
+voxels and 0 otherwise. The number of nearest neighbours is defined by the number
+of spatial dimensions (i.e. 8 for 3D spatial inference). This can cause bias at
+the image/mask boundaries hence spatial prior type ``M`` is generally used
+instead.
+
 ARD priors
 ----------
 

@@ -1,5 +1,9 @@
-Theory
-======
+Theory behind Fabber
+====================
+
+Fabber uses a technique called *Variational Bayes* to perform Bayesian inference in a computationally
+efficient way. This section gives a brief overview of the theory behind Fabber, its 
+advantages and limitations. For a fuller description see [1]_ .
 
 Forward model
 -------------
@@ -24,7 +28,7 @@ to infer.
 
 One conventional approach to this problem is to calculate the 'best fit' values of the parameters.
 This is done relative to some *cost function* for example the squared difference between the 
-model prediction and the actual data in least-squares fitting. The partial derivatives of the
+model prediction and the actual data in non-linear least-squares (NLLS) fitting. The partial derivatives of the
 model prediction for each parameter are calculated numerically and used to change their values
 to reduce the cost function. When a minimum has been achieved to within some tolerance, the
 resulting parameter values are returned.
@@ -63,14 +67,14 @@ our prior knowledge (if any) and what the data says. Mathematically this is base
 
 .. math::
 
-    P(value \mid data) = \frac{P(data \mid value) \, P(value)}{P(data)}
+    P(parameters \mid data) = \frac{P(data \mid parameters) \, P(parameters)}{P(data)}
 
-Here :math:`P(value \mid data)`: is the posterior distribution of the parameter's value given
-the data we have. :math:`P(value)` is the prior distribution of the parameter's value. 
-:math:`P(data \mid value)` is the probability of getting the data we have given the value 
-of the parameter and is determined from the forward model together with some model of random
+Here :math:`P(parameters \mid data)`: is the posterior distribution of the parameter values given
+the data we have. :math:`P(parameters)` is the prior distribution of the parameter values. 
+:math:`P(data \mid parameters)` is the probability of getting the data we have given a set of
+parameter values and is determined from the forward model together with some model of random
 noise. This term is known as the *likelihood*. The final term :math:`P(data)` is known as the
-*evidence*, and can generally be neglected as it only provides a normalization of the
+*evidence*, and can often be neglected as it only provides a normalization of the
 posterior distribution.
 
 So, rather than determining the 'best fit' values of model parameters, the output is a
@@ -91,7 +95,8 @@ Advantages of the Bayesian approach include:
 
  - Related to the above, we can potentially fit models which are formally 'over specified' 
    by parameters (i.e. where there are different combinations of parameter values which 
-   produce identical output).
+   produce identical output). Because of the priors, these different combinations of
+   values will not be equally likely and hence we can choose between them.
 
  - The output includes information about how confident we can be in the parameter values 
    as well as the values themselves.
@@ -113,6 +118,13 @@ to reproduce the results of MCMC closely. One consequence of this is that the pr
 posterior distributions must be of the same type. In the Fabber approach these are
 modelled as a multi-variable Gaussian distributions which are characterised by parameter
 means, variances and covariances.
+
+The key measure used by Fabber in fitting the model is the ``Free energy`` which is
+effectively the negative of the Kullback-Leibler divergence between the approximate multi-variate
+Gaussian posterior and the ``true`` posterior distribution. In [1]_ an expression for the
+free energy based on this form of the posterior is derived, along with a set of update equations
+to maximise the free energy (and hence minimise the KL divergence) by varying 
+the parameter means, variances and covariances.
 
 References
 ----------

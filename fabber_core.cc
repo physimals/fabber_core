@@ -298,17 +298,17 @@ int execute(int argc, char **argv)
         gzLog = params->GetBool("gzip-log");
         ret = 0;
     }
-    catch (const exception &e)
-    {
-        log.ReissueWarnings();
-        log.LogStream() << "Exception caught in fabber:\n  " << e.what() << endl;
-        cerr << "Exception caught in fabber:\n  " << e.what() << endl;
-    }
     catch (NEWMAT::Exception &e)
     {
         log.ReissueWarnings();
         log.LogStream() << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
         cerr << "NEWMAT exception caught in fabber:\n  " << e.what() << endl;
+    }
+    catch (const exception &e)
+    {
+        log.ReissueWarnings();
+        log.LogStream() << "Exception caught in fabber:\n  " << e.what() << endl;
+        cerr << "Exception caught in fabber:\n  " << e.what() << endl;
     }
     catch (...)
     {

@@ -62,7 +62,7 @@ tool contains plugins to analyse ASL, CEST, DSC and DCE fMRI data using Fabber.
    
 **Referencing Fabber**
 
-If you use fabber in your research, please make sure that you reference
+If you use Fabber in your research, please make sure that you reference
 at least Chappell et al 2009 [1]_, and ideally [2]_ and [3]_ also.
 
 .. [1] *Chappell, M.A., Groves, A.R., Woolrich, M.W., "Variational Bayesian

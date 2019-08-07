@@ -61,8 +61,8 @@ int main(int argc, char **argv)
         bool ins;
         bool write;
 
-        double val;
-        double var;
+        double val = 0;
+        double var = 0;
         string valimfile;
         string varimfile;
         bool bval = false;
@@ -385,14 +385,14 @@ int main(int argc, char **argv)
 
         return 0;
     }
+    catch (NEWMAT::Exception &e)
+    {
+        cout << e.what() << endl;
+    }
     catch (const std::exception &e)
     {
         cout << e.what() << endl;
         Usage();
-    }
-    catch (NEWMAT::Exception &e)
-    {
-        cout << e.what() << endl;
     }
     catch (...)
     {

@@ -276,7 +276,7 @@ FABBER_DLL_API int fabber_model_evaluate(void *fab, unsigned int n_params, float
  * @return 0 on success, <0 on failure
  */
 FABBER_DLL_API int fabber_model_evaluate_output(void *fab, unsigned int n_params, float *params, 
-    unsigned int n_ts, float *indata, char *output_name, float *output, char *err_buf);
+    unsigned int n_ts, float *indata, const char *output_name, float *output, char *err_buf);
 
 #ifdef __cplusplus
 }
