@@ -197,7 +197,17 @@ const SymmetricMatrix &MVNDist::GetPrecisions() const
         {
             precisions = covariance.i();
         }
-        catch (Exception)
+        catch (Exception &e)
+        {
+            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
+            // again
+            WARN_ONCE("MVN precision (m_size==" + stringify(m_size)
+                + ") was singular, adding 1e-10 to diagonal");
+            LOG << means.t() << endl;
+            LOG << covariance << endl;
+            precisions = (covariance + IdentityMatrix(m_size) * 1e-10).i();
+        }
+        catch (std::exception &e)
         {
             // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
             // again
@@ -232,7 +242,7 @@ const SymmetricMatrix &MVNDist::GetCovariance() const
         {
             covariance = precisions.i();
         }
-        catch (Exception)
+        catch (Exception &e)
         {
             // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
             // again
@@ -242,6 +252,17 @@ const SymmetricMatrix &MVNDist::GetCovariance() const
             LOG << precisions << endl;
             covariance = (precisions + IdentityMatrix(m_size) * 1e-10).i();
         }
+        catch (std::exception &e)
+        {
+            // Failure to invert matrix - this hack adds a tiny amount to the diagonal and tries
+            // again
+            WARN_ONCE("MVN precision (m_size==" + stringify(m_size)
+                + ") was singular, adding 1e-10 to diagonal");
+            LOG << means.t() << endl;
+            LOG << precisions << endl;
+            covariance = (precisions + IdentityMatrix(m_size) * 1e-10).i();
+        }
+        
         covarianceValid = true;
     }
     assert(means.Nrows() == m_size);
@@ -344,6 +365,12 @@ void MVNDist::Load(vector<MVNDist *> &mvns, Matrix &voxel_data, EasyLog *log)
                 tmp(r, c) = voxel_data(++index, vox);
 
         assert(index == nParams * (nParams + 1) / 2);
+        // Catch singular matrix. This can occur when MVN is stored in float precision
+        // e.g. GIFTI file where fslsurface does not support double precision
+        if (tmp.Determinant() < 1e-10) {
+            tmp = (tmp + IdentityMatrix(nParams) * 1e-10);
+        }
+
         mvn->SetCovariance(tmp);
         mvn->means = voxel_data.Column(vox).Rows(
             nParams * (nParams + 1) / 2 + 1, nParams * (nParams + 1) / 2 + nParams);
