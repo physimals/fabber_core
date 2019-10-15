@@ -35,7 +35,7 @@ public:
     virtual void SaveVoxelData(
         const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type = VDT_SCALAR);
 
-private:
+protected:
     void SetCoordsFromExtent(int nx, int ny, int nz);
     NEWIMAGE::volume<float> m_mask;
     bool m_have_mask;

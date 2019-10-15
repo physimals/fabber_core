@@ -2,7 +2,7 @@ include ${FSLCONFDIR}/default.mk
 
 PROJNAME = fabber_core
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
+USRINCFLAGS = -I${FSLDIR}/extras/include/libxml2 -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
 
 FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
@@ -17,7 +17,7 @@ else
   NIFTILIB = -lNewNifti
 endif
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
+LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl -lxml2
 TESTLIBS = -lgtest -lpthread
 
 #
@@ -45,7 +45,7 @@ NOISEOBJS = noisemodel_white.o noisemodel_ar.o
 CONFIGOBJS = setup.o factories.o
 
 # Library for executables
-EXECOBJS = rundata_newimage.o fabber_core.o
+EXECOBJS = rundata_recxml.o rundata_newimage.o fabber_core.o
 
 # Executable main object
 CLIENTOBJS =  fabber_main.o

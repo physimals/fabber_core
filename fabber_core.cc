@@ -10,6 +10,7 @@
 #include "fwdmodel.h"
 #include "inference.h"
 #include "rundata_newimage.h"
+#include "rundata_recxml.h"
 #include "version.h"
 #include "tools.h"
 
@@ -92,8 +93,10 @@ int execute(int argc, char **argv)
         set_environment();
 
         // Create a new Fabber run
-        FabberRunDataNewimage paramso(true);
-        FabberRunDataNewimage *params = &paramso;
+        //FabberRunDataNewimage paramso(true);
+        //FabberRunDataNewimage *params = &paramso;
+        FabberRunDataRecxml paramso(true);
+        FabberRunDataRecxml *params = &paramso;
         params->SetLogger(&log);
         params->Parse(argc, argv);
 
