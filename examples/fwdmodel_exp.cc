@@ -53,8 +53,8 @@ void ExpFwdModel::GetParameterDefaults(std::vector<Parameter> &params) const
     int p=0;
     for (int i=0; i<m_num; i++) {
         // Infer log of parameter values to prevent negative values
-        params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1, 100), DistParams(1, 100), PRIOR_NORMAL, TRANSFORM_ABS()));
-        params.push_back(Parameter(p++, "r" + stringify(i+1), DistParams(1, 100), DistParams(1, 100), PRIOR_NORMAL, TRANSFORM_ABS()));
+        params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1, 1e5), DistParams(1, 1.5), PRIOR_NORMAL, TRANSFORM_LOG()));
+        params.push_back(Parameter(p++, "r" + stringify(i+1), DistParams(1, 1e5), DistParams(1, 1.5), PRIOR_NORMAL, TRANSFORM_LOG()));
 
         // Infer parameter values directly
         //params.push_back(Parameter(p++, "amp" + stringify(i+1), DistParams(1, 100), DistParams(1, 100)));
