@@ -44,14 +44,10 @@ const Matrix &FabberRunDataRecxml::LoadVoxelData(const std::string &filename)
         LOG << "FabberRunDataRecxml::Loading data from '" + filename << "'" << endl;
 
         volume4D<float> vol;
-        m_parser_currdata = filename;
         try
         {
-            // Load the metadata file
-            LoadMetadata(filename + ".xml");
+            LoadRecxml(vol, filename);
 
-            // Load the binary data into a NEWIMAGE volume
-            LoadBinaryData(filename + ".rec");
             if (!m_have_mask)
             {
                 // We need a mask volume so that when we save we can make sure
@@ -139,18 +135,18 @@ static void endElementNs( void * ctx,
     {
         if (recxml.m_parser_inimage) 
         {
-            cerr << "Image ";
+            //cerr << "Image ";
             // Currently inside an image record - add attribute to the last image in the sequence
             int last_vol = recxml.m_recxml_data[recxml.m_parser_currdata].vol_attrs.size() - 1;
             recxml.m_recxml_data[recxml.m_parser_currdata].vol_attrs[last_vol][recxml.m_parser_attrname] = recxml.m_parser_chars;
         }
         else 
         {
-            cerr << "Global ";
+            //cerr << "Global ";
             // Not currently inside an image record - add attribute to global list
             recxml.m_recxml_data[recxml.m_parser_currdata].global_attrs[recxml.m_parser_attrname] = recxml.m_parser_chars;
         }
-        cerr << "Attribute: " << recxml.m_parser_attrname << "=" << recxml.m_parser_chars << endl;
+        //cerr << "Attribute: " << recxml.m_parser_attrname << "=" << recxml.m_parser_chars << endl;
     }
     recxml.m_parser_chars = "";
 }
@@ -162,25 +158,68 @@ static void characters_handler(void * ctx, const xmlChar * ch, int len)
     recxml.m_parser_chars += chars;
 }
 
-void FabberRunDataRecxml::LoadMetadata(const std::string &filename)
+void FabberRunDataRecxml::LoadRecxml(volume4D<float> &vol, const std::string &filename)
 {
-   LIBXML_TEST_VERSION
+    // Parse XML header using libxml SAX interface
+    LIBXML_TEST_VERSION
+    xmlSAXHandler saxHandler;
+    memset( &saxHandler, 0, sizeof(saxHandler) );
+    saxHandler.initialized = XML_SAX2_MAGIC;
+    saxHandler.startElementNs = &startElementNs;
+    saxHandler.endElementNs = &endElementNs;
+    saxHandler.characters = &characters_handler;
 
-   xmlSAXHandler saxHandler; // See http://xmlsoft.org/html/libxml-tree.html#xmlSAXHandler
-   memset( &saxHandler, 0, sizeof(saxHandler) );
-   // Using xmlSAXVersion( &saxHandler, 2 ) generate crash as it sets plenty of other pointers...
-   saxHandler.initialized = XML_SAX2_MAGIC;  // so we do this to force parsing as SAX2.
-   saxHandler.startElementNs = &startElementNs;
-   saxHandler.endElementNs = &endElementNs;
-   saxHandler.characters = &characters_handler;
+    m_parser_inimage = false;
+    m_parser_currdata = filename;
+    int result = xmlSAXUserParseFile(&saxHandler, this, (filename + ".xml").c_str());
+    xmlCleanupParser(); 
+    if (result != 0)
+    {
+       throw std::runtime_error("Failed to parse document");
+    }
 
-   m_parser_inimage = false;
-   int result = xmlSAXUserParseFile(&saxHandler, this, filename.c_str());
-   xmlCleanupParser(); 
-   if (result != 0)
-   {
-      throw std::runtime_error("Failed to parse document");
-   }
+    // Extract the XY resolution from the first image - FIXME check all the same
+    int rx = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[0]["Resolution X"]);
+    int ry = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[0]["Resolution Y"]);
+    int px = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[0]["Pixel Size"]);
+    int bytes_per_value = px / 8;
+    cerr << "Resolution: " << rx << "x" << ry << " at " << px << " bits/pixel" << endl;
+
+    // Find the max number of slices and phases - this gives the Z and T resolution
+    int n_slices = 0;
+    int n_phases = 0;
+    for (int idx=0; idx<m_recxml_data[m_parser_currdata].vol_attrs.size(); idx++) 
+    {
+        int slice = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[idx]["Slice"]);
+        int phase = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[idx]["Phase"]);
+        if (slice > n_slices) n_slices = slice;
+        if (phase > n_phases) n_phases = phase;
+    }
+    vol.reinitialize(rx, ry, n_slices, n_phases);
+
+    // Now read the binary file and put the data in the appropriate place
+    FILE *fp = fopen((filename + ".rec").c_str(), "rb");
+    unsigned char bytes[bytes_per_value];
+    for (int idx=0; idx<m_recxml_data[m_parser_currdata].vol_attrs.size(); idx++) 
+    {
+        int slice = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[idx]["Slice"]);
+        int phase = convertTo<int>(m_recxml_data[m_parser_currdata].vol_attrs[idx]["Phase"]);
+        for (int x=0; x<rx; x++) 
+        {
+            for (int y=0; y<ry; y++) 
+            {
+                int flag = fread(bytes, bytes_per_value, 1, fp);
+                int value = 0;
+                for (int byte=0; byte<bytes_per_value; byte++) 
+                {
+                    value |= bytes[byte] << (8*byte);
+                }
+                cerr << x  << ", " << y << ", " << slice << ", " << phase << "=" << value << endl;
+                vol[x, y, slice-1, phase-1] = float(value);
+            }
+        }
+    }
+    fclose(fp);
 }
 
 void FabberRunDataRecxml::LoadBinaryData(const std::string &filename)

@@ -47,6 +47,6 @@ public:
     std::map<std::string, RecxmlImage> m_recxml_data;
 
 private:
-    void LoadMetadata(const std::string &filename);
+    void LoadRecxml(NEWIMAGE::volume4D<float> &vol, const std::string &filename);
     void LoadBinaryData(const std::string &filename);
 };
