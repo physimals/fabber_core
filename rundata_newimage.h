@@ -37,6 +37,8 @@ public:
 
 protected:
     void SetCoordsFromExtent(int nx, int ny, int nz);
+    void DumpVolumeInfo4D(const NEWIMAGE::volume4D<float> &vol);
+    void DumpVolumeInfo(const NEWIMAGE::volume<float> &vol);
     NEWIMAGE::volume<float> m_mask;
     bool m_have_mask;
 };

@@ -24,27 +24,6 @@ using namespace std;
 using namespace NEWIMAGE;
 using NEWMAT::Matrix;
 
-static void DumpVolumeInfo4D(const volume4D<float> &info, ostream &out)
-{
-    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize()
-        << ", z=" << info.zsize() << ", vols=" << info.tsize() << endl;
-    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim()
-        << "mm, z=" << info.zdim() << "mm, TR=" << info.tdim() << " sec\n";
-    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1)
-        << ", " << info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
-static void DumpVolumeInfo(const volume<float> &info, ostream &out)
-{
-    out << "FabberRunDataNewimage::Dimensions: x=" << info.xsize() << ", y=" << info.ysize()
-        << ", z=" << info.zsize() << ", vols=1" << endl;
-    out << "FabberRunDataNewimage::Voxel size: x=" << info.xdim() << "mm, y=" << info.ydim()
-        << "mm, z=" << info.zdim() << "mm, TR=1"
-        << " sec\n";
-    out << "FabberRunDataNewimage::Intents: " << info.intent_code() << ", " << info.intent_param(1)
-        << ", " << info.intent_param(2) << ", " << info.intent_param(3) << endl;
-}
-
 FabberRunDataNewimage::FabberRunDataNewimage(bool compat_options)
     : FabberRunData(compat_options)
     , m_mask(1, 1, 1)
@@ -66,7 +45,7 @@ void FabberRunDataNewimage::SetExtentFromData()
         }
         read_volume(m_mask, mask_fname);
         m_mask.binarise(1e-16, m_mask.max() + 1, exclusive);
-        DumpVolumeInfo(m_mask, LOG);
+        DumpVolumeInfo(m_mask);
         SetCoordsFromExtent(m_mask.xsize(), m_mask.ysize(), m_mask.zsize());
     }
     else
@@ -79,7 +58,7 @@ void FabberRunDataNewimage::SetExtentFromData()
         {
             throw DataNotFound(data_fname, "File is invalid or does not exist");
         }
-        volume<float> main_vol;
+        volume4D<float> main_vol;
         read_volume(main_vol, data_fname);
         SetCoordsFromExtent(main_vol.xsize(), main_vol.ysize(), main_vol.zsize());
     }
@@ -114,7 +93,7 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
         {
             throw DataNotFound(filename, "Error loading file");
         }
-        DumpVolumeInfo4D(vol, LOG);
+        DumpVolumeInfo4D(vol);
 
         try
         {
@@ -207,4 +186,25 @@ void FabberRunDataNewimage::SetCoordsFromExtent(int nx, int ny, int nz)
     {
         SetVoxelCoords(coordvol.matrix());
     }
+}
+
+void FabberRunDataNewimage::DumpVolumeInfo4D(const volume4D<float> &vol)
+{
+    LOG << "FabberRunDataNewimage::Dimensions: x=" << vol.xsize() << ", y=" << vol.ysize()
+        << ", z=" << vol.zsize() << ", vols=" << vol.tsize() << endl;
+    LOG << "FabberRunDataNewimage::Voxel size: x=" << vol.xdim() << "mm, y=" << vol.ydim()
+        << "mm, z=" << vol.zdim() << "mm, TR=" << vol.tdim() << " sec\n";
+    LOG << "FabberRunDataNewimage::Intents: " << vol.intent_code() << ", " << vol.intent_param(1)
+        << ", " << vol.intent_param(2) << ", " << vol.intent_param(3) << endl;
+}
+
+void FabberRunDataNewimage::DumpVolumeInfo(const volume<float> &vol)
+{
+    LOG << "FabberRunDataNewimage::Dimensions: x=" << vol.xsize() << ", y=" << vol.ysize()
+        << ", z=" << vol.zsize() << ", vols=1" << endl;
+    LOG << "FabberRunDataNewimage::Voxel size: x=" << vol.xdim() << "mm, y=" << vol.ydim()
+        << "mm, z=" << vol.zdim() << "mm, TR=1"
+        << " sec\n";
+    LOG << "FabberRunDataNewimage::Intents: " << vol.intent_code() << ", " << vol.intent_param(1)
+        << ", " << vol.intent_param(2) << ", " << vol.intent_param(3) << endl;
 }
