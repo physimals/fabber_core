@@ -187,7 +187,7 @@ static OptionSpec OPTIONS[] = {
     { "save-mean", OPT_BOOL, "Output the parameter means.", OPT_NONREQ, "" },
     { "save-std", OPT_BOOL, "Output the parameter standard deviations.", OPT_NONREQ, "" },
     { "save-zstat", OPT_BOOL, "Output the parameter Zstats.", OPT_NONREQ, "" },
-    { "save-noise-mean", OPT_BOOL, "Output the noise means.", OPT_NONREQ, "" },
+    { "save-noise-mean", OPT_BOOL, "Output the noise means. The noise distribution inferred is the precision of a Gaussian noise source", OPT_NONREQ, "" },
     { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
     { "save-free-energy", OPT_BOOL, "Output the free energy, if calculated. ", OPT_NONREQ, "" },
     { "optfile", OPT_BOOL, "File containing additional options, one per line, in the same form as "
