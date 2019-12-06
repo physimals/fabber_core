@@ -282,11 +282,9 @@ void FabberRunData::Run(ProgressCheck *progress)
     if (GetBool("dump-param-names"))
     {
         ofstream paramFile((GetStringDefault("output", ".") + "/paramnames.txt").c_str());
-        vector<string> paramNames;
-        fwd_model->NameParams(paramNames);
-        for (unsigned i = 0; i < paramNames.size(); i++)
+        for (unsigned i = 0; i < params.size(); i++)
         {
-            paramFile << paramNames[i] << endl;
+            paramFile << params[i].name << endl;
         }
         paramFile.close();
     }
