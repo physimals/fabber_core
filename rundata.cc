@@ -147,7 +147,7 @@ static OptionSpec OPTIONS[] = {
     { "listoutputs", OPT_BOOL, "List additional model outputs (requires model configuration options to be given)", OPT_NONREQ, "" },
     { "evaluate", OPT_STR, "Evaluate model. Set to name of output required or blank for default output. Requires model configuration options, --evaluate-params and --evaluate-nt", OPT_NONREQ, "" },
     { "evaluate-params", OPT_MATRIX, "List of parameter values for evaluation", OPT_NONREQ, "" },
-    { "evaluate-nt", OPT_MATRIX, "Number of time points for evaluation - must be consistent with model options where appropriate", OPT_NONREQ, "" },
+    { "evaluate-nt", OPT_INT, "Number of time points for evaluation - must be consistent with model options where appropriate", OPT_NONREQ, "" },
     { "simple-output", OPT_BOOL, "Instead of usual standard output, simply output series of lines each giving progress as percentage", OPT_NONREQ, "" },
     { "output", OPT_STR, "Directory for output files (including logfile)", OPT_REQ, "" },
     { "overwrite", OPT_BOOL, "If set will overwrite existing output. If not set, new output "
