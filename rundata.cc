@@ -186,6 +186,7 @@ static OptionSpec OPTIONS[] = {
     { "save-mvn", OPT_BOOL, "Output the final MVN distributions.", OPT_NONREQ, "" },
     { "save-mean", OPT_BOOL, "Output the parameter means.", OPT_NONREQ, "" },
     { "save-std", OPT_BOOL, "Output the parameter standard deviations.", OPT_NONREQ, "" },
+    { "save-var", OPT_BOOL, "Output the parameter variances.", OPT_NONREQ, "" },
     { "save-zstat", OPT_BOOL, "Output the parameter Zstats.", OPT_NONREQ, "" },
     { "save-noise-mean", OPT_BOOL, "Output the noise means. The noise distribution inferred is the precision of a Gaussian noise source", OPT_NONREQ, "" },
     { "save-noise-std", OPT_BOOL, "Output the noise standard deviations. ", OPT_NONREQ, "" },
