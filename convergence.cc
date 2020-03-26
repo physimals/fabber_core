@@ -170,7 +170,8 @@ bool TrialModeConvergenceDetector::Test(double F)
         {
             // if F has reduced then we will enter trial mode. Don't overwrite 
             // our best F so far
-            ++m_trials;
+            m_its = 1;
+            m_trials = 1;
             m_trialmode = true;
             m_revert = true;
             m_save = false;
@@ -190,7 +191,8 @@ bool TrialModeConvergenceDetector::Test(double F)
                 m_save = true;
                 m_revert = false;
                 m_prev_f = F;
-                return false;
+                ++m_its;
+                return (m_its >= m_max_its);
             }
         }
     }
@@ -215,6 +217,7 @@ bool TrialModeConvergenceDetector::Test(double F)
                 // and save as best so far 
                 m_trialmode = false;
                 m_trials = 0;
+
                 m_save = true;
                 m_revert = false;
                 m_prev_f = F;
