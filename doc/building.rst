@@ -1,6 +1,11 @@
 Building Fabber
 ===============
 
+In most cases **you don't need to build Fabber** - executables covering a variety of models are available in FSL (v6.0.1 or later recommended). You might need to use the following instructions, however if you:
+
+ - Need to install updated code which has not yet been released in FSL
+ - Want to write your own model or otherwise modify the code
+
 Building Fabber using an installed FSL distribution
 ---------------------------------------------------
 
@@ -34,19 +39,31 @@ to set it to something in your home directory, e.g. ``$HOME/fsldev``. Most
 FSL-based scripts should use code installed in ``FSLDEVDIR`` in preference
 to the main FSL release code.
 
-*Sometimes* this is all you need to do, however often you will need to set
-up a link so that FSL knows what compiler flags to use for your platform.
-If you get compilation errors (especially referring to missing libraries),
-you may need to create a link in ``$FSLDIR/config``. A couple of samples are given below
-for popular platforms:
+Setting up compiler/linker flags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**OSX**::
+.. note::
+    This is not always necessary - it depends on the system you're building on.
+    So try skipping to the 'Building...' sections below and come back if you get
+    compiler/linker errors.
 
-    sudo ln -s $FSLDIR/config/apple-darwin13-llvm6.0 $FSLDIR/config/$FSLMACHTYPE
+Firstly, if you're getting errors trying to build you need to do ``make clean``
+and (to be safe!) ``rm depend.mk`` before building again with new settings. Also
+note that the FSL build system changed in v6.0.3 - here we provide only information
+for the new build system.
 
-**Ubuntu**::
-    
-    sudo ln -s $FSLDIR/config/linux_64-gcc4.8 $FSLDIR/config/$FSLMACHTYPE
+The relevant settings are in ``$FSLDIR/config/buildSettings.mk``. In particular
+you may need to modify ``ARCHFLAGS`` for your system - be careful as there are
+separate definitions for Linux and Mac ('Darwin') systems, so make sure you
+change the right one!
+
+For recent versions of Ubuntu, you need to turn off use of the C++11 ABI as FSL libraries are not
+compiled using this. To do this add the following to ``ARCHFLAGS``::
+
+    -D_GLIBCXX_USE_CXX11_ABI=0 -no-pie
+
+If you are having difficulty with other systems, please raise an issue and we will
+investigate.
 
 Building ``fabber_core``
 ~~~~~~~~~~~~~~~~~~~~~~~~
