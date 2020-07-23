@@ -17,7 +17,7 @@ else
   NIFTILIB = -lNewNifti
 endif
 
-LIBS = -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
+LIBS = -lnewimage -lmiscmaths -lutils -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
