@@ -18,7 +18,7 @@ else
 endif
 
 SURFACE_LIBS = -lfslsurface -lfslvtkio -lgiftiio -lmeshclass -lfirst_lib -lexpat
-LIBS = ${SURFACE_LIBS} -lutils -lnewimage -lmiscmaths -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
+LIBS = ${SURFACE_LIBS} -lnewimage -lmiscmaths -lutils -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
