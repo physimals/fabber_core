@@ -249,7 +249,7 @@ void Vb::PassModelData(int v)
     if (m_suppdata->Ncols() > 0)
     {
         ColumnVector suppy = m_suppdata->Column(v);
-        m_model->PassData(v, data, vcoords, suppy);
+        m_model->PassData(v, data, vcoords,  suppy);
     }
     else
     {
@@ -351,6 +351,18 @@ bool Vb::IsSpatial(FabberRunData &rundata) const
     return false;
 }
 
+bool Vb::UseLaplacian(FabberRunData &rundata) const
+{
+    if (rundata.HaveKey("laplacian"))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void Vb::DoCalculations(FabberRunData &rundata)
 {
     // extract data (and the coords) from rundata for the (first) VB run
@@ -361,6 +373,9 @@ void Vb::DoCalculations(FabberRunData &rundata)
     m_origdata = &rundata.GetMainVoxelData();
     m_coords = &rundata.GetVoxelCoords();
     m_suppdata = &rundata.GetVoxelSuppData();
+    // load laplacian weighting matrix if provided
+    if (UseLaplacian(rundata))
+        m_laplacian = &rundata.GetLaplacian("laplacian");
     m_nvoxels = m_origdata->Ncols();
     m_ctx = new RunContext(m_nvoxels);
 
@@ -617,7 +632,14 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                 // Apply prior updates for spatial or ARD priors
                 for (int k = 0; k < m_num_params; k++)
                 {
-                    Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
+                    if (UseLaplacian(rundata))
+                    {
+                        Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx, m_laplacian->Column(v));
+                    }
+                    else
+                    {
+                        Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
+                    }
                 }
                 if (m_debug)
                     DebugVoxel(v, "Priors set");

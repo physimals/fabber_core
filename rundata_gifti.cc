@@ -229,4 +229,3 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
         //cout << endl;
     }
 }
-

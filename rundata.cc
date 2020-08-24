@@ -829,6 +829,30 @@ const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
     return m;
 }
 
+const NEWMAT::Matrix &FabberRunData::GetLaplacian(const std::string &key)
+{
+    // Attempt to load Laplacian weighting matrix if not 
+    // already present. Will throw an exception if parameter 
+    // not specified or file could not be loaded
+    //
+    // FIXME different exceptions? What about use case where
+    // Laplacian is optional?
+    string key_cur = key;
+    string lap_key = "";
+    while (key_cur != "")
+    {
+        lap_key = key_cur;
+        key_cur = GetStringDefault(key_cur, "");
+        // Avoid possible circular reference!
+        if (key_cur == key)
+            break;
+    }
+
+    const NEWMAT::Matrix &m = LoadVoxelData(lap_key);
+    LOG << "FabberRunData::GetLaplacian: " << key << "=" << lap_key << endl;
+    return m;
+}
+
 const NEWMAT::Matrix &FabberRunData::LoadVoxelData(const std::string &key)
 {
     if (m_voxel_data.count(key) == 0)

@@ -44,6 +44,7 @@ public:
      * Returns any additional free energy contribution (e.g. for ARD priors)
      */
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx) = 0;
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings) = 0;
 
     /** Expand the param-spatial-priors string to give a value for each parameter */
     static std::string ExpandPriorTypesString(std::string priors_str, unsigned int num_params);
@@ -73,6 +74,7 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings);
 };
 
 /**
@@ -123,6 +125,7 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
+    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings);
 
 protected:
     double CalculateaK(const RunContext &ctx);
