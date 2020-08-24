@@ -161,6 +161,7 @@ static OptionSpec OPTIONS[] = {
     { "loadmodels", OPT_FILE,
         "Load models dynamically from the specified filename, which should be a DLL/shared library",
         OPT_NONREQ, "" },
+    { "laplacian", OPT_MATRIX, "Provide a weighting matrix for the spatial prior", OPT_NONREQ, ""},
     { "surface", OPT_FILE, "Specify a GIFTI surface file on which data is defined. If this option is used all voxel data files are assumed to be GIFTI files defined on the same surface", OPT_NONREQ, "" },
     { "data", OPT_TIMESERIES, "Specify a single input data file", OPT_REQ, "" },
     { "data<n>", OPT_TIMESERIES, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
