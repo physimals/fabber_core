@@ -533,7 +533,6 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEW
     {
         assert(nn <= m_spatial_dims * 2);
         nn = 2 * m_spatial_dims;
-        nn2 = 4 * m_spatial_dims * m_spatial_dims - nn;
     }
 
     // Prior precision
@@ -589,7 +588,6 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEW
     {
         double rec = - 1 / (total_weight + 1e-8);
         spatial_mean = contrib_nn * rec;
-    }
     }
     else
         spatial_mean = 0;
