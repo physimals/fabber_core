@@ -47,4 +47,5 @@ struct RunContext
     std::vector<NoiseParams *> noise_post;
     std::vector<std::vector<int> > neighbours;
     std::vector<std::vector<int> > neighbours2;
+    std::vector<std::vector<double> > weightings;
 };

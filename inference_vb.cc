@@ -595,6 +595,11 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
     // Make the neighbours lists if required
     rundata.GetNeighbours(m_ctx->neighbours, m_ctx->neighbours2);
 
+    if (UseLaplacian(rundata))
+    {
+        rundata.GetWeightings(m_ctx->weightings, m_ctx->neighbours, *m_laplacian);
+    }
+
     vector<Parameter> params;
     m_model->GetParameters(rundata, params);
     vector<Prior *> priors = PriorFactory(rundata).CreatePriors(params);
@@ -632,14 +637,7 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
                 // Apply prior updates for spatial or ARD priors
                 for (int k = 0; k < m_num_params; k++)
                 {
-                    if (UseLaplacian(rundata))
-                    {
-                        Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx, m_laplacian->Column(v));
-                    }
-                    else
-                    {
-                        Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
-                    }
+                    Fprior += priors[k]->ApplyToMVN(&m_ctx->fwd_prior[v - 1], *m_ctx);
                 }
                 if (m_debug)
                     DebugVoxel(v, "Priors set");

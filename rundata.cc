@@ -1025,6 +1025,18 @@ void FabberRunData::GetNeighbours(std::vector<std::vector<int> > &neighbours,
     neighbours2.resize(nvoxels);
 }
 
+void FabberRunData::GetWeightings(std::vector<std::vector<double> > &weightings, 
+                                  std::vector<std::vector<int> > &neighbours,
+                                  const NEWMAT::Matrix &m_laplacian)
+{
+    WARN_ONCE("FabberRunData::GetWeightings default implementation returns no weightings");
+    
+    const Matrix &coords = GetVoxelCoords();
+    const int nvoxels = coords.Ncols();
+
+    weightings.resize(nvoxels);
+}
+
 void FabberRunData::CheckSize(std::string key, const NEWMAT::Matrix &mat)
 {
     if (m_voxel_data.size() > 0)

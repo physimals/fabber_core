@@ -24,6 +24,7 @@ const char PRIOR_SPATIAL_M = 'M'; // Markov random field - normally used
 const char PRIOR_SPATIAL_m = 'm'; // 'M' with Dirichlet BCs
 const char PRIOR_SPATIAL_P = 'P'; // Alternative to M (Penny prior?)
 const char PRIOR_SPATIAL_p = 'p'; // P with Dirichlet BCs
+const char PRIOR_SPATIAL_l = 'l'; // laplacian weightings
 const char PRIOR_DEFAULT = '-';   // Use whatever the model specifies
 
 /**
@@ -44,7 +45,6 @@ public:
      * Returns any additional free energy contribution (e.g. for ARD priors)
      */
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx) = 0;
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings) = 0;
 
     /** Expand the param-spatial-priors string to give a value for each parameter */
     static std::string ExpandPriorTypesString(std::string priors_str, unsigned int num_params);
@@ -74,7 +74,6 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings);
 };
 
 /**
@@ -125,7 +124,6 @@ public:
 
     virtual void DumpInfo(std::ostream &out) const;
     virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx);
-    virtual double ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings);
 
 protected:
     double CalculateaK(const RunContext &ctx);

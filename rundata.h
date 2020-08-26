@@ -586,6 +586,18 @@ public:
                                std::vector<std::vector<int> > &neighbours2);
 
     /**
+     * Get list of weightings for each neighbour for each voxel
+     *
+     * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+     * 
+     * This should be implemented by subclasses. The default implementation returns 
+     * no neighbours for any voxel (but correctly sized output vectors).
+     */
+    virtual void GetWeightings(std::vector<std::vector<double> > &weightings, 
+                               std::vector<std::vector<int> > &neighbours,
+                               const NEWMAT::Matrix &m_laplacian);
+
+    /**
      * Report progress
      *
      * InferenceMethods call this to report how many voxels

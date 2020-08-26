@@ -116,17 +116,6 @@ double DefaultPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     return 0;
 }
 
-double DefaultPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings)
-{
-    prior->means(m_idx + 1) = m_params.mean();
-
-    SymmetricMatrix prec = prior->GetPrecisions();
-    prec(m_idx + 1, m_idx + 1) = m_params.prec();
-    prior->SetPrecisions(prec);
-
-    return 0;
-}
-
 ImagePrior::ImagePrior(const Parameter &p, FabberRunData &rundata)
     : DefaultPrior(p)
 {
@@ -273,6 +262,12 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
             // number of nearest neighbours = 2*spatial_dims
             trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + 2 * m_spatial_dims);
         }
+        else if (m_type_code == PRIOR_SPATIAL_l)
+        {
+            // Use the cotangent laplacian weighting matrix
+            trace_term += sigmaK * ctx.weightings[v-1].back(); // weight for this vertex is last in vector
+                                                               // really not sure if I've used .back() right
+        }
         else 
         {
             // Penny prior with boundary correction using actual
@@ -289,7 +284,15 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
         for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
              v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
         {
-            SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            if (m_type_code == PRIOR_SPATIAL_l)
+            {
+                double weight = ctx.weightings[v-1][*v2It-1];
+                SwK += wK + weight*ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            }
+            else
+            {
+                SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            }
         }
 
         // For priors with no boundary correction assume fixed number of neighbours
@@ -369,12 +372,23 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     // These have weighting +8
     int nn = ctx.neighbours[ctx.v - 1].size();
     double contrib_nn = 0.0;
+    double total_weighting = 0.0;
     for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
          nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        contrib_nn += 8 * neighbourPost.means(m_idx + 1);
+        if (m_type_code == PRIOR_SPATIAL_l)
+        {
+            double weight = ctx.weightings[ctx.v-1][nid-1];
+            total_weighting -= weight; // subtracting because weights are negative
+                                       // so total_weighting will be positive
+            contrib_nn += weight * neighbourPost.means(m_idx + 1);
+        }
+        else
+        {
+            contrib_nn += 8 * neighbourPost.means(m_idx + 1);
+        }
     }
 
     // Loop over second neighbours of the current voxel. Note that this list
@@ -418,6 +432,8 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         spatial_prec = m_aK * nn;
     else if ((m_type_code == PRIOR_SPATIAL_P) || (m_type_code == PRIOR_SPATIAL_p))
         spatial_prec = m_aK * (nn * nn + nn);
+    else if (m_type_code == PRIOR_SPATIAL_l)
+        spatial_prec = m_aK * total_weighting;
     else
         assert(false);
 
@@ -458,136 +474,15 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         double rec = 1 / (8 * (double(nn) + 1e-8));
         spatial_mean = contrib_nn * rec;
     }
+    else if (m_type_code == PRIOR_SPATIAL_l)
+    {
+        double rec = 1 / total_weighting;
+        spatial_mean = contrib_nn * rec;
+    }
     else if (nn != 0)
     {
         double rec = 1 / (8*nn - nn2);
         spatial_mean = (contrib_nn + contrib_nn2) * rec;
-    }
-    else
-        spatial_mean = 0;
-
-    if (m_type_code == PRIOR_SPATIAL_m || m_type_code == PRIOR_SPATIAL_M)
-    {
-        // These priors do not take account of the original parameter prior mean at all - 
-        // the prior mean is determined entirely by the expectation of spatial uniformity
-        // compared to neighbouring voxels.
-        //
-        // For prior type m this reduces to spatial_mean since the covariance is in this 
-        // case simply the reciprocal of the spatial precision
-        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1) * spatial_prec
-            * spatial_mean;
-    }
-    else
-    {
-        // These priors include the original parameter prior mean as well as the values of 
-        // the parameter at neighbouring voxels.
-        //
-        // For prior type p, this reduces to spatial_mean + spatial_cov * original_prec * original_mean
-        // For a weak original non-spatial prior (i.e. m_params->prec is small)  this reduces to
-        // the spatial spatial_mean, 
-        prior->means(m_idx + 1) = prior->GetCovariance()(m_idx + 1, m_idx + 1)
-            * (spatial_prec * spatial_mean + m_params.prec() * m_params.mean());
-    }
-
-    // Spatial prior does not contribute to the free energy?
-    // Technically I think it should via the prior on ak (q1, q2) however since this is uninformative
-    // it may not matter.
-    return 0;
-}
-
-double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx, const NEWMAT::ColumnVector &weightings)
-{
-    // Comments and theory notes are from MSC and should not be trusted
-
-    if (ctx.v == 1 && (ctx.it > 0 || m_update_first_iter))
-    {
-        // m_aK is a global (all voxels) spatial precision variable for 
-        // the parameter. It determines the degree of smoothness
-        // and is estimated from the data. We update it on the first
-        // voxel (unless it is the first iteration and m_update_first_iter 
-        // is false). See Penny et all 2004
-        m_aK = CalculateaK(ctx);
-    }
-
-    // Loop over nearest neighbours of the current voxel
-    // These are weighted according to the Laplacian matrix passed in via the command line
-    int nn = ctx.neighbours[ctx.v - 1].size();
-    double contrib_nn = 0.0;
-    double total_weight = 0.0;
-    for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
-         nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
-    {
-        int nid = *nidIt;
-        const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        double weight = weightings.element(nid-1);
-        total_weight += weight;
-        contrib_nn += nid * neighbourPost.means(m_idx + 1);
-    }
-
-    // In priors without boundary correction, the number of neighbours is fixed by
-    // the spatial dimensions, although this is not correct at the edges of the volume
-    // The contributions from first and second neighbours are unchanged - this is
-    // equivalent to the 'missing' voxels outside the boundary having value 0
-    // (hence biased towards zero as noted in Penny 2005).
-    if ((m_type_code == PRIOR_SPATIAL_p) || (m_type_code == PRIOR_SPATIAL_m))
-    {
-        assert(nn <= m_spatial_dims * 2);
-        nn = 2 * m_spatial_dims;
-    }
-
-    // Prior precision
-    //
-    // The precision of the prior depends on the degree of spatial regularization
-    // (m_aK) and the number of neighbours.
-     
-    // Calculate spatial precision for each prior type. Note the 1e-8 contribution
-    // for the MRF prior, this is to ensure invertibility?
-    double spatial_prec = 0;
-    if (m_type_code == PRIOR_SPATIAL_M)
-        spatial_prec = m_aK * (nn + 1e-8);
-    else if (m_type_code == PRIOR_SPATIAL_m)
-        spatial_prec = m_aK * nn;
-    else if ((m_type_code == PRIOR_SPATIAL_P) || (m_type_code == PRIOR_SPATIAL_p))
-        spatial_prec = m_aK * (nn * nn + nn);
-    else
-        assert(false);
-
-    SymmetricMatrix precs = prior->GetPrecisions();
-    if ((m_type_code == PRIOR_SPATIAL_p) || (m_type_code == PRIOR_SPATIAL_m))
-    {
-        // Penny-style DirichletBC prior ignores original prior precision completely
-        precs(m_idx + 1, m_idx + 1) = spatial_prec;
-    }
-    else
-    {
-        // All other priors set a prior precision based on the sum of the original
-        // prior precision and the spatial precision - i.e. spatial smoothing
-        // makes prior more informative
-        precs(m_idx + 1, m_idx + 1) = m_params.prec() + spatial_prec;
-    }
-    prior->SetPrecisions(precs);
-
-    // Prior mean
-    //
-    // The prior mean depends on the degree of spatial regularization (which has been
-    // absorbed into the prior precision/covariance matrix). It may also reflect the
-    // original prior mean for the parameter, i.e. spatial regularization does not completely
-    // override the original prior mean.
-
-    // NB that we multiply by reciprocals rather than dividing. This is
-    // to maximise numerical compatibility with NEWMAT which presumably
-    // does it as an optimization when dividing a whole matrix by a constant
-    double spatial_mean;
-    if (m_type_code == PRIOR_SPATIAL_m)
-    {
-        // Dirichlet BCs on MRF i.e. no boundary correction
-        double rec = - 1 / total_weight;
-        spatial_mean = contrib_nn * rec;
-    }
-    else if (m_type_code == PRIOR_SPATIAL_M)
-    {
-        double rec = - 1 / (total_weight + 1e-8);
-        spatial_mean = contrib_nn * rec;
     }
     else
         spatial_mean = 0;
@@ -653,6 +548,7 @@ Prior *PriorFactory::CreatePrior(Parameter p)
     case PRIOR_SPATIAL_m:
     case PRIOR_SPATIAL_P:
     case PRIOR_SPATIAL_p:
+    case PRIOR_SPATIAL_l:
         return new SpatialPrior(p, m_rundata);
     case PRIOR_ARD:
         return new ARDPrior(p, m_rundata);
