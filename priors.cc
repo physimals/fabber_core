@@ -553,6 +553,6 @@ Prior *PriorFactory::CreatePrior(Parameter p)
     case PRIOR_ARD:
         return new ARDPrior(p, m_rundata);
     default:
-        throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmPpAI");
+        throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmlPpAI");
     }
 }
