@@ -287,6 +287,7 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
             if (m_type_code == PRIOR_SPATIAL_l)
             {
                 double weight = ctx.weightings[v-1][*v2It-1];
+                // + instead of - because the weights are already negative
                 SwK += wK + weight*ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
             }
             else
