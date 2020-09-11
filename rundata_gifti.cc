@@ -308,9 +308,9 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
         //         -np.dot(te[1], te[0]),
         //     ])
         vector<float> td;
-        td.push_back(dot(te[2], te[1]));
-        td.push_back(dot(te[0], te[2]));
-        td.push_back(dot(te[1], te[0]));
+        td.push_back(-dot(te[2], te[1]));
+        td.push_back(-dot(te[0], te[2]));
+        td.push_back(-dot(te[1], te[0]));
 
         //     cross = np.linalg.norm(np.cross(te[0], te[1]))
         //     ta = cross / 2
@@ -326,6 +326,9 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
             // cot of angle at vertex 'e' is dot product of other
             // two edges divided by cross product
         //         cot = td[e] / cross
+        // vi1, vi2, vi3 = t[e], t[(e+1) % 3], t[(e+2) % 3]
+            int vi2 = t[(e+1) % 3];
+            int vi3 = t[(e+2) % 3];
             float cot = td[e] / cross_norm;
             
         //         if obtuse:
@@ -373,9 +376,9 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
                 // Voronoi area is associated with this edge
                 // is applied to the two end vertices of the edge
                 float sqnorm = te[e].norm();
-                float voronoi_area = cot * sqnorm * sqnorm;
-                vertex_masses[t[(e+1) % 3]] += voronoi_area;
-                vertex_masses[t[(e+2) % 3]] += voronoi_area;
+                float voronoi_area = cot * sqnorm * sqnorm / 8;
+                vertex_masses[vi2] += voronoi_area;
+                vertex_masses[vi3] += voronoi_area;
             }
 
             // Calculate the contribution to the weightings (equivalent to the cotangent
@@ -386,9 +389,6 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
             // in the neighbours list. We add on to the end the diagonal entry for
             // the voxel
 
-        // vi1, vi2, vi3 = t[e], t[(e+1) % 3], t[(e+2) % 3]
-            int vi2 = t[(e+1) % 3];
-            int vi3 = t[(e+2) % 3];
         //         vals.append(0.5 * cot)
         //         vals.append(0.5 * cot)
         //         vals.append(-0.5 * cot)
@@ -405,18 +405,28 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
             vector<int> v_neighbours = neighbours[vi2];
             for (unsigned int i=0; i<v_neighbours.size(); i++)
             {
-                if (v_neighbours[i] == vi3) weightings[vi2][i] -= 0.5*cot;
+                if (v_neighbours[i] == vi3+1) weightings[vi2][i] -= 0.5*cot;
             }
             weightings[vi2].back() += 0.5 * cot;
             v_neighbours = neighbours[vi3];
             for (unsigned int i=0; i<v_neighbours.size(); i++) 
             {
-                if (v_neighbours[i] == vi2) weightings[vi3][i] -= 0.5*cot;
+                if (v_neighbours[i] == vi2+1) weightings[vi3][i] -= 0.5*cot;
             }
             weightings[vi3].back() += 0.5 * cot;
         }
     }
+
+    // Finally need to scale weightings by corresponding vertex masses    
+    for (unsigned int vidx=0; vidx<nv; vidx++)
+    {
+        for (unsigned int nidx=0; nidx<weightings[vidx].size(); nidx++)
+        {
+            weightings[vidx][nidx] /= vertex_masses[vidx];
+        }
+    }
 }
+
 /*
 void FabberRunDataGifti::GetWeightings2(std::vector<std::vector<double> > &weightings,
                                        std::vector<std::vector<int> > &neighbours,
