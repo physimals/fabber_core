@@ -24,6 +24,7 @@ const char PRIOR_SPATIAL_M = 'M'; // Markov random field - normally used
 const char PRIOR_SPATIAL_m = 'm'; // 'M' with Dirichlet BCs
 const char PRIOR_SPATIAL_P = 'P'; // Alternative to M (Penny prior?)
 const char PRIOR_SPATIAL_p = 'p'; // P with Dirichlet BCs
+const char PRIOR_SPATIAL_l = 'l'; // laplacian weightings
 const char PRIOR_DEFAULT = '-';   // Use whatever the model specifies
 
 /**

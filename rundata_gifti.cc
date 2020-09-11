@@ -230,3 +230,30 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
     }
 }
 
+void FabberRunDataGifti::GetWeightings(std::vector<std::vector<double> > &weightings,
+                                       std::vector<std::vector<int> > &neighbours,
+                                       const NEWMAT::Matrix &m_laplacian)
+{
+    LOG << "FabberRunDataGifti::Getting Laplacian weightings for neighbours" << endl;
+
+    int nv = m_surface.getNumberOfVertices();
+    weightings.clear();
+    weightings.resize(nv);
+
+    // iterate over each vertex
+    for (unsigned int vid=1; vid <= nv; vid++)
+    {   
+        ColumnVector v_weights = m_laplacian.Column(vid);
+        // iterate over neighbours of this vertex
+        // this only assigns weightings for neighbouring values, not own weighting
+        for (unsigned int n2=0; n2<neighbours[vid-1].size(); n2++)
+        {
+            // get weightings for vertex/neighbour combination from Laplacian matrix
+            double weight = v_weights.element(n2);
+            weightings[vid-1].push_back(weight);
+        }
+        // also add the weighting for this vertex
+        double weight = v_weights.element(vid-1);
+        weightings[vid-1].push_back(weight);
+    }
+}

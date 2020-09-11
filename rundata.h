@@ -469,6 +469,32 @@ public:
     const NEWMAT::Matrix &GetVoxelData(const std::string &key);
 
     /**
+     * Get named Laplacian weighting matrix
+     *
+     * GetLaplacian will check recursively for a string option with this key
+     * until it can resolve the key no further. The last non-empty key will
+     * then be used to request data from the FabberIo instance.
+     *
+     * For example, if GetLaplacian("lap") is called, we first check for a
+     * string option with key "lap". If this option is set to "fmri_data",
+     * then we check for a string option with key "fmri_data", and so on.
+     * If no option with key "fmri_data" is found, we ask our FabberIo instance
+     * to get the data with key "fmri_data", which it might, for example,
+     * load from a file fmri_data.nii.gz.
+     *
+     * This sounds complicated, but actually simplifies situations such as
+     * restarting runs from a file, where the restart might come from memory
+     * saved data, or an external file.
+     *
+     * @param key Name identifying the voxel data required.
+     * @return an NxN matrix where each column contains the weightings for 
+     *         a single voxel.
+     * @throw DataNotFound If no voxel data matching key is found and no data
+     *                     could be loaded
+     */
+    const NEWMAT::Matrix &GetLaplacian(const std::string &key);
+
+    /**
      * Get named voxel data, with no further resolution of the name.
      *
      * Can be overridden in a subclass to, for example, load data from
@@ -558,6 +584,18 @@ public:
      */
     virtual void GetNeighbours(std::vector<std::vector<int> > &neighbours, 
                                std::vector<std::vector<int> > &neighbours2);
+
+    /**
+     * Get list of weightings for each neighbour for each voxel
+     *
+     * The list will contain voxel indices for matrices, i.e. starting at 1 not 0
+     * 
+     * This should be implemented by subclasses. The default implementation returns 
+     * no neighbours for any voxel (but correctly sized output vectors).
+     */
+    virtual void GetWeightings(std::vector<std::vector<double> > &weightings, 
+                               std::vector<std::vector<int> > &neighbours,
+                               const NEWMAT::Matrix &m_laplacian);
 
     /**
      * Report progress

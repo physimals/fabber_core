@@ -262,6 +262,12 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
             // number of nearest neighbours = 2*spatial_dims
             trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + 2 * m_spatial_dims);
         }
+        else if (m_type_code == PRIOR_SPATIAL_l)
+        {
+            // Use the cotangent laplacian weighting matrix
+            trace_term += sigmaK * ctx.weightings[v-1].back(); // weight for this vertex is last in vector
+                                                               // really not sure if I've used .back() right
+        }
         else 
         {
             // Penny prior with boundary correction using actual
@@ -278,7 +284,16 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
         for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
              v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
         {
-            SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            if (m_type_code == PRIOR_SPATIAL_l)
+            {
+                double weight = ctx.weightings[v-1][*v2It-1];
+                // + instead of - because the weights are already negative
+                SwK += wK + weight*ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            }
+            else
+            {
+                SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
+            }
         }
 
         // For priors with no boundary correction assume fixed number of neighbours
@@ -358,12 +373,23 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     // These have weighting +8
     int nn = ctx.neighbours[ctx.v - 1].size();
     double contrib_nn = 0.0;
+    double total_weighting = 0.0;
     for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
          nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
     {
         int nid = *nidIt;
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        contrib_nn += 8 * neighbourPost.means(m_idx + 1);
+        if (m_type_code == PRIOR_SPATIAL_l)
+        {
+            double weight = ctx.weightings[ctx.v-1][nid-1];
+            total_weighting -= weight; // subtracting because weights are negative
+                                       // so total_weighting will be positive
+            contrib_nn += weight * neighbourPost.means(m_idx + 1);
+        }
+        else
+        {
+            contrib_nn += 8 * neighbourPost.means(m_idx + 1);
+        }
     }
 
     // Loop over second neighbours of the current voxel. Note that this list
@@ -407,6 +433,8 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         spatial_prec = m_aK * nn;
     else if ((m_type_code == PRIOR_SPATIAL_P) || (m_type_code == PRIOR_SPATIAL_p))
         spatial_prec = m_aK * (nn * nn + nn);
+    else if (m_type_code == PRIOR_SPATIAL_l)
+        spatial_prec = m_aK * total_weighting;
     else
         assert(false);
 
@@ -445,6 +473,11 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     else if (m_type_code == PRIOR_SPATIAL_M)
     {
         double rec = 1 / (8 * (double(nn) + 1e-8));
+        spatial_mean = contrib_nn * rec;
+    }
+    else if (m_type_code == PRIOR_SPATIAL_l)
+    {
+        double rec = 1 / total_weighting;
         spatial_mean = contrib_nn * rec;
     }
     else if (nn != 0)
@@ -516,10 +549,11 @@ Prior *PriorFactory::CreatePrior(Parameter p)
     case PRIOR_SPATIAL_m:
     case PRIOR_SPATIAL_P:
     case PRIOR_SPATIAL_p:
+    case PRIOR_SPATIAL_l:
         return new SpatialPrior(p, m_rundata);
     case PRIOR_ARD:
         return new ARDPrior(p, m_rundata);
     default:
-        throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmPpAI");
+        throw InvalidOptionValue("Prior type", stringify(p.prior_type), "Supported types: NMmlPpAI");
     }
 }

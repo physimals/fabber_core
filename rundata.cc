@@ -161,6 +161,7 @@ static OptionSpec OPTIONS[] = {
     { "loadmodels", OPT_FILE,
         "Load models dynamically from the specified filename, which should be a DLL/shared library",
         OPT_NONREQ, "" },
+    { "laplacian", OPT_MATRIX, "Provide a weighting matrix for the spatial prior", OPT_NONREQ, ""},
     { "surface", OPT_FILE, "Specify a GIFTI surface file on which data is defined. If this option is used all voxel data files are assumed to be GIFTI files defined on the same surface", OPT_NONREQ, "" },
     { "data", OPT_TIMESERIES, "Specify a single input data file", OPT_REQ, "" },
     { "data<n>", OPT_TIMESERIES, "Specify multiple data files for n=1, 2, 3...", OPT_NONREQ, "" },
@@ -829,6 +830,30 @@ const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
     return m;
 }
 
+const NEWMAT::Matrix &FabberRunData::GetLaplacian(const std::string &key)
+{
+    // Attempt to load Laplacian weighting matrix if not 
+    // already present. Will throw an exception if parameter 
+    // not specified or file could not be loaded
+    //
+    // FIXME different exceptions? What about use case where
+    // Laplacian is optional?
+    string key_cur = key;
+    string lap_key = "";
+    while (key_cur != "")
+    {
+        lap_key = key_cur;
+        key_cur = GetStringDefault(key_cur, "");
+        // Avoid possible circular reference!
+        if (key_cur == key)
+            break;
+    }
+
+    const NEWMAT::Matrix &m = LoadVoxelData(lap_key);
+    LOG << "FabberRunData::GetLaplacian: " << key << "=" << lap_key << endl;
+    return m;
+}
+
 const NEWMAT::Matrix &FabberRunData::LoadVoxelData(const std::string &key)
 {
     if (m_voxel_data.count(key) == 0)
@@ -999,6 +1024,18 @@ void FabberRunData::GetNeighbours(std::vector<std::vector<int> > &neighbours,
 
     neighbours.resize(nvoxels);
     neighbours2.resize(nvoxels);
+}
+
+void FabberRunData::GetWeightings(std::vector<std::vector<double> > &weightings, 
+                                  std::vector<std::vector<int> > &neighbours,
+                                  const NEWMAT::Matrix &m_laplacian)
+{
+    WARN_ONCE("FabberRunData::GetWeightings default implementation returns no weightings");
+    
+    const Matrix &coords = GetVoxelCoords();
+    const int nvoxels = coords.Ncols();
+
+    weightings.resize(nvoxels);
 }
 
 void FabberRunData::CheckSize(std::string key, const NEWMAT::Matrix &mat)
