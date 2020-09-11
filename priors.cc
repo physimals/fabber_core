@@ -251,9 +251,7 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
         else if (m_type_code == PRIOR_SPATIAL_M) 
         {
             // Markov random field with boundary correction
-            // Using the actual number of nearest neighbours
-            // (1e-8 term is to guarantee invertibility?)
-            trace_term += sigmaK * (nn + 1e-8);
+            trace_term += sigmaK * ctx.weightings[v-1].back();
         }
         else if (m_type_code == PRIOR_SPATIAL_p)
         {
@@ -261,12 +259,6 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
             // Uses Laplacian spatial matrix with
             // number of nearest neighbours = 2*spatial_dims
             trace_term += sigmaK * (4 * m_spatial_dims * m_spatial_dims + 2 * m_spatial_dims);
-        }
-        else if (m_type_code == PRIOR_SPATIAL_l)
-        {
-            // Use the cotangent laplacian weighting matrix
-            trace_term += sigmaK * ctx.weightings[v-1].back(); // weight for this vertex is last in vector
-                                                               // really not sure if I've used .back() right
         }
         else 
         {
@@ -279,21 +271,16 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
         double wK = ctx.fwd_post.at(v - 1).means(m_idx + 1);
 
         // Contribution from nearest neighbours - sum of differences
-        // between voxel mean and neighbour mean
+        // between voxel mean and neighbour mean multipled by the
+        // neighbour weighting
         double SwK = 0.0;
+        int neighbour_idx = 0;
         for (vector<int>::const_iterator v2It = ctx.neighbours[v - 1].begin();
              v2It != ctx.neighbours.at(v - 1).end(); ++v2It)
         {
-            if (m_type_code == PRIOR_SPATIAL_l)
-            {
-                double weight = ctx.weightings[v-1][*v2It-1];
-                // + instead of - because the weights are already negative
-                SwK += wK + weight*ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
-            }
-            else
-            {
-                SwK += wK - ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
-            }
+            double weight = ctx.weightings[v-1][neighbour_idx++];
+            // + instead of - because the weights are already negative
+            SwK += wK + weight*ctx.fwd_post.at(*v2It - 1).means(m_idx + 1);
         }
 
         // For priors with no boundary correction assume fixed number of neighbours
@@ -374,6 +361,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     int nn = ctx.neighbours[ctx.v - 1].size();
     double contrib_nn = 0.0;
     double total_weighting = 0.0;
+    int neighbour_idx = 0;
     for (vector<int>::const_iterator nidIt = ctx.neighbours[ctx.v - 1].begin();
          nidIt != ctx.neighbours[ctx.v - 1].end(); ++nidIt)
     {
@@ -381,7 +369,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
         if (m_type_code == PRIOR_SPATIAL_l)
         {
-            double weight = ctx.weightings[ctx.v-1][nid-1];
+            double weight = ctx.weightings[ctx.v-1][neighbour_idx++];
             total_weighting -= weight; // subtracting because weights are negative
                                        // so total_weighting will be positive
             contrib_nn += weight * neighbourPost.means(m_idx + 1);
