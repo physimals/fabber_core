@@ -83,13 +83,13 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
 {
     if (m_voxel_data.find(filename) == m_voxel_data.end())
     {
-        LOG << "FabberRunDataNewimage::Loading data from '" + filename << "'" << endl;
         // Load the data file using Newimage library
         if (!fsl_imageexists(filename))
         {
             throw DataNotFound(filename, "File is invalid or does not exist");
         }
 
+        LOG << "FabberRunDataNewimage::Loading data from '" + filename << "'" << endl;
         volume4D<float> vol;
         try
         {

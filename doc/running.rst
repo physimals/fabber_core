@@ -62,7 +62,7 @@ Selecting what data to output
         Output the parameter Zstats.
 
 --save-noise-mean
-        Output the noise means.
+        Output the noise means. The noise distribution inferred is the precision of a Gaussian noise source
 
 --save-noise-std
         Output the noise standard deviations. 

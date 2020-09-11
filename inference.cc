@@ -123,22 +123,24 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
     // Create individual files for each parameter's mean and Z-stat
     vector<Parameter> params;
     m_model->GetParameters(rundata, params);
-    if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat"))
+    if (rundata.GetBool("save-mean") | rundata.GetBool("save-std") | rundata.GetBool("save-zstat") | rundata.GetBool("save-var"))
     {
         LOG << "InferenceTechnique::Writing means..." << endl;
         for (unsigned i = 1; i <= params.size(); i++)
         {
-            Matrix paramMean, paramZstat, paramStd;
+            Matrix paramMean, paramZstat, paramStd, paramVar;
             paramMean.ReSize(1, nVoxels);
             paramZstat.ReSize(1, nVoxels);
             paramStd.ReSize(1, nVoxels);
+            paramVar.ReSize(1, nVoxels);
 
             for (int vox = 1; vox <= nVoxels; vox++)
             {
                 MVNDist result = *resultMVNs[vox - 1];
                 m_model->ToModel(result);
                 paramMean(1, vox) = result.means(i);
-                double std = sqrt(result.GetCovariance()(i, i));
+                paramVar(1, vox) = result.GetCovariance()(i, i);
+                double std = sqrt(paramVar(1, vox));
                 paramZstat(1, vox) = paramMean(1, vox) / std;
                 paramStd(1, vox) = std;
             }
@@ -149,6 +151,8 @@ void InferenceTechnique::SaveResults(FabberRunData &rundata) const
                 rundata.SaveVoxelData("zstat_" + params.at(i - 1).name, paramZstat);
             if (rundata.GetBool("save-std"))
                 rundata.SaveVoxelData("std_" + params.at(i - 1).name, paramStd);
+            if (rundata.GetBool("save-var"))
+                rundata.SaveVoxelData("var_" + params.at(i - 1).name, paramVar);
         }
     }
 

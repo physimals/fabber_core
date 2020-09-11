@@ -720,9 +720,26 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
         ColumnVector gamma_vk(m_nvoxels);
         for (int v = 1; v <= m_nvoxels; v++)
         {
-            gamma_vk(v) = 1
-                - m_ctx->fwd_post[v - 1].GetCovariance()(k, k)
-                    / m_ctx->fwd_prior[v - 1].GetCovariance()(k, k);
+            // Ignore voxels where numerical issues have occurred
+            if (std::find(m_ctx->ignore_voxels.begin(), m_ctx->ignore_voxels.end(), v)
+                != m_ctx->ignore_voxels.end())
+            {
+                gamma_vk(v) = 0;
+                continue;
+            }
+
+            try
+            {
+                gamma_vk(v) = 1
+                    - m_ctx->fwd_post[v - 1].GetCovariance()(k, k)
+                        / m_ctx->fwd_prior[v - 1].GetCovariance()(k, k);
+            }
+            catch (...)
+            {
+                // Even that can fail, due to results being singular
+                LOG << "Vb::Coefficient resels failed for voxel " << v << endl;
+                gamma_vk(v) = 0;
+            }
         }
         LOG << "Vb::Coefficient resels per voxel for param " << k << ": "
             << gamma_vk.Sum() / m_nvoxels << endl;

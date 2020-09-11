@@ -70,14 +70,28 @@ MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
     {
         for (int col=1; col <= from1.m_size; col++) 
         {
-            covariance(row, col) = from1.GetCovariance()(row, col);
+            try
+            {
+                covariance(row, col) = from1.GetCovariance()(row, col);
+            }
+            catch (Exception)
+            {
+                covariance(row, col) = 0;
+            }
         }
     }
     for (int row=1; row <= from2.m_size; row++) 
     {
         for (int col=1; col <= from2.m_size; col++) 
         {
-            covariance(from1.m_size + row, from1.m_size + col) = from2.GetCovariance()(row, col);
+            try
+            {
+                covariance(from1.m_size + row, from1.m_size + col) = from2.GetCovariance()(row, col);
+            }
+            catch (Exception)
+            {
+                covariance(row, col) = 0;
+            }
         }
     }
 
