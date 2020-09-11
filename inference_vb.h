@@ -67,11 +67,6 @@ protected:
     bool IsSpatial(FabberRunData &rundata) const;
 
     /**
-     * Determine whether we are providing a Laplacian weighting matrix.
-     */
-    bool UseLaplacian(FabberRunData &rundata) const;
-
-    /**
      * Do calculations loop in voxelwise mode (i.e. all iterations for
      * one voxel, then all iterations for the next voxel, etc)
      */
@@ -152,9 +147,6 @@ protected:
 
     /** Voxelwise supplementary data */
     const NEWMAT::Matrix *m_suppdata;
-
-    /** NxN Laplacian weighting matrix */
-    const NEWMAT::Matrix *m_laplacian;
 
     /** Number of motion correction steps to run */
     int m_num_mcsteps;

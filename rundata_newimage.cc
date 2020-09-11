@@ -207,7 +207,8 @@ void FabberRunDataNewimage::SetCoordsFromData()
 }
 
 void FabberRunDataNewimage::GetNeighbours(std::vector<std::vector<int> > &neighbours, 
-                                          std::vector<std::vector<int> > &neighbours2)
+                                          std::vector<std::vector<int> > &neighbours2,
+                                          std::vector<std::vector<double> > &weightings)
 {
     LOG << "FabberRunDataNewimage::Getting nearest neigbours and second neighbours" << endl;
     neighbours.clear();
@@ -313,5 +314,15 @@ void FabberRunDataNewimage::GetNeighbours(std::vector<std::vector<int> > &neighb
                                           "the original voxel as a neighbour exactly once");
             }
         }
+    }
+
+    // For volumetric data, weightings are -1 for each neighbour and +<num nn> for the voxel self-weight
+    weightings.clear();
+    for (unsigned int vid=1; vid <= nv; vid++)
+    {
+        unsigned int nn = neighbours[vid-1].size();
+        vector<double> voxel_weightings(nn+1, -1);
+        voxel_weightings.back() = nn;
+        weightings.push_back(voxel_weightings);
     }
 }

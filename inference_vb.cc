@@ -351,18 +351,6 @@ bool Vb::IsSpatial(FabberRunData &rundata) const
     return false;
 }
 
-bool Vb::UseLaplacian(FabberRunData &rundata) const
-{
-    if (rundata.HaveKey("laplacian"))
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 void Vb::DoCalculations(FabberRunData &rundata)
 {
     // extract data (and the coords) from rundata for the (first) VB run
@@ -373,9 +361,6 @@ void Vb::DoCalculations(FabberRunData &rundata)
     m_origdata = &rundata.GetMainVoxelData();
     m_coords = &rundata.GetVoxelCoords();
     m_suppdata = &rundata.GetVoxelSuppData();
-    // load laplacian weighting matrix if provided
-    if (UseLaplacian(rundata))
-        m_laplacian = &rundata.GetLaplacian("laplacian");
     m_nvoxels = m_origdata->Ncols();
     m_ctx = new RunContext(m_nvoxels);
 
@@ -593,12 +578,7 @@ void Vb::DoCalculationsSpatial(FabberRunData &rundata)
         PassModelData(1);
 
     // Make the neighbours lists if required
-    rundata.GetNeighbours(m_ctx->neighbours, m_ctx->neighbours2);
-
-    if (UseLaplacian(rundata))
-    {
-        rundata.GetWeightings(m_ctx->weightings, m_ctx->neighbours, *m_laplacian);
-    }
+    rundata.GetNeighbours(m_ctx->neighbours, m_ctx->neighbours2, m_ctx->weightings);
 
     vector<Parameter> params;
     m_model->GetParameters(rundata, params);

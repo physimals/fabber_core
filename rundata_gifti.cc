@@ -23,6 +23,9 @@
 
 using namespace std;
 using NEWMAT::Matrix;
+using fslsurface_name::fslSurface;
+using fslsurface_name::vertex;
+using fslsurface_name::vec3;
 
 FabberRunDataGifti::FabberRunDataGifti(bool compat_options)
     : FabberRunData(compat_options)
@@ -50,7 +53,7 @@ const Matrix &FabberRunDataGifti::LoadVoxelData(const std::string &filename)
         //    throw DataNotFound(filename, "File is invalid or does not exist");
         //}
 
-        fslsurface_name::fslSurface<float, unsigned int> vertex_data;
+        fslSurface<float, unsigned int> vertex_data;
         try
         {
             fslsurface_name::read_surface(vertex_data, filename);
@@ -102,9 +105,9 @@ const Matrix &FabberRunDataGifti::LoadVoxelData(const std::string &filename)
 void FabberRunDataGifti::SaveVoxelData(
     const std::string &filename, NEWMAT::Matrix &data, VoxelDataType data_type)
 {
-    fslsurface_name::fslSurface<float, unsigned int> output_data;
+    fslSurface<float, unsigned int> output_data;
     unsigned int nv = m_surface.getNumberOfVertices();
-    if (data.Ncols() != nv) 
+    if (data.Ncols() != nv)
     {
         throw FabberInternalError("FabberRunDataGifti::Output data " + filename +
                                   " not consistent with reference surface: " + stringify(data.Ncols()) + 
@@ -143,7 +146,7 @@ void FabberRunDataGifti::SetCoordsFromSurface()
     Matrix coords(3, m_surface.getNumberOfVertices());
 
     unsigned int idx = 1;
-    for (std::vector< fslsurface_name::vertex<float> >::iterator iter=m_surface.vbegin();
+    for (std::vector<vertex<float> >::iterator iter=m_surface.vbegin();
          iter != m_surface.vend(); ++iter) 
     {
         coords(1, idx) = iter->x;
@@ -155,22 +158,37 @@ void FabberRunDataGifti::SetCoordsFromSurface()
     SetVoxelCoords(coords);
 }
 
+static float dot(const vec3<float> &v1, const vec3<float> &v2)
+{
+    return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
+static vec3<float> cross(const vec3<float> &v1, const vec3<float> &v2)
+{
+    return vec3<float>(
+        v1.y * v2.z - v1.z * v2.y, 
+        v1.z * v2.x - v1.x * v2.z,
+        v1.x * v2.y - v1.y * v2.x
+    );
+}
+
 void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbours, 
-                                       std::vector<std::vector<int> > &neighbours2)
+                                       std::vector<std::vector<int> > &neighbours2,
+                                       std::vector<std::vector<double> > &weightings)
 {
     LOG << "FabberRunDataGifti::Getting nearest neigbours and second neighbours" << endl;
 
-    int nv = m_surface.getNumberOfVertices();
-    int nt = m_surface.getNumberOfFaces();
+    unsigned int nv = m_surface.getNumberOfVertices();
+    unsigned int nt = m_surface.getNumberOfFaces();
     neighbours.clear();
     neighbours2.clear();
     neighbours.resize(nv);
     neighbours2.resize(nv);
 
     // Iterate over faces
-    for (int t=0; t<nt; t++)
+    for (unsigned int t=0; t<nt; t++)
     {
-        fslsurface_name::vec3<unsigned int> trig = m_surface.getFace(t, 3);
+        vec3<unsigned int> trig = m_surface.getFace(t, 3);
 
         // Iterate over vertices in a triangle - each vertex is connected to each other vertex
         // so add neighbours for all combinations unless they are already in the neighbours list
@@ -208,7 +226,6 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
             // Go through each of it's neighbours. Add each, apart from original voxel
             for (unsigned int n2=0; n2<neighbours[n1id-1].size(); n2++)
             {
-                //cerr << n2 << ", " << n1id << ", " << neighbours.size() << ", " << nv << endl;
                 unsigned int n2id = neighbours[n1id-1][n2];
                 if (n2id != vid)
                 {
@@ -228,9 +245,180 @@ void FabberRunDataGifti::GetNeighbours(std::vector<std::vector<int> > &neighbour
         }
         //cout << endl;
     }
-}
 
-void FabberRunDataGifti::GetWeightings(std::vector<std::vector<double> > &weightings,
+    weightings.clear();
+
+    // Hold the Voroni masses for each vertex
+    std::vector<float> vertex_masses(nv, 0);
+
+    // Initialize the weightings list for each vertex with a vector of zeros for each neighbour
+    // plus an extra entry for the vertex self-weight
+    for (unsigned int vidx=0; vidx<nv; vidx++)
+    {
+        int nn = neighbours[vidx].size();
+        weightings.push_back(vector<double>(nn+1, 0));
+    }
+
+    // This code calculates the weighting for each neighbour of a vertex
+    // using the mesh Laplacian
+    // Python code to duplicate:
+    // vals = []
+    // rows = []
+    // cols = []
+    // avals = []
+    // arows = []
+    // acols = []
+    // for idx, t in enumerate(f):
+    for (unsigned int tidx=0; tidx<nt; tidx++)
+    {
+        vec3<unsigned int> trig = m_surface.getFace(tidx, 3);
+        vector<unsigned int> t;
+        t.push_back(trig.x);
+        t.push_back(trig.y);
+        t.push_back(trig.z);
+
+        //     # Triangle vertices (real co-ordinates)
+        //     tv = np.array([
+        //         v[t[0]],
+        //         v[t[1]],
+        //         v[t[2]],
+        //     ])
+        vector<vec3<float> > tv;
+        tv.push_back(m_surface.getVertexCoord(t[0]));
+        tv.push_back(m_surface.getVertexCoord(t[1]));
+        tv.push_back(m_surface.getVertexCoord(t[2]));
+
+        //     # Triangle edges - edge 0 is opposite vertex 0
+        //     # with consistent orientation
+        //     te = np.array([
+        //         tv[2] - tv[1],
+        //         tv[0] - tv[2],
+        //         tv[1] - tv[0],
+        //     ])
+        vector<vec3<float> > te;
+        te.push_back(tv[2] - tv[1]);
+        te.push_back(tv[0] - tv[2]);
+        te.push_back(tv[1] - tv[0]);
+            
+        //     # Dot products of edges at each vertex (negative
+        //     # to capture interior angle of triangle)
+        //     td = np.array([
+        //         -np.dot(te[2], te[1]),
+        //         -np.dot(te[0], te[2]),
+        //         -np.dot(te[1], te[0]),
+        //     ])
+        vector<float> td;
+        td.push_back(dot(te[2], te[1]));
+        td.push_back(dot(te[0], te[2]));
+        td.push_back(dot(te[1], te[0]));
+
+        //     cross = np.linalg.norm(np.cross(te[0], te[1]))
+        //     ta = cross / 2
+        //     obtuse = td[0]*td[1]*td[2] < 0
+        float cross_norm = cross(te[0], te[1]).norm();
+        float ta = cross_norm/2;
+        bool obtuse = td[0]*td[1]*td[2] < 0;
+
+        //     for e in range(3):
+        for (unsigned int e=0; e<3; e++) 
+        {
+            // Consider edge of triangle opposite vertex 'e'
+            // cot of angle at vertex 'e' is dot product of other
+            // two edges divided by cross product
+        //         cot = td[e] / cross
+            float cot = td[e] / cross_norm;
+            
+        //         if obtuse:
+        //             # Obtuse triangles use barycentric area
+        //             # (as in http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.37.8894&rep=rep1&type=pdf)
+        //             #avals.append(ta / 3)
+        //             if td[e] < 0:
+        //                 # Vertex with the obtuse angle gets half the area
+        //                 # This is as done in IGL (see http://www.alecjacobson.com/weblog/?p=874)
+        //                 avals.append(ta / 2)
+        //             else:
+        //                 avals.append(ta / 4)
+        //             arows.append(t[e])
+        //             acols.append(t[e])
+        //         else:
+        //             # For non obtuse triangles also add the Voronoi area
+        //             esqlen = np.sum(np.square(te[e]))
+        //             aval = cot * esqlen / 8
+        //             avals.append(aval)
+        //             avals.append(aval)
+        //             arows.append(vi2)
+        //             acols.append(vi2)
+        //             arows.append(vi3)
+        //             acols.append(vi3)
+            // Calculate the mass contribution for this triangle. If not obtuse we use the
+            // Voroni area, otherwise we give half the area to the vertex with the obtuse
+            // angle and quarter to the other two vertices
+            // (this is as done in IGL - see http://www.alecjacobson.com/weblog/?p=874)
+            if (obtuse)
+            {
+                // For obtuse triangle contribution is to the vertex
+                // opposite the edge depending on whether this vertex
+                // has the obtuse angle or not
+                if (cot < 0)
+                {
+                    vertex_masses[t[e]] += ta / 2;
+                }
+                else
+                {
+                    vertex_masses[t[e]] += ta / 4;
+                }
+            }
+            else
+            {
+                // Voronoi area is associated with this edge
+                // is applied to the two end vertices of the edge
+                float sqnorm = te[e].norm();
+                float voronoi_area = cot * sqnorm * sqnorm;
+                vertex_masses[t[(e+1) % 3]] += voronoi_area;
+                vertex_masses[t[(e+2) % 3]] += voronoi_area;
+            }
+
+            // Calculate the contribution to the weightings (equivalent to the cotangent
+            // matrix). Each edge contributes in 4 places:
+            //   (v2, v2), (v3, v3), (v2, v3), (v3, v2)
+            // where v2, v3 are the vertices forming the edge. We store the off-diagonal
+            // weights in a list for each voxel corresponding to the neighbour voxels
+            // in the neighbours list. We add on to the end the diagonal entry for
+            // the voxel
+
+        // vi1, vi2, vi3 = t[e], t[(e+1) % 3], t[(e+2) % 3]
+            int vi2 = t[(e+1) % 3];
+            int vi3 = t[(e+2) % 3];
+        //         vals.append(0.5 * cot)
+        //         vals.append(0.5 * cot)
+        //         vals.append(-0.5 * cot)
+        //         vals.append(-0.5 * cot)
+        //         rows.append(vi2)
+        //         rows.append(vi3)
+        //         rows.append(vi2)
+        //         rows.append(vi3)
+        //         cols.append(vi2)
+        //         cols.append(vi3)
+        //         cols.append(vi3)
+        //         cols.append(vi2)
+
+            vector<int> v_neighbours = neighbours[vi2];
+            for (unsigned int i=0; i<v_neighbours.size(); i++)
+            {
+                if (v_neighbours[i] == vi3) weightings[vi2][i] -= 0.5*cot;
+            }
+            weightings[vi2].back() += 0.5 * cot;
+            v_neighbours = neighbours[vi3];
+            for (unsigned int i=0; i<v_neighbours.size(); i++) 
+            {
+                if (v_neighbours[i] == vi2) weightings[vi3][i] -= 0.5*cot;
+            }
+            weightings[vi3].back() += 0.5 * cot;
+        }
+    }
+}
+/*
+void FabberRunDataGifti::GetWeightings2(std::vector<std::vector<double> > &weightings,
                                        std::vector<std::vector<int> > &neighbours,
                                        const NEWMAT::Matrix &m_laplacian)
 {
@@ -256,4 +444,4 @@ void FabberRunDataGifti::GetWeightings(std::vector<std::vector<double> > &weight
         double weight = v_weights.element(vid-1);
         weightings[vid-1].push_back(weight);
     }
-}
+}*/
