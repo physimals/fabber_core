@@ -408,12 +408,13 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
 
         expectedLogPosteriorParts[9]
             += -gammaln(ciPrior) - ciPrior * log(siPrior) - si * ci / siPrior;
+
+        expectedLogPosteriorParts[2]
+            += -0.5 * ci*si*((k.t() * k).AsScalar() + (J.t() * J * Linv).Trace()); //*NB remove Qsum
     }
 
     expectedLogPosteriorParts[1] = 0; //*NB not required
 
-    expectedLogPosteriorParts[2]
-        = -0.5 * (k.t() * k).AsScalar() - 0.5 * (J.t() * J * Linv).Trace(); //*NB remove Qsum
 
     expectedLogPosteriorParts[3] = +0.5 * thetaPrior.GetPrecisions().LogDeterminant().LogValue()
         - 0.5 * nTimes * log(2 * M_PI) - 0.5 * nTheta * log(2 * M_PI);
