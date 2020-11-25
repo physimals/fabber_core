@@ -74,7 +74,11 @@ void FabberRunDataNewimage::Initialize()
     {
         throw DataNotFound(data_fname, "File is invalid or does not exist");
     }
-    read_volume(m_main_vol, data_fname);
+
+    // Initialize reference 3d volume (note that data is generally 4D so load it as such)
+    volume4D<float> vol4d;
+    read_volume4D(vol4d, data_fname);
+    m_main_vol = vol4d[0];
 
     SetCoordsFromData();
 }
