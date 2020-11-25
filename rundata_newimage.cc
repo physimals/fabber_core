@@ -72,15 +72,15 @@ void FabberRunDataNewimage::SetExtentFromData()
     else
     {
         // Make sure the coords are loaded from the main data even if we don't
-        // have a mask, and that the reference volume is initialized
+        // have a mask
         LOG << "FabberRunDataNewimage::No mask, using data for extent" << endl;
         string data_fname = GetStringDefault("data", GetStringDefault("data1", ""));
         if (!fsl_imageexists(data_fname))
         {
             throw DataNotFound(data_fname, "File is invalid or does not exist");
         }
-        volume<float> main_vol;
-        read_volume(main_vol, data_fname);
+        volume4D<float> main_vol;
+        read_volume4D(main_vol, data_fname);
         SetCoordsFromExtent(main_vol.xsize(), main_vol.ysize(), main_vol.zsize());
     }
 }
