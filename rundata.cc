@@ -360,22 +360,32 @@ void FabberRunData::ParseOldStyleParamFile(const string &filename)
     }
     char c;
     string param;
-    while (is.good())
+    while (true)
     {
+        // Get the next character and add it to the current parameter definition
+        // unless it is whitespace or end of file - at this point we process
+        // the parameter definition
         is.get(c);
-        if (!isspace(c))
+        if (is.good() && !isspace(c))
+        {
             param += c;
-        else if (param == "")
+            continue;
+        }
+
+        // End of parameter definition - deal with it
+        if (param == "")
         {
-        }                                     // repeated whitespace, so do nothing
-        else if (string(param, 0, 2) == "--") // we have an option
+            // repeated whitespace, so do nothing
+        }
+        else if (string(param, 0, 2) == "--")
         {
+            // we have an option
             AddKeyEqualsValue(string(param, 2, string::npos));
             param = "";
         }
-        else if (string(param, 0, 1) == "#") // comment
+        else if (string(param, 0, 1) == "#")
         {
-            // discard this word and the rest of the line.
+            // Comment - discard this word and the rest of the line.
             param = "";
             while (is.good() && c != '\n')
                 is.get(c);
@@ -389,6 +399,9 @@ void FabberRunData::ParseOldStyleParamFile(const string &filename)
             throw FabberRunDataError(
                 "Invalid data '" + param + "' found in file '" + filename + "'");
         }
+
+        // If we are at the end of file, stop
+        if (!is.good()) break;
     }
 }
 
