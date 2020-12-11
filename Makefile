@@ -2,7 +2,7 @@ include ${FSLCONFDIR}/default.mk
 
 PROJNAME = fabber_core
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_PROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
+USRINCFLAGS = -I${INC_NEWMAT} -I${INC_CPROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
 
 FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
