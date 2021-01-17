@@ -20,7 +20,7 @@ Standalone versions of Fabber including a selection of model libraries are avail
 for a number of platforms. These may be useful if you don't want the rest of FSL
 or if you need a more up to date version of Fabber than the one included with FSL.
 
-The current standalone release can be found at https://github.com/ibme-qubic/fabber_core/releases.
+The current standalone release can be found at https://github.com/physimals/fabber_core/releases.
 
 The standalone release can be used with tools requiring a Fabber installation such as 
 the `Python API <https://pyfab.readthedocs.io/>`_, or Fabber-based plugins 
@@ -32,7 +32,7 @@ notably the ASL plugin.
 Building from source code
 -------------------------
 
-You can build Fabber from the source code available in the `Github repository <https://github.com/ibme-qubic/fabber_core.git>`_.
+You can build Fabber from the source code available in the `Github repository <https://github.com/physimals/fabber_core.git>`_.
 You will need an FSL installation for this. For instructions see `Building Fabber`_.
 
 .. _Building Fabber: building.html

@@ -85,7 +85,7 @@ Model libraries are distributed separately from the Fabber core.
 If you need an updated version of a model library, for example
 the ASL model library, you first need to get the source code
 for the models library. A number of model libraries are
-available in our `Github repositories <https://github.com/ibme-qubic/>`_
+available in our `Github repositories <https://github.com/physimals/>`_
 all named ``fabber_models_<name>``.
 
 Then to build and install the updated model libraries you would then 
