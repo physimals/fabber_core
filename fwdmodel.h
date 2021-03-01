@@ -196,7 +196,7 @@ public:
      *        may set mean/variances to suggested posterior, or just do nothing to
      *        accept general default
      */
-    void GetInitialPosterior(MVNDist &posterior) const;
+    void GetInitialPosterior(MVNDist &posterior, FabberRunData &rundata) const;
 
     /**
      * Evaluate the forward model in Fabber internal parameter space

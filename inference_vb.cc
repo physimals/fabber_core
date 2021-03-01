@@ -213,7 +213,7 @@ void Vb::SetupPerVoxelDists(FabberRunData &rundata)
             // Set the initial posterior for model params. Model
             // may want the voxel data in order to do this
             PassModelData(v);
-            m_model->GetInitialPosterior(m_ctx->fwd_post[v - 1]);
+            m_model->GetInitialPosterior(m_ctx->fwd_post[v - 1], rundata);
             // Set initial noise posterior
             m_ctx->noise_post[v - 1] = initialNoisePosterior->Clone();
         }

@@ -281,7 +281,7 @@ void FwdModel::GetParameters(FabberRunData &rundata, vector<Parameter> &params)
     }
 }
 
-void FwdModel::GetInitialPosterior(MVNDist &posterior) const
+void FwdModel::GetInitialPosterior(MVNDist &posterior, FabberRunData &rundata) const
 {
     posterior.SetSize(m_params.size());
 
@@ -289,7 +289,18 @@ void FwdModel::GetInitialPosterior(MVNDist &posterior) const
     NEWMAT::SymmetricMatrix cov = posterior.GetCovariance();
     for (size_t p = 0; p < m_params.size(); p++)
     {
-        posterior.means(p + 1) = m_params[p].post.mean();
+        if (m_params[p].prior_type == PRIOR_IMAGE)
+        {
+            // For an image prior we should initialize the posterior 
+            // from the voxelwise image
+            string filename = m_params[p].options.find("image")->second;
+            NEWMAT::RowVector image = rundata.GetVoxelData(filename).AsRow();
+            posterior.means(p + 1) = image(voxel);
+        }
+        else
+        {
+            posterior.means(p + 1) = m_params[p].post.mean();
+        }
         cov(p + 1, p + 1) = m_params[p].post.var();
     }
     posterior.SetCovariance(cov);
