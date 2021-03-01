@@ -479,8 +479,8 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     }
 
     // Spatial prior does not contribute to the free energy?
-    // Technically I think it should via the prior on ak (q1, q2) however since this is uninformative
-    // it may not matter.
+    // Technically I think it should via the prior on ak (q1, q2) however this is quite uninformative.
+    // It may not matter as we are not maximising F directly but rather following the update equations.
     return 0;
 }
 
