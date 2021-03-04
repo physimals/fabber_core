@@ -206,6 +206,9 @@ SpatialPrior::SpatialPrior(const Parameter &p, FabberRunData &rundata)
 
     // FIXME still needed?
     m_update_first_iter = rundata.GetBool("update-spatial-prior-on-first-iteration");
+
+    m_q1 = rundata.GetDoubleDefault("spatial-q1", 10.0);
+    m_q2 = rundata.GetDoubleDefault("spatial-q2", 1.0);
 }
 
 void SpatialPrior::DumpInfo(std::ostream &out) const
@@ -303,9 +306,9 @@ double SpatialPrior::CalculateaK(const RunContext &ctx)
     // Fig 4 in Penny (2005) update equations for gK, hK and aK
     //
     // Following Penny, prior on aK is a relatively uninformative gamma distribution with 
-    // q1 = 10 (1/q1 = 0.1) and q2 = 1.0
-    double gk = 1 / (0.5 * trace_term + 0.5 * term2 + 0.1); 
-    double hK = (ctx.nvoxels * 0.5 + 1.0);
+    // q1 (theta) = 10 (1/q1 = 0.1) and q2 (k) = 1.0
+    double gk = 1 / (0.5 * trace_term + 0.5 * term2 + 1/m_q1); 
+    double hK = (ctx.nvoxels * 0.5 + m_q2);
     double aK = gk * hK;
 
     if (aK < 1e-50)

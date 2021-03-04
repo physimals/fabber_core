@@ -130,6 +130,8 @@ protected:
     int m_spatial_dims;
     double m_spatial_speed;
     bool m_update_first_iter;
+    double m_q1;
+    double m_q2;
 };
 
 /**
