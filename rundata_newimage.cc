@@ -133,6 +133,9 @@ const Matrix &FabberRunDataNewimage::LoadVoxelData(const std::string &filename)
             LOG << "NEWMAT error while applying mask... Most likely a dimension mismatch. ***\n";
             throw;
         }
+        const NEWMAT::Matrix &m = m_voxel_data[filename];
+        double mean = m.Sum() / (m.Nrows() * m.Ncols());
+        LOG << "FabberRunDataNewimage::GetVoxelData: " << filename << " mean value=" << mean << endl;
     }
 
     return m_voxel_data[filename];

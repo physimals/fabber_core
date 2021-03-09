@@ -819,8 +819,6 @@ const NEWMAT::Matrix &FabberRunData::GetVoxelData(const std::string &key)
     }
 
     const NEWMAT::Matrix &m = LoadVoxelData(data_key);
-    double mean = m.Sum() / (m.Nrows() * m.Ncols());
-    LOG << "FabberRunData::GetVoxelData: " << key << "=" << data_key << " mean value=" << mean << endl;
     return m;
 }
 
