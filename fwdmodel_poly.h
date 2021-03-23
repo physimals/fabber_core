@@ -47,3 +47,4 @@ protected:
 private:
     int m_degree;
 };
+

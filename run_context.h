@@ -48,3 +48,4 @@ struct RunContext
     std::vector<std::vector<int> > neighbours;
     std::vector<std::vector<int> > neighbours2;
 };
+
