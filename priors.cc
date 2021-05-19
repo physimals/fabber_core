@@ -366,7 +366,7 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     {
         int nid = *nidIt;
         const MVNDist &neighbourPost = ctx.fwd_post[nid - 1];
-        contrib_nn += 8 * neighbourPost.means(m_idx + 1);
+        contrib_nn += neighbourPost.means(m_idx + 1);
     }
 
     // Loop over second neighbours of the current voxel. Note that this list
@@ -442,18 +442,18 @@ double SpatialPrior::ApplyToMVN(MVNDist *prior, const RunContext &ctx)
     if (m_type_code == PRIOR_SPATIAL_m)
     {
         // Dirichlet BCs on MRF i.e. no boundary correction
-        double rec = 1 / (8 * nn);
+        double rec = 1 / double(nn);
         spatial_mean = contrib_nn * rec;
     }
     else if (m_type_code == PRIOR_SPATIAL_M)
     {
-        double rec = 1 / (8 * (double(nn) + 1e-8));
+        double rec = 1 / double(nn);
         spatial_mean = contrib_nn * rec;
     }
     else if (nn != 0)
     {
         double rec = 1 / (8*nn - nn2);
-        spatial_mean = (contrib_nn + contrib_nn2) * rec;
+        spatial_mean = (8*contrib_nn + contrib_nn2) * rec;
     }
     else
         spatial_mean = 0;
