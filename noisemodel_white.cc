@@ -366,6 +366,7 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
     const MVNDist &theta, const MVNDist &thetaPrior, const LinearFwdModel &linear,
     const ColumnVector &data) const
 {
+    MakeQis(data.Nrows());
     const int nPhis = Qis.size();
     const WhiteParams &noise = dynamic_cast<const WhiteParams &>(noiseIn);
     const WhiteParams &noisePrior = dynamic_cast<const WhiteParams &>(noisePriorIn);
@@ -408,12 +409,15 @@ double WhiteNoiseModel::CalcFreeEnergy(const NoiseParams &noiseIn, const NoisePa
 
         expectedLogPosteriorParts[9]
             += -gammaln(ciPrior) - ciPrior * log(siPrior) - si * ci / siPrior;
+
+        DiagonalMatrix &qi = Qis[i];
+        ColumnVector ki = qi * k;
+        Matrix Ji = qi * J;
+        expectedLogPosteriorParts[2]
+            += -0.5 * si * ci * (ki.t() * ki).AsScalar() - 0.5 * (Ji.t() * Ji * Linv).Trace(); //*NB remove Qsum
     }
 
     expectedLogPosteriorParts[1] = 0; //*NB not required
-
-    expectedLogPosteriorParts[2]
-        = -0.5 * (k.t() * k).AsScalar() - 0.5 * (J.t() * J * Linv).Trace(); //*NB remove Qsum
 
     expectedLogPosteriorParts[3] = +0.5 * thetaPrior.GetPrecisions().LogDeterminant().LogValue()
         - 0.5 * nTimes * log(2 * M_PI) - 0.5 * nTheta * log(2 * M_PI);
