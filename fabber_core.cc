@@ -13,6 +13,8 @@
 #include "version.h"
 #include "tools.h"
 
+#include "armawrap/newmat.h"
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -25,6 +27,9 @@
 #include <vector>
 
 using namespace std;
+
+using NEWMAT::Matrix;
+using NEWMAT::ColumnVector;
 
 /**
  * Print version information.
@@ -154,7 +159,7 @@ int execute(int argc, char **argv)
 
             return 0;
         }
-        else if (params->GetBool("listparams")) 
+        else if (params->GetBool("listparams"))
         {
             string model = params->GetStringDefault("model", "");
             std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
@@ -172,7 +177,7 @@ int execute(int argc, char **argv)
 
             return 0;
         }
-        else if (params->GetBool("descparams")) 
+        else if (params->GetBool("descparams"))
         {
             string model = params->GetStringDefault("model", "");
             std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
@@ -186,7 +191,7 @@ int execute(int argc, char **argv)
             for (iter = model_params.begin(); iter != model_params.end(); ++iter)
             {
                 cout << iter->name << " " << iter->desc;
-                if (iter->units != "") 
+                if (iter->units != "")
                 {
                     cout << " (units: " << iter->units << ")";
                 }
@@ -195,7 +200,7 @@ int execute(int argc, char **argv)
 
             return 0;
         }
-        else if (params->GetBool("listoutputs")) 
+        else if (params->GetBool("listoutputs"))
         {
             string model = params->GetStringDefault("model", "");
             std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));
@@ -213,7 +218,7 @@ int execute(int argc, char **argv)
 
             return 0;
         }
-        else if (params->HaveKey("evaluate")) 
+        else if (params->HaveKey("evaluate"))
         {
             string model = params->GetStringDefault("model", "");
             std::auto_ptr<FwdModel> fwd_model(FwdModel::NewFromName(model));

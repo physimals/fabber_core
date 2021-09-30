@@ -19,8 +19,14 @@
 #include "armawrap/newmat.h"
 
 #include <math.h>
+#include <vector>
 
 using MISCMATHS::sign;
+using NEWMAT::Matrix;
+using NEWMAT::IdentityMatrix;
+using NEWMAT::ColumnVector;
+using NEWMAT::Matrix;
+using namespace std;
 
 static OptionSpec OPTIONS[] = {
     { "noise", OPT_STR, "Noise model to use (white or ar1)", OPT_REQ, "" },

@@ -33,9 +33,9 @@ public:
     {
     }
 
-    virtual void GetOptions(vector<OptionSpec> &opts) const;
+    virtual void GetOptions(std::vector<OptionSpec> &opts) const;
     virtual std::string GetDescription() const;
-    virtual string GetVersion() const;
+    virtual std::string GetVersion() const;
 
     virtual void Initialize(FwdModel *fwd_model, FabberRunData &args);
     virtual void DoCalculations(FabberRunData &data);
@@ -47,7 +47,7 @@ protected:
      * Initialize noise prior or posterior distribution from a file stored in the
      * rundata under the given parameter key
      */
-    void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, string param_key);
+    void InitializeNoiseFromParam(FabberRunData &args, NoiseParams *dist, std::string param_key);
 
     /**
      * Pass the model the data, coords and suppdata for a voxel.
@@ -86,7 +86,7 @@ protected:
     /**
      * Output detailed debugging information for a voxel
      */
-    void DebugVoxel(int v, const string &where);
+    void DebugVoxel(int v, const std::string &where);
 
     /**
      * Setup per-voxel data for Spatial VB

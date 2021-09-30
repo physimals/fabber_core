@@ -12,6 +12,7 @@
 #include "easylog.h"
 #include "rundata.h"
 
+#include <NewNifti/NewNifti.h>
 #include <newimage/newimage.h>
 #include <newimage/newimageio.h>
 #include "armawrap/newmat.h"
@@ -22,7 +23,10 @@
 
 using namespace std;
 using namespace NEWIMAGE;
+using NiftiIO::NIFTI_INTENT_SYMMATRIX;
+using NiftiIO::NIFTI_INTENT_NONE;
 using NEWMAT::Matrix;
+using NEWMAT::ColumnVector;
 
 static void DumpVolumeInfo4D(const volume4D<float> &info, ostream &out)
 {

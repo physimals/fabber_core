@@ -18,6 +18,7 @@
 #include <limits.h>
 #include <map>
 #include <set>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -598,7 +599,7 @@ public:
      * Friend function to allow summary of Parameters to be streamed
      * using the << operator.
      */
-    friend ostream &operator<<(ostream &out, const FabberRunData &opts);
+    friend std::ostream &operator<<(std::ostream &out, const FabberRunData &opts);
 
 // Following methods present for compatibility only
 #ifdef DEPRECATED
@@ -761,7 +762,7 @@ public:
 template <typename T> inline T convertTo(const std::string &s, const std::string &key = "")
 {
     T x;
-    istringstream i(s);
+    std::istringstream i(s);
     char c;
     if (!(i >> x) || (i.get(c)))
         throw InvalidOptionValue(key, s, "Failed to convert to required type");

@@ -16,10 +16,20 @@
 #include "armawrap/newmat.h"
 
 #include <stdexcept>
+#include <string>
+#include <ostream>
+#include <vector>
 
 #define AR1_BANDWIDTH 3
 
 using MISCMATHS::digamma;
+using NEWMAT::ColumnVector;
+using NEWMAT::Matrix;
+using NEWMAT::IdentityMatrix;
+using NEWMAT::SymmetricMatrix;
+using NEWMAT::DiagonalMatrix;
+using NEWMAT::LogAndSign;
+
 
 /**
  * There seem to be compatibility problems using SymmetricBandMatrix
@@ -263,9 +273,9 @@ Ar1cParams *Ar1cParams::Clone() const
 {
     return new Ar1cParams(*this);
 }
-void Ar1cParams::Dump(ostream &os) const
+void Ar1cParams::Dump(std::ostream &os) const
 {
-    os << "Alpha:" << endl;
+    os << "Alpha:" << std::endl;
     alpha.Dump(os);
     for (unsigned int i = 0; i < phis.size(); i++)
     {
@@ -309,7 +319,7 @@ void Ar1cNoiseModel::Initialize(FabberRunData &args)
 {
     NoiseModel::Initialize(args);
 
-    string nPhisString = args.GetStringDefault("num-echoes", "(default)");
+    std::string nPhisString = args.GetStringDefault("num-echoes", "(default)");
     if (nPhisString == "(default)")
     {
         nPhis = 1;
@@ -506,7 +516,7 @@ void Ar1cNoiseModel::UpdateAlpha(NoiseParams &noise, const NoiseParams &noisePri
     if (posterior.alpha.means.MaximumAbsoluteValue() > 1)
     {
         LOG << "Warning: alpha magnitude > 1... "
-            << "maybe right but probably bad" << endl;
+            << "maybe right but probably bad" << std::endl;
         LOG << "Values: " << posterior.alpha.means.t();
         // throw overflow_exception("Alpha > 1 detected");
     }
@@ -586,7 +596,7 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
     if (chk.Sign() <= 0)
     {
         LOG << "Ar1cNoiseModel::UpdateTheta - theta precisions aren't positive-definite: "
-            << chk.Sign() << ", " << chk.LogValue() << endl;
+            << chk.Sign() << ", " << chk.LogValue() << std::endl;
     }
 
     // Update m (model means)
@@ -623,7 +633,7 @@ void Ar1cNoiseModel::UpdateTheta(const NoiseParams &noise, MVNDist &theta,
     }
 }
 
-ostream &operator<<(ostream &s, vector<double> n)
+std::ostream &operator<<(std::ostream &s, std::vector<double> n)
 {
     for (unsigned i = 0; i < n.size(); i++)
         s << n[i] << " ";
@@ -673,7 +683,7 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
         - 0.5 * nTheta * (log(2 * M_PI) + 1);
 
     double expectedLogPhiDist = 0; // bits arising fromt he factorised posterior for phi
-    vector<double> expectedLogPosteriorParts(10); // bits arising from the likelihood
+    std::vector<double> expectedLogPosteriorParts(10); // bits arising from the likelihood
     for (int i = 0; i < 10; i++)
         expectedLogPosteriorParts[i] = 0;
 
@@ -726,10 +736,10 @@ double Ar1cNoiseModel::CalcFreeEnergy(const NoiseParams &noise, const NoiseParam
     // Error checking
     if (!(F - F == 0))
     {
-        LOG_ERR("expectedLogAlphaDist == " << expectedLogAlphaDist << endl);
-        LOG_ERR("expectedLogThetaDist == " << expectedLogThetaDist << endl);
-        LOG_ERR("expectedLogPhiDist == " << expectedLogPhiDist << endl);
-        LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << endl);
+        LOG_ERR("expectedLogAlphaDist == " << expectedLogAlphaDist << std::endl);
+        LOG_ERR("expectedLogThetaDist == " << expectedLogThetaDist << std::endl);
+        LOG_ERR("expectedLogPhiDist == " << expectedLogPhiDist << std::endl);
+        LOG_ERR("expectedLogPosteriorParts == " << expectedLogPosteriorParts << std::endl);
         throw FabberInternalError("Ar1cNoiseModel::CalcFreeEnergy Non-finite free energy!");
     }
 

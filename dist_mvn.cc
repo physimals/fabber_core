@@ -14,6 +14,7 @@
 #include "armawrap/newmat.h"
 
 using fabber::read_matrix_file;
+using namespace std;
 using namespace NEWMAT;
 
 // Constructors

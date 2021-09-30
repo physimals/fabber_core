@@ -147,12 +147,12 @@ public:
     /**
      * Initialize ARD
      */
-    double SetupARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const;
+    double SetupARD(std::vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const;
 
     /**
      * Update ARD
      */
-    double UpdateARD(vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const;
+    double UpdateARD(std::vector<int> ardindices, const MVNDist &theta, MVNDist &thetaPrior) const;
 
     /**
      * Return the number of noise parameters

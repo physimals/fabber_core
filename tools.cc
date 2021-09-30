@@ -17,6 +17,7 @@
 
 using namespace std;
 using NEWMAT::Matrix;
+using NEWMAT::ReturnMatrix;
 using NEWMAT::ColumnVector;
 using MISCMATHS::read_vest;
 using MISCMATHS::read_ascii_matrix;
