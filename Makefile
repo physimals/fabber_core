@@ -59,22 +59,22 @@ all: ${XFILES} ${SOFILES}
 clean:
 	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.so *.exe core depend.mk fabber_test
 
-mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o
-	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+mvntool: mvn_tool/mvntool.o rundata_newimage.o | libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
 
 # Build a fabber exectuable, this will have nothing but the generic models so it not practically useful for data analysis
-fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
-	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+fabber: ${CLIENTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS}
 
 # Library build
 libfsl-fabbercore.so : ${OBJS}
 	${CXX} ${CXXFLAGS} -shared -o $@ $^ ${LDFLAGS}
 
-libfsl-fabberexec.so : ${EXECOBJS}
+libfsl-fabberexec.so : ${EXECOBJS} | libfsl-fabbercore.so
 	${CXX} ${CXXFLAGS} -shared -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
 
 # Unit tests
-test: ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${TESTOBJS}
-	${CXX} ${CXXFLAGS} -o fabber_test $^ ${LDFLAGS} ${TESTLIBS}
+test: ${CLIENTOBJS} ${TESTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o fabber_test $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS} ${TESTLIBS}
 
 # DO NOT DELETE
