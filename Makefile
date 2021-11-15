@@ -3,16 +3,35 @@ include ${FSLCONFDIR}/default.mk
 PROJNAME = fabber_core
 
 USRINCFLAGS = -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
-LIBS = -lfsl-newimage -lfsl-miscmaths -lfsl-utils \
-       -lfsl-cprob -lfsl-NewNifti -lfsl-znz -ldl
+
+# The FSL build system changed
+# substantially in FSL 6.0.6
+# FSL >= 6.0.6
+ifeq (${FSL_GE_606}, true)
+  LIBS = -lfsl-newimage -lfsl-miscmaths -lfsl-utils \
+         -lfsl-cprob -lfsl-NewNifti -lfsl-znz -ldl
+# FSL <= 6.0.5
+else
+  ifeq ($(shell uname -s), Linux)
+	MATLIB := -lopenblas
+  endif
+
+  USRINCFLAGS += -I${INC_NEWMAT} -I${INC_CPROB} -I${INC_BOOST} \
+                 -I${FSLDIR}/extras/include/armawrap
+  USRLDFLAGS   = -L${LIB_NEWMAT} -L${LIB_PROB}         \
+                 -lnewimage -lmiscmaths -lutils -lprob \
+                 -lNewNifti ${MATLIB} -lznz -lz -ldl
+endif
+
 TESTLIBS = -lgtest -lpthread
 
 #
 # Executables and libraries provided by this project
 #
 
-XFILES = fabber mvntool
+XFILES  = fabber mvntool
 SOFILES = libfsl-fabbercore.so libfsl-fabberexec.so
+AFILES  = libfabbercore.a libfabberexec.a
 SCRIPTS = fabber_var
 
 # Sets of objects separated into logical divisions
@@ -48,16 +67,24 @@ OBJS = ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 #OPTFLAGS = -ggdb -Wall
 
 # Pass Git revision details
-GIT_SHA1:=$(shell git describe --dirty)
-GIT_DATE:=$(shell git log -1 --format=%ad --date=local)
+GIT_SHA1 := $(shell git describe --dirty)
+GIT_DATE := $(shell git log -1 --format=%ad --date=local)
 CXXFLAGS += -DGIT_SHA1=\"${GIT_SHA1}\" -DGIT_DATE="\"${GIT_DATE}\""
-
-# Targets
-
-all: ${XFILES} ${SOFILES}
 
 clean:
 	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.so *.exe core depend.mk fabber_test
+
+# FSL >=606 uses dynamic linking
+ifeq (${FSL_GE_606}, true)
+
+all: ${XFILES} ${SOFILES}
+
+# Dynamically linked libraries are compiled for FSL >= 606
+libfsl-fabbercore.so : ${OBJS}
+	${CXX} ${CXXFLAGS} -shared -o $@ $^ ${LDFLAGS}
+
+libfsl-fabberexec.so : ${EXECOBJS} | libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -shared -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
 
 mvntool: mvn_tool/mvntool.o rundata_newimage.o | libfsl-fabbercore.so
 	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
@@ -66,15 +93,29 @@ mvntool: mvn_tool/mvntool.o rundata_newimage.o | libfsl-fabbercore.so
 fabber: ${CLIENTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
 	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS}
 
-# Library build
-libfsl-fabbercore.so : ${OBJS}
-	${CXX} ${CXXFLAGS} -shared -o $@ $^ ${LDFLAGS}
-
-libfsl-fabberexec.so : ${EXECOBJS} | libfsl-fabbercore.so
-	${CXX} ${CXXFLAGS} -shared -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
-
 # Unit tests
 test: ${CLIENTOBJS} ${TESTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
 	${CXX} ${CXXFLAGS} -o fabber_test $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS} ${TESTLIBS}
+
+# FSL <=605 uses static linking
+else
+
+all: ${XFILES} ${AFILES}
+
+libfabbercore.a : ${OBJS}
+	${AR} -r $@ $^
+
+libfabberexec.a : ${EXECOBJS}
+	${AR} -r $@ $^
+
+mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+
+fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+
+test: ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${TESTOBJS}
+	${CXX} ${CXXFLAGS} -o fabber_test $^ ${LDFLAGS} ${TESTLIBS}
+endif
 
 # DO NOT DELETE
