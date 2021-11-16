@@ -13,13 +13,13 @@ ifeq (${FSL_GE_606}, true)
 # FSL <= 6.0.5
 else
   ifeq ($(shell uname -s), Linux)
-	MATLIB := -lopenblas
+    MATLIB := -lopenblas
   endif
 
   USRINCFLAGS += -I${INC_NEWMAT} -I${INC_CPROB} -I${INC_BOOST} \
                  -I${FSLDIR}/extras/include/armawrap
-  USRLDFLAGS   = -L${LIB_NEWMAT} -L${LIB_PROB}         \
-                 -lnewimage -lmiscmaths -lutils -lprob \
+  USRLDFLAGS   = -L${LIB_NEWMAT} -L${LIB_CPROB}         \
+                 -lnewimage -lmiscmaths -lutils -lcprob \
                  -lNewNifti ${MATLIB} -lznz -lz -ldl
 endif
 
