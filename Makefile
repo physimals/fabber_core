@@ -8,8 +8,9 @@ USRINCFLAGS = -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
 # substantially in FSL 6.0.6
 # FSL >= 6.0.6
 ifeq (${FSL_GE_606}, true)
-  LIBS = -lfsl-newimage -lfsl-miscmaths -lfsl-utils \
-         -lfsl-cprob -lfsl-NewNifti -lfsl-znz -ldl
+  LIBS         = -lfsl-newimage -lfsl-miscmaths -lfsl-utils \
+                 -lfsl-cprob -lfsl-NewNifti -lfsl-znz -ldl
+  USRCPPFLAGS += -DFSL_GE_606
 # FSL <= 6.0.5
 else
   ifeq ($(shell uname -s), Linux)
