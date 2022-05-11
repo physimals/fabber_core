@@ -12,9 +12,10 @@
 #include "easylog.h"
 #include "rundata.h"
 
+#include <NewNifti/NewNifti.h>
 #include <newimage/newimage.h>
 #include <newimage/newimageio.h>
-#include <newmat.h>
+#include "armawrap/newmat.h"
 
 #include <ostream>
 #include <string>
@@ -23,6 +24,17 @@
 using namespace std;
 using namespace NEWIMAGE;
 using NEWMAT::Matrix;
+using NEWMAT::ColumnVector;
+
+/*
+ * In FSL<606, the NewNifti/nifti1.h constants are #defines,
+ * whereas in FSL>=606 they are constants.
+ */
+#ifdef FSL_GE_606
+using NiftiIO::NIFTI_INTENT_SYMMATRIX;
+using NiftiIO::NIFTI_INTENT_NONE;
+#endif
+
 
 static void DumpVolumeInfo4D(const volume4D<float> &info, ostream &out)
 {

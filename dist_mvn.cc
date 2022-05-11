@@ -11,9 +11,10 @@
 #include "tools.h"
 
 #include <math.h>
-#include <newmatio.h>
+#include "armawrap/newmat.h"
 
 using fabber::read_matrix_file;
+using namespace std;
 using namespace NEWMAT;
 
 // Constructors
@@ -66,9 +67,9 @@ MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
     // Always duplicate the covariances (even if this means some recalculation)
     // Otherwise if we use precisions.i(), zeros won't stay exactly zero
     covariance = 0;
-    for (int row=1; row <= from1.m_size; row++) 
+    for (int row=1; row <= from1.m_size; row++)
     {
-        for (int col=1; col <= from1.m_size; col++) 
+        for (int col=1; col <= from1.m_size; col++)
         {
             try
             {
@@ -80,9 +81,9 @@ MVNDist::MVNDist(const MVNDist &from1, const MVNDist &from2)
             }
         }
     }
-    for (int row=1; row <= from2.m_size; row++) 
+    for (int row=1; row <= from2.m_size; row++)
     {
-        for (int col=1; col <= from2.m_size; col++) 
+        for (int col=1; col <= from2.m_size; col++)
         {
             try
             {
@@ -417,9 +418,9 @@ void MVNDist::Save(const vector<MVNDist *> &mvns, const string &filename, Fabber
         // required by NIFTI_INTENT_SYMMATRIX
         ColumnVector cov(nCov);
         int idx=1;
-        for (int row=1; row <=nParams; row++) 
+        for (int row=1; row <=nParams; row++)
         {
-            for (int col=1; col<=row; col++) 
+            for (int col=1; col<=row; col++)
             {
                 cov(idx++) = mvns.at(vox - 1)->GetCovariance()(row, col);
             }

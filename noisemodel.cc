@@ -17,6 +17,7 @@
 #include <string>
 
 using MISCMATHS::digamma;
+using NEWMAT::SymmetricMatrix;
 using namespace std;
 
 NoiseModel *NoiseModel::NewFromName(const string &name)

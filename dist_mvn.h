@@ -11,7 +11,7 @@
 #include "easylog.h"
 #include "rundata.h"
 
-#include <newmat.h>
+#include "armawrap/newmat.h"
 #include <ostream>
 #include <string>
 #include <vector>
@@ -68,7 +68,7 @@ public:
      *
      * @param mvns One MVN for each voxel
      */
-    static void Save(const vector<MVNDist *> &mvns, const string &filename, FabberRunData &data);
+    static void Save(const std::vector<MVNDist *> &mvns, const std::string &filename, FabberRunData &data);
 
     /**
      * Default constructor
@@ -96,7 +96,7 @@ public:
     /**
      * Create from matrix file (VEST or ASCII)
      */
-    MVNDist(const string filename, EasyLog *log = 0);
+    MVNDist(const std::string filename, EasyLog *log = 0);
 
     /**
      * Copy using a subset of another MVN distribution's parameters

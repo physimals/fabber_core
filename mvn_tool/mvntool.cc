@@ -8,6 +8,8 @@
 #include "dist_mvn.h"
 #include "rundata_newimage.h"
 
+#include "armawrap/newmat.h"
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -15,6 +17,10 @@
 #include <string>
 
 using namespace std;
+using NEWMAT::ColumnVector;
+using NEWMAT::Matrix;
+using NEWMAT::SymmetricMatrix;
+
 
 /* Function declarations */
 void Usage(const string &errorString = "");
@@ -108,7 +114,7 @@ int main(int argc, char **argv)
                         param = i + 1;
                 }
                 if (param == 0)
-                    throw Exception("Cannot find specfied parameter name in list");
+                    throw std::runtime_error("Cannot find specfied parameter name in list");
             }
             else
             { //deal with current and new parameter lists
@@ -129,7 +135,7 @@ int main(int argc, char **argv)
                 for (unsigned int i = 0; i < paramNames.size(); i++)
                 {
                     if (paramname.compare(paramNames[i]) == 0)
-                        throw Exception(
+                        throw std::runtime_error(
                             "Parameter name found in parameter list for this MVN, cannot insert an identical parameter");
                 }
                 //find parameter in new list
@@ -140,7 +146,7 @@ int main(int argc, char **argv)
                         newparam = i + 1;
                 }
                 if (newparam == 0)
-                    throw Exception("Cannot find specfied parameter name in new parameter name list");
+                    throw std::runtime_error("Cannot find specfied parameter name in new parameter name list");
                 //cout << newparam<<endl;
 
                 if (newparam == 1)
@@ -159,7 +165,7 @@ int main(int argc, char **argv)
                             param = i + 1;
                     }
                     if (param == 0)
-                        throw Exception(
+                        throw std::runtime_error(
                             "Cannot complete this operation since the new list contains other parameters not present in the old list.\n You may be able to get around this by adding new parameters in a different order:\n new parameters that are sequential in the new list should be added starting with the earliest appearing.");
                     // param currently hold location of previous parameter to the one we want to insert, so increment
                     param++;
@@ -385,7 +391,7 @@ int main(int argc, char **argv)
 
         return 0;
     }
-    catch (NEWMAT::Exception &e)
+    catch (std::runtime_error &e)
     {
         cout << e.what() << endl;
     }

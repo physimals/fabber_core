@@ -11,12 +11,13 @@
 #include "easylog.h"
 
 #include <miscmaths/miscmaths.h>
-#include <newmat.h>
+#include "armawrap/newmat.h"
 
 #include <limits>
 
 using namespace std;
 using NEWMAT::Matrix;
+using NEWMAT::ReturnMatrix;
 using NEWMAT::ColumnVector;
 using MISCMATHS::read_vest;
 using MISCMATHS::read_ascii_matrix;

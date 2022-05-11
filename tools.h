@@ -9,7 +9,7 @@
 
 #include "rundata.h"
 
-#include <newmatio.h>
+#include "armawrap/newmat.h"
 
 #include <assert.h>
 #include <math.h>
@@ -123,8 +123,8 @@ public:
         double guess = sqrt(lower * upper);
         if (lower >= guess || guess >= upper)
         {
-            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
-                 << endl;
+            std::cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
+                 << std::endl;
         }
         return guess;
     }
@@ -175,8 +175,8 @@ public:
 
         if (lower >= guess || guess >= upper)
         {
-            cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
-                 << ", atLower = " << atLower << ", atUpper = " << atUpper << endl;
+            std::cout << "Uh-oh... lower = " << lower << ", guess = " << guess << ", upper = " << upper
+                 << ", atLower = " << atLower << ", atUpper = " << atUpper << std::endl;
         }
         return guess;
     }

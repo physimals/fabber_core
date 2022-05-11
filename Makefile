@@ -2,29 +2,37 @@ include ${FSLCONFDIR}/default.mk
 
 PROJNAME = fabber_core
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_CPROB} -I${INC_BOOST} -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
-USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_PROB} -L/lib64
+USRINCFLAGS = -DFABBER_SRC_DIR="\"${PWD}\"" -DFABBER_BUILD_DIR="\"${PWD}\""
 
-FSLVERSION= $(shell cat ${FSLDIR}/etc/fslversion | head -c 1)
-ifeq ($(FSLVERSION), 5) 
-  NIFTILIB = -lfslio -lniftiio 
-  MATLIB = -lnewmat
-else 
-  UNAME := $(shell uname -s)
-  ifeq ($(UNAME), Linux)
-    MATLIB = -lopenblas
+# The FSL build system changed
+# substantially in FSL 6.0.6
+# FSL >= 6.0.6
+ifeq (${FSL_GE_606}, true)
+  LIBS         = -lfsl-newimage -lfsl-miscmaths -lfsl-utils \
+                 -lfsl-cprob -lfsl-NewNifti -lfsl-znz -ldl
+  USRCPPFLAGS += -DFSL_GE_606
+# FSL <= 6.0.5
+else
+  ifeq ($(shell uname -s), Linux)
+    MATLIB := -lopenblas
   endif
-  NIFTILIB = -lNewNifti
+
+  USRINCFLAGS += -I${INC_NEWMAT} -I${INC_CPROB} -I${INC_BOOST} \
+                 -I${FSLDIR}/extras/include/armawrap
+  USRLDFLAGS   = -L${LIB_NEWMAT} -L${LIB_CPROB}         \
+                 -lnewimage -lmiscmaths -lutils -lcprob \
+                 -lNewNifti ${MATLIB} -lznz -lz -ldl
 endif
 
-LIBS = -lnewimage -lmiscmaths -lutils -lprob ${MATLIB} ${NIFTILIB} -lznz -lz -ldl
 TESTLIBS = -lgtest -lpthread
 
 #
-# Executables
+# Executables and libraries provided by this project
 #
 
-XFILES = fabber mvntool
+XFILES  = fabber mvntool
+SOFILES = libfsl-fabbercore.so libfsl-fabberexec.so
+AFILES  = libfabbercore.a libfabberexec.a
 SCRIPTS = fabber_var
 
 # Sets of objects separated into logical divisions
@@ -60,33 +68,55 @@ OBJS = ${BASICOBJS} ${COREOBJS} ${INFERENCEOBJS} ${NOISEOBJS} ${CONFIGOBJS}
 #OPTFLAGS = -ggdb -Wall
 
 # Pass Git revision details
-GIT_SHA1:=$(shell git describe --dirty)
-GIT_DATE:=$(shell git log -1 --format=%ad --date=local)
+GIT_SHA1 := $(shell git describe --dirty)
+GIT_DATE := $(shell git log -1 --format=%ad --date=local)
 CXXFLAGS += -DGIT_SHA1=\"${GIT_SHA1}\" -DGIT_DATE="\"${GIT_DATE}\""
 
-# Targets
-
-all:	${XFILES} libfabbercore.a libfabberexec.a
-
 clean:
-	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.exe core depend.mk fabber_test
+	${RM} -f /tmp/fslgrot *.o mvn_tool/*.o *.a *.so *.exe core depend.mk fabber_test
 
-mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o 
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} mvn_tool/mvntool.o rundata_newimage.o ${LIBS}
+# FSL >=606 uses dynamic linking
+ifeq (${FSL_GE_606}, true)
+
+all: ${XFILES} ${SOFILES}
+
+# Dynamically linked libraries are compiled for FSL >= 606
+libfsl-fabbercore.so : ${OBJS}
+	${CXX} ${CXXFLAGS} -shared -o $@ $^ ${LDFLAGS}
+
+libfsl-fabberexec.so : ${EXECOBJS} | libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -shared -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
+
+mvntool: mvn_tool/mvntool.o rundata_newimage.o | libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabbercore ${LDFLAGS}
 
 # Build a fabber exectuable, this will have nothing but the generic models so it not practically useful for data analysis
-fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${LIBS} 
-
-# Library build
-libfabbercore.a : ${OBJS}
-	${AR} -r $@ ${OBJS}
-
-libfabberexec.a : ${EXECOBJS} 
-	${AR} -r $@ ${EXECOBJS} 
+fabber: ${CLIENTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o $@ $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS}
 
 # Unit tests
+test: ${CLIENTOBJS} ${TESTOBJS} | libfsl-fabberexec.so libfsl-fabbercore.so
+	${CXX} ${CXXFLAGS} -o fabber_test $^ -lfsl-fabberexec -lfsl-fabbercore ${LDFLAGS} ${TESTLIBS}
+
+# FSL <=605 uses static linking
+else
+
+all: ${XFILES} ${AFILES}
+
+libfabbercore.a : ${OBJS}
+	${AR} -r $@ $^
+
+libfabberexec.a : ${EXECOBJS}
+	${AR} -r $@ $^
+
+mvntool: ${OBJS} mvn_tool/mvntool.o rundata_newimage.o
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+
+fabber: ${OBJS} ${EXECOBJS} ${CLIENTOBJS}
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+
 test: ${OBJS} ${EXECOBJS} ${CLIENTOBJS} ${TESTOBJS}
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${TESTINC} -o fabber_test ${OBJS} ${EXECOBJS} ${TESTOBJS} ${LIBS} ${TESTLIBS} 
+	${CXX} ${CXXFLAGS} -o fabber_test $^ ${LDFLAGS} ${TESTLIBS}
+endif
 
 # DO NOT DELETE
